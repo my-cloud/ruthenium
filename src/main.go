@@ -8,6 +8,8 @@ func main() {
 	blockChain := chore.NewBlockChain()
 	blockChain.Print()
 
+	blockChain.AddTransaction("A", "B", 1.)
+
 	previousHash := blockChain.LastBlock().Hash()
 	blockChain.CreateBlock(5, previousHash)
 	blockChain.Print()

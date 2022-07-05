@@ -6,8 +6,8 @@ import (
 )
 
 type BlockChain struct {
-	transactionPool []string
-	blocks          []*Block
+	transactions []*Transaction
+	blocks       []*Block
 }
 
 func NewBlockChain() *BlockChain {
@@ -29,7 +29,13 @@ func (blockChain *BlockChain) Print() {
 }
 
 func (blockChain *BlockChain) CreateBlock(nonce int, previousHash [32]byte) *Block {
-	block := NewBlock(nonce, previousHash)
+	block := NewBlock(nonce, previousHash, blockChain.transactions)
 	blockChain.blocks = append(blockChain.blocks, block)
+	blockChain.transactions = []*Transaction{}
 	return block
+}
+
+func (blockChain *BlockChain) AddTransaction(sender string, recipient string, value float32) {
+	transaction := NewTransaction(sender, recipient, value)
+	blockChain.transactions = append(blockChain.transactions, transaction)
 }
