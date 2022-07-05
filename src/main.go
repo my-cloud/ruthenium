@@ -7,28 +7,27 @@ import (
 )
 
 func main() {
-	// Block chain
-	myBlockChainAddress := "my block chain address"
-	blockChain := chain.NewBlockChain(myBlockChainAddress)
-	blockChain.Print()
-
-	blockChain.AddTransaction("A", "B", 100.)
-	blockChain.Mining()
-	blockChain.AddTransaction("B", "C", 10.)
-	blockChain.Mining()
-	blockChain.Print()
-	fmt.Printf("A %.1f\n", blockChain.CalculateTotalAmount("A"))
-	fmt.Printf("B %.1f\n", blockChain.CalculateTotalAmount("B"))
-	fmt.Printf("C %.1f\n", blockChain.CalculateTotalAmount("C"))
-	fmt.Printf("mine %.1f\n", blockChain.CalculateTotalAmount("my block chain address"))
-
 	// Wallet
-	w := wallet.NewWallet()
-	fmt.Println("Private key: ", w.PrivateKeyStr())
-	fmt.Println("Public key: ", w.PublicKeyStr())
-	fmt.Println("Address: ", w.Address())
+	walletA := wallet.NewWallet()
+	walletB := wallet.NewWallet()
+	walletC := wallet.NewWallet()
+	minerWallet := wallet.NewWallet()
 
-	// Signed transaction
-	transaction := wallet.NewTransaction(w, "B", 1.)
-	fmt.Printf("Signature: %s \n", transaction.GenerateSignature())
+	transaction1 := wallet.NewTransaction(walletA, walletB.Address(), 100.)
+
+	// Block chain
+	blockChain := chain.NewBlockchain(minerWallet.Address())
+	isAdded := blockChain.AddTransaction(walletA.Address(), walletB.Address(), 100., walletA.PublicKey(), transaction1.GenerateSignature())
+	fmt.Println("Added? ", isAdded)
+	blockChain.Mining()
+
+	transaction2 := wallet.NewTransaction(walletB, walletC.Address(), 10.)
+	blockChain.AddTransaction(walletB.Address(), walletC.Address(), 10., walletB.PublicKey(), transaction2.GenerateSignature())
+	blockChain.Mining()
+
+	fmt.Printf("A %.1f\n", blockChain.CalculateTotalAmount(walletA.Address()))
+	fmt.Printf("B %.1f\n", blockChain.CalculateTotalAmount(walletB.Address()))
+	fmt.Printf("C %.1f\n", blockChain.CalculateTotalAmount(walletC.Address()))
+	fmt.Printf("mine %.1f\n", blockChain.CalculateTotalAmount(minerWallet.Address()))
+	fmt.Printf("Signature: %s \n", transaction1.GenerateSignature())
 }

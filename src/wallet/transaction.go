@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
+	"log"
 )
 
 type Transaction struct {
@@ -18,9 +19,15 @@ func NewTransaction(sender *Wallet, recipientAddress string, value float32) *Tra
 }
 
 func (transaction *Transaction) GenerateSignature() *Signature {
-	serializedTransaction, _ := json.Marshal(transaction)
-	hash := sha256.Sum256(serializedTransaction)
-	r, s, _ := ecdsa.Sign(rand.Reader, transaction.sender.privateKey, hash[:])
+	marshaledTransaction, err := json.Marshal(transaction)
+	if err != nil {
+		log.Println("ERROR: transaction marshal failed")
+	}
+	hash := sha256.Sum256(marshaledTransaction)
+	r, s, err := ecdsa.Sign(rand.Reader, transaction.sender.PrivateKey(), hash[:])
+	if err != nil {
+		log.Println("ERROR: signature generation failed")
+	}
 	return &Signature{r, s}
 }
 
@@ -30,7 +37,7 @@ func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 		Recipient string  `json:"recipient_address"`
 		Value     float32 `json:"value"`
 	}{
-		Sender:    transaction.sender.address,
+		Sender:    transaction.sender.Address(),
 		Recipient: transaction.recipientAddress,
 		Value:     transaction.value,
 	})

@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -23,28 +24,6 @@ func NewBlock(nonce int, previousHash [32]byte, transactions []*Transaction) *Bl
 	}
 }
 
-func (block *Block) Hash() [32]byte {
-	serializedBlock, err := json.Marshal(block)
-	if err != nil {
-		panic(err)
-	}
-	return sha256.Sum256(serializedBlock)
-}
-
-func (block *Block) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		TimeStamp    int64          `json:"timestamp"`
-		Nonce        int            `json:"nonce"`
-		PreviousHash [32]byte       `json:"previousHash"`
-		Transactions []*Transaction `json:"transactions"`
-	}{
-		TimeStamp:    block.timestamp,
-		Nonce:        block.nonce,
-		PreviousHash: block.previousHash,
-		Transactions: block.transactions,
-	})
-}
-
 func (block *Block) Print() {
 	fmt.Printf("timestamp       %d\n", block.timestamp)
 	fmt.Printf("nonce           %d\n", block.nonce)
@@ -52,4 +31,26 @@ func (block *Block) Print() {
 	for _, transaction := range block.transactions {
 		transaction.Print()
 	}
+}
+
+func (block *Block) Hash() [32]byte {
+	marshaledBlock, err := json.Marshal(block)
+	if err != nil {
+		log.Println("ERROR: block marshal failed")
+	}
+	return sha256.Sum256(marshaledBlock)
+}
+
+func (block *Block) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Timestamp    int64          `json:"timestamp"`
+		Nonce        int            `json:"nonce"`
+		PreviousHash [32]byte       `json:"previous_hash"`
+		Transactions []*Transaction `json:"transactions"`
+	}{
+		Timestamp:    block.timestamp,
+		Nonce:        block.nonce,
+		PreviousHash: block.previousHash,
+		Transactions: block.transactions,
+	})
 }
