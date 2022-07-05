@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
-	"ruthenium/src/chore"
+	"ruthenium/src/chain"
+	"ruthenium/src/wallet"
 )
 
 func main() {
+	// Block chain
 	myBlockChainAddress := "my block chain address"
-	blockChain := chore.NewBlockChain(myBlockChainAddress)
+	blockChain := chain.NewBlockChain(myBlockChainAddress)
 	blockChain.Print()
 
 	blockChain.AddTransaction("A", "B", 100.)
@@ -19,4 +21,11 @@ func main() {
 	fmt.Printf("B %.1f\n", blockChain.CalculateTotalAmount("B"))
 	fmt.Printf("C %.1f\n", blockChain.CalculateTotalAmount("C"))
 	fmt.Printf("mine %.1f\n", blockChain.CalculateTotalAmount("my block chain address"))
+
+	// Wallet
+	w := wallet.NewWallet()
+	fmt.Println(w.PrivateKey())
+	fmt.Println(w.PublicKey())
+	fmt.Println(w.PrivateKeyStr())
+	fmt.Println(w.PublicKeyStr())
 }

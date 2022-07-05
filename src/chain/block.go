@@ -1,4 +1,4 @@
-package chore
+package chain
 
 import (
 	"crypto/sha256"
