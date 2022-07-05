@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+const MiningDifficulty = 3
+
 type BlockChain struct {
 	transactions []*Transaction
 	blocks       []*Block
@@ -38,4 +40,32 @@ func (blockChain *BlockChain) CreateBlock(nonce int, previousHash [32]byte) *Blo
 func (blockChain *BlockChain) AddTransaction(sender string, recipient string, value float32) {
 	transaction := NewTransaction(sender, recipient, value)
 	blockChain.transactions = append(blockChain.transactions, transaction)
+}
+
+func (blockChain *BlockChain) CopyTransactions() []*Transaction {
+	transactions := make([]*Transaction, 0)
+	for _, transaction := range blockChain.transactions {
+		transactions = append(transactions,
+			NewTransaction(transaction.sender,
+				transaction.recipient,
+				transaction.value))
+	}
+	return transactions
+}
+
+func (blockChain *BlockChain) ValidProof(nonce int, previousHash [32]byte, transactions []*Transaction, difficulty int) bool {
+	zeros := strings.Repeat("0", difficulty)
+	guessBlock := Block{0, nonce, previousHash, transactions}
+	guessHashStr := fmt.Sprintf("%x", guessBlock.Hash())
+	return guessHashStr[:difficulty] == zeros
+}
+
+func (blockChain *BlockChain) ProofOfWork() int {
+	transactions := blockChain.CopyTransactions()
+	lastHash := blockChain.LastBlock().Hash()
+	var nonce int
+	for !blockChain.ValidProof(nonce, lastHash, transactions, MiningDifficulty) {
+		nonce++
+	}
+	return nonce
 }

@@ -10,11 +10,13 @@ func main() {
 
 	blockChain.AddTransaction("A", "B", 1.)
 
-	previousHash := blockChain.LastBlock().Hash()
-	blockChain.CreateBlock(5, previousHash)
+	lastHash := blockChain.LastBlock().Hash()
+	nonce := blockChain.ProofOfWork()
+	blockChain.CreateBlock(nonce, lastHash)
 	blockChain.Print()
 
-	previousHash = blockChain.LastBlock().Hash()
-	blockChain.CreateBlock(2, previousHash)
+	lastHash = blockChain.LastBlock().Hash()
+	nonce = blockChain.ProofOfWork()
+	blockChain.CreateBlock(nonce, lastHash)
 	blockChain.Print()
 }
