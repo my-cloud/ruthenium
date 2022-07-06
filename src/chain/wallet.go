@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/ripemd160"
-	"log"
 )
 
 type Wallet struct {
@@ -69,6 +68,10 @@ func (wallet *Wallet) MarshalJSON() ([]byte, error) {
 	})
 }
 
+func (wallet *Wallet) PrivateKey() *ecdsa.PrivateKey {
+	return wallet.privateKey
+}
+
 func (wallet *Wallet) PublicKey() *ecdsa.PublicKey {
 	return wallet.publicKey
 }
@@ -77,23 +80,10 @@ func (wallet *Wallet) Address() string {
 	return wallet.address
 }
 
-func (wallet *Wallet) GenerateSignature(transaction *Transaction) *Signature {
-	marshaledTransaction, err := json.Marshal(transaction)
-	if err != nil {
-		log.Println("ERROR: transaction marshal failed")
-	}
-	hash := sha256.Sum256(marshaledTransaction)
-	r, s, err := ecdsa.Sign(rand.Reader, wallet.privateKey, hash[:])
-	if err != nil {
-		log.Println("ERROR: signature generation failed")
-	}
-	return &Signature{r, s}
-}
-
 func (wallet *Wallet) privateKeyStr() string {
 	return fmt.Sprintf("%x", wallet.privateKey.D.Bytes())
 }
 
 func (wallet *Wallet) publicKeyStr() string {
-	return fmt.Sprintf("%x%x", wallet.publicKey.X.Bytes(), wallet.publicKey.Y.Bytes())
+	return fmt.Sprintf("%064x%064x", wallet.publicKey.X.Bytes(), wallet.publicKey.Y.Bytes())
 }

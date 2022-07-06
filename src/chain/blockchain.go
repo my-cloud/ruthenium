@@ -54,7 +54,7 @@ func (blockchain *Blockchain) AddTransaction(sender *Wallet, recipientAddress st
 		return true
 	}
 
-	signature := sender.GenerateSignature(transaction)
+	signature := NewSignature(transaction, sender.PrivateKey())
 	if blockchain.verifyTransactionSignature(sender.PublicKey(), signature, transaction) {
 		/*
 			if blockchain.CalculateTotalAmount(sender) < value {
@@ -115,7 +115,7 @@ func (blockchain *Blockchain) verifyTransactionSignature(
 		log.Println("ERROR: blockchain marshal failed")
 	}
 	hash := sha256.Sum256(marshaledBlockchain)
-	return ecdsa.Verify(senderPublicKey, hash[:], signature.R, signature.S)
+	return ecdsa.Verify(senderPublicKey, hash[:], signature.r, signature.s)
 }
 
 func (blockchain *Blockchain) copyTransactions() []*Transaction {

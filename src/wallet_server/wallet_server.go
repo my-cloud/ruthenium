@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -63,7 +64,7 @@ func (walletServer *WalletServer) Wallet(writer http.ResponseWriter, req *http.R
 	}
 }
 
-func (walletServer *WalletServer) CreateTransaction(w http.ResponseWriter, req *http.Request) {
+func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
 		decoder := json.NewDecoder(req.Body)
@@ -71,7 +72,7 @@ func (walletServer *WalletServer) CreateTransaction(w http.ResponseWriter, req *
 		err := decoder.Decode(&transactionRequest)
 		if err != nil {
 			log.Printf("ERROR: %v", err)
-			i, err := io.WriteString(w, NewStatus("fail").StringValue())
+			i, err := io.WriteString(writer, NewStatus("fail").StringValue())
 			if err != nil || i == 0 {
 				log.Printf("ERROR: Failed to write status")
 				return
@@ -79,15 +80,34 @@ func (walletServer *WalletServer) CreateTransaction(w http.ResponseWriter, req *
 		}
 		if transactionRequest.IsInvalid() {
 			log.Println("ERROR: missing fields in transaction request")
-			i, err := io.WriteString(w, NewStatus("fail").StringValue())
+			i, err := io.WriteString(writer, NewStatus("fail").StringValue())
 			if err != nil || i == 0 {
 				log.Printf("ERROR: Failed to write status")
 				return
 			}
 		}
 
+		publicKey := chain.NewPublicKey(*transactionRequest.SenderPublicKey)
+		privateKey := chain.NewPublicKey(*transactionRequest.SenderPrivateKey)
+		value, err := strconv.ParseFloat(*transactionRequest.Value, 32)
+		if err != nil {
+			log.Println("ERROR: transaction value parsing error")
+			i, err := io.WriteString(writer, NewStatus("fail").StringValue())
+			if err != nil || i == 0 {
+				log.Printf("ERROR: Failed to write status")
+				return
+			}
+		}
+		value32 := float32(value)
+
+		fmt.Println(publicKey)
+		fmt.Println(privateKey)
+		fmt.Printf("%.1f\n", value32)
+
+		writer.Header().Add("Content-type", "application/json")
+
 	default:
-		w.WriteHeader(http.StatusBadRequest)
+		writer.WriteHeader(http.StatusBadRequest)
 		log.Println("ERROR: Invalid HTTP Method")
 	}
 }
