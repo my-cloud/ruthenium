@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 	"ruthenium/src/chain"
+	"ruthenium/src/rest"
 	"strconv"
 )
 
@@ -39,18 +41,72 @@ func (blockchainServer *BlockchainServer) GetChain(writer http.ResponseWriter, r
 		blockchain := blockchainServer.GetBlockchain()
 		marshaledBlockchain, err := blockchain.MarshalJSON()
 		if err != nil {
-			log.Printf("ERROR: Failed to marshal blockchain")
+			log.Println("ERROR: Failed to marshal blockchain")
 		}
 		i, err := io.WriteString(writer, string(marshaledBlockchain[:]))
 		if err != nil || i == 0 {
-			log.Printf("ERROR: Failed to write blockchain")
+			log.Println("ERROR: Failed to write blockchain")
 		}
 	default:
-		log.Printf("ERROR: Invalid HTTP Method")
+		log.Println("ERROR: Invalid HTTP Method")
+	}
+}
+
+func (blockchainServer *BlockchainServer) Transactions(writer http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		writer.Header().Add("Content-Type", "application/json")
+		blockchain := blockchainServer.GetBlockchain()
+		transactions := blockchain.Transactions()
+		marshaledTransactions, err := json.Marshal(struct {
+			Transactions []*chain.Transaction `json:"transactions"`
+			Length       int                  `json:"length"`
+		}{
+			Transactions: transactions,
+			Length:       len(transactions),
+		})
+		if err != nil {
+			log.Println("ERROR: Failed to marshal transactions")
+		}
+		i, err := io.WriteString(writer, string(marshaledTransactions[:]))
+		if err != nil || i == 0 {
+			log.Println("ERROR: Failed to write transactions")
+		}
+	case http.MethodPost:
+		decoder := json.NewDecoder(req.Body)
+		var transactionRequest chain.TransactionRequest
+		err := decoder.Decode(&transactionRequest)
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+			rest.NewStatus("fail").Write(writer)
+			return
+		}
+		if transactionRequest.IsInvalid() {
+			log.Println("ERROR: Field(s) are missing in transaction request to blockchain server")
+			rest.NewStatus("fail").Write(writer)
+			return
+		}
+		publicKey := chain.NewPublicKey(*transactionRequest.SenderPublicKey)
+		signature := chain.DecodeSignature(*transactionRequest.Signature)
+		blockchain := blockchainServer.GetBlockchain()
+		isCreated := blockchain.CreateTransaction(*transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, publicKey, *transactionRequest.Value, signature)
+
+		writer.Header().Add("Content-Type", "application/json")
+		if !isCreated {
+			writer.WriteHeader(http.StatusBadRequest)
+			rest.NewStatus("fail").Write(writer)
+		} else {
+			writer.WriteHeader(http.StatusCreated)
+			rest.NewStatus("success").Write(writer)
+		}
+	default:
+		log.Println("ERROR: Invalid HTTP Method")
+		writer.WriteHeader(http.StatusBadRequest)
 	}
 }
 
 func (blockchainServer *BlockchainServer) Run() {
 	http.HandleFunc("/", blockchainServer.GetChain)
+	http.HandleFunc("/transactions", blockchainServer.Transactions)
 	log.Fatal(http.ListenAndServe("localhost:"+strconv.Itoa(int(blockchainServer.port)), nil))
 }

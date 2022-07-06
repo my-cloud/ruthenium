@@ -25,14 +25,19 @@ type Signature struct {
 func NewSignature(transaction *Transaction, privateKey *ecdsa.PrivateKey) *Signature {
 	marshaledTransaction, err := json.Marshal(transaction)
 	if err != nil {
-		log.Println("ERROR: transaction marshal failed")
+		log.Println("ERROR: Failed to marshal transaction")
 	}
 	hash := sha256.Sum256(marshaledTransaction)
 	r, s, err := ecdsa.Sign(rand.Reader, privateKey, hash[:])
 	if err != nil {
-		log.Println("ERROR: signature generation failed")
+		log.Println("ERROR: Failed to generate signature")
 	}
 	return &Signature{r, s}
+}
+
+func DecodeSignature(signatureString string) *Signature {
+	r, s := string2BigIntTuple(signatureString)
+	return &Signature{&r, &s}
 }
 
 func NewPublicKey(publicKeyString string) *ecdsa.PublicKey {

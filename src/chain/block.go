@@ -36,7 +36,7 @@ func (block *Block) Print() {
 func (block *Block) Hash() [32]byte {
 	marshaledBlock, err := json.Marshal(block)
 	if err != nil {
-		log.Println("ERROR: block marshal failed")
+		log.Println("ERROR: Failed to marshal block")
 	}
 	return sha256.Sum256(marshaledBlock)
 }

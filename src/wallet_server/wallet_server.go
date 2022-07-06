@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"path"
 	"ruthenium/src/chain"
+	"ruthenium/src/rest"
 	"strconv"
 )
 
@@ -37,12 +38,12 @@ func (walletServer *WalletServer) Index(w http.ResponseWriter, req *http.Request
 	case http.MethodGet:
 		t, err := template.ParseFiles(path.Join(templateDir, "index.html"))
 		if err != nil {
-			log.Printf("ERROR: Failed to parse the template")
+			log.Println("ERROR: Failed to parse the template")
 		} else if err := t.Execute(w, ""); err != nil {
-			log.Printf("ERROR: Failed to execute the template")
+			log.Println("ERROR: Failed to execute the template")
 		}
 	default:
-		log.Printf("ERROR: Invalid HTTP Method")
+		log.Println("ERROR: Invalid HTTP Method")
 	}
 }
 
@@ -57,7 +58,7 @@ func (walletServer *WalletServer) Wallet(writer http.ResponseWriter, req *http.R
 		}
 		i, err := io.WriteString(writer, string(marshaledWallet[:]))
 		if err != nil || i == 0 {
-			log.Printf("ERROR: Failed to write wallet")
+			log.Println("ERROR: Failed to write wallet")
 		}
 	default:
 		writer.WriteHeader(http.StatusBadRequest)
@@ -73,31 +74,19 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 		err := decoder.Decode(&transactionRequest)
 		if err != nil {
 			log.Printf("ERROR: %v", err)
-			i, err := io.WriteString(writer, NewStatus("fail").StringValue())
-			if err != nil || i == 0 {
-				log.Printf("ERROR: Failed to write status")
-				return
-			}
+			rest.NewStatus("fail").Write(writer)
 		}
 		if transactionRequest.IsInvalid() {
-			log.Println("ERROR: missing fields in transaction request")
-			i, err := io.WriteString(writer, NewStatus("fail").StringValue())
-			if err != nil || i == 0 {
-				log.Printf("ERROR: Failed to write status")
-				return
-			}
+			log.Println("ERROR: Field(s) are missing in transaction request to wallet server")
+			rest.NewStatus("fail").Write(writer)
 		}
 
 		publicKey := chain.NewPublicKey(*transactionRequest.SenderPublicKey)
 		privateKey := chain.NewPrivateKey(*transactionRequest.SenderPrivateKey, publicKey)
 		value, err := strconv.ParseFloat(*transactionRequest.Value, 32)
 		if err != nil {
-			log.Println("ERROR: transaction value parsing error")
-			i, err := io.WriteString(writer, NewStatus("fail").StringValue())
-			if err != nil || i == 0 {
-				log.Printf("ERROR: Failed to write status")
-				return
-			}
+			log.Println("ERROR: Failed to parse transaction value")
+			rest.NewStatus("fail").Write(writer)
 		}
 		value32 := float32(value)
 
@@ -111,21 +100,16 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 		transaction := chain.NewTransaction(sender, *transactionRequest.RecipientAddress, value32)
 		signature := chain.NewSignature(transaction, privateKey)
 
-		marshaledTransaction, err := json.Marshal(struct {
-			SenderAddress    string  `json:"sender_address"`
-			RecipientAddress string  `json:"recipient_address"`
-			SenderPublicKey  string  `json:"sender_public_key"`
-			Value            float32 `json:"value"`
-			Signature        string  `json:"signature"`
-		}{
-			SenderAddress:    *transactionRequest.SenderAddress,
-			RecipientAddress: *transactionRequest.RecipientAddress,
-			SenderPublicKey:  *transactionRequest.SenderPublicKey,
-			Value:            value32,
-			Signature:        signature.String(),
+		signatureString := signature.String()
+		marshaledTransaction, err := json.Marshal(&chain.TransactionRequest{
+			SenderAddress:    transactionRequest.SenderAddress,
+			RecipientAddress: transactionRequest.RecipientAddress,
+			SenderPublicKey:  transactionRequest.SenderPublicKey,
+			Value:            &value32,
+			Signature:        &signatureString,
 		})
 		if err != nil {
-			log.Println("ERROR: transaction marshal failed")
+			log.Println("ERROR: Failed to marshal transaction")
 		}
 
 		buffer := bytes.NewBuffer(marshaledTransaction)
@@ -134,19 +118,11 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 		if err != nil {
 			log.Printf("ERROR: %v", err)
 		} else if response.StatusCode == 201 {
-			i, err := io.WriteString(writer, NewStatus("success").StringValue())
-			if err != nil || i == 0 {
-				log.Printf("ERROR: Failed to write status")
-				return
-			}
+			rest.NewStatus("success").Write(writer)
 			return
 		}
 		log.Printf("ERROR: status code %d", response.StatusCode)
-		i, err := io.WriteString(writer, NewStatus("fail").StringValue())
-		if err != nil || i == 0 {
-			log.Printf("ERROR: Failed to write status")
-			return
-		}
+		rest.NewStatus("fail").Write(writer)
 	default:
 		writer.WriteHeader(http.StatusBadRequest)
 		log.Println("ERROR: Invalid HTTP Method")

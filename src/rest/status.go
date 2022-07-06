@@ -1,7 +1,8 @@
-package main
+package rest
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 )
 
@@ -21,10 +22,17 @@ func (status *Status) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (status *Status) StringValue() string {
+func (status *Status) Write(writer io.Writer) {
+	i, err := io.WriteString(writer, status.stringValue())
+	if err != nil || i == 0 {
+		log.Println("ERROR: Failed to write status")
+	}
+}
+
+func (status *Status) stringValue() string {
 	marshaledStatus, err := status.MarshalJSON()
 	if err != nil {
-		log.Printf("ERROR: Failed to marshal status")
+		log.Println("ERROR: Failed to marshal status")
 	}
 	return string(marshaledStatus)
 }

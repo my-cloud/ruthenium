@@ -17,11 +17,16 @@ func Test_Blockchain(t *testing.T) {
 
 	// Block chain
 	blockChain := chain.NewBlockchain(minerWallet.Address(), 0)
-	isAdded1 := blockChain.AddTransaction(walletA, walletB.Address(), 100.)
+
+	transaction1 := chain.NewTransaction(walletA, walletB.Address(), 100.)
+	signature1 := chain.NewSignature(transaction1, walletA.PrivateKey())
+	isAdded1 := blockChain.AddTransaction(transaction1, signature1)
 	assert(t, isAdded1, "Failed to add first transaction")
 	blockChain.Mining()
 
-	isAdded2 := blockChain.AddTransaction(walletB, walletC.Address(), 10.)
+	transaction2 := chain.NewTransaction(walletB, walletC.Address(), 10.)
+	signature2 := chain.NewSignature(transaction2, walletB.PrivateKey())
+	isAdded2 := blockChain.AddTransaction(transaction2, signature2)
 	assert(t, isAdded2, "Failed to add second transaction")
 	blockChain.Mining()
 

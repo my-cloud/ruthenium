@@ -46,16 +46,25 @@ func (blockchain *Blockchain) Print() {
 	fmt.Printf("%s\n", strings.Repeat("*", 60))
 }
 
-func (blockchain *Blockchain) AddTransaction(sender *Wallet, recipientAddress string, value float32) bool {
+func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) bool {
+	// FIXME nil private key
+	sender := &Wallet{nil, senderPublicKey, senderAddress}
 	transaction := NewTransaction(sender, recipientAddress, value)
+	isTransacted := blockchain.AddTransaction(transaction, signature)
 
-	if sender.Address() == MiningSender {
+	// TODO
+	// Sync
+
+	return isTransacted
+}
+
+func (blockchain *Blockchain) AddTransaction(transaction *Transaction, signature *Signature) bool {
+	if transaction.Sender().Address() == MiningSender {
 		blockchain.transactions = append(blockchain.transactions, transaction)
 		return true
 	}
 
-	signature := NewSignature(transaction, sender.PrivateKey())
-	if blockchain.verifyTransactionSignature(sender.PublicKey(), signature, transaction) {
+	if blockchain.verifyTransactionSignature(transaction.Sender().PublicKey(), signature, transaction) {
 		/*
 			if blockchain.CalculateTotalAmount(sender) < value {
 				log.Println("ERROR: Not enough balance in a wallet")
@@ -65,14 +74,15 @@ func (blockchain *Blockchain) AddTransaction(sender *Wallet, recipientAddress st
 		blockchain.transactions = append(blockchain.transactions, transaction)
 		return true
 	} else {
-		log.Println("ERROR: Verify Transaction")
+		log.Println("ERROR: Failed to verify transaction")
 	}
 	return false
 
 }
 
 func (blockchain *Blockchain) Mining() bool {
-	blockchain.AddTransaction(&Wallet{nil, nil, MiningSender}, blockchain.address, MiningReward)
+	transaction := NewTransaction(&Wallet{nil, nil, MiningSender}, blockchain.address, MiningReward)
+	blockchain.AddTransaction(transaction, nil)
 	nonce := blockchain.proofOfWork()
 	previousHash := blockchain.lastBlock().Hash()
 	blockchain.createBlock(nonce, previousHash)
@@ -97,6 +107,10 @@ func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) flo
 	return totalAmount
 }
 
+func (blockchain *Blockchain) Transactions() []*Transaction {
+	return blockchain.transactions
+}
+
 func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *Block {
 	block := NewBlock(nonce, previousHash, blockchain.transactions)
 	blockchain.blocks = append(blockchain.blocks, block)
@@ -112,7 +126,7 @@ func (blockchain *Blockchain) verifyTransactionSignature(
 	senderPublicKey *ecdsa.PublicKey, signature *Signature, t *Transaction) bool {
 	marshaledBlockchain, err := json.Marshal(t)
 	if err != nil {
-		log.Println("ERROR: blockchain marshal failed")
+		log.Println("ERROR: Failed to marshal blockchain")
 	}
 	hash := sha256.Sum256(marshaledBlockchain)
 	return ecdsa.Verify(senderPublicKey, hash[:], signature.r, signature.s)
