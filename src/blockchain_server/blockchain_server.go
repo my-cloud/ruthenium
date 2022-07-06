@@ -138,10 +138,35 @@ func (blockchainServer *BlockchainServer) StartMining(writer http.ResponseWriter
 	}
 }
 
+func (blockchainServer *BlockchainServer) Amount(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		blockchainAddress := req.URL.Query().Get("address")
+		amount := blockchainServer.GetBlockchain().CalculateTotalAmount(blockchainAddress)
+
+		amountResponse := chain.NewAmountResponse(amount)
+		marshaledAmountResponse, err := amountResponse.MarshalJSON()
+		if err != nil {
+			log.Println("ERROR: Failed to marshal amount response")
+		}
+
+		w.Header().Add("Content-Type", "application/json")
+		i, err := io.WriteString(w, string(marshaledAmountResponse[:]))
+		if err != nil || i == 0 {
+			log.Println("ERROR: Failed to write amount response")
+		}
+
+	default:
+		log.Println("ERROR: Invalid HTTP Method")
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}
+
 func (blockchainServer *BlockchainServer) Run() {
 	http.HandleFunc("/", blockchainServer.GetChain)
 	http.HandleFunc("/transactions", blockchainServer.Transactions)
 	http.HandleFunc("/mine", blockchainServer.Mine)
 	http.HandleFunc("/mine/start", blockchainServer.StartMining)
+	http.HandleFunc("/amount", blockchainServer.Amount)
 	log.Fatal(http.ListenAndServe("localhost:"+strconv.Itoa(int(blockchainServer.port)), nil))
 }

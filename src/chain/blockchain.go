@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	MiningDifficulty = 3
-	MiningAddress    = "MINER BLOCKCHAIN WALLET ADDRESS"
-	MiningReward     = 1.0
-	MiningTimerSec   = 20
+	MiningDifficulty          = 3
+	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
+	MiningReward              = 1.0
+	MiningTimerSec            = 20
 )
 
 type Blockchain struct {
@@ -63,7 +63,7 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 }
 
 func (blockchain *Blockchain) AddTransaction(transaction *Transaction, signature *Signature) bool {
-	if transaction.Sender().Address() == MiningAddress {
+	if transaction.Sender().Address() == MiningRewardSenderAddress {
 		blockchain.transactions = append(blockchain.transactions, transaction)
 		return true
 	}
@@ -92,7 +92,7 @@ func (blockchain *Blockchain) Mine() bool {
 	//	return false
 	//}
 
-	transaction := NewTransaction(&Wallet{nil, nil, MiningAddress}, blockchain.address, MiningReward)
+	transaction := NewTransaction(&Wallet{nil, nil, MiningRewardSenderAddress}, blockchain.address, MiningReward)
 	blockchain.AddTransaction(transaction, nil)
 	nonce := blockchain.proofOfWork()
 	previousHash := blockchain.lastBlock().Hash()
