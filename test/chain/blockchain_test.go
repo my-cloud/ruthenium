@@ -16,7 +16,7 @@ func Test_Blockchain(t *testing.T) {
 	minerWallet := chain.NewWallet()
 
 	// Block chain
-	blockChain := chain.NewBlockchain(minerWallet.Address())
+	blockChain := chain.NewBlockchain(minerWallet.Address(), 0)
 	isAdded1 := blockChain.AddTransaction(walletA, walletB.Address(), 100.)
 	assert(t, isAdded1, "Failed to add first transaction")
 	blockChain.Mining()
