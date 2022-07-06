@@ -6,19 +6,48 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script>
         $(function () {
-        $.ajax({
-            url: '/wallet',
-            type: 'POST',
-            success: function (response) {
-                $('#public_key').val(response['public_key']);
-                $('#private_key').val(response['private_key']);
-                $('#address').val(response['address']);
-                console.info(response);
-            },
-            error: function(error) {
-                console.error(error);
-            }
-        })
+            $.ajax({
+                url: '/wallet',
+                type: 'POST',
+                success: function (response) {
+                    $('#public_key').val(response['public_key']);
+                    $('#private_key').val(response['private_key']);
+                    $('#address').val(response['address']);
+                    console.info(response);
+                },
+                error: function(error) {
+                    console.error(error);
+                }
+            })
+            $('#send_money_button').click(function() {
+                if (!confirm('Are you sure to send?')) {
+                    alert('Canceled')
+                    return
+                }
+
+                let transaction_data = {
+                    'sender_private_key': $('#private_key').val(),
+                    'sender_address': $('#address').val(),
+                    'recipient_address': $('#recipient_address').val(),
+                    'sender_public_key': $('#public_key').val(),
+                    'value': $('#send_amount').val(),
+                };
+
+                $.ajax({
+                    url: '/transaction',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(transaction_data),
+                    success: function (response) {
+                        console.info(response);
+                        alert('Send success');
+                    },
+                    error: function (response) {
+                        console.error(response);
+                        alert('Send failed');
+                    }
+                })
+            })
     })
     </script>
 </head>

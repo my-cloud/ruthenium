@@ -62,8 +62,22 @@ func (walletServer *WalletServer) Wallet(writer http.ResponseWriter, req *http.R
 	}
 }
 
+func (walletServer *WalletServer) CreateTransaction(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodPost:
+		i, err := io.WriteString(w, NewStatus("success").StringValue())
+		if err != nil || i == 0 {
+			log.Printf("ERROR: Failed to write status")
+		}
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		log.Println("ERROR: Invalid HTTP Method")
+	}
+}
+
 func (walletServer *WalletServer) Run() {
 	http.HandleFunc("/", walletServer.Index)
 	http.HandleFunc("/wallet", walletServer.Wallet)
+	http.HandleFunc("/transaction", walletServer.CreateTransaction)
 	log.Fatal(http.ListenAndServe("localhost:"+strconv.Itoa(int(walletServer.Port())), nil))
 }
