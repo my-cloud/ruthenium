@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
+	"time"
 )
 
 const (
 	MiningDifficulty = 3
-	MiningSender     = "THE BLOCKCHAIN"
+	MiningAddress    = "MINER BLOCKCHAIN WALLET ADDRESS"
 	MiningReward     = 1.0
+	MiningTimerSec   = 20
 )
 
 type Blockchain struct {
@@ -20,6 +23,7 @@ type Blockchain struct {
 	blocks       []*Block
 	address      string
 	port         uint16
+	mux          sync.Mutex
 }
 
 func NewBlockchain(address string, port uint16) *Blockchain {
@@ -59,7 +63,7 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 }
 
 func (blockchain *Blockchain) AddTransaction(transaction *Transaction, signature *Signature) bool {
-	if transaction.Sender().Address() == MiningSender {
+	if transaction.Sender().Address() == MiningAddress {
 		blockchain.transactions = append(blockchain.transactions, transaction)
 		return true
 	}
@@ -81,13 +85,25 @@ func (blockchain *Blockchain) AddTransaction(transaction *Transaction, signature
 }
 
 func (blockchain *Blockchain) Mine() bool {
-	transaction := NewTransaction(&Wallet{nil, nil, MiningSender}, blockchain.address, MiningReward)
+	blockchain.mux.Lock()
+	defer blockchain.mux.Unlock()
+
+	//if len(blockchain.transactionPool) == 0 {
+	//	return false
+	//}
+
+	transaction := NewTransaction(&Wallet{nil, nil, MiningAddress}, blockchain.address, MiningReward)
 	blockchain.AddTransaction(transaction, nil)
 	nonce := blockchain.proofOfWork()
 	previousHash := blockchain.lastBlock().Hash()
 	blockchain.createBlock(nonce, previousHash)
 	log.Println("action=mining, status=success")
 	return true
+}
+
+func (blockchain *Blockchain) StartMining() {
+	blockchain.Mine()
+	_ = time.AfterFunc(time.Second*MiningTimerSec, blockchain.StartMining)
 }
 
 func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) float32 {
