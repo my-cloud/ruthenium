@@ -17,16 +17,18 @@ type Wallet struct {
 	address    string
 }
 
+func PopWallet(privateKey *ecdsa.PrivateKey, publicKey *ecdsa.PublicKey, address string) *Wallet {
+	return &Wallet{privateKey, publicKey, address}
+}
+
 func NewWallet() *Wallet {
-	wallet := new(Wallet)
 	// 1. Create ECDSA private key (32 bytes) and public key (64 bytes)
 	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	wallet.privateKey = privateKey
-	wallet.publicKey = &privateKey.PublicKey
+	publicKey := &privateKey.PublicKey
 	// 2. Perform SHA-256 hashing on the public key (32 bytes).
 	h2 := sha256.New()
-	h2.Write(wallet.publicKey.X.Bytes())
-	h2.Write(wallet.publicKey.Y.Bytes())
+	h2.Write(publicKey.X.Bytes())
+	h2.Write(publicKey.Y.Bytes())
 	digest2 := h2.Sum(nil)
 	// 3. Perform RIPEMD-160 hashing on the result of SHA-256 (20 bytes).
 	h3 := ripemd160.New()
@@ -52,8 +54,7 @@ func NewWallet() *Wallet {
 	copy(dc8[21:], checksum[:])
 	// 9. Convert the result from a byte string into base58.
 	address := base58.Encode(dc8)
-	wallet.address = address
-	return wallet
+	return PopWallet(privateKey, publicKey, address)
 }
 
 func (wallet *Wallet) MarshalJSON() ([]byte, error) {
