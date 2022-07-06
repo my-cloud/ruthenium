@@ -43,7 +43,7 @@ func (blockchainServer *BlockchainServer) GetChain(writer http.ResponseWriter, r
 		}
 		i, err := io.WriteString(writer, string(marshaledBlockchain[:]))
 		if err != nil || i == 0 {
-			log.Printf("ERROR: Failed to write")
+			log.Printf("ERROR: Failed to write blockchain")
 		}
 	default:
 		log.Printf("ERROR: Invalid HTTP Method")

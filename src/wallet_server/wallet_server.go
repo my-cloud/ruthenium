@@ -2,9 +2,11 @@ package main
 
 import (
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"path"
+	"ruthenium/src/chain"
 	"strconv"
 )
 
@@ -19,15 +21,15 @@ func NewWalletServer(port uint16, gateway string) *WalletServer {
 	return &WalletServer{port, gateway}
 }
 
-func (ws *WalletServer) Port() uint16 {
-	return ws.port
+func (walletServer *WalletServer) Port() uint16 {
+	return walletServer.port
 }
 
-func (ws *WalletServer) Gateway() string {
-	return ws.gateway
+func (walletServer *WalletServer) Gateway() string {
+	return walletServer.gateway
 }
 
-func (ws *WalletServer) Index(w http.ResponseWriter, req *http.Request) {
+func (walletServer *WalletServer) Index(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 		t, err := template.ParseFiles(path.Join(templateDir, "index.html"))
@@ -41,7 +43,27 @@ func (ws *WalletServer) Index(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (ws *WalletServer) Run() {
-	http.HandleFunc("/", ws.Index)
-	log.Fatal(http.ListenAndServe("localhost:"+strconv.Itoa(int(ws.Port())), nil))
+func (walletServer *WalletServer) Wallet(writer http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodPost:
+		writer.Header().Add("Content-Type", "application/json")
+		wallet := chain.NewWallet()
+		marshaledWallet, err := wallet.MarshalJSON()
+		if err != nil {
+			log.Println("ERROR: Failed to marshal wallet")
+		}
+		i, err := io.WriteString(writer, string(marshaledWallet[:]))
+		if err != nil || i == 0 {
+			log.Printf("ERROR: Failed to write wallet")
+		}
+	default:
+		writer.WriteHeader(http.StatusBadRequest)
+		log.Println("ERROR: Invalid HTTP Method")
+	}
+}
+
+func (walletServer *WalletServer) Run() {
+	http.HandleFunc("/", walletServer.Index)
+	http.HandleFunc("/wallet", walletServer.Wallet)
+	log.Fatal(http.ListenAndServe("localhost:"+strconv.Itoa(int(walletServer.Port())), nil))
 }

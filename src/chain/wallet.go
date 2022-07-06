@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/ripemd160"
 	"log"
@@ -56,6 +57,18 @@ func NewWallet() *Wallet {
 	return wallet
 }
 
+func (wallet *Wallet) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		PrivateKey        string `json:"private_key"`
+		PublicKey         string `json:"public_key"`
+		BlockchainAddress string `json:"address"`
+	}{
+		PrivateKey:        wallet.privateKeyStr(),
+		PublicKey:         wallet.publicKeyStr(),
+		BlockchainAddress: wallet.Address(),
+	})
+}
+
 func (wallet *Wallet) PublicKey() *ecdsa.PublicKey {
 	return wallet.publicKey
 }
@@ -75,4 +88,12 @@ func (wallet *Wallet) GenerateSignature(transaction *Transaction) *Signature {
 		log.Println("ERROR: signature generation failed")
 	}
 	return &Signature{r, s}
+}
+
+func (wallet *Wallet) privateKeyStr() string {
+	return fmt.Sprintf("%x", wallet.privateKey.D.Bytes())
+}
+
+func (wallet *Wallet) publicKeyStr() string {
+	return fmt.Sprintf("%x%x", wallet.publicKey.X.Bytes(), wallet.publicKey.Y.Bytes())
 }
