@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"html/template"
 	"io"
 	"log"
@@ -65,10 +66,26 @@ func (walletServer *WalletServer) Wallet(writer http.ResponseWriter, req *http.R
 func (walletServer *WalletServer) CreateTransaction(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		i, err := io.WriteString(w, NewStatus("success").StringValue())
-		if err != nil || i == 0 {
-			log.Printf("ERROR: Failed to write status")
+		decoder := json.NewDecoder(req.Body)
+		var transactionRequest TransactionRequest
+		err := decoder.Decode(&transactionRequest)
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+			i, err := io.WriteString(w, NewStatus("fail").StringValue())
+			if err != nil || i == 0 {
+				log.Printf("ERROR: Failed to write status")
+				return
+			}
 		}
+		if transactionRequest.IsInvalid() {
+			log.Println("ERROR: missing fields in transaction request")
+			i, err := io.WriteString(w, NewStatus("fail").StringValue())
+			if err != nil || i == 0 {
+				log.Printf("ERROR: Failed to write status")
+				return
+			}
+		}
+
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 		log.Println("ERROR: Invalid HTTP Method")
