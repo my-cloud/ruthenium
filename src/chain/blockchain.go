@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"ruthenium/src/wallet"
 	"strings"
 )
 
@@ -37,16 +36,16 @@ func (blockchain *Blockchain) Print() {
 	fmt.Printf("%s\n", strings.Repeat("*", 60))
 }
 
-func (blockchain *Blockchain) AddTransaction(sender string, recipient string, value float32,
-	senderPublicKey *ecdsa.PublicKey, signature *wallet.Signature) bool {
-	transaction := NewTransaction(sender, recipient, value)
+func (blockchain *Blockchain) AddTransaction(sender *Wallet, recipientAddress string, value float32) bool {
+	transaction := NewTransaction(sender, recipientAddress, value)
 
-	if sender == MiningSender {
+	if sender.Address() == MiningSender {
 		blockchain.transactions = append(blockchain.transactions, transaction)
 		return true
 	}
 
-	if blockchain.verifyTransactionSignature(senderPublicKey, signature, transaction) {
+	signature := sender.GenerateSignature(transaction)
+	if blockchain.verifyTransactionSignature(sender.PublicKey(), signature, transaction) {
 		/*
 			if blockchain.CalculateTotalAmount(sender) < value {
 				log.Println("ERROR: Not enough balance in a wallet")
@@ -63,7 +62,7 @@ func (blockchain *Blockchain) AddTransaction(sender string, recipient string, va
 }
 
 func (blockchain *Blockchain) Mining() bool {
-	blockchain.AddTransaction(MiningSender, blockchain.address, MiningReward, nil, nil)
+	blockchain.AddTransaction(&Wallet{nil, nil, MiningSender}, blockchain.address, MiningReward)
 	nonce := blockchain.proofOfWork()
 	previousHash := blockchain.lastBlock().Hash()
 	blockchain.createBlock(nonce, previousHash)
@@ -75,12 +74,12 @@ func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) flo
 	var totalAmount float32 = 0.0
 	for _, block := range blockchain.blocks {
 		for _, transaction := range block.transactions {
-			value := transaction.value
-			if blockchainAddress == transaction.recipientAddress {
+			value := transaction.Value()
+			if blockchainAddress == transaction.RecipientAddress() {
 				totalAmount += value
 			}
 
-			if blockchainAddress == transaction.senderAddress {
+			if blockchainAddress == transaction.Sender().Address() {
 				totalAmount -= value
 			}
 		}
@@ -100,7 +99,7 @@ func (blockchain *Blockchain) lastBlock() *Block {
 }
 
 func (blockchain *Blockchain) verifyTransactionSignature(
-	senderPublicKey *ecdsa.PublicKey, signature *wallet.Signature, t *Transaction) bool {
+	senderPublicKey *ecdsa.PublicKey, signature *Signature, t *Transaction) bool {
 	marshaledBlockchain, err := json.Marshal(t)
 	if err != nil {
 		log.Println("ERROR: blockchain marshal failed")
@@ -113,9 +112,9 @@ func (blockchain *Blockchain) copyTransactions() []*Transaction {
 	transactions := make([]*Transaction, 0)
 	for _, transaction := range blockchain.transactions {
 		transactions = append(transactions,
-			NewTransaction(transaction.senderAddress,
-				transaction.recipientAddress,
-				transaction.value))
+			NewTransaction(transaction.Sender(),
+				transaction.RecipientAddress(),
+				transaction.Value()))
 	}
 	return transactions
 }

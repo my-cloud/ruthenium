@@ -1,13 +1,14 @@
-package wallet
+package chain
 
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
-	"fmt"
+	"encoding/json"
 	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/ripemd160"
+	"log"
 )
 
 type Wallet struct {
@@ -55,22 +56,23 @@ func NewWallet() *Wallet {
 	return wallet
 }
 
-func (wallet *Wallet) PrivateKey() *ecdsa.PrivateKey {
-	return wallet.privateKey
-}
-
-func (wallet *Wallet) PrivateKeyStr() string {
-	return fmt.Sprintf("%x", wallet.privateKey.D.Bytes())
-}
-
 func (wallet *Wallet) PublicKey() *ecdsa.PublicKey {
 	return wallet.publicKey
 }
 
-func (wallet *Wallet) PublicKeyStr() string {
-	return fmt.Sprintf("%x%x", wallet.publicKey.X.Bytes(), wallet.publicKey.Y.Bytes())
-}
-
 func (wallet *Wallet) Address() string {
 	return wallet.address
+}
+
+func (wallet *Wallet) GenerateSignature(transaction *Transaction) *Signature {
+	marshaledTransaction, err := json.Marshal(transaction)
+	if err != nil {
+		log.Println("ERROR: transaction marshal failed")
+	}
+	hash := sha256.Sum256(marshaledTransaction)
+	r, s, err := ecdsa.Sign(rand.Reader, wallet.privateKey, hash[:])
+	if err != nil {
+		log.Println("ERROR: signature generation failed")
+	}
+	return &Signature{r, s}
 }
