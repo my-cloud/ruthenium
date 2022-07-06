@@ -80,7 +80,7 @@ func (blockchain *Blockchain) AddTransaction(transaction *Transaction, signature
 
 }
 
-func (blockchain *Blockchain) Mining() bool {
+func (blockchain *Blockchain) Mine() bool {
 	transaction := NewTransaction(&Wallet{nil, nil, MiningSender}, blockchain.address, MiningReward)
 	blockchain.AddTransaction(transaction, nil)
 	nonce := blockchain.proofOfWork()

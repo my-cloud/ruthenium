@@ -22,13 +22,13 @@ func Test_Blockchain(t *testing.T) {
 	signature1 := chain.NewSignature(transaction1, walletA.PrivateKey())
 	isAdded1 := blockChain.AddTransaction(transaction1, signature1)
 	assert(t, isAdded1, "Failed to add first transaction")
-	blockChain.Mining()
+	blockChain.Mine()
 
 	transaction2 := chain.NewTransaction(walletB, walletC.Address(), 10.)
 	signature2 := chain.NewSignature(transaction2, walletB.PrivateKey())
 	isAdded2 := blockChain.AddTransaction(transaction2, signature2)
 	assert(t, isAdded2, "Failed to add second transaction")
-	blockChain.Mining()
+	blockChain.Mine()
 
 	fmt.Printf("A %.1f\n", blockChain.CalculateTotalAmount(walletA.Address()))
 	fmt.Printf("B %.1f\n", blockChain.CalculateTotalAmount(walletB.Address()))

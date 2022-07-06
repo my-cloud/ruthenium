@@ -105,8 +105,28 @@ func (blockchainServer *BlockchainServer) Transactions(writer http.ResponseWrite
 	}
 }
 
+func (blockchainServer *BlockchainServer) Mine(writer http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		blockchain := blockchainServer.GetBlockchain()
+		isMined := blockchain.Mine()
+
+		writer.Header().Add("Content-Type", "application/json")
+		if isMined {
+			rest.NewStatus("success").Write(writer)
+		} else {
+			writer.WriteHeader(http.StatusBadRequest)
+			rest.NewStatus("fail").Write(writer)
+		}
+	default:
+		log.Println("ERROR: Invalid HTTP Method")
+		writer.WriteHeader(http.StatusBadRequest)
+	}
+}
+
 func (blockchainServer *BlockchainServer) Run() {
 	http.HandleFunc("/", blockchainServer.GetChain)
 	http.HandleFunc("/transactions", blockchainServer.Transactions)
+	http.HandleFunc("/mine", blockchainServer.Mine)
 	log.Fatal(http.ListenAndServe("localhost:"+strconv.Itoa(int(blockchainServer.port)), nil))
 }
