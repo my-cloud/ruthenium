@@ -19,6 +19,7 @@
                     console.error(error);
                 }
             })
+
             $('#send_money_button').click(function() {
                 if (!confirm('Are you sure to send?')) {
                     alert('Canceled')
@@ -51,6 +52,29 @@
                         alert('Send failed');
                     }
                 })
+
+                function reload_amount() {
+                    let data = {'address': $('#address').val()}
+                    $.ajax({
+                        url: '/wallet/amount',
+                        type: 'GET',
+                        data: data,
+                        success: function (response) {
+                            let amount = response['amount'];
+                            $('#wallet_amount').text(amount);
+                            console.info(amount)
+                        },
+                        error: function(error) {
+                            console.error(error)
+                        }
+                    })
+                }
+
+                $('#reload_wallet').click(function(){
+                    reload_amount();
+                });
+
+                setInterval(reload_amount, 3000)
             })
     })
     </script>
@@ -60,7 +84,7 @@
     <div>
         <h1>Wallet</h1>
         <div id="wallet_amount">0</div>
-        <button id="reload_wallet">Reload Wallet</button>
+        <button id="reload_wallet">Refresh amount</button>
 
         <p>Public  Key</p>
         <textarea id="public_key" rows="2" cols="100"></textarea>
