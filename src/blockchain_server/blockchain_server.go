@@ -76,14 +76,15 @@ func (blockchainServer *BlockchainServer) Transactions(writer http.ResponseWrite
 		decoder := json.NewDecoder(req.Body)
 		var transactionRequest chain.TransactionRequest
 		err := decoder.Decode(&transactionRequest)
+		jsonWriter := rest.NewJsonWriter(writer)
 		if err != nil {
 			log.Printf("ERROR: %v", err)
-			rest.NewStatus("fail").Write(writer)
+			jsonWriter.WriteStatus("fail")
 			return
 		}
 		if transactionRequest.IsInvalid() {
 			log.Println("ERROR: Field(s) are missing in transaction request to blockchain server")
-			rest.NewStatus("fail").Write(writer)
+			jsonWriter.WriteStatus("fail")
 			return
 		}
 		publicKey := chain.NewPublicKey(*transactionRequest.SenderPublicKey)
@@ -94,10 +95,10 @@ func (blockchainServer *BlockchainServer) Transactions(writer http.ResponseWrite
 		writer.Header().Add("Content-Type", "application/json")
 		if !isCreated {
 			writer.WriteHeader(http.StatusBadRequest)
-			rest.NewStatus("fail").Write(writer)
+			jsonWriter.WriteStatus("fail")
 		} else {
 			writer.WriteHeader(http.StatusCreated)
-			rest.NewStatus("success").Write(writer)
+			jsonWriter.WriteStatus("success")
 		}
 	default:
 		log.Println("ERROR: Invalid HTTP Method")
@@ -111,12 +112,13 @@ func (blockchainServer *BlockchainServer) Mine(writer http.ResponseWriter, req *
 		blockchain := blockchainServer.GetBlockchain()
 		isMined := blockchain.Mine()
 
+		jsonWriter := rest.NewJsonWriter(writer)
 		writer.Header().Add("Content-Type", "application/json")
 		if isMined {
-			rest.NewStatus("success").Write(writer)
+			jsonWriter.WriteStatus("success")
 		} else {
 			writer.WriteHeader(http.StatusBadRequest)
-			rest.NewStatus("fail").Write(writer)
+			jsonWriter.WriteStatus("fail")
 		}
 	default:
 		log.Println("ERROR: Invalid HTTP Method")
@@ -130,8 +132,9 @@ func (blockchainServer *BlockchainServer) StartMining(writer http.ResponseWriter
 		blockchain := blockchainServer.GetBlockchain()
 		blockchain.StartMining()
 
+		jsonWriter := rest.NewJsonWriter(writer)
 		writer.Header().Add("Content-Type", "application/json")
-		rest.NewStatus("success").Write(writer)
+		jsonWriter.WriteStatus("success")
 	default:
 		log.Println("ERROR: Invalid HTTP Method")
 		writer.WriteHeader(http.StatusBadRequest)

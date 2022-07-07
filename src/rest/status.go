@@ -6,15 +6,15 @@ import (
 	"log"
 )
 
-type Status struct {
+type status struct {
 	message string
 }
 
-func NewStatus(message string) *Status {
-	return &Status{message}
+func newStatus(message string) *status {
+	return &status{message}
 }
 
-func (status *Status) MarshalJSON() ([]byte, error) {
+func (status *status) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Message string `json:"message"`
 	}{
@@ -22,17 +22,26 @@ func (status *Status) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (status *Status) Write(writer io.Writer) {
-	i, err := io.WriteString(writer, status.stringValue())
-	if err != nil || i == 0 {
-		log.Println("ERROR: Failed to write status")
-	}
-}
-
-func (status *Status) stringValue() string {
+func (status *status) stringValue() string {
 	marshaledStatus, err := status.MarshalJSON()
 	if err != nil {
 		log.Println("ERROR: Failed to marshal status")
 	}
 	return string(marshaledStatus)
+}
+
+type JsonWriter struct {
+	writer io.Writer
+}
+
+func NewJsonWriter(writer io.Writer) *JsonWriter {
+	return &JsonWriter{writer}
+}
+
+func (jsonWriter *JsonWriter) WriteStatus(message string) {
+	messageStatus := newStatus(message)
+	i, err := io.WriteString(jsonWriter.writer, messageStatus.stringValue())
+	if err != nil || i == 0 {
+		log.Println("ERROR: Failed to write status")
+	}
 }

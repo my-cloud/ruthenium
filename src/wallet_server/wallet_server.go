@@ -72,13 +72,14 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 		decoder := json.NewDecoder(req.Body)
 		var transactionRequest TransactionRequest
 		err := decoder.Decode(&transactionRequest)
+		jsonWriter := rest.NewJsonWriter(writer)
 		if err != nil {
 			log.Printf("ERROR: %v", err)
-			rest.NewStatus("fail").Write(writer)
+			jsonWriter.WriteStatus("fail")
 		}
 		if transactionRequest.IsInvalid() {
 			log.Println("ERROR: Field(s) are missing in transaction request to wallet server")
-			rest.NewStatus("fail").Write(writer)
+			jsonWriter.WriteStatus("fail")
 		}
 
 		publicKey := chain.NewPublicKey(*transactionRequest.SenderPublicKey)
@@ -86,7 +87,7 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 		value, err := strconv.ParseFloat(*transactionRequest.Value, 32)
 		if err != nil {
 			log.Println("ERROR: Failed to parse transaction value")
-			rest.NewStatus("fail").Write(writer)
+			jsonWriter.WriteStatus("fail")
 		}
 		value32 := float32(value)
 
@@ -118,11 +119,11 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 		if err != nil {
 			log.Printf("ERROR: %v", err)
 		} else if response.StatusCode == 201 {
-			rest.NewStatus("success").Write(writer)
+			jsonWriter.WriteStatus("success")
 			return
 		}
 		log.Printf("ERROR: status code %d", response.StatusCode)
-		rest.NewStatus("fail").Write(writer)
+		jsonWriter.WriteStatus("fail")
 	default:
 		writer.WriteHeader(http.StatusBadRequest)
 		log.Println("ERROR: Invalid HTTP Method")
