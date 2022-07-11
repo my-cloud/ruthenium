@@ -16,22 +16,43 @@ const (
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
 	MiningReward              = 1.0
 	MiningTimerSec            = 20
+
+	NeighborSynchronizationTimeSecond = 5
 )
 
 type Blockchain struct {
 	transactions []*Transaction
 	blocks       []*Block
 	address      string
-	port         uint16
-	mux          sync.Mutex
+	mineMutex    sync.Mutex
+
+	neighbors      []string
+	neighborsMutex sync.Mutex
+	hostNode       *Node
 }
 
 func NewBlockchain(address string, port uint16) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.address = address
-	blockchain.port = port
+	blockchain.hostNode = NewHostNode(port)
 	blockchain.createBlock(0, new(Block).Hash())
 	return blockchain
+}
+
+func (blockchain *Blockchain) Run() {
+	blockchain.StartNeighborsSynchronization()
+}
+
+func (blockchain *Blockchain) SynchronizeNeighbors() {
+	blockchain.neighborsMutex.Lock()
+	defer blockchain.neighborsMutex.Unlock()
+	blockchain.neighbors = blockchain.hostNode.FindNeighbors()
+	log.Printf("%v", blockchain.neighbors)
+}
+
+func (blockchain *Blockchain) StartNeighborsSynchronization() {
+	blockchain.SynchronizeNeighbors()
+	_ = time.AfterFunc(time.Second*NeighborSynchronizationTimeSecond, blockchain.StartNeighborsSynchronization)
 }
 
 func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
@@ -85,8 +106,8 @@ func (blockchain *Blockchain) AddTransaction(transaction *Transaction, signature
 }
 
 func (blockchain *Blockchain) Mine() bool {
-	blockchain.mux.Lock()
-	defer blockchain.mux.Unlock()
+	blockchain.mineMutex.Lock()
+	defer blockchain.mineMutex.Unlock()
 
 	//if len(blockchain.transactionPool) == 0 {
 	//	return false

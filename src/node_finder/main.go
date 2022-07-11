@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"ruthenium/src/chain"
 )
 
 func main() {
-	//fmt.Println(IsFoundHost("127.0.0.1", 5000))
-	fmt.Println(FindNeighbors("127.0.0.1", 5000, 0, 3, 5000, 5003))
+	fmt.Println(chain.NewHostNode(5000).FindNeighbors())
 }
