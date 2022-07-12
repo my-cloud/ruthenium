@@ -202,6 +202,25 @@ func (blockchainServer *BlockchainServer) Amount(w http.ResponseWriter, req *htt
 	}
 }
 
+func (blockchainServer *BlockchainServer) Consensus(writer http.ResponseWriter, request *http.Request) {
+	switch request.Method {
+	case http.MethodPut:
+		blockchain := blockchainServer.GetBlockchain()
+		isSelfBlockchainReplacedByNeighborsOne := blockchain.ResolveConflicts()
+
+		jsonWriter := rest.NewJsonWriter(writer)
+		writer.Header().Add("Content-Type", "application/json")
+		if isSelfBlockchainReplacedByNeighborsOne {
+			jsonWriter.WriteStatus("success")
+		} else {
+			jsonWriter.WriteStatus("fail")
+		}
+	default:
+		log.Println("ERROR: Invalid HTTP Method")
+		writer.WriteHeader(http.StatusBadRequest)
+	}
+}
+
 func (blockchainServer *BlockchainServer) Run() {
 	blockchainServer.GetBlockchain().Run()
 
@@ -210,5 +229,6 @@ func (blockchainServer *BlockchainServer) Run() {
 	http.HandleFunc("/mine", blockchainServer.Mine)
 	http.HandleFunc("/mine/start", blockchainServer.StartMining)
 	http.HandleFunc("/amount", blockchainServer.Amount)
+	http.HandleFunc("/consensus", blockchainServer.Consensus)
 	log.Fatal(http.ListenAndServe("localhost:"+strconv.Itoa(int(blockchainServer.port)), nil))
 }
