@@ -2,8 +2,6 @@ package chain
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -21,9 +19,8 @@ func PopWallet(privateKey *ecdsa.PrivateKey, publicKey *ecdsa.PublicKey, address
 	return &Wallet{privateKey, publicKey, address}
 }
 
-func NewWallet() *Wallet {
-	// 1. Create ECDSA private key (32 bytes) and public key (64 bytes)
-	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+func NewWallet(privateKey *ecdsa.PrivateKey) *Wallet {
+	// 1. Create ECDSA public key (64 bytes)
 	publicKey := &privateKey.PublicKey
 	// 2. Perform SHA-256 hashing on the public key (32 bytes).
 	h2 := sha256.New()

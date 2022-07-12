@@ -2,6 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -51,14 +54,19 @@ func (walletServer *WalletServer) Wallet(writer http.ResponseWriter, req *http.R
 	switch req.Method {
 	case http.MethodPost:
 		writer.Header().Add("Content-Type", "application/json")
-		wallet := chain.NewWallet()
-		marshaledWallet, err := wallet.MarshalJSON()
+		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
-			log.Println("ERROR: Failed to marshal wallet")
-		}
-		i, err := io.WriteString(writer, string(marshaledWallet[:]))
-		if err != nil || i == 0 {
-			log.Println("ERROR: Failed to write wallet")
+			fmt.Printf("ERROR: Failed to generate private key, err%v\n", err)
+		} else {
+			wallet := chain.NewWallet(privateKey)
+			marshaledWallet, err := wallet.MarshalJSON()
+			if err != nil {
+				log.Println("ERROR: Failed to marshal wallet")
+			}
+			i, err := io.WriteString(writer, string(marshaledWallet[:]))
+			if err != nil || i == 0 {
+				log.Println("ERROR: Failed to write wallet")
+			}
 		}
 	default:
 		writer.WriteHeader(http.StatusBadRequest)

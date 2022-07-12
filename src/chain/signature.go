@@ -36,17 +36,26 @@ func NewSignature(transaction *Transaction, privateKey *ecdsa.PrivateKey) *Signa
 }
 
 func DecodeSignature(signatureString string) *Signature {
-	r, s := string2BigIntTuple(signatureString)
+	r, s, err := string2BigIntTuple(signatureString)
+	if err != nil {
+		log.Println("ERROR: Failed to decode signature")
+	}
 	return &Signature{&r, &s}
 }
 
 func NewPublicKey(publicKeyString string) *ecdsa.PublicKey {
-	x, y := string2BigIntTuple(publicKeyString)
+	x, y, err := string2BigIntTuple(publicKeyString)
+	if err != nil {
+		log.Println("ERROR: Failed to decode public key")
+	}
 	return &ecdsa.PublicKey{elliptic.P256(), &x, &y}
 }
 
 func NewPrivateKey(privateKeyString string, publicKey *ecdsa.PublicKey) *ecdsa.PrivateKey {
-	b, _ := hex.DecodeString(privateKeyString[:])
+	b, err := hex.DecodeString(privateKeyString[:])
+	if err != nil {
+		log.Println("ERROR: Failed to decode private key")
+	}
 	var bi big.Int
 	_ = bi.SetBytes(b)
 	return &ecdsa.PrivateKey{*publicKey, &bi}
@@ -56,9 +65,15 @@ func (signature *Signature) String() string {
 	return fmt.Sprintf("%064x%064x", signature.r, signature.s)
 }
 
-func string2BigIntTuple(s string) (big.Int, big.Int) {
-	bx, _ := hex.DecodeString(s[:64])
-	by, _ := hex.DecodeString(s[64:])
+func string2BigIntTuple(s string) (big.Int, big.Int, error) {
+	bx, err := hex.DecodeString(s[:64])
+	if err != nil {
+		return big.Int{}, big.Int{}, err
+	}
+	by, err := hex.DecodeString(s[64:])
+	if err != nil {
+		return big.Int{}, big.Int{}, err
+	}
 
 	var bix big.Int
 	var biy big.Int
@@ -66,5 +81,5 @@ func string2BigIntTuple(s string) (big.Int, big.Int) {
 	_ = bix.SetBytes(bx)
 	_ = biy.SetBytes(by)
 
-	return bix, biy
+	return bix, biy, nil
 }

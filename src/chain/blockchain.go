@@ -1,11 +1,13 @@
 package chain
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -47,7 +49,6 @@ func (blockchain *Blockchain) SynchronizeNeighbors() {
 	blockchain.neighborsMutex.Lock()
 	defer blockchain.neighborsMutex.Unlock()
 	blockchain.neighbors = blockchain.hostNode.FindNeighbors()
-	log.Printf("%v", blockchain.neighbors)
 }
 
 func (blockchain *Blockchain) StartNeighborsSynchronization() {
@@ -72,18 +73,49 @@ func (blockchain *Blockchain) Print() {
 }
 
 func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) bool {
-	// FIXME nil private key
-	sender := &Wallet{nil, senderPublicKey, senderAddress}
-	transaction := NewTransaction(sender, recipientAddress, value)
-	isTransacted := blockchain.AddTransaction(transaction, signature)
+	isTransacted := blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
 
-	// TODO
-	// Sync
+	if isTransacted {
+		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
+		signatureStr := signature.String()
+		transactionRequest := &TransactionRequest{
+			&senderAddress,
+			&recipientAddress,
+			&publicKeyStr,
+			&value,
+			&signatureStr}
+		marshaledTransactionRequest, err := json.Marshal(transactionRequest)
+		if err != nil {
+			log.Println("ERROR: Failed to marshal transaction request for neighbors")
+		}
+		for _, neighbor := range blockchain.neighbors {
+			// TODO extract http logic
+			endpoint := fmt.Sprintf("http://%s/transactions", neighbor)
+			client := &http.Client{}
+			buffer := bytes.NewBuffer(marshaledTransactionRequest)
+			request, requestError := http.NewRequest("PUT", endpoint, buffer)
+			if requestError != nil {
+				log.Printf("ERROR: Failed to send PUT transactions request\n%v\n", requestError)
+			}
+			response, responseError := client.Do(request)
+			if responseError != nil {
+				log.Printf("ERROR: Failed to get PUT transactions response\n%v\n", responseError)
+			}
+			log.Printf("%v\n", response)
+		}
+	}
 
 	return isTransacted
 }
 
-func (blockchain *Blockchain) AddTransaction(transaction *Transaction, signature *Signature) bool {
+func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) (isTransacted bool) {
+	// FIXME nil private key
+	sender := &Wallet{nil, senderPublicKey, senderAddress}
+	transaction := NewTransaction(sender, recipientAddress, value)
+	return blockchain.addTransaction(transaction, signature)
+}
+
+func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature *Signature) bool {
 	if transaction.Sender().Address() == MiningRewardSenderAddress {
 		blockchain.transactions = append(blockchain.transactions, transaction)
 		return true
@@ -113,8 +145,9 @@ func (blockchain *Blockchain) Mine() bool {
 	//	return false
 	//}
 
-	transaction := NewTransaction(&Wallet{nil, nil, MiningRewardSenderAddress}, blockchain.address, MiningReward)
-	blockchain.AddTransaction(transaction, nil)
+	sender := &Wallet{nil, nil, MiningRewardSenderAddress}
+	transaction := NewTransaction(sender, blockchain.address, MiningReward)
+	blockchain.addTransaction(transaction, nil)
 	nonce := blockchain.proofOfWork()
 	previousHash := blockchain.lastBlock().Hash()
 	blockchain.createBlock(nonce, previousHash)
@@ -148,10 +181,28 @@ func (blockchain *Blockchain) Transactions() []*Transaction {
 	return blockchain.transactions
 }
 
+func (blockchain *Blockchain) ClearTransactions() {
+	blockchain.transactions = blockchain.transactions[:0]
+}
+
 func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *Block {
 	block := NewBlock(nonce, previousHash, blockchain.transactions)
 	blockchain.blocks = append(blockchain.blocks, block)
-	blockchain.transactions = []*Transaction{}
+	blockchain.ClearTransactions()
+	for _, neighbor := range blockchain.neighbors {
+		// TODO extract http logic
+		endpoint := fmt.Sprintf("http://%s/transactions", neighbor)
+		client := &http.Client{}
+		request, requestError := http.NewRequest("DELETE", endpoint, nil)
+		if requestError != nil {
+			log.Printf("ERROR: Failed to send DELETE transactions request\n%v\n", requestError)
+		}
+		response, responseError := client.Do(request)
+		if responseError != nil {
+			log.Printf("ERROR: Failed to get PUT transactions response\n%v\n", responseError)
+		}
+		log.Printf("%v\n", response)
+	}
 	return block
 }
 

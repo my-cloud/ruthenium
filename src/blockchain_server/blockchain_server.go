@@ -1,7 +1,11 @@
 package main
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -27,9 +31,14 @@ func (blockchainServer *BlockchainServer) Port() uint16 {
 func (blockchainServer *BlockchainServer) GetBlockchain() *chain.Blockchain {
 	blockchain, ok := cache["blockchain"]
 	if !ok {
-		minerWallet := chain.NewWallet()
-		blockchain = chain.NewBlockchain(minerWallet.Address(), blockchainServer.Port())
-		cache["blockchain"] = blockchain
+		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			panic(fmt.Sprintf("ERROR: Failed to generate private key, err%v\n", err))
+		} else {
+			minerWallet := chain.NewWallet(privateKey)
+			blockchain = chain.NewBlockchain(minerWallet.Address(), blockchainServer.Port())
+			cache["blockchain"] = blockchain
+		}
 	}
 	return blockchain
 }
@@ -80,26 +89,54 @@ func (blockchainServer *BlockchainServer) Transactions(writer http.ResponseWrite
 		if err != nil {
 			log.Printf("ERROR: %v", err)
 			jsonWriter.WriteStatus("fail")
-			return
-		}
-		if transactionRequest.IsInvalid() {
+		} else if transactionRequest.IsInvalid() {
 			log.Println("ERROR: Field(s) are missing in transaction request to blockchain server")
 			jsonWriter.WriteStatus("fail")
-			return
-		}
-		publicKey := chain.NewPublicKey(*transactionRequest.SenderPublicKey)
-		signature := chain.DecodeSignature(*transactionRequest.Signature)
-		blockchain := blockchainServer.GetBlockchain()
-		isCreated := blockchain.CreateTransaction(*transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, publicKey, *transactionRequest.Value, signature)
+		} else {
+			publicKey := chain.NewPublicKey(*transactionRequest.SenderPublicKey)
+			signature := chain.DecodeSignature(*transactionRequest.Signature)
+			blockchain := blockchainServer.GetBlockchain()
+			isCreated := blockchain.CreateTransaction(*transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, publicKey, *transactionRequest.Value, signature)
 
-		writer.Header().Add("Content-Type", "application/json")
-		if !isCreated {
-			writer.WriteHeader(http.StatusBadRequest)
+			writer.Header().Add("Content-Type", "application/json")
+			if !isCreated {
+				writer.WriteHeader(http.StatusBadRequest)
+				jsonWriter.WriteStatus("fail")
+			} else {
+				writer.WriteHeader(http.StatusCreated)
+				jsonWriter.WriteStatus("success")
+			}
+		}
+	case http.MethodPut:
+		decoder := json.NewDecoder(req.Body)
+		var transactionRequest chain.TransactionRequest
+		err := decoder.Decode(&transactionRequest)
+		jsonWriter := rest.NewJsonWriter(writer)
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+			jsonWriter.WriteStatus("fail")
+		} else if transactionRequest.IsInvalid() {
+			log.Println("ERROR: Field(s) are missing in transaction request to blockchain server")
 			jsonWriter.WriteStatus("fail")
 		} else {
-			writer.WriteHeader(http.StatusCreated)
-			jsonWriter.WriteStatus("success")
+			publicKey := chain.NewPublicKey(*transactionRequest.SenderPublicKey)
+			signature := chain.DecodeSignature(*transactionRequest.Signature)
+			blockchain := blockchainServer.GetBlockchain()
+			isUpdated := blockchain.UpdateTransaction(*transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, publicKey, *transactionRequest.Value, signature)
+
+			writer.Header().Add("Content-Type", "application/json")
+			if !isUpdated {
+				writer.WriteHeader(http.StatusBadRequest)
+				jsonWriter.WriteStatus("fail")
+			} else {
+				jsonWriter.WriteStatus("success")
+			}
 		}
+	case http.MethodDelete:
+		blockchain := blockchainServer.GetBlockchain()
+		blockchain.ClearTransactions()
+		jsonWriter := rest.NewJsonWriter(writer)
+		jsonWriter.WriteStatus("success")
 	default:
 		log.Println("ERROR: Invalid HTTP Method")
 		writer.WriteHeader(http.StatusBadRequest)

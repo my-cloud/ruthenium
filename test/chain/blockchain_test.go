@@ -1,6 +1,9 @@
 package chain
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"fmt"
 	"path/filepath"
 	"runtime"
@@ -10,23 +13,29 @@ import (
 
 func Test_Blockchain(t *testing.T) {
 	// Wallet
-	walletA := chain.NewWallet()
-	walletB := chain.NewWallet()
-	walletC := chain.NewWallet()
-	minerWallet := chain.NewWallet()
+	privateKey1, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	walletA := chain.NewWallet(privateKey1)
+	privateKey2, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	walletB := chain.NewWallet(privateKey2)
+	privateKey3, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	walletC := chain.NewWallet(privateKey3)
+	minerPrivateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	minerWallet := chain.NewWallet(minerPrivateKey)
 
 	// Block chain
 	blockChain := chain.NewBlockchain(minerWallet.Address(), 0)
 
-	transaction1 := chain.NewTransaction(walletA, walletB.Address(), 100.)
+	var value1 float32 = 100.
+	transaction1 := chain.NewTransaction(walletA, walletB.Address(), value1)
 	signature1 := chain.NewSignature(transaction1, walletA.PrivateKey())
-	isAdded1 := blockChain.AddTransaction(transaction1, signature1)
+	isAdded1 := blockChain.UpdateTransaction(walletA.Address(), walletB.Address(), walletA.PublicKey(), value1, signature1)
 	assert(t, isAdded1, "Failed to add first transaction")
 	blockChain.Mine()
 
-	transaction2 := chain.NewTransaction(walletB, walletC.Address(), 10.)
+	var value2 float32 = 10.
+	transaction2 := chain.NewTransaction(walletB, walletC.Address(), value2)
 	signature2 := chain.NewSignature(transaction2, walletB.PrivateKey())
-	isAdded2 := blockChain.AddTransaction(transaction2, signature2)
+	isAdded2 := blockChain.UpdateTransaction(walletB.Address(), walletC.Address(), walletB.PublicKey(), value2, signature2)
 	assert(t, isAdded2, "Failed to add second transaction")
 	blockChain.Mine()
 

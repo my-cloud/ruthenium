@@ -11,7 +11,7 @@ import (
 
 const (
 	StartPort uint16 = 5000
-	EndPort   uint16 = 5003
+	EndPort   uint16 = 5002
 	StartIp   uint8  = 0
 	EndIp     uint8  = 0
 )
@@ -48,7 +48,10 @@ func (node *Node) FindNeighbors() []string {
 		return nil
 	}
 	prefixHost := m[1]
-	lastIp, _ := strconv.Atoi(m[len(m)-1])
+	lastIp, err := strconv.Atoi(m[len(m)-1])
+	if err != nil {
+		fmt.Printf("ERROR: Failed to parse IP %s, err:%v\n", m[len(m)-1], err)
+	}
 	neighbors := make([]string, 0)
 
 	for port := StartPort; port <= EndPort; port += 1 {
@@ -72,6 +75,5 @@ func (node *Node) isFound() bool {
 		fmt.Printf("%s not found, err:%v\n", target, err)
 		return false
 	}
-	fmt.Printf("%s found\n", target)
 	return true
 }
