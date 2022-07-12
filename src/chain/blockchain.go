@@ -3,7 +3,6 @@ package chain
 import (
 	"bytes"
 	"crypto/ecdsa"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -44,6 +43,7 @@ func NewBlockchain(address string, port uint16) *Blockchain {
 func (blockchain *Blockchain) Run() {
 	blockchain.StartNeighborsSynchronization()
 	blockchain.ResolveConflicts()
+	blockchain.StartMining()
 }
 
 func (blockchain *Blockchain) SynchronizeNeighbors() {
@@ -133,13 +133,11 @@ func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature
 		return true
 	}
 
-	if blockchain.verifyTransactionSignature(transaction.SenderPublicKey(), signature, transaction) {
-		/*
-			if blockchain.CalculateTotalAmount(sender) < value {
-				log.Println("ERROR: Not enough balance in a wallet")
-				return false
-			}
-		*/
+	if transaction.VerifySignature(signature) {
+		if blockchain.CalculateTotalAmount(transaction.SenderAddress()) < transaction.Value() {
+			log.Println("ERROR: Not enough balance in a wallet")
+			return false
+		}
 		blockchain.transactions = append(blockchain.transactions, transaction)
 		return true
 	} else {
@@ -153,6 +151,7 @@ func (blockchain *Blockchain) Mine() bool {
 	blockchain.mineMutex.Lock()
 	defer blockchain.mineMutex.Unlock()
 
+	// TODO decide if we should get a reward when there is no transaction in the pool
 	//if len(blockchain.transactionPool) == 0 {
 	//	return false
 	//}
@@ -295,16 +294,6 @@ func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *Blo
 
 func (blockchain *Blockchain) lastBlock() *Block {
 	return blockchain.blocks[len(blockchain.blocks)-1]
-}
-
-func (blockchain *Blockchain) verifyTransactionSignature(
-	senderPublicKey *ecdsa.PublicKey, signature *Signature, t *Transaction) bool {
-	marshaledBlockchain, err := json.Marshal(t)
-	if err != nil {
-		log.Println("ERROR: Failed to marshal blockchain")
-	}
-	hash := sha256.Sum256(marshaledBlockchain)
-	return ecdsa.Verify(senderPublicKey, hash[:], signature.r, signature.s)
 }
 
 func (blockchain *Blockchain) copyTransactions() []*Transaction {

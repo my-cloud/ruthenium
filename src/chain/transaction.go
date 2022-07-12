@@ -2,8 +2,10 @@ package chain
 
 import (
 	"crypto/ecdsa"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -66,4 +68,13 @@ func (transaction *Transaction) Print() {
 	fmt.Printf(" sender_address %s\n", transaction.senderAddress)
 	fmt.Printf(" recipient_address %s\n", transaction.recipientAddress)
 	fmt.Printf(" value %.1f\n", transaction.value)
+}
+
+func (transaction *Transaction) VerifySignature(signature *Signature) bool {
+	marshaledBlockchain, err := json.Marshal(transaction)
+	if err != nil {
+		log.Println("ERROR: Failed to marshal blockchain")
+	}
+	hash := sha256.Sum256(marshaledBlockchain)
+	return ecdsa.Verify(transaction.SenderPublicKey(), hash[:], signature.r, signature.s)
 }
