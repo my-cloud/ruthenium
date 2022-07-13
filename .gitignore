@@ -1,0 +1,9 @@
+##IDEs
+#JetBrain Goland
+.idea/**
+#Microsoft VSCode
+.vscode/**
+#Microsoft VS
+.vs/**
+#visualfc LiteIDE
+src.debug.exe
