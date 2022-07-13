@@ -9,12 +9,13 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"ruthenium/src"
 	"ruthenium/src/chain"
 	"ruthenium/src/rest"
 	"strconv"
 )
 
-var cache = make(map[string]*chain.Blockchain)
+var cache = make(map[string]*src.Blockchain)
 
 type BlockchainServer struct {
 	port uint16
@@ -28,7 +29,7 @@ func (blockchainServer *BlockchainServer) Port() uint16 {
 	return blockchainServer.port
 }
 
-func (blockchainServer *BlockchainServer) GetBlockchain() *chain.Blockchain {
+func (blockchainServer *BlockchainServer) GetBlockchain() *src.Blockchain {
 	blockchain, ok := cache["blockchain"]
 	if !ok {
 		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -36,7 +37,7 @@ func (blockchainServer *BlockchainServer) GetBlockchain() *chain.Blockchain {
 			panic(fmt.Sprintf("ERROR: Failed to generate private key, err%v\n", err))
 		} else {
 			minerWallet := chain.NewWallet(privateKey)
-			blockchain = chain.NewBlockchain(minerWallet.Address(), blockchainServer.Port())
+			blockchain = src.NewBlockchain(minerWallet.Address(), blockchainServer.Port())
 			cache["blockchain"] = blockchain
 		}
 	}

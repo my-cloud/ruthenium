@@ -2,15 +2,15 @@
 
 ## Description
 
-The blockchain motivating to do local business and to not capitalize money.
+The blockchain motivating to do local business and to not capitalize tokens.
 
 ## Installation
 
-go 1.16 is recommended
+* Clone the project
+* Build the project (**requires [go](https://go.dev/dl/), version 1.17 at least)**
 
 ## Usage
 
-* Clone this project
 * In src/blockchain_server, run:
     * go run main.go
     * go run main.go -port=5001
