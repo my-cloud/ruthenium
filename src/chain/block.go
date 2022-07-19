@@ -51,7 +51,12 @@ func (block *Block) Nonce() int {
 }
 
 func (block *Block) Transactions() []*Transaction {
-	return block.transactions
+	// TODO improve copy
+	var transactions []*Transaction
+	for _, transaction := range block.transactions {
+		transactions = append(transactions, transaction)
+	}
+	return transactions
 }
 
 func (block *Block) MarshalJSON() ([]byte, error) {

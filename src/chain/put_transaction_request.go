@@ -1,6 +1,6 @@
 package chain
 
-type TransactionRequest struct {
+type PutTransactionRequest struct {
 	SenderAddress    *string  `json:"sender_address"`
 	RecipientAddress *string  `json:"recipient_address"`
 	SenderPublicKey  *string  `json:"sender_public_key"`
@@ -8,7 +8,7 @@ type TransactionRequest struct {
 	Signature        *string  `json:"signature"`
 }
 
-func (transactionRequest *TransactionRequest) IsInvalid() bool {
+func (transactionRequest *PutTransactionRequest) IsInvalid() bool {
 	return transactionRequest.SenderAddress == nil ||
 		transactionRequest.RecipientAddress == nil ||
 		transactionRequest.SenderPublicKey == nil ||

@@ -9,13 +9,13 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"ruthenium/src"
 	"ruthenium/src/chain"
+	"ruthenium/src/node"
 	"ruthenium/src/rest"
 	"strconv"
 )
 
-var cache = make(map[string]*src.Blockchain)
+var cache = make(map[string]*node.Blockchain)
 
 type BlockchainServer struct {
 	port uint16
@@ -29,7 +29,7 @@ func (blockchainServer *BlockchainServer) Port() uint16 {
 	return blockchainServer.port
 }
 
-func (blockchainServer *BlockchainServer) GetBlockchain() *src.Blockchain {
+func (blockchainServer *BlockchainServer) GetBlockchain() *node.Blockchain {
 	blockchain, ok := cache["blockchain"]
 	if !ok {
 		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -37,7 +37,7 @@ func (blockchainServer *BlockchainServer) GetBlockchain() *src.Blockchain {
 			panic(fmt.Sprintf("ERROR: Failed to generate private key, err%v\n", err))
 		} else {
 			minerWallet := chain.NewWallet(privateKey)
-			blockchain = src.NewBlockchain(minerWallet.Address(), blockchainServer.Port())
+			blockchain = node.NewBlockchain(minerWallet.Address(), blockchainServer.Port())
 			cache["blockchain"] = blockchain
 		}
 	}
@@ -84,7 +84,7 @@ func (blockchainServer *BlockchainServer) Transactions(writer http.ResponseWrite
 		}
 	case http.MethodPost:
 		decoder := json.NewDecoder(req.Body)
-		var transactionRequest chain.TransactionRequest
+		var transactionRequest chain.PostTransactionRequest
 		err := decoder.Decode(&transactionRequest)
 		jsonWriter := rest.NewJsonWriter(writer)
 		if err != nil {
@@ -110,7 +110,7 @@ func (blockchainServer *BlockchainServer) Transactions(writer http.ResponseWrite
 		}
 	case http.MethodPut:
 		decoder := json.NewDecoder(req.Body)
-		var transactionRequest chain.TransactionRequest
+		var transactionRequest chain.PutTransactionRequest
 		err := decoder.Decode(&transactionRequest)
 		jsonWriter := rest.NewJsonWriter(writer)
 		if err != nil {

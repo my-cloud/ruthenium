@@ -1,14 +1,13 @@
-package src
+package node
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
+	"regexp"
 	"ruthenium/src/chain"
-	"ruthenium/src/node"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,10 +17,17 @@ const (
 	MiningDifficulty          = 3
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
 	MiningReward              = 1.0
-	MiningTimerSec            = 20
+	MiningTimerSec            = 30
+
+	StartPort     uint16 = 5000
+	EndPort       uint16 = 5002
+	StartIpSuffix uint8  = 0
+	EndIpSuffix   uint8  = 0
 
 	NeighborSynchronizationTimeSecond = 5
 )
+
+var PATTERN = regexp.MustCompile(`((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?\.){3})(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`)
 
 type Blockchain struct {
 	transactions []*chain.Transaction
@@ -29,15 +35,17 @@ type Blockchain struct {
 	address      string
 	mineMutex    sync.Mutex
 
-	neighbors      []*node.Neighbor
+	ip   string
+	port uint16
+
+	neighbors      []*Neighbor
 	neighborsMutex sync.Mutex
-	hostNode       *node.Host
 }
 
 func NewBlockchain(address string, port uint16) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.address = address
-	blockchain.hostNode = node.NewHost(port)
+	blockchain.port = port
 	blockchain.createBlock(0, new(chain.Block).Hash())
 	return blockchain
 }
@@ -51,12 +59,40 @@ func (blockchain *Blockchain) Run() {
 func (blockchain *Blockchain) SynchronizeNeighbors() {
 	blockchain.neighborsMutex.Lock()
 	defer blockchain.neighborsMutex.Unlock()
-	blockchain.neighbors = blockchain.hostNode.FindNeighbors()
+	blockchain.neighbors = blockchain.FindNeighbors()
 }
 
 func (blockchain *Blockchain) StartNeighborsSynchronization() {
 	blockchain.SynchronizeNeighbors()
 	_ = time.AfterFunc(time.Second*NeighborSynchronizationTimeSecond, blockchain.StartNeighborsSynchronization)
+}
+
+func (blockchain *Blockchain) FindNeighbors() []*Neighbor {
+	address := fmt.Sprintf("%s:%d", blockchain.ip, blockchain.port)
+
+	m := PATTERN.FindStringSubmatch(blockchain.ip)
+	if m == nil {
+		return nil
+	}
+	prefixHost := m[1]
+	lastIp, err := strconv.Atoi(m[len(m)-1])
+	if err != nil {
+		fmt.Printf("ERROR: Failed to parse IP %s, err:%v\n", m[len(m)-1], err)
+	}
+	neighbors := make([]*Neighbor, 0)
+
+	for port := StartPort; port <= EndPort; port += 1 {
+		for ipSuffix := StartIpSuffix; ipSuffix <= EndIpSuffix; ipSuffix += 1 {
+			guessIp := fmt.Sprintf("%s%d", prefixHost, lastIp+int(ipSuffix))
+			neighbor := NewNeighbor(guessIp, port)
+			guessTarget := neighbor.IpAndPort()
+			if guessTarget != address && neighbor.IsFound() {
+				neighbor.StartClient()
+				neighbors = append(neighbors, neighbor)
+			}
+		}
+	}
+	return neighbors
 }
 
 func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
@@ -65,17 +101,6 @@ func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 	}{
 		Blocks: blockchain.blocks,
 	})
-}
-
-func (blockchain *Blockchain) UnmarshalJSON(data []byte) error {
-	if err := json.Unmarshal(data, &struct {
-		Blocks *[]*chain.Block `json:"blocks"`
-	}{
-		Blocks: &blockchain.blocks,
-	}); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (blockchain *Blockchain) Print() {
@@ -92,30 +117,31 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 	if isTransacted {
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
-		transactionRequest := &chain.TransactionRequest{
+		transactionRequest := &chain.PutTransactionRequest{
 			&senderAddress,
 			&recipientAddress,
 			&publicKeyStr,
 			&value,
 			&signatureStr}
-		marshaledTransactionRequest, err := json.Marshal(transactionRequest)
-		if err != nil {
-			log.Println("ERROR: Failed to marshal transaction request for neighbors")
-		}
+		//marshaledTransactionRequest, err := json.Marshal(transactionRequest)
+		//if err != nil {
+		//	log.Println("ERROR: Failed to marshal transaction request for neighbors")
+		//}
 		for _, neighbor := range blockchain.neighbors {
-			// TODO extract http logic
-			endpoint := fmt.Sprintf("http://%s/transactions", neighbor.IpAndPort())
-			client := &http.Client{}
-			buffer := bytes.NewBuffer(marshaledTransactionRequest)
-			request, requestError := http.NewRequest("PUT", endpoint, buffer)
-			if requestError != nil {
-				log.Printf("ERROR: %v", requestError)
-			}
-			response, responseError := client.Do(request)
-			if responseError != nil {
-				log.Printf("ERROR: %v", responseError)
-			}
-			log.Printf("%v\n", response)
+			//	// TODO extract http logic
+			//	endpoint := fmt.Sprintf("http://%s/transactions", neighbor.IpAndPort())
+			//	client := &http.Client{}
+			//	buffer := bytes.NewBuffer(marshaledTransactionRequest)
+			//	request, requestError := http.NewRequest("PUT", endpoint, buffer)
+			//	if requestError != nil {
+			//		log.Printf("ERROR: %v", requestError)
+			//	}
+			//	response, responseError := client.Do(request)
+			//	if responseError != nil {
+			//		log.Printf("ERROR: %v", responseError)
+			//	}
+			//	log.Printf("%v\n", response)
+			neighbor.PutTransactions(transactionRequest)
 		}
 	}
 
@@ -167,18 +193,19 @@ func (blockchain *Blockchain) Mine() bool {
 	log.Println("action=mining, status=success")
 
 	for _, neighbor := range blockchain.neighbors {
-		// TODO extract http logic
-		endpoint := fmt.Sprintf("http://%s/consensus", neighbor.IpAndPort())
-		client := &http.Client{}
-		request, requestError := http.NewRequest("PUT", endpoint, nil)
-		if requestError != nil {
-			log.Printf("ERROR: %v", requestError)
-		}
-		response, responseError := client.Do(request)
-		if responseError != nil {
-			log.Printf("ERROR: %v", responseError)
-		}
-		log.Printf("%v\n", response)
+		//	// TODO extract http logic
+		//	endpoint := fmt.Sprintf("http://%s/consensus", neighbor.IpAndPort())
+		//	client := &http.Client{}
+		//	request, requestError := http.NewRequest("PUT", endpoint, nil)
+		//	if requestError != nil {
+		//		log.Printf("ERROR: %v", requestError)
+		//	}
+		//	response, responseError := client.Do(request)
+		//	if responseError != nil {
+		//		log.Printf("ERROR: %v", responseError)
+		//	}
+		//	log.Printf("%v\n", response)
+		neighbor.Consensus()
 	}
 
 	return true
@@ -211,7 +238,12 @@ func (blockchain *Blockchain) Transactions() []*chain.Transaction {
 }
 
 func (blockchain *Blockchain) Blocks() []*chain.Block {
-	return blockchain.blocks
+	// TODO improve copy
+	var blocks []*chain.Block
+	for _, transaction := range blockchain.blocks {
+		blocks = append(blocks, transaction)
+	}
+	return blocks
 }
 
 func (blockchain *Blockchain) ClearTransactions() {
@@ -256,7 +288,6 @@ func (blockchain *Blockchain) ResolveConflicts() bool {
 		//	if err != nil {
 		//		log.Printf("ERROR: Failed to decode neighbor blockchain\n%v", responseError)
 		//	}
-		//	neighborBlocks := neighborBlockchain.Blocks()
 		neighborBlocks := neighbor.ReadBlocks()
 		if len(neighborBlocks) > maxLength && blockchain.IsValid(neighborBlocks) {
 			maxLength = len(neighborBlocks)
@@ -279,19 +310,20 @@ func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *cha
 	blockchain.blocks = append(blockchain.blocks, block)
 	blockchain.ClearTransactions()
 	for _, neighbor := range blockchain.neighbors {
-		// TODO extract http logic
-		endpoint := fmt.Sprintf("http://%s/transactions", neighbor.IpAndPort())
-		client := &http.Client{}
-		// FIXME don't delete transactions if the block is not validated by peers
-		request, requestError := http.NewRequest("DELETE", endpoint, nil)
-		if requestError != nil {
-			log.Printf("ERROR: %v", requestError)
-		}
-		response, responseError := client.Do(request)
-		if responseError != nil {
-			log.Printf("ERROR: %v", responseError)
-		}
-		log.Printf("%v\n", response)
+		//	// TODO extract http logic
+		//	endpoint := fmt.Sprintf("http://%s/transactions", neighbor.IpAndPort())
+		//	client := &http.Client{}
+		//	// FIXME don't delete transactions if the block is not validated by peers
+		//	request, requestError := http.NewRequest("DELETE", endpoint, nil)
+		//	if requestError != nil {
+		//		log.Printf("ERROR: %v", requestError)
+		//	}
+		//	response, responseError := client.Do(request)
+		//	if responseError != nil {
+		//		log.Printf("ERROR: %v", responseError)
+		//	}
+		//	log.Printf("%v\n", response)
+		neighbor.DeleteTransactions()
 	}
 	return block
 }
