@@ -16,10 +16,10 @@ const (
 	MiningDifficulty          = 3
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
 	MiningReward              = 5.0
-	MiningTimerSec            = 30
+	MiningTimerSec            = 5
 
 	StartPort     uint16 = 5000
-	EndPort       uint16 = 5002
+	EndPort       uint16 = 5001
 	StartIpSuffix uint8  = 0
 	EndIpSuffix   uint8  = 0
 
@@ -41,9 +41,10 @@ type Blockchain struct {
 	neighborsMutex sync.Mutex
 }
 
-func NewBlockchain(address string, port uint16) *Blockchain {
+func NewBlockchain(address string, ip string, port uint16) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.address = address
+	blockchain.ip = ip
 	blockchain.port = port
 	blockchain.createBlock(0, new(Block).Hash())
 	return blockchain
@@ -108,7 +109,7 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 	if isTransacted {
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
-		transactionRequest := &PutTransactionRequest{
+		transactionRequest := PutTransactionRequest{
 			&senderAddress,
 			&recipientAddress,
 			&publicKeyStr,

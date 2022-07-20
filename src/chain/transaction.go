@@ -18,6 +18,10 @@ func NewTransaction(senderAddress string, senderPublicKey *ecdsa.PublicKey, reci
 	return &Transaction{senderAddress, senderPublicKey, recipientAddress, value}
 }
 
+func NewTransactionFromDto(transaction *TransactionResponse) *Transaction {
+	return &Transaction{transaction.SenderAddress, nil, transaction.RecipientAddress, transaction.Value}
+}
+
 func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Sender    string  `json:"sender_address"`
@@ -53,4 +57,12 @@ func (transaction *Transaction) VerifySignature(signature *Signature) bool {
 	}
 	hash := sha256.Sum256(marshaledBlockchain)
 	return ecdsa.Verify(transaction.SenderPublicKey(), hash[:], signature.r, signature.s)
+}
+
+func (transaction *Transaction) GetDto() *TransactionResponse {
+	return &TransactionResponse{
+		SenderAddress:    transaction.senderAddress,
+		RecipientAddress: transaction.recipientAddress,
+		Value:            transaction.value,
+	}
 }

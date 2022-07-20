@@ -1,7 +1,7 @@
 package chain
 
 type AmountRequest struct {
-	Address *string `json:"address"`
+	Address *string
 }
 
 func (amountRequest *AmountRequest) IsInvalid() bool {

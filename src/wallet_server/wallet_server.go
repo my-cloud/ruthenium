@@ -115,7 +115,7 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 
 		signatureString := signature.String()
 
-		blockchainTransactionRequest := &chain.PostTransactionRequest{
+		blockchainTransactionRequest := chain.PostTransactionRequest{
 			SenderAddress:    transactionRequest.SenderAddress,
 			RecipientAddress: transactionRequest.RecipientAddress,
 			SenderPublicKey:  transactionRequest.SenderPublicKey,

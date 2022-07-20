@@ -24,6 +24,19 @@ func NewBlock(nonce int, previousHash [32]byte, transactions []*Transaction) *Bl
 	}
 }
 
+func NewBlockFromDto(block *BlockResponse) *Block {
+	var transactions []*Transaction
+	for _, transaction := range block.Transactions {
+		transactions = append(transactions, NewTransactionFromDto(transaction))
+	}
+	return &Block{
+		block.Timestamp,
+		block.Nonce,
+		block.PreviousHash,
+		transactions,
+	}
+}
+
 func (block *Block) Hash() [32]byte {
 	marshaledBlock, err := json.Marshal(block)
 	if err != nil {
@@ -56,4 +69,17 @@ func (block *Block) MarshalJSON() ([]byte, error) {
 		PreviousHash: fmt.Sprintf("%x", block.previousHash),
 		Transactions: block.transactions,
 	})
+}
+
+func (block *Block) GetDto() *BlockResponse {
+	var transactions []*TransactionResponse
+	for _, transaction := range block.transactions {
+		transactions = append(transactions, transaction.GetDto())
+	}
+	return &BlockResponse{
+		Timestamp:    block.timestamp,
+		Nonce:        block.nonce,
+		PreviousHash: block.previousHash,
+		Transactions: transactions,
+	}
 }

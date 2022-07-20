@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -13,6 +14,7 @@ type Node struct {
 	ip     string
 	port   uint16
 	client *p2p.Client
+	mutex  sync.Mutex
 }
 
 func NewNode(ip string, port uint16) *Node {
@@ -23,8 +25,7 @@ func NewNode(ip string, port uint16) *Node {
 }
 
 func (node *Node) StartClient() {
-	tcp := p2p.NewTCP("localhost", strconv.Itoa(int(node.port)))
-
+	tcp := p2p.NewTCP(node.ip, strconv.Itoa(int(node.port)))
 	client, err := p2p.NewClient(tcp)
 	if err != nil {
 		log.Println(err)
@@ -50,11 +51,16 @@ func (node *Node) GetBlocks() []*Block {
 		return nil
 	}
 
-	var blocks []*Block
-	err = res.GetGob(&blocks)
+	var blockResponses []*BlockResponse
+	err = res.GetGob(&blockResponses)
 	if err != nil {
 		log.Println(err)
 		return nil
+	}
+
+	var blocks []*Block
+	for _, block := range blockResponses {
+		blocks = append(blocks, NewBlockFromDto(block))
 	}
 
 	return blocks
@@ -77,7 +83,6 @@ func (node *Node) Consensus() bool {
 	if err != nil {
 		log.Println(err)
 		return false
-
 	}
 
 	var consented bool
@@ -85,12 +90,11 @@ func (node *Node) Consensus() bool {
 	return consented
 }
 
-func (node *Node) PostTransactions(request *PostTransactionRequest) bool {
+func (node *Node) PostTransactions(request PostTransactionRequest) bool {
 	res, err := node.sendRequest(request)
 	if err != nil {
 		log.Println(err)
 		return false
-
 	}
 
 	var created bool
@@ -98,12 +102,11 @@ func (node *Node) PostTransactions(request *PostTransactionRequest) bool {
 	return created
 }
 
-func (node *Node) PutTransactions(request *PutTransactionRequest) bool {
+func (node *Node) PutTransactions(request PutTransactionRequest) bool {
 	res, err := node.sendRequest(request)
 	if err != nil {
 		log.Println(err)
 		return false
-
 	}
 
 	var updated bool
@@ -132,11 +135,13 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 	}
 
 	res = p2p.Data{}
+	node.mutex.Lock()
+	defer node.mutex.Unlock()
 	res, err = node.client.Send("dialog", req)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	return res, err
+	return
 }

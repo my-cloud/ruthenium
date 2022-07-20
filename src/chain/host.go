@@ -31,13 +31,20 @@ type Host struct {
 }
 
 func NewHost(port uint16) *Host {
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "127.0.0.1"
+	}
+	ips, err := net.LookupHost(hostname)
+	if err != nil {
+		ips[0] = "127.0.0.1"
+	}
+	// FIXME ips[3] = 192.168.1.90
+
 	host := new(Host)
 	host.port = port
+	host.ip = ips[3]
 	return host
-}
-
-func (host *Host) Port() uint16 {
-	return host.port
 }
 
 func (host *Host) GetBlockchain() *Blockchain {
@@ -48,7 +55,7 @@ func (host *Host) GetBlockchain() *Blockchain {
 			panic(fmt.Sprintf("ERROR: Failed to generate private key, err%v\n", err))
 		} else {
 			hostWallet := NewWallet(privateKey)
-			blockchain = NewBlockchain(hostWallet.Address(), host.Port())
+			blockchain = NewBlockchain(hostWallet.Address(), host.ip, host.port)
 			//TODO remove fmt
 			fmt.Println("host address: " + hostWallet.Address())
 			cachedBlockchain["blockchain"] = blockchain
@@ -57,15 +64,24 @@ func (host *Host) GetBlockchain() *Blockchain {
 	return blockchain
 }
 
-func (host *Host) GetChain() (res p2p.Data, err error) {
+func (host *Host) GetBlocks() (res p2p.Data, err error) {
 	res = p2p.Data{}
-	err = res.SetGob(host.GetBlockchain().Blocks())
-	return res, err
+	var blockResponses []*BlockResponse
+	for _, block := range host.GetBlockchain().Blocks() {
+		blockResponses = append(blockResponses, block.GetDto())
+	}
+	err = res.SetGob(blockResponses)
+	return
 }
 
+// TODO unused
 func (host *Host) GetTransactions() (res p2p.Data, err error) {
 	res = p2p.Data{}
-	if err = res.SetGob(host.GetBlockchain().Transactions()); err != nil {
+	var transactionResponses []*TransactionResponse
+	for _, transaction := range host.GetBlockchain().Transactions() {
+		transactionResponses = append(transactionResponses, transaction.GetDto())
+	}
+	if err = res.SetGob(transactionResponses); err != nil {
 		return
 	}
 	return
@@ -158,7 +174,7 @@ func (host *Host) Amount(request *AmountRequest) (res p2p.Data, err error) {
 	}
 	blockchainAddress := *request.Address
 	amount := host.GetBlockchain().CalculateTotalAmount(blockchainAddress)
-	amountResponse := NewAmountResponse(amount)
+	amountResponse := &AmountResponse{amount}
 	res = p2p.Data{}
 	if err = res.SetGob(amountResponse); err != nil {
 		return
@@ -182,17 +198,6 @@ func (host *Host) Run() {
 }
 
 func (host *Host) startHost() {
-	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = "127.0.0.1"
-	}
-	ips, err := net.LookupHost(hostname)
-	if err != nil {
-		ips[0] = "127.0.0.1"
-	}
-	// FIXME host[3] = 192.168.1.90
-	host.ip = "localhost"
-
 	tcp := p2p.NewTCP(host.ip, strconv.Itoa(int(host.port)))
 
 	server, err := p2p.NewServer(tcp)
@@ -205,7 +210,7 @@ func (host *Host) startHost() {
 		if err = req.GetGob(&requestString); err == nil {
 			switch requestString {
 			case GetBlocksRequest:
-				if res, err = host.GetChain(); err != nil {
+				if res, err = host.GetBlocks(); err != nil {
 					return
 				}
 			case GetTransactionsRequest:
