@@ -1,4 +1,4 @@
-package node
+package chain
 
 import (
 	"crypto/ecdsa"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"ruthenium/src/chain"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,15 +29,15 @@ const (
 var PATTERN = regexp.MustCompile(`((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?\.){3})(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`)
 
 type Blockchain struct {
-	transactions []*chain.Transaction
-	blocks       []*chain.Block
+	transactions []*Transaction
+	blocks       []*Block
 	address      string
 	mineMutex    sync.Mutex
 
 	ip   string
 	port uint16
 
-	neighbors      []*Neighbor
+	neighbors      []*Node
 	neighborsMutex sync.Mutex
 }
 
@@ -46,7 +45,7 @@ func NewBlockchain(address string, port uint16) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.address = address
 	blockchain.port = port
-	blockchain.createBlock(0, new(chain.Block).Hash())
+	blockchain.createBlock(0, new(Block).Hash())
 	return blockchain
 }
 
@@ -67,7 +66,7 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 	_ = time.AfterFunc(time.Second*NeighborSynchronizationTimeSecond, blockchain.StartNeighborsSynchronization)
 }
 
-func (blockchain *Blockchain) FindNeighbors() []*Neighbor {
+func (blockchain *Blockchain) FindNeighbors() []*Node {
 	address := fmt.Sprintf("%s:%d", blockchain.ip, blockchain.port)
 
 	m := PATTERN.FindStringSubmatch(blockchain.ip)
@@ -79,12 +78,12 @@ func (blockchain *Blockchain) FindNeighbors() []*Neighbor {
 	if err != nil {
 		fmt.Printf("ERROR: Failed to parse IP %s, err:%v\n", m[len(m)-1], err)
 	}
-	neighbors := make([]*Neighbor, 0)
+	neighbors := make([]*Node, 0)
 
 	for port := StartPort; port <= EndPort; port += 1 {
 		for ipSuffix := StartIpSuffix; ipSuffix <= EndIpSuffix; ipSuffix += 1 {
 			guessIp := fmt.Sprintf("%s%d", prefixHost, lastIp+int(ipSuffix))
-			neighbor := NewNeighbor(guessIp, port)
+			neighbor := NewNode(guessIp, port)
 			guessTarget := neighbor.IpAndPort()
 			if guessTarget != address && neighbor.IsFound() {
 				neighbor.StartClient()
@@ -97,19 +96,19 @@ func (blockchain *Blockchain) FindNeighbors() []*Neighbor {
 
 func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Blocks []*chain.Block `json:"blocks"`
+		Blocks []*Block `json:"blocks"`
 	}{
 		Blocks: blockchain.blocks,
 	})
 }
 
-func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *chain.Signature) bool {
+func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) bool {
 	isTransacted := blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
 
 	if isTransacted {
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
-		transactionRequest := &chain.PutTransactionRequest{
+		transactionRequest := &PutTransactionRequest{
 			&senderAddress,
 			&recipientAddress,
 			&publicKeyStr,
@@ -123,12 +122,12 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 	return isTransacted
 }
 
-func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *chain.Signature) (isTransacted bool) {
-	transaction := chain.NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
+func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) (isTransacted bool) {
+	transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
 	return blockchain.addTransaction(transaction, signature)
 }
 
-func (blockchain *Blockchain) addTransaction(transaction *chain.Transaction, signature *chain.Signature) bool {
+func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature *Signature) bool {
 	if transaction.SenderAddress() == MiningRewardSenderAddress {
 		blockchain.transactions = append(blockchain.transactions, transaction)
 		return true
@@ -152,7 +151,7 @@ func (blockchain *Blockchain) Mine() bool {
 	blockchain.mineMutex.Lock()
 	defer blockchain.mineMutex.Unlock()
 
-	transaction := chain.NewTransaction(MiningRewardSenderAddress, nil, blockchain.address, MiningReward)
+	transaction := NewTransaction(MiningRewardSenderAddress, nil, blockchain.address, MiningReward)
 	blockchain.addTransaction(transaction, nil)
 	nonce := blockchain.proofOfWork()
 	previousHash := blockchain.lastBlock().Hash()
@@ -188,11 +187,11 @@ func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) flo
 	return totalAmount
 }
 
-func (blockchain *Blockchain) Transactions() []*chain.Transaction {
+func (blockchain *Blockchain) Transactions() []*Transaction {
 	return blockchain.transactions
 }
 
-func (blockchain *Blockchain) Blocks() []*chain.Block {
+func (blockchain *Blockchain) Blocks() []*Block {
 	return blockchain.blocks
 }
 
@@ -200,7 +199,7 @@ func (blockchain *Blockchain) ClearTransactions() {
 	blockchain.transactions = nil
 }
 
-func (blockchain *Blockchain) IsValid(blocks []*chain.Block) bool {
+func (blockchain *Blockchain) IsValid(blocks []*Block) bool {
 	previousBlock := blocks[0]
 	currentIndex := 1
 	for currentIndex > len(blocks) {
@@ -222,7 +221,7 @@ func (blockchain *Blockchain) IsValid(blocks []*chain.Block) bool {
 }
 
 func (blockchain *Blockchain) ResolveConflicts() bool {
-	var longestChain []*chain.Block
+	var longestChain []*Block
 	maxLength := len(blockchain.blocks)
 
 	for _, neighbor := range blockchain.neighbors {
@@ -242,8 +241,8 @@ func (blockchain *Blockchain) ResolveConflicts() bool {
 	return false
 }
 
-func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *chain.Block {
-	block := chain.NewBlock(nonce, previousHash, blockchain.transactions)
+func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *Block {
+	block := NewBlock(nonce, previousHash, blockchain.transactions)
 	blockchain.blocks = append(blockchain.blocks, block)
 	blockchain.ClearTransactions()
 	for _, neighbor := range blockchain.neighbors {
@@ -253,15 +252,15 @@ func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *cha
 	return block
 }
 
-func (blockchain *Blockchain) lastBlock() *chain.Block {
+func (blockchain *Blockchain) lastBlock() *Block {
 	return blockchain.blocks[len(blockchain.blocks)-1]
 }
 
-func (blockchain *Blockchain) copyTransactions() []*chain.Transaction {
-	transactions := make([]*chain.Transaction, 0)
+func (blockchain *Blockchain) copyTransactions() []*Transaction {
+	transactions := make([]*Transaction, 0)
 	for _, transaction := range blockchain.transactions {
 		transactions = append(transactions,
-			chain.NewTransaction(transaction.SenderAddress(),
+			NewTransaction(transaction.SenderAddress(),
 				transaction.SenderPublicKey(),
 				transaction.RecipientAddress(),
 				transaction.Value()))
@@ -269,9 +268,9 @@ func (blockchain *Blockchain) copyTransactions() []*chain.Transaction {
 	return transactions
 }
 
-func (blockchain *Blockchain) isProofValid(nonce int, previousHash [32]byte, transactions []*chain.Transaction, difficulty int) bool {
+func (blockchain *Blockchain) isProofValid(nonce int, previousHash [32]byte, transactions []*Transaction, difficulty int) bool {
 	zeros := strings.Repeat("0", difficulty)
-	guessBlock := chain.NewBlock(nonce, previousHash, transactions)
+	guessBlock := NewBlock(nonce, previousHash, transactions)
 	guessHashStr := fmt.Sprintf("%x", guessBlock.Hash())
 	return guessHashStr[:difficulty] == zeros
 }

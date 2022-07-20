@@ -1,4 +1,4 @@
-package node
+package chain
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"ruthenium/src/chain"
 	"strconv"
 )
 
@@ -48,7 +47,7 @@ func (host *Host) GetBlockchain() *Blockchain {
 		if err != nil {
 			panic(fmt.Sprintf("ERROR: Failed to generate private key, err%v\n", err))
 		} else {
-			hostWallet := chain.NewWallet(privateKey)
+			hostWallet := NewWallet(privateKey)
 			blockchain = NewBlockchain(hostWallet.Address(), host.Port())
 			//TODO remove fmt
 			fmt.Println("host address: " + hostWallet.Address())
@@ -72,14 +71,14 @@ func (host *Host) GetTransactions() (res p2p.Data, err error) {
 	return
 }
 
-func (host *Host) PostTransactions(request *chain.PostTransactionRequest) (res p2p.Data, err error) {
+func (host *Host) PostTransactions(request *PostTransactionRequest) (res p2p.Data, err error) {
 	if request.IsInvalid() {
 		log.Println("ERROR: Field(s) are missing in transaction request")
 		err = errors.New("fail")
 		return
 	}
-	publicKey := chain.NewPublicKey(*request.SenderPublicKey)
-	signature := chain.DecodeSignature(*request.Signature)
+	publicKey := NewPublicKey(*request.SenderPublicKey)
+	signature := DecodeSignature(*request.Signature)
 	blockchain := host.GetBlockchain()
 	isCreated := blockchain.CreateTransaction(*request.SenderAddress, *request.RecipientAddress, publicKey, *request.Value, signature)
 
@@ -94,14 +93,14 @@ func (host *Host) PostTransactions(request *chain.PostTransactionRequest) (res p
 	return
 }
 
-func (host *Host) PutTransactions(request *chain.PutTransactionRequest) (res p2p.Data, err error) {
+func (host *Host) PutTransactions(request *PutTransactionRequest) (res p2p.Data, err error) {
 	if request.IsInvalid() {
 		log.Println("ERROR: Field(s) are missing in transaction request")
 		err = errors.New("fail")
 		return
 	}
-	publicKey := chain.NewPublicKey(*request.SenderPublicKey)
-	signature := chain.DecodeSignature(*request.Signature)
+	publicKey := NewPublicKey(*request.SenderPublicKey)
+	signature := DecodeSignature(*request.Signature)
 	blockchain := host.GetBlockchain()
 	isCreated := blockchain.UpdateTransaction(*request.SenderAddress, *request.RecipientAddress, publicKey, *request.Value, signature)
 
@@ -151,7 +150,7 @@ func (host *Host) StartMining() (res p2p.Data, err error) {
 	return
 }
 
-func (host *Host) Amount(request *chain.AmountRequest) (res p2p.Data, err error) {
+func (host *Host) Amount(request *AmountRequest) (res p2p.Data, err error) {
 	if request.IsInvalid() {
 		log.Println("ERROR: Field(s) are missing in amount request")
 		err = errors.New("fail")
@@ -159,7 +158,7 @@ func (host *Host) Amount(request *chain.AmountRequest) (res p2p.Data, err error)
 	}
 	blockchainAddress := *request.Address
 	amount := host.GetBlockchain().CalculateTotalAmount(blockchainAddress)
-	amountResponse := chain.NewAmountResponse(amount)
+	amountResponse := NewAmountResponse(amount)
 	res = p2p.Data{}
 	if err = res.SetGob(amountResponse); err != nil {
 		return
@@ -232,21 +231,21 @@ func (host *Host) startHost() {
 			}
 			return
 		}
-		var requestPostTransaction chain.PostTransactionRequest
+		var requestPostTransaction PostTransactionRequest
 		if err = req.GetGob(&requestPostTransaction); err == nil {
 			if res, err = host.PostTransactions(&requestPostTransaction); err != nil {
 				return
 			}
 			return
 		}
-		var requestPutTransaction chain.PutTransactionRequest
+		var requestPutTransaction PutTransactionRequest
 		if err = req.GetGob(&requestPutTransaction); err == nil {
 			if res, err = host.PutTransactions(&requestPutTransaction); err != nil {
 				return
 			}
 			return
 		}
-		var requestAmount chain.AmountRequest
+		var requestAmount AmountRequest
 		if err = req.GetGob(&requestAmount); err == nil {
 			if res, err = host.Amount(&requestAmount); err != nil {
 				return

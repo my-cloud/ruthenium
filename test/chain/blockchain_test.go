@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"ruthenium/src/chain"
-	"ruthenium/src/node"
 	"testing"
 )
 
@@ -24,7 +23,7 @@ func Test_Blockchain(t *testing.T) {
 	minerWallet := chain.NewWallet(minerPrivateKey)
 
 	// Block chain
-	blockChain := node.NewBlockchain(minerWallet.Address(), 0)
+	blockChain := chain.NewBlockchain(minerWallet.Address(), 0)
 
 	var value1 float32 = 100.
 	transaction1 := chain.NewTransaction(walletA.Address(), walletA.PublicKey(), walletB.Address(), value1)

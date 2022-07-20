@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"path"
 	"ruthenium/src/chain"
-	"ruthenium/src/node"
 	"ruthenium/src/rest"
 	"strconv"
 )
@@ -21,11 +20,11 @@ const templateDir = "src/wallet_server/templates"
 
 type WalletServer struct {
 	port             uint16
-	blockchainClient *node.Neighbor
+	blockchainClient *chain.Node
 }
 
 func NewWalletServer(port uint16, hostIp string, hostPort uint16) *WalletServer {
-	blockchainClient := node.NewNeighbor(hostIp, hostPort)
+	blockchainClient := chain.NewNode(hostIp, hostPort)
 	if blockchainClient.IsFound() {
 		blockchainClient.StartClient()
 	} else {
@@ -38,7 +37,7 @@ func (walletServer *WalletServer) Port() uint16 {
 	return walletServer.port
 }
 
-func (walletServer *WalletServer) BlockchainClient() *node.Neighbor {
+func (walletServer *WalletServer) BlockchainClient() *chain.Node {
 	return walletServer.blockchainClient
 }
 
