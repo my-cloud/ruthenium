@@ -111,8 +111,7 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 
 		writer.Header().Add("Content-type", "application/json")
 
-		sender := chain.PopWallet(privateKey, publicKey, *transactionRequest.SenderAddress)
-		transaction := chain.NewTransaction(sender.Address(), sender.PublicKey(), *transactionRequest.RecipientAddress, value32)
+		transaction := chain.NewTransaction(*transactionRequest.SenderAddress, publicKey, *transactionRequest.RecipientAddress, value32)
 		signature := chain.NewSignature(transaction, privateKey)
 
 		signatureString := signature.String()

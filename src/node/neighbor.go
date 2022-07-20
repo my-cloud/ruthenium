@@ -44,7 +44,7 @@ func (neighbor *Neighbor) IsFound() bool {
 	return err == nil
 }
 
-func (neighbor *Neighbor) ReadBlocks() []*chain.Block {
+func (neighbor *Neighbor) GetBlocks() []*chain.Block {
 	res, err := neighbor.sendRequest(GetBlocksRequest)
 	if err != nil {
 		log.Println(err)

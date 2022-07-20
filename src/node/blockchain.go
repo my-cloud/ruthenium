@@ -16,7 +16,7 @@ import (
 const (
 	MiningDifficulty          = 3
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
-	MiningReward              = 1.0
+	MiningReward              = 5.0
 	MiningTimerSec            = 30
 
 	StartPort     uint16 = 5000
@@ -103,14 +103,6 @@ func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (blockchain *Blockchain) Print() {
-	for i, block := range blockchain.blocks {
-		fmt.Printf("%s Block  %d %s\n", strings.Repeat("=", 25), i, strings.Repeat("=", 25))
-		block.Print()
-	}
-	fmt.Printf("%s\n", strings.Repeat("*", 60))
-}
-
 func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *chain.Signature) bool {
 	isTransacted := blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
 
@@ -123,24 +115,7 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 			&publicKeyStr,
 			&value,
 			&signatureStr}
-		//marshaledTransactionRequest, err := json.Marshal(transactionRequest)
-		//if err != nil {
-		//	log.Println("ERROR: Failed to marshal transaction request for neighbors")
-		//}
 		for _, neighbor := range blockchain.neighbors {
-			//	// TODO extract http logic
-			//	endpoint := fmt.Sprintf("http://%s/transactions", neighbor.IpAndPort())
-			//	client := &http.Client{}
-			//	buffer := bytes.NewBuffer(marshaledTransactionRequest)
-			//	request, requestError := http.NewRequest("PUT", endpoint, buffer)
-			//	if requestError != nil {
-			//		log.Printf("ERROR: %v", requestError)
-			//	}
-			//	response, responseError := client.Do(request)
-			//	if responseError != nil {
-			//		log.Printf("ERROR: %v", responseError)
-			//	}
-			//	log.Printf("%v\n", response)
 			neighbor.PutTransactions(transactionRequest)
 		}
 	}
@@ -149,9 +124,7 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 }
 
 func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *chain.Signature) (isTransacted bool) {
-	// FIXME nil private key
-	sender := chain.PopWallet(nil, senderPublicKey, senderAddress)
-	transaction := chain.NewTransaction(sender.Address(), sender.PublicKey(), recipientAddress, value)
+	transaction := chain.NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
 	return blockchain.addTransaction(transaction, signature)
 }
 
@@ -179,13 +152,7 @@ func (blockchain *Blockchain) Mine() bool {
 	blockchain.mineMutex.Lock()
 	defer blockchain.mineMutex.Unlock()
 
-	// TODO decide if we should get a reward when there is no transaction in the pool
-	//if len(blockchain.transactionPool) == 0 {
-	//	return false
-	//}
-
-	sender := chain.PopWallet(nil, nil, MiningRewardSenderAddress)
-	transaction := chain.NewTransaction(sender.Address(), sender.PublicKey(), blockchain.address, MiningReward)
+	transaction := chain.NewTransaction(MiningRewardSenderAddress, nil, blockchain.address, MiningReward)
 	blockchain.addTransaction(transaction, nil)
 	nonce := blockchain.proofOfWork()
 	previousHash := blockchain.lastBlock().Hash()
@@ -193,18 +160,6 @@ func (blockchain *Blockchain) Mine() bool {
 	log.Println("action=mining, status=success")
 
 	for _, neighbor := range blockchain.neighbors {
-		//	// TODO extract http logic
-		//	endpoint := fmt.Sprintf("http://%s/consensus", neighbor.IpAndPort())
-		//	client := &http.Client{}
-		//	request, requestError := http.NewRequest("PUT", endpoint, nil)
-		//	if requestError != nil {
-		//		log.Printf("ERROR: %v", requestError)
-		//	}
-		//	response, responseError := client.Do(request)
-		//	if responseError != nil {
-		//		log.Printf("ERROR: %v", responseError)
-		//	}
-		//	log.Printf("%v\n", response)
 		neighbor.Consensus()
 	}
 
@@ -238,16 +193,11 @@ func (blockchain *Blockchain) Transactions() []*chain.Transaction {
 }
 
 func (blockchain *Blockchain) Blocks() []*chain.Block {
-	// TODO improve copy
-	var blocks []*chain.Block
-	for _, transaction := range blockchain.blocks {
-		blocks = append(blocks, transaction)
-	}
-	return blocks
+	return blockchain.blocks
 }
 
 func (blockchain *Blockchain) ClearTransactions() {
-	blockchain.transactions = blockchain.transactions[:0]
+	blockchain.transactions = nil
 }
 
 func (blockchain *Blockchain) IsValid(blocks []*chain.Block) bool {
@@ -276,24 +226,11 @@ func (blockchain *Blockchain) ResolveConflicts() bool {
 	maxLength := len(blockchain.blocks)
 
 	for _, neighbor := range blockchain.neighbors {
-		//TODO cleaning
-		//endpoint := fmt.Sprintf("http://%s/chain", neighbor.IpAndPort())
-		//response, responseError := http.Get(endpoint)
-		//if responseError != nil {
-		//	log.Printf("ERROR: %v", responseError)
-		//} else if response.StatusCode == 200 {
-		//	var neighborBlockchain Blockchain
-		//	decoder := json.NewDecoder(response.Body)
-		//	err := decoder.Decode(&neighborBlockchain)
-		//	if err != nil {
-		//		log.Printf("ERROR: Failed to decode neighbor blockchain\n%v", responseError)
-		//	}
-		neighborBlocks := neighbor.ReadBlocks()
+		neighborBlocks := neighbor.GetBlocks()
 		if len(neighborBlocks) > maxLength && blockchain.IsValid(neighborBlocks) {
 			maxLength = len(neighborBlocks)
 			longestChain = neighborBlocks
 		}
-		//}
 	}
 
 	if longestChain != nil {
@@ -310,19 +247,7 @@ func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *cha
 	blockchain.blocks = append(blockchain.blocks, block)
 	blockchain.ClearTransactions()
 	for _, neighbor := range blockchain.neighbors {
-		//	// TODO extract http logic
-		//	endpoint := fmt.Sprintf("http://%s/transactions", neighbor.IpAndPort())
-		//	client := &http.Client{}
-		//	// FIXME don't delete transactions if the block is not validated by peers
-		//	request, requestError := http.NewRequest("DELETE", endpoint, nil)
-		//	if requestError != nil {
-		//		log.Printf("ERROR: %v", requestError)
-		//	}
-		//	response, responseError := client.Do(request)
-		//	if responseError != nil {
-		//		log.Printf("ERROR: %v", responseError)
-		//	}
-		//	log.Printf("%v\n", response)
+		// FIXME don't delete transactions if the block is not validated by peers
 		neighbor.DeleteTransactions()
 	}
 	return block
