@@ -44,8 +44,9 @@ func NewHost(port uint16) *Host {
 	host := new(Host)
 	host.port = port
 	for _, ip := range ips {
-		if len(ip) > 10 && ip[:9] == "192.168.1." {
+		if len(ip) > 10 && ip[:10] == "192.168.1." {
 			host.ip = ip
+			break
 		}
 	}
 	return host
