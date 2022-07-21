@@ -31,6 +31,7 @@ type Host struct {
 }
 
 func NewHost(port uint16) *Host {
+	// TODO change default IP address
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "127.0.0.1"
@@ -39,11 +40,14 @@ func NewHost(port uint16) *Host {
 	if err != nil {
 		ips[0] = "127.0.0.1"
 	}
-	// FIXME ips[3] = 192.168.1.90
 
 	host := new(Host)
 	host.port = port
-	host.ip = ips[3]
+	for _, ip := range ips {
+		if len(ip) > 10 && ip[:9] == "192.168.1." {
+			host.ip = ip
+		}
+	}
 	return host
 }
 
