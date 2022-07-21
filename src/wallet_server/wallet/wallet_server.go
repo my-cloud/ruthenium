@@ -136,6 +136,51 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 	}
 }
 
+func (walletServer *WalletServer) Mine(writer http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodPost:
+		mined := walletServer.blockchainClient.Mine()
+		if !mined {
+			log.Println("ERROR: Failed to mine")
+			jsonWriter := rest.NewJsonWriter(writer)
+			jsonWriter.WriteStatus("fail")
+		}
+	default:
+		writer.WriteHeader(http.StatusBadRequest)
+		log.Println("ERROR: Invalid HTTP Method")
+	}
+}
+
+func (walletServer *WalletServer) StartMining(writer http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodPost:
+		mined := walletServer.blockchainClient.StartMining()
+		if !mined {
+			log.Println("ERROR: Failed to start mining")
+			jsonWriter := rest.NewJsonWriter(writer)
+			jsonWriter.WriteStatus("fail")
+		}
+	default:
+		writer.WriteHeader(http.StatusBadRequest)
+		log.Println("ERROR: Invalid HTTP Method")
+	}
+}
+
+func (walletServer *WalletServer) StopMining(writer http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodPost:
+		mined := walletServer.blockchainClient.StopMining()
+		if !mined {
+			log.Println("ERROR: Failed to stop mining")
+			jsonWriter := rest.NewJsonWriter(writer)
+			jsonWriter.WriteStatus("fail")
+		}
+	default:
+		writer.WriteHeader(http.StatusBadRequest)
+		log.Println("ERROR: Invalid HTTP Method")
+	}
+}
+
 func (walletServer *WalletServer) WalletAmount(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
@@ -177,5 +222,8 @@ func (walletServer *WalletServer) Run() {
 	http.HandleFunc("/wallet", walletServer.Wallet)
 	http.HandleFunc("/transaction", walletServer.CreateTransaction)
 	http.HandleFunc("/wallet/amount", walletServer.WalletAmount)
+	http.HandleFunc("/mine", walletServer.Mine)
+	http.HandleFunc("/mine/start", walletServer.StartMining)
+	http.HandleFunc("/mine/stop", walletServer.StopMining)
 	log.Fatal(http.ListenAndServe("localhost:"+strconv.Itoa(int(walletServer.Port())), nil))
 }

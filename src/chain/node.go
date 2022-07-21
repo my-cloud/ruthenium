@@ -66,52 +66,48 @@ func (node *Node) GetBlocks() []*Block {
 	return blocks
 }
 
-func (node *Node) DeleteTransactions() bool {
+func (node *Node) DeleteTransactions() (deleted bool) {
 	res, err := node.sendRequest(DeleteTransactionsRequest)
 	if err != nil {
 		log.Println(err)
 		return false
 	}
 
-	var deleted bool
 	err = res.GetGob(&deleted)
-	return deleted
+	return
 }
 
-func (node *Node) Consensus() bool {
+func (node *Node) Consensus() (consented bool) {
 	res, err := node.sendRequest(ConsensusRequest)
 	if err != nil {
 		log.Println(err)
 		return false
 	}
 
-	var consented bool
 	err = res.GetGob(&consented)
-	return consented
+	return
 }
 
-func (node *Node) PostTransactions(request PostTransactionRequest) bool {
+func (node *Node) PostTransactions(request PostTransactionRequest) (created bool) {
 	res, err := node.sendRequest(request)
 	if err != nil {
 		log.Println(err)
 		return false
 	}
 
-	var created bool
 	err = res.GetGob(&created)
-	return created
+	return
 }
 
-func (node *Node) PutTransactions(request PutTransactionRequest) bool {
+func (node *Node) PutTransactions(request PutTransactionRequest) (updated bool) {
 	res, err := node.sendRequest(request)
 	if err != nil {
 		log.Println(err)
 		return false
 	}
 
-	var updated bool
 	err = res.GetGob(&updated)
-	return updated
+	return
 }
 
 func (node *Node) GetAmount(request AmountRequest) *AmountResponse {
@@ -124,6 +120,39 @@ func (node *Node) GetAmount(request AmountRequest) *AmountResponse {
 	var amount *AmountResponse
 	err = res.GetGob(&amount)
 	return amount
+}
+
+func (node *Node) Mine() (mined bool) {
+	res, err := node.sendRequest(MineRequest)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	err = res.GetGob(&mined)
+	return
+}
+
+func (node *Node) StartMining() (miningStarted bool) {
+	res, err := node.sendRequest(StartMiningRequest)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	err = res.GetGob(&miningStarted)
+	return
+}
+
+func (node *Node) StopMining() (miningStopped bool) {
+	res, err := node.sendRequest(StopMiningRequest)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	err = res.GetGob(&miningStopped)
+	return
 }
 
 func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {

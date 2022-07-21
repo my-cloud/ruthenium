@@ -22,6 +22,7 @@ const (
 	DeleteTransactionsRequest = "DELETE TRANSACTIONS REQUEST"
 	MineRequest               = "MINE REQUEST"
 	StartMiningRequest        = "START MINING REQUEST"
+	StopMiningRequest         = "STOP MINING REQUEST"
 	ConsensusRequest          = "CONSENSUS REQUEST"
 )
 
@@ -171,6 +172,16 @@ func (host *Host) StartMining() (res p2p.Data, err error) {
 	return
 }
 
+func (host *Host) StopMining() (res p2p.Data, err error) {
+	blockchain := host.GetBlockchain()
+	blockchain.StopMining()
+	res = p2p.Data{}
+	if err = res.SetGob(true); err != nil {
+		return
+	}
+	return
+}
+
 func (host *Host) Amount(request *AmountRequest) (res p2p.Data, err error) {
 	if request.IsInvalid() {
 		log.Println("ERROR: Field(s) are missing in amount request")
@@ -232,6 +243,10 @@ func (host *Host) startHost() {
 				}
 			case StartMiningRequest:
 				if res, err = host.StartMining(); err != nil {
+					return
+				}
+			case StopMiningRequest:
+				if res, err = host.StopMining(); err != nil {
 					return
 				}
 			case ConsensusRequest:

@@ -15,8 +15,8 @@ import (
 const (
 	MiningDifficulty          = 3
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
-	MiningReward              = 5.0
-	MiningTimerSec            = 5
+	MiningReward              = 1.0
+	MiningTimerSec            = 1
 
 	StartPort     uint16 = 5000
 	EndPort       uint16 = 5001
@@ -29,10 +29,11 @@ const (
 var PATTERN = regexp.MustCompile(`((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?\.){3})(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`)
 
 type Blockchain struct {
-	transactions []*Transaction
-	blocks       []*Block
-	address      string
-	mineMutex    sync.Mutex
+	transactions  []*Transaction
+	blocks        []*Block
+	address       string
+	mineMutex     sync.Mutex
+	miningStopped bool
 
 	ip   string
 	port uint16
@@ -53,7 +54,6 @@ func NewBlockchain(address string, ip string, port uint16) *Blockchain {
 func (blockchain *Blockchain) Run() {
 	blockchain.StartNeighborsSynchronization()
 	blockchain.ResolveConflicts()
-	blockchain.StartMining()
 }
 
 func (blockchain *Blockchain) SynchronizeNeighbors() {
@@ -167,8 +167,16 @@ func (blockchain *Blockchain) Mine() bool {
 }
 
 func (blockchain *Blockchain) StartMining() {
-	blockchain.Mine()
-	_ = time.AfterFunc(time.Second*MiningTimerSec, blockchain.StartMining)
+	if blockchain.miningStopped {
+		blockchain.miningStopped = false
+	} else {
+		blockchain.Mine()
+		_ = time.AfterFunc(time.Second*MiningTimerSec, blockchain.StartMining)
+	}
+}
+
+func (blockchain *Blockchain) StopMining() {
+	blockchain.miningStopped = true
 }
 
 func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) float32 {
