@@ -45,8 +45,4 @@ http://unlicense.org/
 
 ## Project status
 
-**Done**: Blockchain created using REST APIs
-
-**WIP**: Replace REST by P2P
-
-**TODO**: Customize the blockchain
+Still under heavy development
