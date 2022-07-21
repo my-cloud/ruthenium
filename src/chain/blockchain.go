@@ -109,14 +109,17 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 	if isTransacted {
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
-		transactionRequest := PutTransactionRequest{
-			&senderAddress,
-			&recipientAddress,
-			&publicKeyStr,
-			&value,
-			&signatureStr}
+		var verb = PUT
+		transactionRequest := TransactionRequest{
+			Verb:             &verb,
+			SenderAddress:    &senderAddress,
+			RecipientAddress: &recipientAddress,
+			SenderPublicKey:  &publicKeyStr,
+			Value:            &value,
+			Signature:        &signatureStr,
+		}
 		for _, neighbor := range blockchain.neighbors {
-			neighbor.PutTransactions(transactionRequest)
+			neighbor.UpdateTransactions(transactionRequest)
 		}
 	}
 

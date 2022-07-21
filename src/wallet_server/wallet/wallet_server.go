@@ -115,14 +115,16 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 
 		signatureString := signature.String()
 
-		blockchainTransactionRequest := chain.PostTransactionRequest{
+		var verb = chain.POST
+		blockchainTransactionRequest := chain.TransactionRequest{
+			Verb:             &verb,
 			SenderAddress:    transactionRequest.SenderAddress,
 			RecipientAddress: transactionRequest.RecipientAddress,
 			SenderPublicKey:  transactionRequest.SenderPublicKey,
 			Value:            &value32,
 			Signature:        &signatureString,
 		}
-		updated := walletServer.blockchainClient.PostTransactions(blockchainTransactionRequest)
+		updated := walletServer.blockchainClient.UpdateTransactions(blockchainTransactionRequest)
 		if updated {
 			jsonWriter.WriteStatus("success")
 			return

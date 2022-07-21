@@ -93,7 +93,7 @@ func (host *Host) GetTransactions() (res p2p.Data, err error) {
 	return
 }
 
-func (host *Host) PostTransactions(request *PostTransactionRequest) (res p2p.Data, err error) {
+func (host *Host) PostTransactions(request *TransactionRequest) (res p2p.Data, err error) {
 	if request.IsInvalid() {
 		log.Println("ERROR: Field(s) are missing in transaction request")
 		err = errors.New("fail")
@@ -115,7 +115,7 @@ func (host *Host) PostTransactions(request *PostTransactionRequest) (res p2p.Dat
 	return
 }
 
-func (host *Host) PutTransactions(request *PutTransactionRequest) (res p2p.Data, err error) {
+func (host *Host) PutTransactions(request *TransactionRequest) (res p2p.Data, err error) {
 	if request.IsInvalid() {
 		log.Println("ERROR: Field(s) are missing in transaction request")
 		err = errors.New("fail")
@@ -263,25 +263,24 @@ func (host *Host) startHost() {
 			}
 			return
 		}
-		var requestPutTransaction PutTransactionRequest
-		if err = req.GetGob(&requestPutTransaction); err == nil {
-			if res, err = host.PutTransactions(&requestPutTransaction); err != nil {
-				log.Println("ERROR: Failed to put transactions")
-				return
+		var transactionRequest TransactionRequest
+		if err = req.GetGob(&transactionRequest); err == nil {
+			if *transactionRequest.Verb == POST {
+				if res, err = host.PostTransactions(&transactionRequest); err != nil {
+					log.Println("ERROR: Failed to post transactions")
+					return
+				}
+			} else if *transactionRequest.Verb == PUT {
+				if res, err = host.PutTransactions(&transactionRequest); err != nil {
+					log.Println("ERROR: Failed to put transactions")
+					return
+				}
 			}
 			return
 		}
-		var requestPostTransaction PostTransactionRequest
-		if err = req.GetGob(&requestPostTransaction); err == nil {
-			if res, err = host.PostTransactions(&requestPostTransaction); err != nil {
-				log.Println("ERROR: Failed to post transactions")
-				return
-			}
-			return
-		}
-		var requestAmount AmountRequest
-		if err = req.GetGob(&requestAmount); err == nil {
-			if res, err = host.Amount(&requestAmount); err != nil {
+		var amountRequest AmountRequest
+		if err = req.GetGob(&amountRequest); err == nil {
+			if res, err = host.Amount(&amountRequest); err != nil {
 				log.Println("ERROR: Failed to get amount")
 				return
 			}

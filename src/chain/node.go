@@ -88,7 +88,7 @@ func (node *Node) Consensus() (consented bool) {
 	return
 }
 
-func (node *Node) PostTransactions(request PostTransactionRequest) (created bool) {
+func (node *Node) UpdateTransactions(request TransactionRequest) (created bool) {
 	res, err := node.sendRequest(request)
 	if err != nil {
 		log.Println(err)
@@ -96,17 +96,6 @@ func (node *Node) PostTransactions(request PostTransactionRequest) (created bool
 	}
 
 	err = res.GetGob(&created)
-	return
-}
-
-func (node *Node) PutTransactions(request PutTransactionRequest) (updated bool) {
-	res, err := node.sendRequest(request)
-	if err != nil {
-		log.Println(err)
-		return false
-	}
-
-	err = res.GetGob(&updated)
 	return
 }
 
