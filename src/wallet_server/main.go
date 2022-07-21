@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"ruthenium/src/wallet_server/wallet"
 )
 
 func init() {
@@ -16,7 +17,7 @@ func main() {
 	hostPort := flag.Uint("host-port", 5000, "Blockchain host port")
 	flag.Parse()
 
-	app := NewWalletServer(uint16(*port), *hostIp, uint16(*hostPort))
+	app := wallet.NewWalletServer(uint16(*port), *hostIp, uint16(*hostPort))
 	fmt.Println("Running...")
 	app.Run()
 }
