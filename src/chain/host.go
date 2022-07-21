@@ -227,45 +227,54 @@ func (host *Host) startHost() {
 			switch requestString {
 			case GetBlocksRequest:
 				if res, err = host.GetBlocks(); err != nil {
+					log.Println("ERROR: Failed to get blocks")
 					return
 				}
 			case GetTransactionsRequest:
 				if res, err = host.GetTransactions(); err != nil {
+					log.Println("ERROR: Failed to get transactions")
 					return
 				}
 			case DeleteTransactionsRequest:
 				if res, err = host.DeleteTransactions(); err != nil {
+					log.Println("ERROR: Failed to delete transactions")
 					return
 				}
 			case MineRequest:
 				if res, err = host.Mine(); err != nil {
+					log.Println("ERROR: Failed to mine")
 					return
 				}
 			case StartMiningRequest:
 				if res, err = host.StartMining(); err != nil {
+					log.Println("ERROR: Failed to start mining")
 					return
 				}
 			case StopMiningRequest:
 				if res, err = host.StopMining(); err != nil {
+					log.Println("ERROR: Failed to stop mining")
 					return
 				}
 			case ConsensusRequest:
 				if res, err = host.Consensus(); err != nil {
+					log.Println("ERROR: Failed to get consensus")
 					return
 				}
-			}
-			return
-		}
-		var requestPostTransaction PostTransactionRequest
-		if err = req.GetGob(&requestPostTransaction); err == nil {
-			if res, err = host.PostTransactions(&requestPostTransaction); err != nil {
-				return
 			}
 			return
 		}
 		var requestPutTransaction PutTransactionRequest
 		if err = req.GetGob(&requestPutTransaction); err == nil {
 			if res, err = host.PutTransactions(&requestPutTransaction); err != nil {
+				log.Println("ERROR: Failed to put transactions")
+				return
+			}
+			return
+		}
+		var requestPostTransaction PostTransactionRequest
+		if err = req.GetGob(&requestPostTransaction); err == nil {
+			if res, err = host.PostTransactions(&requestPostTransaction); err != nil {
+				log.Println("ERROR: Failed to post transactions")
 				return
 			}
 			return
@@ -273,6 +282,7 @@ func (host *Host) startHost() {
 		var requestAmount AmountRequest
 		if err = req.GetGob(&requestAmount); err == nil {
 			if res, err = host.Amount(&requestAmount); err != nil {
+				log.Println("ERROR: Failed to get amount")
 				return
 			}
 			return

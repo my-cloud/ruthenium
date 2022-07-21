@@ -164,6 +164,7 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 	}
 
 	res = p2p.Data{}
+	// TODO remove useless mutex?
 	node.mutex.Lock()
 	defer node.mutex.Unlock()
 	res, err = node.client.Send("dialog", req)
