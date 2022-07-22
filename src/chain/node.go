@@ -34,13 +34,13 @@ func (node *Node) StartClient() {
 	node.client = client
 }
 
-func (node *Node) IpAndPort() string {
-	return fmt.Sprintf("%s:%d", node.ip, node.port)
+func (node *Node) Target() string {
+	return net.JoinHostPort(node.ip, strconv.Itoa(int(node.port)))
 }
 
 func (node *Node) IsFound() bool {
 	target := fmt.Sprintf("%s:%d", node.ip, node.port)
-	_, err := net.DialTimeout("tcp", target, time.Second)
+	_, err := net.DialTimeout("tcp", target, NeighborClientFindingTimeoutSecond*time.Second)
 	return err == nil
 }
 

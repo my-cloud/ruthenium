@@ -12,6 +12,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 )
 
 var cachedBlockchain = make(map[string]*Blockchain)
@@ -220,6 +221,10 @@ func (host *Host) startHost() {
 	if err != nil {
 		log.Panicln(err)
 	}
+
+	settings := p2p.NewServerSettings()
+	settings.SetConnTimeout(HostConnectionTimeoutSecond * time.Second)
+	server.SetSettings(settings)
 
 	server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
 		var requestString string

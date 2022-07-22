@@ -23,7 +23,9 @@ const (
 	StartIpSuffix uint8  = 0
 	EndIpSuffix   uint8  = 0
 
-	NeighborSynchronizationTimeSecond = 5
+	NeighborSynchronizationTimeSecond  = 5
+	HostConnectionTimeoutSecond        = 10
+	NeighborClientFindingTimeoutSecond = 1
 )
 
 var PATTERN = regexp.MustCompile(`((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?\.){3})(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`)
@@ -68,7 +70,7 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 }
 
 func (blockchain *Blockchain) FindNeighbors() []*Node {
-	address := fmt.Sprintf("%s:%d", blockchain.ip, blockchain.port)
+	hostTarget := fmt.Sprintf("%s:%d", blockchain.ip, blockchain.port)
 
 	m := PATTERN.FindStringSubmatch(blockchain.ip)
 	if m == nil {
@@ -79,14 +81,14 @@ func (blockchain *Blockchain) FindNeighbors() []*Node {
 	if err != nil {
 		fmt.Printf("ERROR: Failed to parse IP %s, err:%v\n", m[len(m)-1], err)
 	}
-	neighbors := make([]*Node, 0)
 
+	neighbors := make([]*Node, 0)
 	for port := StartPort; port <= EndPort; port += 1 {
 		for ipSuffix := StartIpSuffix; ipSuffix <= EndIpSuffix; ipSuffix += 1 {
 			guessIp := fmt.Sprintf("%s%d", prefixHost, lastIp+int(ipSuffix))
 			neighbor := NewNode(guessIp, port)
-			guessTarget := neighbor.IpAndPort()
-			if guessTarget != address && neighbor.IsFound() {
+			guessTarget := neighbor.Target()
+			if guessTarget != hostTarget && neighbor.IsFound() {
 				neighbor.StartClient()
 				neighbors = append(neighbors, neighbor)
 			}
@@ -246,6 +248,7 @@ func (blockchain *Blockchain) ResolveConflicts() bool {
 
 	if longestChain != nil {
 		blockchain.blocks = longestChain
+		// TODO clear transactions pool here
 		log.Println("Conflicts resolved: blockchain replaced")
 		return true
 	}
