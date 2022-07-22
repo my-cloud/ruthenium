@@ -1,7 +1,6 @@
-package main
+package wallet
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -20,20 +19,26 @@ import (
 const templateDir = "src/wallet_server/templates"
 
 type WalletServer struct {
-	port    uint16
-	gateway string
+	port             uint16
+	blockchainClient *chain.Node
 }
 
-func NewWalletServer(port uint16, gateway string) *WalletServer {
-	return &WalletServer{port, gateway}
+func NewWalletServer(port uint16, hostIp string, hostPort uint16) *WalletServer {
+	blockchainClient := chain.NewNode(hostIp, hostPort)
+	if blockchainClient.IsFound() {
+		blockchainClient.StartClient()
+	} else {
+		panic("Unable to find blockchain client")
+	}
+	return &WalletServer{port, blockchainClient}
 }
 
 func (walletServer *WalletServer) Port() uint16 {
 	return walletServer.port
 }
 
-func (walletServer *WalletServer) Gateway() string {
-	return walletServer.gateway
+func (walletServer *WalletServer) BlockchainClient() *chain.Node {
+	return walletServer.blockchainClient
 }
 
 func (walletServer *WalletServer) Index(w http.ResponseWriter, req *http.Request) {
@@ -105,33 +110,73 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 
 		writer.Header().Add("Content-type", "application/json")
 
-		sender := chain.PopWallet(privateKey, publicKey, *transactionRequest.SenderAddress)
-		transaction := chain.NewTransaction(sender.Address(), sender.PublicKey(), *transactionRequest.RecipientAddress, value32)
+		transaction := chain.NewTransaction(*transactionRequest.SenderAddress, publicKey, *transactionRequest.RecipientAddress, value32)
 		signature := chain.NewSignature(transaction, privateKey)
 
 		signatureString := signature.String()
-		marshaledTransaction, err := json.Marshal(&chain.TransactionRequest{
+
+		var verb = chain.POST
+		blockchainTransactionRequest := chain.TransactionRequest{
+			Verb:             &verb,
 			SenderAddress:    transactionRequest.SenderAddress,
 			RecipientAddress: transactionRequest.RecipientAddress,
 			SenderPublicKey:  transactionRequest.SenderPublicKey,
 			Value:            &value32,
 			Signature:        &signatureString,
-		})
-		if err != nil {
-			log.Println("ERROR: Failed to marshal transaction")
 		}
-
-		buffer := bytes.NewBuffer(marshaledTransaction)
-
-		response, err := http.Post(walletServer.Gateway()+"/transactions", "application/json", buffer)
-		if err != nil {
-			log.Printf("ERROR: %v", err)
-		} else if response.StatusCode == 201 {
+		updated := walletServer.blockchainClient.UpdateTransactions(blockchainTransactionRequest)
+		if updated {
 			jsonWriter.WriteStatus("success")
 			return
+		} else {
+			log.Println("ERROR: Failed to create transaction")
+			jsonWriter.WriteStatus("fail")
 		}
-		log.Printf("ERROR: status code %d", response.StatusCode)
-		jsonWriter.WriteStatus("fail")
+	default:
+		writer.WriteHeader(http.StatusBadRequest)
+		log.Println("ERROR: Invalid HTTP Method")
+	}
+}
+
+func (walletServer *WalletServer) Mine(writer http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodPost:
+		mined := walletServer.blockchainClient.Mine()
+		if !mined {
+			log.Println("ERROR: Failed to mine")
+			jsonWriter := rest.NewJsonWriter(writer)
+			jsonWriter.WriteStatus("fail")
+		}
+	default:
+		writer.WriteHeader(http.StatusBadRequest)
+		log.Println("ERROR: Invalid HTTP Method")
+	}
+}
+
+func (walletServer *WalletServer) StartMining(writer http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodPost:
+		mined := walletServer.blockchainClient.StartMining()
+		if !mined {
+			log.Println("ERROR: Failed to start mining")
+			jsonWriter := rest.NewJsonWriter(writer)
+			jsonWriter.WriteStatus("fail")
+		}
+	default:
+		writer.WriteHeader(http.StatusBadRequest)
+		log.Println("ERROR: Invalid HTTP Method")
+	}
+}
+
+func (walletServer *WalletServer) StopMining(writer http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodPost:
+		mined := walletServer.blockchainClient.StopMining()
+		if !mined {
+			log.Println("ERROR: Failed to stop mining")
+			jsonWriter := rest.NewJsonWriter(writer)
+			jsonWriter.WriteStatus("fail")
+		}
 	default:
 		writer.WriteHeader(http.StatusBadRequest)
 		log.Println("ERROR: Invalid HTTP Method")
@@ -142,44 +187,21 @@ func (walletServer *WalletServer) WalletAmount(writer http.ResponseWriter, req *
 	switch req.Method {
 	case http.MethodGet:
 		address := req.URL.Query().Get("address")
-		endpoint := fmt.Sprintf("%s/amount", walletServer.Gateway())
+
+		amountRequest := chain.AmountRequest{
+			Address: &address,
+		}
+		amount := walletServer.blockchainClient.GetAmount(amountRequest)
 
 		jsonWriter := rest.NewJsonWriter(writer)
-		bcsReq, err := http.NewRequest("GET", endpoint, nil)
-		if err != nil {
-			log.Printf("ERROR: %v", err)
-			jsonWriter.WriteStatus("fail")
-			return
-		}
-		q := bcsReq.URL.Query()
-		q.Add("address", address)
-		bcsReq.URL.RawQuery = q.Encode()
-
-		client := &http.Client{}
-		bcsResp, err := client.Do(bcsReq)
-		if err != nil {
-			log.Printf("ERROR: %v", err)
-			jsonWriter.WriteStatus("fail")
-			return
-		}
-
 		writer.Header().Add("Content-Type", "application/json")
-		if bcsResp.StatusCode == 200 {
-			decoder := json.NewDecoder(bcsResp.Body)
-			var bar chain.AmountResponse
-			err := decoder.Decode(&bar)
-			if err != nil {
-				log.Printf("ERROR: %v", err)
-				jsonWriter.WriteStatus("fail")
-				return
-			}
-
+		if amount != nil {
 			marshaledAmount, err := json.Marshal(struct {
 				Message string  `json:"message"`
 				Amount  float32 `json:"amount"`
 			}{
 				Message: "success",
-				Amount:  bar.Amount,
+				Amount:  amount.Amount,
 			})
 			if err != nil {
 				log.Println("ERROR: Failed to marshal amount")
@@ -202,5 +224,8 @@ func (walletServer *WalletServer) Run() {
 	http.HandleFunc("/wallet", walletServer.Wallet)
 	http.HandleFunc("/transaction", walletServer.CreateTransaction)
 	http.HandleFunc("/wallet/amount", walletServer.WalletAmount)
+	http.HandleFunc("/mine", walletServer.Mine)
+	http.HandleFunc("/mine/start", walletServer.StartMining)
+	http.HandleFunc("/mine/stop", walletServer.StopMining)
 	log.Fatal(http.ListenAndServe("localhost:"+strconv.Itoa(int(walletServer.Port())), nil))
 }

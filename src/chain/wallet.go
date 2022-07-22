@@ -15,10 +15,6 @@ type Wallet struct {
 	address    string
 }
 
-func PopWallet(privateKey *ecdsa.PrivateKey, publicKey *ecdsa.PublicKey, address string) *Wallet {
-	return &Wallet{privateKey, publicKey, address}
-}
-
 func NewWallet(privateKey *ecdsa.PrivateKey) *Wallet {
 	// 1. Create ECDSA public key (64 bytes)
 	publicKey := &privateKey.PublicKey
@@ -51,7 +47,7 @@ func NewWallet(privateKey *ecdsa.PrivateKey) *Wallet {
 	copy(dc8[21:], checksum[:])
 	// 9. Convert the result from a byte string into base58.
 	address := base58.Encode(dc8)
-	return PopWallet(privateKey, publicKey, address)
+	return &Wallet{privateKey, publicKey, address}
 }
 
 func (wallet *Wallet) MarshalJSON() ([]byte, error) {

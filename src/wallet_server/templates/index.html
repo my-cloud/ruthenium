@@ -54,7 +54,7 @@
                 })
             })
 
-            function reload_amount() {
+            function refresh_amount() {
                 let data = {'address': $('#sender_address').val()}
                 $.ajax({
                     url: '/wallet/amount',
@@ -71,11 +71,53 @@
                 })
             }
 
-            $('#reload_wallet').click(function(){
-                reload_amount();
+            function mine() {
+                $.ajax({
+                    url: '/mine',
+                    type: 'POST',
+                    error: function(error) {
+                        console.error(error)
+                    }
+                })
+            }
+
+            function start_mining() {
+                $.ajax({
+                    url: '/mine/start',
+                    type: 'POST',
+                    error: function(error) {
+                        console.error(error)
+                    }
+                })
+            }
+
+            function stop_mining() {
+                $.ajax({
+                    url: '/mine/stop',
+                    type: 'POST',
+                    error: function(error) {
+                        console.error(error)
+                    }
+                })
+            }
+
+            $('#refresh_amount').click(function(){
+                refresh_amount();
             });
 
-            setInterval(reload_amount, 3000)
+            $('#mine').click(function(){
+                mine();
+            });
+
+            $('#start_mining').click(function(){
+                start_mining();
+            });
+
+            $('#stop_mining').click(function(){
+                stop_mining();
+            });
+
+            setInterval(refresh_amount, 1000)
         })
     </script>
 </head>
@@ -84,7 +126,10 @@
     <div>
         <h1>Wallet</h1>
         <div id="wallet_amount">0</div>
-        <button id="reload_wallet">Refresh amount</button>
+        <button id="refresh_amount">Refresh amount</button>
+        <button id="mine">Mine</button>
+        <button id="start_mining">Start Mining</button>
+        <button id="stop_mining">Stop Mining</button>
 
         <p>Public  Key</p>
         <textarea id="public_key" rows="2" cols="100"></textarea>
