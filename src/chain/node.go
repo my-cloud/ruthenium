@@ -2,78 +2,165 @@ package chain
 
 import (
 	"fmt"
+	p2p "github.com/leprosus/golang-p2p"
+	"log"
 	"net"
-	"os"
-	"regexp"
 	"strconv"
+	"sync"
 	"time"
 )
 
-const (
-	StartPort uint16 = 5000
-	EndPort   uint16 = 5002
-	StartIp   uint8  = 0
-	EndIp     uint8  = 0
-)
-
-var PATTERN = regexp.MustCompile(`((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?\.){3})(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`)
-
 type Node struct {
-	host string
-	port uint16
+	ip     string
+	port   uint16
+	client *p2p.Client
+	mutex  sync.Mutex
 }
 
-func NewHostNode(port uint16) *Node {
-	hostname, err := os.Hostname()
+func NewNode(ip string, port uint16) *Node {
+	node := new(Node)
+	node.ip = ip
+	node.port = port
+	return node
+}
+
+func (node *Node) StartClient() {
+	tcp := p2p.NewTCP(node.ip, strconv.Itoa(int(node.port)))
+	client, err := p2p.NewClient(tcp)
 	if err != nil {
-		hostname = "127.0.0.1"
+		log.Println(err)
 	}
-	host, err := net.LookupHost(hostname)
+
+	node.client = client
+}
+
+func (node *Node) IpAndPort() string {
+	return fmt.Sprintf("%s:%d", node.ip, node.port)
+}
+
+func (node *Node) IsFound() bool {
+	target := fmt.Sprintf("%s:%d", node.ip, node.port)
+	_, err := net.DialTimeout("tcp", target, time.Second)
+	return err == nil
+}
+
+func (node *Node) GetBlocks() []*Block {
+	res, err := node.sendRequest(GetBlocksRequest)
 	if err != nil {
-		host[0] = "127.0.0.1"
-	}
-	// FIXME host[3] = 192.168.1.90
-	return &Node{"127.0.0.1", port}
-}
-
-func newNode(host string, port uint16) *Node {
-	return &Node{host, port}
-}
-
-func (node *Node) FindNeighbors() []string {
-	address := fmt.Sprintf("%s:%d", node.host, node.port)
-
-	m := PATTERN.FindStringSubmatch(node.host)
-	if m == nil {
+		log.Println(err)
 		return nil
 	}
-	prefixHost := m[1]
-	lastIp, err := strconv.Atoi(m[len(m)-1])
-	if err != nil {
-		fmt.Printf("ERROR: Failed to parse IP %s, err:%v\n", m[len(m)-1], err)
-	}
-	neighbors := make([]string, 0)
 
-	for port := StartPort; port <= EndPort; port += 1 {
-		for ip := StartIp; ip <= EndIp; ip += 1 {
-			guessHost := fmt.Sprintf("%s%d", prefixHost, lastIp+int(ip))
-			guessTarget := fmt.Sprintf("%s:%d", guessHost, port)
-			neighbor := newNode(guessHost, port)
-			if guessTarget != address && neighbor.isFound() {
-				neighbors = append(neighbors, guessTarget)
-			}
-		}
+	var blockResponses []*BlockResponse
+	err = res.GetGob(&blockResponses)
+	if err != nil {
+		log.Println(err)
+		return nil
 	}
-	return neighbors
+
+	var blocks []*Block
+	for _, block := range blockResponses {
+		blocks = append(blocks, NewBlockFromDto(block))
+	}
+
+	return blocks
 }
 
-func (node *Node) isFound() bool {
-	target := fmt.Sprintf("%s:%d", node.host, node.port)
-
-	_, err := net.DialTimeout("tcp", target, time.Millisecond)
+func (node *Node) DeleteTransactions() (deleted bool) {
+	res, err := node.sendRequest(DeleteTransactionsRequest)
 	if err != nil {
-		fmt.Printf("%s not found, err:%v\n", target, err)
+		log.Println(err)
 		return false
 	}
-	return true
+
+	err = res.GetGob(&deleted)
+	return
+}
+
+func (node *Node) Consensus() (consented bool) {
+	res, err := node.sendRequest(ConsensusRequest)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	err = res.GetGob(&consented)
+	return
+}
+
+func (node *Node) UpdateTransactions(request TransactionRequest) (created bool) {
+	res, err := node.sendRequest(request)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	err = res.GetGob(&created)
+	return
+}
+
+func (node *Node) GetAmount(request AmountRequest) *AmountResponse {
+	res, err := node.sendRequest(request)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	var amount *AmountResponse
+	err = res.GetGob(&amount)
+	return amount
+}
+
+func (node *Node) Mine() (mined bool) {
+	res, err := node.sendRequest(MineRequest)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	err = res.GetGob(&mined)
+	return
+}
+
+func (node *Node) StartMining() (miningStarted bool) {
+	res, err := node.sendRequest(StartMiningRequest)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	err = res.GetGob(&miningStarted)
+	return
+}
+
+func (node *Node) StopMining() (miningStopped bool) {
+	res, err := node.sendRequest(StopMiningRequest)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	err = res.GetGob(&miningStopped)
+	return
+}
+
+func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
+	req := p2p.Data{}
+	err = req.SetGob(request)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	res = p2p.Data{}
+	// TODO remove useless mutex?
+	node.mutex.Lock()
+	defer node.mutex.Unlock()
+	res, err = node.client.Send("dialog", req)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	return
 }

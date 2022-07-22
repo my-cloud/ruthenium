@@ -1,12 +1,12 @@
 package chain
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -16,26 +16,37 @@ const (
 	MiningDifficulty          = 3
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
 	MiningReward              = 1.0
-	MiningTimerSec            = 20
+	MiningTimerSec            = 1
+
+	StartPort     uint16 = 5000
+	EndPort       uint16 = 5001
+	StartIpSuffix uint8  = 0
+	EndIpSuffix   uint8  = 0
 
 	NeighborSynchronizationTimeSecond = 5
 )
 
-type Blockchain struct {
-	transactions []*Transaction
-	blocks       []*Block
-	address      string
-	mineMutex    sync.Mutex
+var PATTERN = regexp.MustCompile(`((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?\.){3})(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`)
 
-	neighbors      []string
+type Blockchain struct {
+	transactions  []*Transaction
+	blocks        []*Block
+	address       string
+	mineMutex     sync.Mutex
+	miningStopped bool
+
+	ip   string
+	port uint16
+
+	neighbors      []*Node
 	neighborsMutex sync.Mutex
-	hostNode       *Node
 }
 
-func NewBlockchain(address string, port uint16) *Blockchain {
+func NewBlockchain(address string, ip string, port uint16) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.address = address
-	blockchain.hostNode = NewHostNode(port)
+	blockchain.ip = ip
+	blockchain.port = port
 	blockchain.createBlock(0, new(Block).Hash())
 	return blockchain
 }
@@ -43,18 +54,45 @@ func NewBlockchain(address string, port uint16) *Blockchain {
 func (blockchain *Blockchain) Run() {
 	blockchain.StartNeighborsSynchronization()
 	blockchain.ResolveConflicts()
-	blockchain.StartMining()
 }
 
 func (blockchain *Blockchain) SynchronizeNeighbors() {
 	blockchain.neighborsMutex.Lock()
 	defer blockchain.neighborsMutex.Unlock()
-	blockchain.neighbors = blockchain.hostNode.FindNeighbors()
+	blockchain.neighbors = blockchain.FindNeighbors()
 }
 
 func (blockchain *Blockchain) StartNeighborsSynchronization() {
 	blockchain.SynchronizeNeighbors()
 	_ = time.AfterFunc(time.Second*NeighborSynchronizationTimeSecond, blockchain.StartNeighborsSynchronization)
+}
+
+func (blockchain *Blockchain) FindNeighbors() []*Node {
+	address := fmt.Sprintf("%s:%d", blockchain.ip, blockchain.port)
+
+	m := PATTERN.FindStringSubmatch(blockchain.ip)
+	if m == nil {
+		return nil
+	}
+	prefixHost := m[1]
+	lastIp, err := strconv.Atoi(m[len(m)-1])
+	if err != nil {
+		fmt.Printf("ERROR: Failed to parse IP %s, err:%v\n", m[len(m)-1], err)
+	}
+	neighbors := make([]*Node, 0)
+
+	for port := StartPort; port <= EndPort; port += 1 {
+		for ipSuffix := StartIpSuffix; ipSuffix <= EndIpSuffix; ipSuffix += 1 {
+			guessIp := fmt.Sprintf("%s%d", prefixHost, lastIp+int(ipSuffix))
+			neighbor := NewNode(guessIp, port)
+			guessTarget := neighbor.IpAndPort()
+			if guessTarget != address && neighbor.IsFound() {
+				neighbor.StartClient()
+				neighbors = append(neighbors, neighbor)
+			}
+		}
+	}
+	return neighbors
 }
 
 func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
@@ -65,55 +103,23 @@ func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (blockchain *Blockchain) UnmarshalJSON(data []byte) error {
-	if err := json.Unmarshal(data, &struct {
-		Blocks *[]*Block `json:"blocks"`
-	}{
-		Blocks: &blockchain.blocks,
-	}); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (blockchain *Blockchain) Print() {
-	for i, block := range blockchain.blocks {
-		fmt.Printf("%s Block  %d %s\n", strings.Repeat("=", 25), i, strings.Repeat("=", 25))
-		block.Print()
-	}
-	fmt.Printf("%s\n", strings.Repeat("*", 60))
-}
-
 func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) bool {
 	isTransacted := blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
 
 	if isTransacted {
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
-		transactionRequest := &TransactionRequest{
-			&senderAddress,
-			&recipientAddress,
-			&publicKeyStr,
-			&value,
-			&signatureStr}
-		marshaledTransactionRequest, err := json.Marshal(transactionRequest)
-		if err != nil {
-			log.Println("ERROR: Failed to marshal transaction request for neighbors")
+		var verb = PUT
+		transactionRequest := TransactionRequest{
+			Verb:             &verb,
+			SenderAddress:    &senderAddress,
+			RecipientAddress: &recipientAddress,
+			SenderPublicKey:  &publicKeyStr,
+			Value:            &value,
+			Signature:        &signatureStr,
 		}
 		for _, neighbor := range blockchain.neighbors {
-			// TODO extract http logic
-			endpoint := fmt.Sprintf("http://%s/transactions", neighbor)
-			client := &http.Client{}
-			buffer := bytes.NewBuffer(marshaledTransactionRequest)
-			request, requestError := http.NewRequest("PUT", endpoint, buffer)
-			if requestError != nil {
-				log.Printf("ERROR: %v", requestError)
-			}
-			response, responseError := client.Do(request)
-			if responseError != nil {
-				log.Printf("ERROR: %v", responseError)
-			}
-			log.Printf("%v\n", response)
+			neighbor.UpdateTransactions(transactionRequest)
 		}
 	}
 
@@ -121,9 +127,7 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 }
 
 func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) (isTransacted bool) {
-	// FIXME nil private key
-	sender := &Wallet{nil, senderPublicKey, senderAddress}
-	transaction := NewTransaction(sender.Address(), sender.PublicKey(), recipientAddress, value)
+	transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
 	return blockchain.addTransaction(transaction, signature)
 }
 
@@ -151,13 +155,7 @@ func (blockchain *Blockchain) Mine() bool {
 	blockchain.mineMutex.Lock()
 	defer blockchain.mineMutex.Unlock()
 
-	// TODO decide if we should get a reward when there is no transaction in the pool
-	//if len(blockchain.transactionPool) == 0 {
-	//	return false
-	//}
-
-	sender := &Wallet{nil, nil, MiningRewardSenderAddress}
-	transaction := NewTransaction(sender.Address(), sender.PublicKey(), blockchain.address, MiningReward)
+	transaction := NewTransaction(MiningRewardSenderAddress, nil, blockchain.address, MiningReward)
 	blockchain.addTransaction(transaction, nil)
 	nonce := blockchain.proofOfWork()
 	previousHash := blockchain.lastBlock().Hash()
@@ -165,32 +163,29 @@ func (blockchain *Blockchain) Mine() bool {
 	log.Println("action=mining, status=success")
 
 	for _, neighbor := range blockchain.neighbors {
-		// TODO extract http logic
-		endpoint := fmt.Sprintf("http://%s/consensus", neighbor)
-		client := &http.Client{}
-		request, requestError := http.NewRequest("PUT", endpoint, nil)
-		if requestError != nil {
-			log.Printf("ERROR: %v", requestError)
-		}
-		response, responseError := client.Do(request)
-		if responseError != nil {
-			log.Printf("ERROR: %v", responseError)
-		}
-		log.Printf("%v\n", response)
+		neighbor.Consensus()
 	}
 
 	return true
 }
 
 func (blockchain *Blockchain) StartMining() {
-	blockchain.Mine()
-	_ = time.AfterFunc(time.Second*MiningTimerSec, blockchain.StartMining)
+	if blockchain.miningStopped {
+		blockchain.miningStopped = false
+	} else {
+		blockchain.Mine()
+		_ = time.AfterFunc(time.Second*MiningTimerSec, blockchain.StartMining)
+	}
+}
+
+func (blockchain *Blockchain) StopMining() {
+	blockchain.miningStopped = true
 }
 
 func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) float32 {
 	var totalAmount float32 = 0.0
 	for _, block := range blockchain.blocks {
-		for _, transaction := range block.transactions {
+		for _, transaction := range block.Transactions() {
 			value := transaction.Value()
 			if blockchainAddress == transaction.RecipientAddress() {
 				totalAmount += value
@@ -213,7 +208,7 @@ func (blockchain *Blockchain) Blocks() []*Block {
 }
 
 func (blockchain *Blockchain) ClearTransactions() {
-	blockchain.transactions = blockchain.transactions[:0]
+	blockchain.transactions = nil
 }
 
 func (blockchain *Blockchain) IsValid(blocks []*Block) bool {
@@ -242,23 +237,10 @@ func (blockchain *Blockchain) ResolveConflicts() bool {
 	maxLength := len(blockchain.blocks)
 
 	for _, neighbor := range blockchain.neighbors {
-		// TODO extract http logic
-		endpoint := fmt.Sprintf("http://%s/chain", neighbor)
-		response, responseError := http.Get(endpoint)
-		if responseError != nil {
-			log.Printf("ERROR: %v", responseError)
-		} else if response.StatusCode == 200 {
-			var neighborBlockchain Blockchain
-			decoder := json.NewDecoder(response.Body)
-			err := decoder.Decode(&neighborBlockchain)
-			if err != nil {
-				log.Printf("ERROR: Failed to decode neighbor blockchain\n%v", responseError)
-			}
-			neighborBlocks := neighborBlockchain.Blocks()
-			if len(neighborBlocks) > maxLength && blockchain.IsValid(neighborBlocks) {
-				maxLength = len(neighborBlocks)
-				longestChain = neighborBlocks
-			}
+		neighborBlocks := neighbor.GetBlocks()
+		if len(neighborBlocks) > maxLength && blockchain.IsValid(neighborBlocks) {
+			maxLength = len(neighborBlocks)
+			longestChain = neighborBlocks
 		}
 	}
 
@@ -276,18 +258,8 @@ func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *Blo
 	blockchain.blocks = append(blockchain.blocks, block)
 	blockchain.ClearTransactions()
 	for _, neighbor := range blockchain.neighbors {
-		// TODO extract http logic
-		endpoint := fmt.Sprintf("http://%s/transactions", neighbor)
-		client := &http.Client{}
-		request, requestError := http.NewRequest("DELETE", endpoint, nil)
-		if requestError != nil {
-			log.Printf("ERROR: %v", requestError)
-		}
-		response, responseError := client.Do(request)
-		if responseError != nil {
-			log.Printf("ERROR: %v", responseError)
-		}
-		log.Printf("%v\n", response)
+		// FIXME don't delete transactions if the block is not validated by peers
+		neighbor.DeleteTransactions()
 	}
 	return block
 }
@@ -310,7 +282,7 @@ func (blockchain *Blockchain) copyTransactions() []*Transaction {
 
 func (blockchain *Blockchain) isProofValid(nonce int, previousHash [32]byte, transactions []*Transaction, difficulty int) bool {
 	zeros := strings.Repeat("0", difficulty)
-	guessBlock := Block{0, nonce, previousHash, transactions}
+	guessBlock := NewBlock(nonce, previousHash, transactions)
 	guessHashStr := fmt.Sprintf("%x", guessBlock.Hash())
 	return guessHashStr[:difficulty] == zeros
 }
