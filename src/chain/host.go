@@ -36,11 +36,11 @@ func NewHost(port uint16) *Host {
 	// TODO change default IP address
 	hostname, err := os.Hostname()
 	if err != nil {
-		hostname = "127.0.0.1"
+		hostname = "192.168.1.55"
 	}
 	ips, err := net.LookupHost(hostname)
 	if err != nil {
-		ips[0] = "127.0.0.1"
+		ips[0] = "192.168.1.55"
 	}
 
 	host := new(Host)
