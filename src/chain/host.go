@@ -8,9 +8,9 @@ import (
 	"errors"
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
+	"io/ioutil"
 	"log"
-	"net"
-	"os"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -19,7 +19,7 @@ var cachedBlockchain = make(map[string]*Blockchain)
 
 const (
 	GetBlocksRequest          = "GET BLOCKS REQUEST"
-	PostIpRequest             = "POST IP REQUEST"
+	PostTargetRequest         = "POST IP REQUEST"
 	GetTransactionsRequest    = "GET TRANSACTIONS REQUEST"
 	DeleteTransactionsRequest = "DELETE TRANSACTIONS REQUEST"
 	MineRequest               = "MINE REQUEST"
@@ -29,30 +29,36 @@ const (
 )
 
 type Host struct {
-	ip string
+	ip   string
+	port uint16
 }
 
-func NewHost() *Host {
-	// TODO change default IP address
-	hostname, err := os.Hostname()
+func NewHost(port uint16) *Host {
+	host := new(Host)
+	ip, err := getPublicIp()
 	if err != nil {
-		hostname = "127.0.0.1"
+		panic(err)
 	}
-	ips, err := net.LookupHost(hostname)
+	host.ip = ip
+	host.port = port
+	return host
+}
+
+func getPublicIp() (ip string, err error) {
+	resp, err := http.Get("https://ifconfig.me")
 	if err != nil {
-		ips[0] = "127.0.0.1"
+		return "", err
 	}
 
-	host := new(Host)
-	// TODO find exported ip
-	for _, ip := range ips {
-		if len(ip) > 10 && ip[:10] == "192.168.1." {
-			host.ip = ip
-			break
-		}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err == nil {
+		ip = string(body)
 	}
-	//host.ip = "127.0.0.1"
-	return host
+	bodyCloseError := resp.Body.Close()
+	if err != nil {
+		log.Printf("ERROR: Failed to close body after getting the public IP, error: %v", bodyCloseError)
+	}
+	return
 }
 
 func (host *Host) GetBlockchain() *Blockchain {
@@ -63,7 +69,7 @@ func (host *Host) GetBlockchain() *Blockchain {
 			panic(fmt.Sprintf("ERROR: Failed to generate private key, err%v\n", err))
 		} else {
 			hostWallet := NewWallet(privateKey)
-			blockchain = NewBlockchain(hostWallet.Address(), host.ip)
+			blockchain = NewBlockchain(hostWallet.Address(), host.ip, host.port)
 			//TODO remove fmt
 			fmt.Println("host address: " + hostWallet.Address())
 			cachedBlockchain["blockchain"] = blockchain
@@ -82,8 +88,8 @@ func (host *Host) GetBlocks() (res p2p.Data, err error) {
 	return
 }
 
-func (host *Host) PostIp(ip string) (res p2p.Data, err error) {
-	host.GetBlockchain().AddIp(ip)
+func (host *Host) PostTarget(ip string, port uint16) (res p2p.Data, err error) {
+	host.GetBlockchain().AddTarget(ip, port)
 
 	res = p2p.Data{}
 	if err = res.SetGob(true); err != nil {
@@ -226,7 +232,7 @@ func (host *Host) Run() {
 }
 
 func (host *Host) startHost() {
-	tcp := p2p.NewTCP(host.ip, strconv.Itoa(int(DefaultPort)))
+	tcp := p2p.NewTCP("127.0.0.1", strconv.Itoa(int(host.port)))
 
 	server, err := p2p.NewServer(tcp)
 	if err != nil {
@@ -305,9 +311,14 @@ func (host *Host) startHost() {
 		var request Request
 		if err = req.GetGob(&request); err == nil {
 			switch *request.Kind {
-			case PostIpRequest:
+			case PostTargetRequest:
 				fields := *request.Fields
-				if res, err = host.PostIp(fields[0]); err != nil {
+				port, parseError := strconv.ParseUint(fields[1], 10, 16)
+				if parseError != nil {
+					log.Println("ERROR: Field port is invalid in TargetRequest")
+					return
+				}
+				if res, err = host.PostTarget(fields[0], uint16(port)); err != nil {
 					log.Println("ERROR: Failed to post IP")
 					return
 				}

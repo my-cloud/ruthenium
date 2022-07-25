@@ -34,6 +34,14 @@ func (node *Node) StartClient() {
 	node.client = client
 }
 
+func (node *Node) Ip() string {
+	return node.ip
+}
+
+func (node *Node) Port() uint16 {
+	return node.port
+}
+
 func (node *Node) Target() string {
 	return net.JoinHostPort(node.ip, strconv.Itoa(int(node.port)))
 }
@@ -66,9 +74,9 @@ func (node *Node) GetBlocks() []*Block {
 	return blocks
 }
 
-func (node *Node) SendIp(ip string) (sent bool) {
-	kind := PostIpRequest
-	fields := []string{ip}
+func (node *Node) SendTarget(ip string, port uint16) (sent bool) {
+	kind := PostTargetRequest
+	fields := []string{ip, strconv.Itoa(int(port))}
 	res, err := node.sendRequest(Request{
 		Kind:   &kind,
 		Fields: &fields,

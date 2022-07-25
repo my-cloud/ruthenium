@@ -31,25 +31,28 @@ type Blockchain struct {
 	mineMutex     sync.Mutex
 	miningStopped bool
 
-	ip string
+	ip   string
+	port uint16
 
-	neighbors          []*Node
-	neighborsMutex     sync.Mutex
-	seeds              []string
-	neighborsAddresses []string
+	neighbors         []*Node
+	neighborsMutex    sync.Mutex
+	neighborsByTarget map[string]*Node
 }
 
-func NewBlockchain(address string, ip string) *Blockchain {
+func NewBlockchain(address string, ip string, port uint16) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.address = address
 	blockchain.ip = ip
+	blockchain.port = port
 	blockchain.createBlock(0, new(Block).Hash())
-	blockchain.seeds = []string{
+	seeds := []string{
 		"89.82.76.241",
 	}
 	// 13FfHz9cqzqJj5QNKXdBp6nCQMcvH3EpRd
-	blockchain.neighborsAddresses = make([]string, len(blockchain.seeds))
-	copy(blockchain.neighborsAddresses, blockchain.seeds)
+	blockchain.neighborsByTarget = map[string]*Node{}
+	for _, seed := range seeds {
+		blockchain.neighborsByTarget[fmt.Sprintf("%s:%d", seed, DefaultPort)] = NewNode(seed, DefaultPort)
+	}
 	return blockchain
 }
 
@@ -71,35 +74,36 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 
 func (blockchain *Blockchain) FindNeighbors() []*Node {
 	neighbors := make([]*Node, 0)
-	for _, neighborAddress := range blockchain.neighborsAddresses {
-		go func(neighborAddress string) {
-			neighborsIps, err := net.LookupIP(neighborAddress)
+	for _, neighbor := range blockchain.neighborsByTarget {
+		go func(neighbor *Node) {
+			neighborsIps, err := net.LookupIP(neighbor.Ip())
 			if err != nil {
-				log.Printf("ERROR: DNS discovery failed on addresse %s: %v", neighborAddress, err)
+				log.Printf("ERROR: DNS discovery failed on addresse %s: %v", neighbor.Ip(), err)
 				return
 			}
 
 			numNeighbors := len(neighborsIps)
-			log.Printf("%d addresses found from DNS addresse %s", numNeighbors, neighborAddress)
-			if numNeighbors == 0 {
+			log.Printf("%d addresses found from DNS addresse %s", numNeighbors, neighbor.Ip())
+			if numNeighbors != 1 {
+				log.Printf("ERROR: DNS discovery did not find a single address (%d addresses found) for the given IP %s", numNeighbors, neighbor.Ip())
 				return
+			} else {
+				log.Printf("One single address found from DNS addresse %s", neighbor.Ip())
 			}
-			for _, neighborIp := range neighborsIps {
-				address := neighborIp.String()
-				if address != blockchain.ip {
-					neighbor := NewNode(address, DefaultPort)
-					neighbors = append(neighbors, neighbor)
-					neighbor.StartClient()
-					neighbor.SendIp(blockchain.ip)
-				}
+			neighborIp := neighborsIps[0]
+			if (neighborIp.String() != blockchain.ip || neighbor.port != blockchain.port) && neighborIp.String() == neighbor.Ip() {
+				neighbors = append(neighbors, neighbor)
+				neighbor.StartClient()
+				neighbor.SendTarget(blockchain.ip, blockchain.port)
 			}
-		}(neighborAddress)
+		}(neighbor)
 	}
 	return neighbors
 }
 
-func (blockchain *Blockchain) AddIp(ip string) {
-	blockchain.neighborsAddresses = append(blockchain.neighborsAddresses, ip)
+func (blockchain *Blockchain) AddTarget(ip string, port uint16) {
+	neighbor := NewNode(ip, port)
+	blockchain.neighborsByTarget[neighbor.Target()] = neighbor
 }
 
 func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
