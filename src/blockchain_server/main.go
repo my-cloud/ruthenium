@@ -12,9 +12,8 @@ func init() {
 }
 
 func main() {
-	port := flag.Uint("port", 5000, "TCP port number for blockchain server")
 	flag.Parse()
-	app := chain.NewHost(uint16(*port))
+	app := chain.NewHost()
 	fmt.Println("Running...")
 	app.Run()
 }

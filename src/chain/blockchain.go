@@ -31,24 +31,25 @@ type Blockchain struct {
 	mineMutex     sync.Mutex
 	miningStopped bool
 
-	ip   string
-	port uint16
+	ip string
 
-	neighbors      []*Node
-	neighborsMutex sync.Mutex
-	seeds          []string
+	neighbors          []*Node
+	neighborsMutex     sync.Mutex
+	seeds              []string
+	neighborsAddresses []string
 }
 
-func NewBlockchain(address string, ip string, port uint16) *Blockchain {
+func NewBlockchain(address string, ip string) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.address = address
 	blockchain.ip = ip
-	blockchain.port = port
 	blockchain.createBlock(0, new(Block).Hash())
 	blockchain.seeds = []string{
 		"89.82.76.241",
 	}
-	// 1ATviRXq6fG6QGBJcPJfJs6sU42SS1qAmM
+	// 13FfHz9cqzqJj5QNKXdBp6nCQMcvH3EpRd
+	blockchain.neighborsAddresses = make([]string, len(blockchain.seeds))
+	copy(blockchain.neighborsAddresses, blockchain.seeds)
 	return blockchain
 }
 
@@ -70,30 +71,35 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 
 func (blockchain *Blockchain) FindNeighbors() []*Node {
 	neighbors := make([]*Node, 0)
-	for _, seed := range blockchain.seeds {
-		go func(seed string) {
-			seedPeers, err := net.LookupIP(seed)
+	for _, neighborAddress := range blockchain.neighborsAddresses {
+		go func(neighborAddress string) {
+			neighborsIps, err := net.LookupIP(neighborAddress)
 			if err != nil {
-				log.Printf("ERROR: DNS discovery failed on seed %s: %v", seed, err)
+				log.Printf("ERROR: DNS discovery failed on addresse %s: %v", neighborAddress, err)
 				return
 			}
 
-			numPeers := len(seedPeers)
-			log.Printf("%d addresses found from DNS seed %s", numPeers, seed)
-			if numPeers == 0 {
+			numNeighbors := len(neighborsIps)
+			log.Printf("%d addresses found from DNS addresse %s", numNeighbors, neighborAddress)
+			if numNeighbors == 0 {
 				return
 			}
-			for _, peer := range seedPeers {
-				address := peer.String()
+			for _, neighborIp := range neighborsIps {
+				address := neighborIp.String()
 				if address != blockchain.ip {
 					neighbor := NewNode(address, DefaultPort)
 					neighbors = append(neighbors, neighbor)
 					neighbor.StartClient()
+					neighbor.SendIp(blockchain.ip)
 				}
 			}
-		}(seed)
+		}(neighborAddress)
 	}
 	return neighbors
+}
+
+func (blockchain *Blockchain) AddIp(ip string) {
+	blockchain.neighborsAddresses = append(blockchain.neighborsAddresses, ip)
 }
 
 func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {

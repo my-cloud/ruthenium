@@ -66,6 +66,22 @@ func (node *Node) GetBlocks() []*Block {
 	return blocks
 }
 
+func (node *Node) SendIp(ip string) (sent bool) {
+	kind := PostIpRequest
+	fields := []string{ip}
+	res, err := node.sendRequest(Request{
+		Kind:   &kind,
+		Fields: &fields,
+	})
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	err = res.GetGob(&sent)
+	return
+}
+
 func (node *Node) DeleteTransactions() (deleted bool) {
 	res, err := node.sendRequest(DeleteTransactionsRequest)
 	if err != nil {

@@ -19,6 +19,7 @@ var cachedBlockchain = make(map[string]*Blockchain)
 
 const (
 	GetBlocksRequest          = "GET BLOCKS REQUEST"
+	PostIpRequest             = "POST IP REQUEST"
 	GetTransactionsRequest    = "GET TRANSACTIONS REQUEST"
 	DeleteTransactionsRequest = "DELETE TRANSACTIONS REQUEST"
 	MineRequest               = "MINE REQUEST"
@@ -28,29 +29,29 @@ const (
 )
 
 type Host struct {
-	port uint16
-	ip   string
+	ip string
 }
 
-func NewHost(port uint16) *Host {
+func NewHost() *Host {
 	// TODO change default IP address
 	hostname, err := os.Hostname()
 	if err != nil {
-		hostname = "192.168.1.55"
+		hostname = "127.0.0.1"
 	}
 	ips, err := net.LookupHost(hostname)
 	if err != nil {
-		ips[0] = "192.168.1.55"
+		ips[0] = "127.0.0.1"
 	}
 
 	host := new(Host)
-	host.port = port
+	// TODO find exported ip
 	for _, ip := range ips {
 		if len(ip) > 10 && ip[:10] == "192.168.1." {
 			host.ip = ip
 			break
 		}
 	}
+	//host.ip = "127.0.0.1"
 	return host
 }
 
@@ -62,7 +63,7 @@ func (host *Host) GetBlockchain() *Blockchain {
 			panic(fmt.Sprintf("ERROR: Failed to generate private key, err%v\n", err))
 		} else {
 			hostWallet := NewWallet(privateKey)
-			blockchain = NewBlockchain(hostWallet.Address(), host.ip, host.port)
+			blockchain = NewBlockchain(hostWallet.Address(), host.ip)
 			//TODO remove fmt
 			fmt.Println("host address: " + hostWallet.Address())
 			cachedBlockchain["blockchain"] = blockchain
@@ -78,6 +79,16 @@ func (host *Host) GetBlocks() (res p2p.Data, err error) {
 		blockResponses = append(blockResponses, block.GetDto())
 	}
 	err = res.SetGob(blockResponses)
+	return
+}
+
+func (host *Host) PostIp(ip string) (res p2p.Data, err error) {
+	host.GetBlockchain().AddIp(ip)
+
+	res = p2p.Data{}
+	if err = res.SetGob(true); err != nil {
+		return
+	}
 	return
 }
 
@@ -215,7 +226,7 @@ func (host *Host) Run() {
 }
 
 func (host *Host) startHost() {
-	tcp := p2p.NewTCP(host.ip, strconv.Itoa(int(host.port)))
+	tcp := p2p.NewTCP(host.ip, strconv.Itoa(int(DefaultPort)))
 
 	server, err := p2p.NewServer(tcp)
 	if err != nil {
@@ -288,6 +299,18 @@ func (host *Host) startHost() {
 			if res, err = host.Amount(&amountRequest); err != nil {
 				log.Println("ERROR: Failed to get amount")
 				return
+			}
+			return
+		}
+		var request Request
+		if err = req.GetGob(&request); err == nil {
+			switch *request.Kind {
+			case PostIpRequest:
+				fields := *request.Fields
+				if res, err = host.PostIp(fields[0]); err != nil {
+					log.Println("ERROR: Failed to post IP")
+					return
+				}
 			}
 			return
 		}
