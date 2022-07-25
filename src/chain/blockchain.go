@@ -83,15 +83,13 @@ func (blockchain *Blockchain) FindNeighbors() []*Node {
 			}
 
 			numNeighbors := len(neighborsIps)
-			log.Printf("%d addresses found from DNS addresse %s", numNeighbors, neighbor.Ip())
 			if numNeighbors != 1 {
 				log.Printf("ERROR: DNS discovery did not find a single address (%d addresses found) for the given IP %s", numNeighbors, neighbor.Ip())
 				return
-			} else {
-				log.Printf("One single address found from DNS addresse %s", neighbor.Ip())
 			}
 			neighborIp := neighborsIps[0]
 			if (neighborIp.String() != blockchain.ip || neighbor.port != blockchain.port) && neighborIp.String() == neighbor.Ip() {
+				log.Printf("Neighbor address found from DNS addresse %s", neighbor.Ip())
 				neighbors = append(neighbors, neighbor)
 				neighbor.StartClient()
 				neighbor.SendTarget(blockchain.ip, blockchain.port)

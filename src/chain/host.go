@@ -313,12 +313,12 @@ func (host *Host) startHost() {
 			switch *request.Kind {
 			case PostTargetRequest:
 				fields := *request.Fields
-				port, parseError := strconv.ParseUint(fields[1], 10, 16)
+				port, parseError := strconv.ParseUint(*fields[1], 10, 16)
 				if parseError != nil {
 					log.Println("ERROR: Field port is invalid in TargetRequest")
 					return
 				}
-				if res, err = host.PostTarget(fields[0], uint16(port)); err != nil {
+				if res, err = host.PostTarget(*fields[0], uint16(port)); err != nil {
 					log.Println("ERROR: Failed to post IP")
 					return
 				}

@@ -76,7 +76,8 @@ func (node *Node) GetBlocks() []*Block {
 
 func (node *Node) SendTarget(ip string, port uint16) (sent bool) {
 	kind := PostTargetRequest
-	fields := []string{ip, strconv.Itoa(int(port))}
+	portString := strconv.Itoa(int(port))
+	fields := []*string{&ip, &portString}
 	res, err := node.sendRequest(Request{
 		Kind:   &kind,
 		Fields: &fields,
