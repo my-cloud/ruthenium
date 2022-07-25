@@ -77,10 +77,10 @@ func (node *Node) GetBlocks() []*Block {
 func (node *Node) SendTarget(ip string, port uint16) (sent bool) {
 	kind := PostTargetRequest
 	portString := strconv.Itoa(int(port))
-	fields := []*string{&ip, &portString}
-	res, err := node.sendRequest(Request{
-		Kind:   &kind,
-		Fields: &fields,
+	res, err := node.sendRequest(TargetRequest{
+		Kind: &kind,
+		Ip:   &ip,
+		Port: &portString,
 	})
 	if err != nil {
 		log.Println(err)
@@ -178,9 +178,6 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 	}
 
 	res = p2p.Data{}
-	// TODO remove useless mutex?
-	node.mutex.Lock()
-	defer node.mutex.Unlock()
 	res, err = node.client.Send("dialog", req)
 	if err != nil {
 		log.Println(err)
