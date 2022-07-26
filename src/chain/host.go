@@ -10,9 +10,7 @@ import (
 	p2p "github.com/leprosus/golang-p2p"
 	"io/ioutil"
 	"log"
-	"net"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 )
@@ -61,28 +59,6 @@ func getPublicIp() (ip string, err error) {
 		log.Printf("ERROR: Failed to close body after getting the public IP, error: %v", bodyCloseError)
 	}
 	return
-}
-
-func getPrivateIp() (hostIp string) {
-	hostIp = "127.0.0.1"
-	hostname, err := os.Hostname()
-	if err != nil {
-		return
-	}
-	ips, err := net.LookupIP(hostname)
-	if err != nil {
-		return
-	}
-
-	for _, ip := range ips {
-		if ip.IsPrivate() {
-			// FIXME there might be several addresses
-			//if len(ip) > 10 && ip[:10] == "192.168.1." {
-			hostIp = ip.String()
-			break
-		}
-	}
-	return hostIp
 }
 
 func (host *Host) GetBlockchain() *Blockchain {
@@ -256,8 +232,7 @@ func (host *Host) Run() {
 }
 
 func (host *Host) startHost() {
-	hostIp := getPrivateIp()
-	tcp := p2p.NewTCP(hostIp, strconv.Itoa(int(host.port)))
+	tcp := p2p.NewTCP("0.0.0.0", strconv.Itoa(int(host.port)))
 
 	server, err := p2p.NewServer(tcp)
 	if err != nil {
