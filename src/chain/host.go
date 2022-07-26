@@ -12,12 +12,14 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 )
 
 var cachedBlockchain = make(map[string]*Blockchain)
 
 const (
 	GetBlocksRequest          = "GET BLOCKS REQUEST"
+	PostTargetRequest         = "POST IP REQUEST"
 	GetTransactionsRequest    = "GET TRANSACTIONS REQUEST"
 	DeleteTransactionsRequest = "DELETE TRANSACTIONS REQUEST"
 	MineRequest               = "MINE REQUEST"
@@ -27,30 +29,56 @@ const (
 )
 
 type Host struct {
-	port uint16
 	ip   string
+	port uint16
 }
 
 func NewHost(port uint16) *Host {
-	// TODO change default IP address
+	host := new(Host)
+	ip := getPrivateIp()
+	host.ip = ip
+	host.port = port
+	return host
+}
+
+//
+//func getPublicIp() (ip string, err error) {
+//	resp, err := http.Get("https://ifconfig.me")
+//	if err != nil {
+//		return "", err
+//	}
+//
+//	body, err := ioutil.ReadAll(resp.Body)
+//	if err == nil {
+//		ip = string(body)
+//	}
+//	bodyCloseError := resp.Body.Close()
+//	if err != nil {
+//		log.Printf("ERROR: Failed to close body after getting the public IP, error: %v", bodyCloseError)
+//	}
+//	return
+//}
+
+func getPrivateIp() (hostIp string) {
+	hostIp = "127.0.0.1"
 	hostname, err := os.Hostname()
 	if err != nil {
-		hostname = "127.0.0.1"
+		return
 	}
-	ips, err := net.LookupHost(hostname)
+	ips, err := net.LookupIP(hostname)
 	if err != nil {
-		ips[0] = "127.0.0.1"
+		return
 	}
 
-	host := new(Host)
-	host.port = port
 	for _, ip := range ips {
-		if len(ip) > 10 && ip[:10] == "192.168.1." {
-			host.ip = ip
+		if ip.IsPrivate() {
+			// FIXME there might be several addresses
+			//if len(ip) > 10 && ip[:10] == "192.168.1." {
+			hostIp = ip.String()
 			break
 		}
 	}
-	return host
+	return hostIp
 }
 
 func (host *Host) GetBlockchain() *Blockchain {
@@ -77,6 +105,16 @@ func (host *Host) GetBlocks() (res p2p.Data, err error) {
 		blockResponses = append(blockResponses, block.GetDto())
 	}
 	err = res.SetGob(blockResponses)
+	return
+}
+
+func (host *Host) PostTarget(ip string, port uint16) (res p2p.Data, err error) {
+	host.GetBlockchain().AddTarget(ip, port)
+
+	res = p2p.Data{}
+	if err = res.SetGob(true); err != nil {
+		return
+	}
 	return
 }
 
@@ -214,12 +252,17 @@ func (host *Host) Run() {
 }
 
 func (host *Host) startHost() {
-	tcp := p2p.NewTCP(host.ip, strconv.Itoa(int(host.port)))
+	hostIp := getPrivateIp()
+	tcp := p2p.NewTCP(hostIp, strconv.Itoa(int(host.port)))
 
 	server, err := p2p.NewServer(tcp)
 	if err != nil {
 		log.Panicln(err)
 	}
+
+	settings := p2p.NewServerSettings()
+	settings.SetConnTimeout(HostConnectionTimeoutSecond * time.Second)
+	server.SetSettings(settings)
 
 	server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
 		var requestString string
@@ -283,6 +326,22 @@ func (host *Host) startHost() {
 			if res, err = host.Amount(&amountRequest); err != nil {
 				log.Println("ERROR: Failed to get amount")
 				return
+			}
+			return
+		}
+		var request TargetRequest
+		if err = req.GetGob(&request); err == nil {
+			switch *request.Kind {
+			case PostTargetRequest:
+				port, parseError := strconv.ParseUint(*request.Port, 10, 16)
+				if parseError != nil {
+					log.Println("ERROR: Field port is invalid in TargetRequest")
+					return
+				}
+				if res, err = host.PostTarget(*request.Ip, uint16(port)); err != nil {
+					log.Println("ERROR: Failed to post IP")
+					return
+				}
 			}
 			return
 		}
