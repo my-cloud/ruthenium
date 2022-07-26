@@ -8,8 +8,10 @@ import (
 	"errors"
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
+	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -35,29 +37,31 @@ type Host struct {
 
 func NewHost(port uint16) *Host {
 	host := new(Host)
-	ip := getPrivateIp()
+	ip, err := getPublicIp()
+	if err != nil {
+		panic(err)
+	}
 	host.ip = ip
 	host.port = port
 	return host
 }
 
-//
-//func getPublicIp() (ip string, err error) {
-//	resp, err := http.Get("https://ifconfig.me")
-//	if err != nil {
-//		return "", err
-//	}
-//
-//	body, err := ioutil.ReadAll(resp.Body)
-//	if err == nil {
-//		ip = string(body)
-//	}
-//	bodyCloseError := resp.Body.Close()
-//	if err != nil {
-//		log.Printf("ERROR: Failed to close body after getting the public IP, error: %v", bodyCloseError)
-//	}
-//	return
-//}
+func getPublicIp() (ip string, err error) {
+	resp, err := http.Get("https://ifconfig.me")
+	if err != nil {
+		return "", err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err == nil {
+		ip = string(body)
+	}
+	bodyCloseError := resp.Body.Close()
+	if err != nil {
+		log.Printf("ERROR: Failed to close body after getting the public IP, error: %v", bodyCloseError)
+	}
+	return
+}
 
 func getPrivateIp() (hostIp string) {
 	hostIp = "127.0.0.1"
