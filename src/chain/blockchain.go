@@ -5,28 +5,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"regexp"
-	"strconv"
+	"net"
 	"strings"
 	"sync"
 	"time"
 )
 
 const (
+	DefaultPort = 8106
+
 	MiningDifficulty          = 3
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
 	MiningReward              = 1.0
 	MiningTimerSec            = 1
 
-	StartPort     uint16 = 5000
-	EndPort       uint16 = 5001
-	StartIpSuffix uint8  = 0
-	EndIpSuffix   uint8  = 0
-
-	NeighborSynchronizationTimeSecond = 5
+	NeighborSynchronizationTimeSecond  = 5
+	HostConnectionTimeoutSecond        = 10
+	NeighborClientFindingTimeoutSecond = 1
 )
-
-var PATTERN = regexp.MustCompile(`((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?\.){3})(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`)
 
 type Blockchain struct {
 	transactions  []*Transaction
@@ -38,8 +34,9 @@ type Blockchain struct {
 	ip   string
 	port uint16
 
-	neighbors      []*Node
-	neighborsMutex sync.Mutex
+	neighbors         []*Node
+	neighborsMutex    sync.Mutex
+	neighborsByTarget map[string]*Node
 }
 
 func NewBlockchain(address string, ip string, port uint16) *Blockchain {
@@ -48,6 +45,14 @@ func NewBlockchain(address string, ip string, port uint16) *Blockchain {
 	blockchain.ip = ip
 	blockchain.port = port
 	blockchain.createBlock(0, new(Block).Hash())
+	seeds := []string{
+		//"89.82.76.241",
+		"192.168.1.90",
+	}
+	blockchain.neighborsByTarget = map[string]*Node{}
+	for _, seed := range seeds {
+		blockchain.neighborsByTarget[fmt.Sprintf("%s:%d", seed, DefaultPort)] = NewNode(seed, DefaultPort)
+	}
 	return blockchain
 }
 
@@ -59,7 +64,7 @@ func (blockchain *Blockchain) Run() {
 func (blockchain *Blockchain) SynchronizeNeighbors() {
 	blockchain.neighborsMutex.Lock()
 	defer blockchain.neighborsMutex.Unlock()
-	blockchain.neighbors = blockchain.FindNeighbors()
+	blockchain.FindNeighbors()
 }
 
 func (blockchain *Blockchain) StartNeighborsSynchronization() {
@@ -67,32 +72,35 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 	_ = time.AfterFunc(time.Second*NeighborSynchronizationTimeSecond, blockchain.StartNeighborsSynchronization)
 }
 
-func (blockchain *Blockchain) FindNeighbors() []*Node {
-	address := fmt.Sprintf("%s:%d", blockchain.ip, blockchain.port)
-
-	m := PATTERN.FindStringSubmatch(blockchain.ip)
-	if m == nil {
-		return nil
-	}
-	prefixHost := m[1]
-	lastIp, err := strconv.Atoi(m[len(m)-1])
-	if err != nil {
-		fmt.Printf("ERROR: Failed to parse IP %s, err:%v\n", m[len(m)-1], err)
-	}
-	neighbors := make([]*Node, 0)
-
-	for port := StartPort; port <= EndPort; port += 1 {
-		for ipSuffix := StartIpSuffix; ipSuffix <= EndIpSuffix; ipSuffix += 1 {
-			guessIp := fmt.Sprintf("%s%d", prefixHost, lastIp+int(ipSuffix))
-			neighbor := NewNode(guessIp, port)
-			guessTarget := neighbor.IpAndPort()
-			if guessTarget != address && neighbor.IsFound() {
-				neighbor.StartClient()
-				neighbors = append(neighbors, neighbor)
+func (blockchain *Blockchain) FindNeighbors() {
+	for _, neighbor := range blockchain.neighborsByTarget {
+		go func(neighbor *Node) {
+			neighborsIps, err := net.LookupIP(neighbor.Ip())
+			if err != nil {
+				log.Printf("ERROR: DNS discovery failed on addresse %s: %v", neighbor.Ip(), err)
+				return
 			}
-		}
+
+			numNeighbors := len(neighborsIps)
+			if numNeighbors != 1 {
+				log.Printf("ERROR: DNS discovery did not find a single address (%d addresses found) for the given IP %s", numNeighbors, neighbor.Ip())
+				return
+			}
+			neighborIp := neighborsIps[0]
+			blockchain.neighbors = nil
+			if (neighborIp.String() != blockchain.ip || neighbor.port != blockchain.port) && neighborIp.String() == neighbor.Ip() && neighbor.IsFound() {
+				log.Printf("Neighbor address found from DNS addresse %s", neighbor.Ip())
+				blockchain.neighbors = append(blockchain.neighbors, neighbor)
+				neighbor.StartClient()
+				neighbor.SendTarget(blockchain.ip, blockchain.port)
+			}
+		}(neighbor)
 	}
-	return neighbors
+}
+
+func (blockchain *Blockchain) AddTarget(ip string, port uint16) {
+	neighbor := NewNode(ip, port)
+	blockchain.neighborsByTarget[neighbor.Target()] = neighbor
 }
 
 func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
@@ -246,6 +254,7 @@ func (blockchain *Blockchain) ResolveConflicts() bool {
 
 	if longestChain != nil {
 		blockchain.blocks = longestChain
+		// TODO clear transactions pool here
 		log.Println("Conflicts resolved: blockchain replaced")
 		return true
 	}

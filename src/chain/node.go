@@ -34,13 +34,21 @@ func (node *Node) StartClient() {
 	node.client = client
 }
 
-func (node *Node) IpAndPort() string {
-	return fmt.Sprintf("%s:%d", node.ip, node.port)
+func (node *Node) Ip() string {
+	return node.ip
+}
+
+func (node *Node) Port() uint16 {
+	return node.port
+}
+
+func (node *Node) Target() string {
+	return net.JoinHostPort(node.ip, strconv.Itoa(int(node.port)))
 }
 
 func (node *Node) IsFound() bool {
 	target := fmt.Sprintf("%s:%d", node.ip, node.port)
-	_, err := net.DialTimeout("tcp", target, time.Second)
+	_, err := net.DialTimeout("tcp", target, NeighborClientFindingTimeoutSecond*time.Second)
 	return err == nil
 }
 
@@ -64,6 +72,23 @@ func (node *Node) GetBlocks() []*Block {
 	}
 
 	return blocks
+}
+
+func (node *Node) SendTarget(ip string, port uint16) (sent bool) {
+	kind := PostTargetRequest
+	portString := strconv.Itoa(int(port))
+	res, err := node.sendRequest(TargetRequest{
+		Kind: &kind,
+		Ip:   &ip,
+		Port: &portString,
+	})
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	err = res.GetGob(&sent)
+	return
 }
 
 func (node *Node) DeleteTransactions() (deleted bool) {
@@ -153,9 +178,6 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 	}
 
 	res = p2p.Data{}
-	// TODO remove useless mutex?
-	node.mutex.Lock()
-	defer node.mutex.Unlock()
 	res, err = node.client.Send("dialog", req)
 	if err != nil {
 		log.Println(err)
