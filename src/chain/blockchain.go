@@ -46,9 +46,9 @@ func NewBlockchain(address string, ip string, port uint16) *Blockchain {
 	blockchain.port = port
 	blockchain.createBlock(0, new(Block).Hash())
 	seeds := []string{
-		"89.82.76.241",
+		//"89.82.76.241",
+		"192.168.1.90",
 	}
-	// 13FfHz9cqzqJj5QNKXdBp6nCQMcvH3EpRd
 	blockchain.neighborsByTarget = map[string]*Node{}
 	for _, seed := range seeds {
 		blockchain.neighborsByTarget[fmt.Sprintf("%s:%d", seed, DefaultPort)] = NewNode(seed, DefaultPort)
@@ -64,7 +64,7 @@ func (blockchain *Blockchain) Run() {
 func (blockchain *Blockchain) SynchronizeNeighbors() {
 	blockchain.neighborsMutex.Lock()
 	defer blockchain.neighborsMutex.Unlock()
-	blockchain.neighbors = blockchain.FindNeighbors()
+	blockchain.FindNeighbors()
 }
 
 func (blockchain *Blockchain) StartNeighborsSynchronization() {
@@ -72,8 +72,7 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 	_ = time.AfterFunc(time.Second*NeighborSynchronizationTimeSecond, blockchain.StartNeighborsSynchronization)
 }
 
-func (blockchain *Blockchain) FindNeighbors() []*Node {
-	neighbors := make([]*Node, 0)
+func (blockchain *Blockchain) FindNeighbors() {
 	for _, neighbor := range blockchain.neighborsByTarget {
 		go func(neighbor *Node) {
 			neighborsIps, err := net.LookupIP(neighbor.Ip())
@@ -88,15 +87,15 @@ func (blockchain *Blockchain) FindNeighbors() []*Node {
 				return
 			}
 			neighborIp := neighborsIps[0]
-			if (neighborIp.String() != blockchain.ip || neighbor.port != blockchain.port) && neighborIp.String() == neighbor.Ip() {
+			blockchain.neighbors = nil
+			if (neighborIp.String() != blockchain.ip || neighbor.port != blockchain.port) && neighborIp.String() == neighbor.Ip() && neighbor.IsFound() {
 				log.Printf("Neighbor address found from DNS addresse %s", neighbor.Ip())
-				neighbors = append(neighbors, neighbor)
+				blockchain.neighbors = append(blockchain.neighbors, neighbor)
 				neighbor.StartClient()
 				neighbor.SendTarget(blockchain.ip, blockchain.port)
 			}
 		}(neighbor)
 	}
-	return neighbors
 }
 
 func (blockchain *Blockchain) AddTarget(ip string, port uint16) {
