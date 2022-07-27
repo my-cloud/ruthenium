@@ -5,5 +5,5 @@ type AmountRequest struct {
 }
 
 func (amountRequest *AmountRequest) IsInvalid() bool {
-	return amountRequest.Address == nil
+	return amountRequest.Address == nil || len(*amountRequest.Address) == 0
 }

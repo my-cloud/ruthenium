@@ -77,14 +77,8 @@ func (node *Node) GetBlocks() []*Block {
 	return blocks
 }
 
-func (node *Node) SendTarget(ip string, port uint16) (sent bool) {
-	kind := PostTargetRequest
-	portString := strconv.Itoa(int(port))
-	res, err := node.sendRequest(TargetRequest{
-		Kind: &kind,
-		Ip:   &ip,
-		Port: &portString,
-	})
+func (node *Node) SendTarget(request TargetRequest) (sent bool) {
+	res, err := node.sendRequest(request)
 	if err != nil {
 		node.logger.Error(err.Error())
 		return false

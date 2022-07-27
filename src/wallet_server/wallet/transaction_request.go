@@ -9,9 +9,9 @@ type TransactionRequest struct {
 }
 
 func (transactionRequest *TransactionRequest) IsInvalid() bool {
-	return transactionRequest.SenderPrivateKey == nil ||
-		transactionRequest.SenderAddress == nil ||
-		transactionRequest.RecipientAddress == nil ||
-		transactionRequest.SenderPublicKey == nil ||
-		transactionRequest.Value == nil
+	return transactionRequest.SenderPrivateKey == nil || len(*transactionRequest.SenderPrivateKey) == 0 ||
+		transactionRequest.SenderAddress == nil || len(*transactionRequest.SenderAddress) == 0 ||
+		transactionRequest.RecipientAddress == nil || len(*transactionRequest.RecipientAddress) == 0 ||
+		transactionRequest.SenderPublicKey == nil || len(*transactionRequest.SenderPublicKey) == 0 ||
+		transactionRequest.Value == nil || len(*transactionRequest.Value) == 0
 }
