@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	DefaultPort = 8106
+	DefaultPort = 8107
 
 	MiningDifficulty          = 3
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
@@ -49,7 +49,7 @@ func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *
 	blockchain.logger = logger
 	blockchain.createBlock(0, new(Block).Hash())
 	seeds := []string{
-		"89.82.76.241",
+		"89.82.76.241", // 16QHwteYnNs5i9TB79Nh6FZ2w2fCauwgv4
 	}
 	blockchain.neighborsByTarget = map[string]*Node{}
 	for _, seed := range seeds {
@@ -90,10 +90,16 @@ func (blockchain *Blockchain) FindNeighbors() {
 			}
 			neighborIp := neighborsIps[0]
 			blockchain.neighbors = nil
-			if (neighborIp.String() != blockchain.ip || neighbor.port != blockchain.port) && neighborIp.String() == neighbor.Ip() && neighbor.IsFound() {
+			if (neighborIp.String() != blockchain.ip || neighbor.Port() != blockchain.port) && neighborIp.String() == neighbor.Ip() && neighbor.IsFound() {
 				neighbor.StartClient()
 				blockchain.neighbors = append(blockchain.neighbors, neighbor)
-				neighbor.SendTarget(blockchain.ip, blockchain.port)
+				kind := PostTargetRequest
+				request := TargetRequest{
+					Kind: &kind,
+					Ip:   &blockchain.ip,
+					Port: &blockchain.port,
+				}
+				neighbor.SendTarget(request)
 			}
 		}(neighbor)
 	}
