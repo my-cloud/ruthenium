@@ -194,6 +194,7 @@ func (walletServer *WalletServer) WalletAmount(writer http.ResponseWriter, req *
 		if amountRequest.IsInvalid() {
 			walletServer.logger.Error("ERROR: Field(s) are missing in amount request to wallet server")
 			jsonWriter.WriteStatus("fail")
+			return
 		}
 
 		amount := walletServer.blockchainClient.GetAmount(amountRequest)

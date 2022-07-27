@@ -90,8 +90,14 @@ func (host *Host) GetBlocks() (res p2p.Data, err error) {
 	return
 }
 
-func (host *Host) PostTarget(ip string, port uint16) (res p2p.Data, err error) {
-	host.GetBlockchain().AddTarget(ip, port)
+func (host *Host) PostTarget(request *TargetRequest) (res p2p.Data, err error) {
+	if request.IsInvalid() {
+		host.logger.Error("ERROR: Field(s) are missing in transaction request")
+		err = errors.New("fail")
+		return
+	}
+
+	host.GetBlockchain().AddTarget(*request.Ip, *request.Port)
 
 	res = p2p.Data{}
 	if err = res.SetGob(true); err != nil {
@@ -203,9 +209,9 @@ func (host *Host) StopMining() (res p2p.Data, err error) {
 }
 
 func (host *Host) Amount(request *AmountRequest) (res p2p.Data, err error) {
+	// TODO remove check
 	if request.IsInvalid() {
 		host.logger.Error("ERROR: Field(s) are missing in amount request")
-		err = errors.New("fail")
 		return
 	}
 	blockchainAddress := *request.Address
@@ -311,17 +317,12 @@ func (host *Host) startHost() {
 				}
 				return
 			}
-			var request TargetRequest
-			if err = req.GetGob(&request); err == nil {
-				switch *request.Kind {
+			var targetRequest TargetRequest
+			if err = req.GetGob(&targetRequest); err == nil {
+				switch *targetRequest.Kind {
 				case PostTargetRequest:
-					port, parseError := strconv.ParseUint(*request.Port, 10, 16)
-					if parseError != nil {
-						host.logger.Error("ERROR: Field port is invalid in TargetRequest")
-						return
-					}
-					if res, err = host.PostTarget(*request.Ip, uint16(port)); err != nil {
-						host.logger.Error("ERROR: Failed to post IP")
+					if res, err = host.PostTarget(&targetRequest); err != nil {
+						host.logger.Error("ERROR: Failed to post peer target (IP and port)")
 						return
 					}
 				}
