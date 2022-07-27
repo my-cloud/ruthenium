@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	DefaultPort = 8107
+	DefaultPort = 8106
 
 	MiningDifficulty          = 3
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
@@ -49,7 +49,7 @@ func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *
 	blockchain.logger = logger
 	blockchain.createBlock(0, new(Block).Hash())
 	seeds := []string{
-		"89.82.76.241", // 16QHwteYnNs5i9TB79Nh6FZ2w2fCauwgv4
+		"89.82.76.241",
 	}
 	blockchain.neighborsByTarget = map[string]*Node{}
 	for _, seed := range seeds {
