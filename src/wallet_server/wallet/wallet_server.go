@@ -187,9 +187,15 @@ func (walletServer *WalletServer) WalletAmount(writer http.ResponseWriter, req *
 		amountRequest := chain.AmountRequest{
 			Address: &address,
 		}
-		amount := walletServer.blockchainClient.GetAmount(amountRequest)
 
 		jsonWriter := rest.NewJsonWriter(writer)
+		if amountRequest.IsInvalid() {
+			log.Println("ERROR: Field(s) are missing in amount request to wallet server")
+			jsonWriter.WriteStatus("fail")
+		}
+
+		amount := walletServer.blockchainClient.GetAmount(amountRequest)
+
 		writer.Header().Add("Content-Type", "application/json")
 		if amount != nil {
 			marshaledAmount, err := json.Marshal(struct {
