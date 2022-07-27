@@ -3,8 +3,8 @@ package chain
 import (
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
-	"log"
 	"net"
+	"ruthenium/src/log"
 	"strconv"
 	"sync"
 	"time"
@@ -15,12 +15,14 @@ type Node struct {
 	port   uint16
 	client *p2p.Client
 	mutex  sync.Mutex
+	logger *log.Logger
 }
 
-func NewNode(ip string, port uint16) *Node {
+func NewNode(ip string, port uint16, logger *log.Logger) *Node {
 	node := new(Node)
 	node.ip = ip
 	node.port = port
+	node.logger = logger
 	return node
 }
 
@@ -28,10 +30,11 @@ func (node *Node) StartClient() {
 	tcp := p2p.NewTCP(node.ip, strconv.Itoa(int(node.port)))
 	client, err := p2p.NewClient(tcp)
 	if err != nil {
-		log.Println(err)
+		node.logger.Error(err.Error())
+	} else {
+		client.SetLogger(node.logger)
+		node.client = client
 	}
-
-	node.client = client
 }
 
 func (node *Node) Ip() string {
@@ -55,14 +58,14 @@ func (node *Node) IsFound() bool {
 func (node *Node) GetBlocks() []*Block {
 	res, err := node.sendRequest(GetBlocksRequest)
 	if err != nil {
-		log.Println(err)
+		node.logger.Error(err.Error())
 		return nil
 	}
 
 	var blockResponses []*BlockResponse
 	err = res.GetGob(&blockResponses)
 	if err != nil {
-		log.Println(err)
+		node.logger.Error(err.Error())
 		return nil
 	}
 
@@ -83,7 +86,7 @@ func (node *Node) SendTarget(ip string, port uint16) (sent bool) {
 		Port: &portString,
 	})
 	if err != nil {
-		log.Println(err)
+		node.logger.Error(err.Error())
 		return false
 	}
 
@@ -94,7 +97,7 @@ func (node *Node) SendTarget(ip string, port uint16) (sent bool) {
 func (node *Node) DeleteTransactions() (deleted bool) {
 	res, err := node.sendRequest(DeleteTransactionsRequest)
 	if err != nil {
-		log.Println(err)
+		node.logger.Error(err.Error())
 		return false
 	}
 
@@ -105,7 +108,7 @@ func (node *Node) DeleteTransactions() (deleted bool) {
 func (node *Node) Consensus() (consented bool) {
 	res, err := node.sendRequest(ConsensusRequest)
 	if err != nil {
-		log.Println(err)
+		node.logger.Error(err.Error())
 		return false
 	}
 
@@ -116,7 +119,7 @@ func (node *Node) Consensus() (consented bool) {
 func (node *Node) UpdateTransactions(request TransactionRequest) (created bool) {
 	res, err := node.sendRequest(request)
 	if err != nil {
-		log.Println(err)
+		node.logger.Error(err.Error())
 		return false
 	}
 
@@ -124,22 +127,21 @@ func (node *Node) UpdateTransactions(request TransactionRequest) (created bool) 
 	return
 }
 
-func (node *Node) GetAmount(request AmountRequest) *AmountResponse {
+func (node *Node) GetAmount(request AmountRequest) (amountResponse *AmountResponse) {
 	res, err := node.sendRequest(request)
 	if err != nil {
-		log.Println(err)
+		node.logger.Error(err.Error())
 		return nil
 	}
 
-	var amount *AmountResponse
-	err = res.GetGob(&amount)
-	return amount
+	err = res.GetGob(&amountResponse)
+	return
 }
 
 func (node *Node) Mine() (mined bool) {
 	res, err := node.sendRequest(MineRequest)
 	if err != nil {
-		log.Println(err)
+		node.logger.Error(err.Error())
 		return false
 	}
 
@@ -150,7 +152,7 @@ func (node *Node) Mine() (mined bool) {
 func (node *Node) StartMining() (miningStarted bool) {
 	res, err := node.sendRequest(StartMiningRequest)
 	if err != nil {
-		log.Println(err)
+		node.logger.Error(err.Error())
 		return false
 	}
 
@@ -161,7 +163,7 @@ func (node *Node) StartMining() (miningStarted bool) {
 func (node *Node) StopMining() (miningStopped bool) {
 	res, err := node.sendRequest(StopMiningRequest)
 	if err != nil {
-		log.Println(err)
+		node.logger.Error(err.Error())
 		return false
 	}
 
@@ -173,14 +175,14 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 	req := p2p.Data{}
 	err = req.SetGob(request)
 	if err != nil {
-		log.Println(err)
+		node.logger.Error(err.Error())
 		return
 	}
 
 	res = p2p.Data{}
 	res, err = node.client.Send("dialog", req)
 	if err != nil {
-		log.Println(err)
+		node.logger.Error(err.Error())
 		return
 	}
 
