@@ -89,8 +89,8 @@ func (blockchain *Blockchain) FindNeighbors() {
 			blockchain.neighbors = nil
 			if (neighborIp.String() != blockchain.ip || neighbor.port != blockchain.port) && neighborIp.String() == neighbor.Ip() && neighbor.IsFound() {
 				log.Printf("Neighbor address found from DNS addresse %s", neighbor.Ip())
-				blockchain.neighbors = append(blockchain.neighbors, neighbor)
 				neighbor.StartClient()
+				blockchain.neighbors = append(blockchain.neighbors, neighbor)
 				neighbor.SendTarget(blockchain.ip, blockchain.port)
 			}
 		}(neighbor)
