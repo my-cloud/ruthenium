@@ -88,17 +88,6 @@ func (node *Node) SendTarget(request TargetRequest) (sent bool) {
 	return
 }
 
-func (node *Node) DeleteTransactions() (deleted bool) {
-	res, err := node.sendRequest(DeleteTransactionsRequest)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
-	}
-
-	err = res.GetGob(&deleted)
-	return
-}
-
 func (node *Node) Consensus() (consented bool) {
 	res, err := node.sendRequest(ConsensusRequest)
 	if err != nil {

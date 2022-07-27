@@ -18,14 +18,13 @@ import (
 var cachedBlockchain = make(map[string]*Blockchain)
 
 const (
-	GetBlocksRequest          = "GET BLOCKS REQUEST"
-	PostTargetRequest         = "POST IP REQUEST"
-	GetTransactionsRequest    = "GET TRANSACTIONS REQUEST"
-	DeleteTransactionsRequest = "DELETE TRANSACTIONS REQUEST"
-	MineRequest               = "MINE REQUEST"
-	StartMiningRequest        = "START MINING REQUEST"
-	StopMiningRequest         = "STOP MINING REQUEST"
-	ConsensusRequest          = "CONSENSUS REQUEST"
+	GetBlocksRequest       = "GET BLOCKS REQUEST"
+	PostTargetRequest      = "POST IP REQUEST"
+	GetTransactionsRequest = "GET TRANSACTIONS REQUEST"
+	MineRequest            = "MINE REQUEST"
+	StartMiningRequest     = "START MINING REQUEST"
+	StopMiningRequest      = "STOP MINING REQUEST"
+	ConsensusRequest       = "CONSENSUS REQUEST"
 )
 
 type Host struct {
@@ -163,16 +162,6 @@ func (host *Host) PutTransactions(request *TransactionRequest) (res p2p.Data, er
 	return
 }
 
-func (host *Host) DeleteTransactions() (res p2p.Data, err error) {
-	blockchain := host.GetBlockchain()
-	blockchain.ClearTransactions()
-	res = p2p.Data{}
-	if err = res.SetGob(true); err != nil {
-		return
-	}
-	return
-}
-
 func (host *Host) Mine() (res p2p.Data, err error) {
 	blockchain := host.GetBlockchain()
 	isMined := blockchain.Mine()
@@ -264,11 +253,6 @@ func (host *Host) startHost() {
 				case GetTransactionsRequest:
 					if res, err = host.GetTransactions(); err != nil {
 						host.logger.Error("ERROR: Failed to get transactions")
-						return
-					}
-				case DeleteTransactionsRequest:
-					if res, err = host.DeleteTransactions(); err != nil {
-						host.logger.Error("ERROR: Failed to delete transactions")
 						return
 					}
 				case MineRequest:

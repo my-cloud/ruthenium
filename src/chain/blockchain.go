@@ -260,11 +260,11 @@ func (blockchain *Blockchain) ResolveConflicts() bool {
 
 	if longestChain != nil {
 		blockchain.blocks = longestChain
-		// TODO clear transactions pool here
-		blockchain.logger.Error("Conflicts resolved: blockchain replaced")
+		blockchain.ClearTransactions()
+		blockchain.logger.Info("Conflicts resolved: blockchain replaced")
 		return true
 	}
-	blockchain.logger.Error("Conflicts resolved: blockchain kept")
+	blockchain.logger.Info("Conflicts resolved: blockchain kept")
 	return false
 }
 
@@ -272,10 +272,6 @@ func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *Blo
 	block := NewBlock(nonce, previousHash, blockchain.transactions)
 	blockchain.blocks = append(blockchain.blocks, block)
 	blockchain.ClearTransactions()
-	for _, neighbor := range blockchain.neighbors {
-		// FIXME don't delete transactions if the block is not validated by peers
-		neighbor.DeleteTransactions()
-	}
 	return block
 }
 
