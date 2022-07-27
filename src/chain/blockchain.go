@@ -30,6 +30,7 @@ type Blockchain struct {
 	blocks        []*Block
 	address       string
 	mineMutex     sync.Mutex
+	miningStarted bool
 	miningStopped bool
 
 	ip     string
@@ -184,15 +185,22 @@ func (blockchain *Blockchain) Mine() bool {
 }
 
 func (blockchain *Blockchain) StartMining() {
-	if blockchain.miningStopped {
+	if !blockchain.miningStarted {
+		blockchain.miningStarted = true
 		blockchain.miningStopped = false
-	} else {
+		blockchain.mining()
+	}
+}
+
+func (blockchain *Blockchain) mining() {
+	if !blockchain.miningStopped {
 		blockchain.Mine()
-		_ = time.AfterFunc(time.Second*MiningTimerSec, blockchain.StartMining)
+		_ = time.AfterFunc(time.Second*MiningTimerSec, blockchain.mining)
 	}
 }
 
 func (blockchain *Blockchain) StopMining() {
+	blockchain.miningStarted = false
 	blockchain.miningStopped = true
 }
 
