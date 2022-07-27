@@ -104,10 +104,6 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 		}
 		value32 := float32(value)
 
-		fmt.Println(publicKey)
-		fmt.Println(privateKey)
-		fmt.Printf("%.1f\n", value32)
-
 		writer.Header().Add("Content-type", "application/json")
 
 		transaction := chain.NewTransaction(*transactionRequest.SenderAddress, publicKey, *transactionRequest.RecipientAddress, value32)
