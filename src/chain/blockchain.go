@@ -4,8 +4,8 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
+	"ruthenium/src/log"
 	"strings"
 	"sync"
 	"time"
@@ -21,6 +21,7 @@ const (
 
 	NeighborSynchronizationTimeSecond  = 5
 	HostConnectionTimeoutSecond        = 10
+	HostHandleTimeoutSecond            = 1
 	NeighborClientFindingTimeoutSecond = 1
 )
 
@@ -31,27 +32,28 @@ type Blockchain struct {
 	mineMutex     sync.Mutex
 	miningStopped bool
 
-	ip   string
-	port uint16
+	ip     string
+	port   uint16
+	logger *log.Logger
 
 	neighbors         []*Node
 	neighborsMutex    sync.Mutex
 	neighborsByTarget map[string]*Node
 }
 
-func NewBlockchain(address string, ip string, port uint16) *Blockchain {
+func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.address = address
 	blockchain.ip = ip
 	blockchain.port = port
+	blockchain.logger = logger
 	blockchain.createBlock(0, new(Block).Hash())
 	seeds := []string{
-		//"89.82.76.241",
-		"192.168.1.90",
+		"89.82.76.241",
 	}
 	blockchain.neighborsByTarget = map[string]*Node{}
 	for _, seed := range seeds {
-		blockchain.neighborsByTarget[fmt.Sprintf("%s:%d", seed, DefaultPort)] = NewNode(seed, DefaultPort)
+		blockchain.neighborsByTarget[fmt.Sprintf("%s:%d", seed, DefaultPort)] = NewNode(seed, DefaultPort, logger)
 	}
 	return blockchain
 }
@@ -77,21 +79,20 @@ func (blockchain *Blockchain) FindNeighbors() {
 		go func(neighbor *Node) {
 			neighborsIps, err := net.LookupIP(neighbor.Ip())
 			if err != nil {
-				log.Printf("ERROR: DNS discovery failed on addresse %s: %v", neighbor.Ip(), err)
+				blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery failed on addresse %s: %v", neighbor.Ip(), err))
 				return
 			}
 
 			numNeighbors := len(neighborsIps)
 			if numNeighbors != 1 {
-				log.Printf("ERROR: DNS discovery did not find a single address (%d addresses found) for the given IP %s", numNeighbors, neighbor.Ip())
+				blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery did not find a single address (%d addresses found) for the given IP %s", numNeighbors, neighbor.Ip()))
 				return
 			}
 			neighborIp := neighborsIps[0]
 			blockchain.neighbors = nil
 			if (neighborIp.String() != blockchain.ip || neighbor.port != blockchain.port) && neighborIp.String() == neighbor.Ip() && neighbor.IsFound() {
-				log.Printf("Neighbor address found from DNS addresse %s", neighbor.Ip())
-				blockchain.neighbors = append(blockchain.neighbors, neighbor)
 				neighbor.StartClient()
+				blockchain.neighbors = append(blockchain.neighbors, neighbor)
 				neighbor.SendTarget(blockchain.ip, blockchain.port)
 			}
 		}(neighbor)
@@ -99,7 +100,7 @@ func (blockchain *Blockchain) FindNeighbors() {
 }
 
 func (blockchain *Blockchain) AddTarget(ip string, port uint16) {
-	neighbor := NewNode(ip, port)
+	neighbor := NewNode(ip, port, blockchain.logger)
 	blockchain.neighborsByTarget[neighbor.Target()] = neighbor
 }
 
@@ -147,13 +148,13 @@ func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature
 
 	if transaction.VerifySignature(signature) {
 		if blockchain.CalculateTotalAmount(transaction.SenderAddress()) < transaction.Value() {
-			log.Println("ERROR: Not enough balance in a wallet")
+			blockchain.logger.Error("ERROR: Not enough balance in a wallet")
 			return false
 		}
 		blockchain.transactions = append(blockchain.transactions, transaction)
 		return true
 	} else {
-		log.Println("ERROR: Failed to verify transaction")
+		blockchain.logger.Error("ERROR: Failed to verify transaction")
 	}
 	return false
 
@@ -168,7 +169,6 @@ func (blockchain *Blockchain) Mine() bool {
 	nonce := blockchain.proofOfWork()
 	previousHash := blockchain.lastBlock().Hash()
 	blockchain.createBlock(nonce, previousHash)
-	log.Println("action=mining, status=success")
 
 	for _, neighbor := range blockchain.neighbors {
 		neighbor.Consensus()
@@ -255,10 +255,10 @@ func (blockchain *Blockchain) ResolveConflicts() bool {
 	if longestChain != nil {
 		blockchain.blocks = longestChain
 		// TODO clear transactions pool here
-		log.Println("Conflicts resolved: blockchain replaced")
+		blockchain.logger.Error("Conflicts resolved: blockchain replaced")
 		return true
 	}
-	log.Println("Conflicts resolved: blockchain kept")
+	blockchain.logger.Error("Conflicts resolved: blockchain kept")
 	return false
 }
 
