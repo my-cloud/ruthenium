@@ -16,8 +16,8 @@ const (
 
 	MiningDifficulty          = 3
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
-	MiningReward              = 1.0
-	MiningTimerSec            = 1
+	MiningReward              = 10.0
+	MiningTimerSec            = 20
 
 	NeighborSynchronizationTimeSecond  = 5
 	HostConnectionTimeoutSecond        = 10
