@@ -145,23 +145,18 @@ func (node *Node) StopMining() (miningStopped bool) {
 func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 	req := p2p.Data{}
 	err = req.SetGob(request)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return
-	}
+	if err == nil {
+		tcp := p2p.NewTCP(node.ip, strconv.Itoa(int(node.port)))
+		client, err := p2p.NewClient(tcp)
+		if err == nil {
+			client.SetLogger(node.logger)
+			client.SetLogger(node.logger)
+			settings := p2p.NewClientSettings()
+			settings.SetRetry(1, p2p.DefaultDelayTimeout)
+			client.SetSettings(settings)
 
-	tcp := p2p.NewTCP(node.ip, strconv.Itoa(int(node.port)))
-	client, err := p2p.NewClient(tcp)
-	if err != nil {
-		node.logger.Error(err.Error())
-	} else {
-		client.SetLogger(node.logger)
-
-		res = p2p.Data{}
-		res, err = client.Send("dialog", req)
-		if err != nil {
-			node.logger.Error(err.Error())
-			return
+			res = p2p.Data{}
+			res, err = client.Send("dialog", req)
 		}
 	}
 

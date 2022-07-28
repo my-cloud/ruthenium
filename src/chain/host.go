@@ -91,8 +91,7 @@ func (host *Host) GetBlocks() (res p2p.Data, err error) {
 
 func (host *Host) PostTarget(request *TargetRequest) (res p2p.Data, err error) {
 	if request.IsInvalid() {
-		host.logger.Error("ERROR: Field(s) are missing in transaction request")
-		err = errors.New("fail")
+		err = errors.New("field(s) are missing in transaction request")
 		return
 	}
 
@@ -120,8 +119,7 @@ func (host *Host) GetTransactions() (res p2p.Data, err error) {
 
 func (host *Host) PostTransactions(request *TransactionRequest) (res p2p.Data, err error) {
 	if request.IsInvalid() {
-		host.logger.Error("ERROR: Field(s) are missing in transaction request")
-		err = errors.New("fail")
+		err = errors.New("field(s) are missing in transaction request")
 		return
 	}
 	publicKey := NewPublicKey(*request.SenderPublicKey)
@@ -142,8 +140,7 @@ func (host *Host) PostTransactions(request *TransactionRequest) (res p2p.Data, e
 
 func (host *Host) PutTransactions(request *TransactionRequest) (res p2p.Data, err error) {
 	if request.IsInvalid() {
-		host.logger.Error("ERROR: Field(s) are missing in transaction request")
-		err = errors.New("fail")
+		err = errors.New("field(s) are missing in transaction request")
 		return
 	}
 	publicKey := NewPublicKey(*request.SenderPublicKey)
@@ -198,9 +195,8 @@ func (host *Host) StopMining() (res p2p.Data, err error) {
 }
 
 func (host *Host) Amount(request *AmountRequest) (res p2p.Data, err error) {
-	// TODO remove check
 	if request.IsInvalid() {
-		host.logger.Error("ERROR: Field(s) are missing in amount request")
+		err = errors.New("field(s) are missing in amount request")
 		return
 	}
 	blockchainAddress := *request.Address
@@ -238,7 +234,6 @@ func (host *Host) startHost() {
 		server.SetLogger(host.logger)
 		settings := p2p.NewServerSettings()
 		settings.SetConnTimeout(HostConnectionTimeoutSecond * time.Second)
-		settings.SetHandleTimeout(HostHandleTimeoutSecond * time.Second)
 		server.SetSettings(settings)
 
 		server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
@@ -247,32 +242,32 @@ func (host *Host) startHost() {
 				switch requestString {
 				case GetBlocksRequest:
 					if res, err = host.GetBlocks(); err != nil {
-						host.logger.Error("ERROR: Failed to get blocks")
+						host.logger.Error(fmt.Sprintf("ERROR: Failed to get blocks, error: %v", err))
 						return
 					}
 				case GetTransactionsRequest:
 					if res, err = host.GetTransactions(); err != nil {
-						host.logger.Error("ERROR: Failed to get transactions")
+						host.logger.Error(fmt.Sprintf("ERROR: Failed to get transactions, error: %v", err))
 						return
 					}
 				case MineRequest:
 					if res, err = host.Mine(); err != nil {
-						host.logger.Error("ERROR: Failed to mine")
+						host.logger.Error(fmt.Sprintf("ERROR: Failed to mine, error: %v", err))
 						return
 					}
 				case StartMiningRequest:
 					if res, err = host.StartMining(); err != nil {
-						host.logger.Error("ERROR: Failed to start mining")
+						host.logger.Error(fmt.Sprintf("ERROR: Failed to start mining, error: %v", err))
 						return
 					}
 				case StopMiningRequest:
 					if res, err = host.StopMining(); err != nil {
-						host.logger.Error("ERROR: Failed to stop mining")
+						host.logger.Error(fmt.Sprintf("ERROR: Failed to stop mining, error: %v", err))
 						return
 					}
 				case ConsensusRequest:
 					if res, err = host.Consensus(); err != nil {
-						host.logger.Error("ERROR: Failed to get consensus")
+						host.logger.Error(fmt.Sprintf("ERROR: Failed to get consensus, error: %v", err))
 						return
 					}
 				}
@@ -282,12 +277,12 @@ func (host *Host) startHost() {
 			if err = req.GetGob(&transactionRequest); err == nil {
 				if *transactionRequest.Verb == POST {
 					if res, err = host.PostTransactions(&transactionRequest); err != nil {
-						host.logger.Error("ERROR: Failed to post transactions")
+						host.logger.Error(fmt.Sprintf("ERROR: Failed to post transactions, error: %v", err))
 						return
 					}
 				} else if *transactionRequest.Verb == PUT {
 					if res, err = host.PutTransactions(&transactionRequest); err != nil {
-						host.logger.Error("ERROR: Failed to put transactions")
+						host.logger.Error(fmt.Sprintf("ERROR: Failed to put transactions, error: %v", err))
 						return
 					}
 				}
@@ -296,7 +291,7 @@ func (host *Host) startHost() {
 			var amountRequest AmountRequest
 			if err = req.GetGob(&amountRequest); err == nil {
 				if res, err = host.Amount(&amountRequest); err != nil {
-					host.logger.Error("ERROR: Failed to get amount")
+					host.logger.Error(fmt.Sprintf("ERROR: Failed to get amount, error: %v", err))
 					return
 				}
 				return
@@ -306,7 +301,7 @@ func (host *Host) startHost() {
 				switch *targetRequest.Kind {
 				case PostTargetRequest:
 					if res, err = host.PostTarget(&targetRequest); err != nil {
-						host.logger.Error("ERROR: Failed to post peer target (IP and port)")
+						host.logger.Error(fmt.Sprintf("ERROR: Failed to post peer target (IP and port), error: %v", err))
 						return
 					}
 				}

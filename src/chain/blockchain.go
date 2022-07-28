@@ -21,7 +21,6 @@ const (
 
 	NeighborSynchronizationTimeSecond  = 5
 	HostConnectionTimeoutSecond        = 10
-	HostHandleTimeoutSecond            = 1
 	NeighborClientFindingTimeoutSecond = 1
 )
 
@@ -134,7 +133,7 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 			Signature:        &signatureStr,
 		}
 		for _, neighbor := range blockchain.neighbors {
-			neighbor.UpdateTransactions(transactionRequest)
+			go neighbor.UpdateTransactions(transactionRequest)
 		}
 	}
 
@@ -177,7 +176,7 @@ func (blockchain *Blockchain) Mine() bool {
 	blockchain.createBlock(nonce, previousHash)
 
 	for _, neighbor := range blockchain.neighbors {
-		neighbor.Consensus()
+		go neighbor.Consensus()
 	}
 
 	return true
