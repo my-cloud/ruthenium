@@ -234,6 +234,7 @@ func (host *Host) startHost() {
 		server.SetLogger(host.logger)
 		settings := p2p.NewServerSettings()
 		settings.SetConnTimeout(HostConnectionTimeoutSecond * time.Second)
+		settings.SetHandleTimeout(HostHandleTimeoutSecond * time.Second)
 		server.SetSettings(settings)
 
 		server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {

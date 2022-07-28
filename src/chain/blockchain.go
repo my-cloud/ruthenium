@@ -21,6 +21,7 @@ const (
 
 	NeighborSynchronizationTimeSecond  = 5
 	HostConnectionTimeoutSecond        = 10
+	HostHandleTimeoutSecond            = 1
 	NeighborClientFindingTimeoutSecond = 1
 )
 
