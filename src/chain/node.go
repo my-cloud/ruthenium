@@ -13,7 +13,6 @@ import (
 type Node struct {
 	ip     string
 	port   uint16
-	client *p2p.Client
 	mutex  sync.Mutex
 	logger *log.Logger
 }
@@ -24,17 +23,6 @@ func NewNode(ip string, port uint16, logger *log.Logger) *Node {
 	node.port = port
 	node.logger = logger
 	return node
-}
-
-func (node *Node) StartClient() {
-	tcp := p2p.NewTCP(node.ip, strconv.Itoa(int(node.port)))
-	client, err := p2p.NewClient(tcp)
-	if err != nil {
-		node.logger.Error(err.Error())
-	} else {
-		client.SetLogger(node.logger)
-		node.client = client
-	}
 }
 
 func (node *Node) Ip() string {
@@ -162,11 +150,23 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 		return
 	}
 
-	res = p2p.Data{}
-	res, err = node.client.Send("dialog", req)
+	tcp := p2p.NewTCP(node.ip, strconv.Itoa(int(node.port)))
+	client, err := p2p.NewClient(tcp)
 	if err != nil {
 		node.logger.Error(err.Error())
-		return
+	} else {
+		client.SetLogger(node.logger)
+		settings := p2p.NewClientSettings()
+		settings.SetConnTimeout(HostConnectionTimeoutSecond * time.Second)
+		settings.SetRetry(100, HostHandleTimeoutSecond*time.Second)
+		client.SetSettings(settings)
+
+		res = p2p.Data{}
+		res, err = client.Send("dialog", req)
+		if err != nil {
+			node.logger.Error(err.Error())
+			return
+		}
 	}
 
 	return

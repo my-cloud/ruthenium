@@ -27,10 +27,8 @@ type WalletServer struct {
 func NewWalletServer(port uint16, hostIp string, hostPort uint16, level log.Level) *WalletServer {
 	logger := log.NewLogger(level)
 	blockchainClient := chain.NewNode(hostIp, hostPort, logger)
-	if blockchainClient.IsFound() {
-		blockchainClient.StartClient()
-	} else {
-		panic("Unable to find blockchain client")
+	if !blockchainClient.IsFound() {
+		logger.Fatal("Unable to find blockchain client")
 	}
 	return &WalletServer{port, blockchainClient, logger}
 }

@@ -92,7 +92,6 @@ func (blockchain *Blockchain) FindNeighbors() {
 			neighborIp := neighborsIps[0]
 			blockchain.neighbors = nil
 			if (neighborIp.String() != blockchain.ip || neighbor.Port() != blockchain.port) && neighborIp.String() == neighbor.Ip() && neighbor.IsFound() {
-				neighbor.StartClient()
 				blockchain.neighbors = append(blockchain.neighbors, neighbor)
 				kind := PostTargetRequest
 				request := TargetRequest{
@@ -155,7 +154,7 @@ func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature
 
 	if transaction.VerifySignature(signature) {
 		if blockchain.CalculateTotalAmount(transaction.SenderAddress()) < transaction.Value() {
-			blockchain.logger.Error("ERROR: Not enough balance in a wallet")
+			blockchain.logger.Error("ERROR: Not enough balance in the sender wallet")
 			return false
 		}
 		blockchain.transactions = append(blockchain.transactions, transaction)
