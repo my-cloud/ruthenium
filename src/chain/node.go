@@ -156,10 +156,6 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 		node.logger.Error(err.Error())
 	} else {
 		client.SetLogger(node.logger)
-		settings := p2p.NewClientSettings()
-		settings.SetConnTimeout(HostConnectionTimeoutSecond * time.Second)
-		settings.SetRetry(100, HostHandleTimeoutSecond*time.Second)
-		client.SetSettings(settings)
 
 		res = p2p.Data{}
 		res, err = client.Send("dialog", req)
