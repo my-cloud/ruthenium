@@ -37,6 +37,7 @@ type Blockchain struct {
 
 	neighbors         []*Node
 	neighborsMutex    sync.Mutex
+	transactionMutex  sync.Mutex
 	neighborsByTarget map[string]*Node
 }
 
@@ -75,31 +76,29 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 func (blockchain *Blockchain) FindNeighbors() {
 	blockchain.neighbors = nil
 	for _, neighbor := range blockchain.neighborsByTarget {
-		go func(neighbor *Node) {
-			neighborsIps, err := net.LookupIP(neighbor.Ip())
-			if err != nil {
-				blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery failed on addresse %s: %v", neighbor.Ip(), err))
-				return
-			}
+		neighborsIps, err := net.LookupIP(neighbor.Ip())
+		if err != nil {
+			blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery failed on addresse %s: %v", neighbor.Ip(), err))
+			return
+		}
 
-			numNeighbors := len(neighborsIps)
-			if numNeighbors != 1 {
-				blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery did not find a single address (%d addresses found) for the given IP %s", numNeighbors, neighbor.Ip()))
-				return
+		numNeighbors := len(neighborsIps)
+		if numNeighbors != 1 {
+			blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery did not find a single address (%d addresses found) for the given IP %s", numNeighbors, neighbor.Ip()))
+			return
+		}
+		neighborIp := neighborsIps[0]
+		if (neighborIp.String() != blockchain.ip || neighbor.Port() != blockchain.port) && neighborIp.String() == neighbor.Ip() && neighbor.IsFound() {
+			blockchain.neighbors = append(blockchain.neighbors, neighbor)
+			kind := PostTargetRequest
+			request := TargetRequest{
+				Kind: &kind,
+				Ip:   &blockchain.ip,
+				Port: &blockchain.port,
 			}
-			neighborIp := neighborsIps[0]
-			if (neighborIp.String() != blockchain.ip || neighbor.Port() != blockchain.port) && neighborIp.String() == neighbor.Ip() && neighbor.IsFound() {
-				blockchain.neighbors = append(blockchain.neighbors, neighbor)
-				kind := PostTargetRequest
-				request := TargetRequest{
-					Kind: &kind,
-					Ip:   &blockchain.ip,
-					Port: &blockchain.port,
-				}
-				neighbor.SendTarget(request)
-				blockchain.ResolveConflicts()
-			}
-		}(neighbor)
+			go neighbor.SendTarget(request)
+			blockchain.ResolveConflicts()
+		}
 	}
 }
 
@@ -145,6 +144,8 @@ func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientA
 }
 
 func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature *Signature) bool {
+	blockchain.transactionMutex.Lock()
+	defer blockchain.transactionMutex.Unlock()
 	if transaction.SenderAddress() == MiningRewardSenderAddress {
 		blockchain.transactions = append(blockchain.transactions, transaction)
 		return true
@@ -227,6 +228,8 @@ func (blockchain *Blockchain) Blocks() []*Block {
 }
 
 func (blockchain *Blockchain) ClearTransactions() {
+	blockchain.transactionMutex.Lock()
+	defer blockchain.transactionMutex.Unlock()
 	blockchain.transactions = nil
 }
 
@@ -251,26 +254,28 @@ func (blockchain *Blockchain) IsValid(blocks []*Block) bool {
 	return true
 }
 
-func (blockchain *Blockchain) ResolveConflicts() bool {
+func (blockchain *Blockchain) ResolveConflicts() {
 	var longestChain []*Block
 	maxLength := len(blockchain.blocks)
 
-	for _, neighbor := range blockchain.neighbors {
-		neighborBlocks := neighbor.GetBlocks()
-		if len(neighborBlocks) > maxLength && blockchain.IsValid(neighborBlocks) {
-			maxLength = len(neighborBlocks)
-			longestChain = neighborBlocks
+	go func(neighbors []*Node) {
+		blockchain.transactionMutex.Lock()
+		defer blockchain.transactionMutex.Unlock()
+		for _, neighbor := range blockchain.neighbors {
+			neighborBlocks := neighbor.GetBlocks()
+			if len(neighborBlocks) > maxLength && blockchain.IsValid(neighborBlocks) {
+				maxLength = len(neighborBlocks)
+				longestChain = neighborBlocks
+			}
 		}
-	}
 
-	if longestChain != nil {
-		blockchain.blocks = longestChain
-		blockchain.ClearTransactions()
-		blockchain.logger.Info("Conflicts resolved: blockchain replaced")
-		return true
-	}
-	blockchain.logger.Info("Conflicts resolved: blockchain kept")
-	return false
+		if longestChain != nil {
+			blockchain.blocks = longestChain
+			blockchain.ClearTransactions()
+			blockchain.logger.Info("Conflicts resolved: blockchain replaced")
+		}
+		blockchain.logger.Info("Conflicts resolved: blockchain kept")
+	}(blockchain.neighbors)
 }
 
 func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *Block {

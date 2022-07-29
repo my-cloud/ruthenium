@@ -210,9 +210,10 @@ func (host *Host) Amount(request *AmountRequest) (res p2p.Data, err error) {
 
 func (host *Host) Consensus() (res p2p.Data, err error) {
 	blockchain := host.GetBlockchain()
-	isSelfBlockchainReplacedByNeighborsOne := blockchain.ResolveConflicts()
+	blockchain.ResolveConflicts()
 	res = p2p.Data{}
-	if err = res.SetGob(isSelfBlockchainReplacedByNeighborsOne); err != nil {
+	// TODO try not sending response
+	if err = res.SetGob(true); err != nil {
 		return
 	}
 	return
