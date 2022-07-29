@@ -62,6 +62,7 @@ func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *
 
 func (blockchain *Blockchain) Run() {
 	blockchain.StartNeighborsSynchronization()
+	blockchain.ResolveConflicts()
 }
 
 func (blockchain *Blockchain) SynchronizeNeighbors() {
@@ -103,7 +104,6 @@ func (blockchain *Blockchain) FindNeighbors() {
 			}
 		}
 		blockchain.neighbors = neighbors
-		blockchain.ResolveConflicts()
 	}(blockchain.neighborsByTarget)
 }
 
