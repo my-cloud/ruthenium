@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	DefaultPort = 8106
+	DefaultPort = 8107
 
 	MiningDifficulty          = 3
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
@@ -237,6 +237,7 @@ func (blockchain *Blockchain) clearTransactions() {
 
 func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBlocks []*Block) {
 	previousBlock := NewBlockFromDto(blocks[0])
+	validBlocks = append(validBlocks, previousBlock)
 	currentIndex := 1
 	for currentIndex < len(blocks) {
 		currentBlock := blocks[currentIndex]
@@ -267,7 +268,7 @@ func (blockchain *Blockchain) ResolveConflicts() {
 			neighborBlocks, err := neighbor.GetBlocks()
 			if err == nil && len(neighborBlocks) > maxLength {
 				validBlocks := blockchain.GetValidBlocks(neighborBlocks)
-				if validBlocks != nil {
+				if len(validBlocks) > 1 {
 					maxLength = len(neighborBlocks)
 					longestChainResponse = neighborBlocks
 					longestChain = validBlocks
