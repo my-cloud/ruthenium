@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"errors"
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
 	"io/ioutil"
@@ -57,7 +56,7 @@ func (host *Host) getPublicIp() (ip string, err error) {
 	}
 	bodyCloseError := resp.Body.Close()
 	if err != nil {
-		host.logger.Error(fmt.Sprintf("ERROR: Failed to close body after getting the public IP, error: %v", bodyCloseError))
+		host.logger.Error(fmt.Sprintf("ERROR: Failed to close body after getting the public IP\n%v", bodyCloseError))
 	}
 	return
 }
@@ -67,7 +66,7 @@ func (host *Host) GetBlockchain() *Blockchain {
 	if !ok {
 		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
-			panic(fmt.Sprintf("ERROR: Failed to generate private key, err%v\n", err))
+			host.logger.Fatal(fmt.Sprintf("ERROR: Failed to generate private key\n%v", err))
 		} else {
 			hostWallet := NewWallet(privateKey)
 			blockchain = NewBlockchain(hostWallet.Address(), host.ip, host.port, host.logger)
@@ -79,29 +78,26 @@ func (host *Host) GetBlockchain() *Blockchain {
 	return blockchain
 }
 
-func (host *Host) GetBlocks() (res p2p.Data, err error) {
-	res = p2p.Data{}
+func (host *Host) GetBlocks() (res p2p.Data) {
 	var blockResponses []*BlockResponse
-	for _, block := range host.GetBlockchain().Blocks() {
+	blockchain := host.GetBlockchain()
+	for _, block := range blockchain.Blocks() {
 		blockResponses = append(blockResponses, block.GetDto())
 	}
-	err = res.SetGob(blockResponses)
+	err := res.SetGob(blockResponses)
+	if err != nil {
+		host.logger.Error(fmt.Sprintf("ERROR: Failed to get blocks\n%v", err))
+	}
 	return
 }
 
-func (host *Host) PostTarget(request *TargetRequest) (res p2p.Data, err error) {
+func (host *Host) PostTarget(request *TargetRequest) {
 	if request.IsInvalid() {
-		err = errors.New("field(s) are missing in transaction request")
-		return
+		host.logger.Error("ERROR: Field(s) are missing in target request")
+	} else {
+		blockchain := host.GetBlockchain()
+		blockchain.AddTarget(*request.Ip, *request.Port)
 	}
-
-	host.GetBlockchain().AddTarget(*request.Ip, *request.Port)
-
-	res = p2p.Data{}
-	if err = res.SetGob(true); err != nil {
-		return
-	}
-	return
 }
 
 // TODO unused
@@ -117,93 +113,60 @@ func (host *Host) GetTransactions() (res p2p.Data, err error) {
 	return
 }
 
-func (host *Host) PostTransactions(request *TransactionRequest) (res p2p.Data, err error) {
+func (host *Host) PostTransactions(request *TransactionRequest) {
 	if request.IsInvalid() {
-		err = errors.New("field(s) are missing in transaction request")
-		return
+		host.logger.Error("ERROR: Field(s) are missing in transaction request")
+	} else {
+		publicKey := NewPublicKey(*request.SenderPublicKey)
+		signature := DecodeSignature(*request.Signature)
+		blockchain := host.GetBlockchain()
+		blockchain.CreateTransaction(*request.SenderAddress, *request.RecipientAddress, publicKey, *request.Value, signature)
 	}
-	publicKey := NewPublicKey(*request.SenderPublicKey)
-	signature := DecodeSignature(*request.Signature)
-	blockchain := host.GetBlockchain()
-	err = blockchain.CreateTransaction(*request.SenderAddress, *request.RecipientAddress, publicKey, *request.Value, signature)
-
-	if err == nil {
-		res = p2p.Data{}
-		if err = res.SetGob(true); err != nil {
-			return
-		}
-	}
-	return
 }
 
-func (host *Host) PutTransactions(request *TransactionRequest) (res p2p.Data, err error) {
+func (host *Host) PutTransactions(request *TransactionRequest) {
 	if request.IsInvalid() {
-		err = errors.New("field(s) are missing in transaction request")
-		return
+		host.logger.Error("ERROR: Field(s) are missing in transaction request")
+	} else {
+		publicKey := NewPublicKey(*request.SenderPublicKey)
+		signature := DecodeSignature(*request.Signature)
+		blockchain := host.GetBlockchain()
+		blockchain.UpdateTransaction(*request.SenderAddress, *request.RecipientAddress, publicKey, *request.Value, signature)
 	}
-	publicKey := NewPublicKey(*request.SenderPublicKey)
-	signature := DecodeSignature(*request.Signature)
-	blockchain := host.GetBlockchain()
-	err = blockchain.UpdateTransaction(*request.SenderAddress, *request.RecipientAddress, publicKey, *request.Value, signature)
-
-	if err == nil {
-		res = p2p.Data{}
-		if err = res.SetGob(true); err != nil {
-			return
-		}
-	}
-	return
 }
 
 func (host *Host) Mine() {
 	blockchain := host.GetBlockchain()
-	go blockchain.Mine()
+	blockchain.Mine()
 }
 
-func (host *Host) StartMining() (res p2p.Data, err error) {
+func (host *Host) StartMining() {
 	blockchain := host.GetBlockchain()
 	blockchain.StartMining()
-	res = p2p.Data{}
-	if err = res.SetGob(true); err != nil {
-		return
-	}
-	return
 }
 
-func (host *Host) StopMining() (res p2p.Data, err error) {
+func (host *Host) StopMining() {
 	blockchain := host.GetBlockchain()
 	blockchain.StopMining()
-	res = p2p.Data{}
-	if err = res.SetGob(true); err != nil {
-		return
-	}
-	return
 }
 
-func (host *Host) Amount(request *AmountRequest) (res p2p.Data, err error) {
+func (host *Host) Amount(request *AmountRequest) (res p2p.Data) {
 	if request.IsInvalid() {
-		err = errors.New("field(s) are missing in amount request")
-		return
-	}
-	blockchainAddress := *request.Address
-	amount := host.GetBlockchain().CalculateTotalAmount(blockchainAddress)
-	amountResponse := &AmountResponse{amount}
-	res = p2p.Data{}
-	if err = res.SetGob(amountResponse); err != nil {
-		return
+		host.logger.Error("ERROR: Field(s) are missing in amount request")
+	} else {
+		blockchainAddress := *request.Address
+		amount := host.GetBlockchain().CalculateTotalAmount(blockchainAddress)
+		amountResponse := &AmountResponse{amount}
+		if err := res.SetGob(amountResponse); err != nil {
+			host.logger.Error(fmt.Sprintf("ERROR: Failed to get amount\n%v", err))
+		}
 	}
 	return
 }
 
-func (host *Host) Consensus() (res p2p.Data, err error) {
+func (host *Host) Consensus() {
 	blockchain := host.GetBlockchain()
 	blockchain.ResolveConflicts()
-	res = p2p.Data{}
-	// TODO try not sending response
-	if err = res.SetGob(true); err != nil {
-		return
-	}
-	return
 }
 
 func (host *Host) Run() {
@@ -224,13 +187,15 @@ func (host *Host) startHost() {
 		server.SetSettings(settings)
 
 		server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
+			var unknownRequest bool
 			var requestString string
+			var transactionRequest TransactionRequest
+			var amountRequest AmountRequest
+			var targetRequest TargetRequest
 			if err = req.GetGob(&requestString); err == nil {
 				switch requestString {
 				case GetBlocksRequest:
-					if res, err = host.GetBlocks(); err != nil {
-						host.logger.Error(fmt.Sprintf("ERROR: Failed to get blocks, error: %v", err))
-					}
+					host.GetBlocks()
 				case GetTransactionsRequest:
 					if res, err = host.GetTransactions(); err != nil {
 						host.logger.Error(fmt.Sprintf("ERROR: Failed to get transactions, error: %v", err))
@@ -238,54 +203,36 @@ func (host *Host) startHost() {
 				case MineRequest:
 					host.Mine()
 				case StartMiningRequest:
-					if res, err = host.StartMining(); err != nil {
-						host.logger.Error(fmt.Sprintf("ERROR: Failed to start mining, error: %v", err))
-					}
+					host.StartMining()
 				case StopMiningRequest:
-					if res, err = host.StopMining(); err != nil {
-						host.logger.Error(fmt.Sprintf("ERROR: Failed to stop mining, error: %v", err))
-					}
+					host.StopMining()
 				case ConsensusRequest:
-					if res, err = host.Consensus(); err != nil {
-						host.logger.Error(fmt.Sprintf("ERROR: Failed to get consensus, error: %v", err))
-					}
+					host.Consensus()
 				default:
-					host.logger.Error("ERROR: Unknown request")
+					unknownRequest = true
 				}
-				return
-			}
-			var transactionRequest TransactionRequest
-			if err = req.GetGob(&transactionRequest); err == nil {
+			} else if err = req.GetGob(&transactionRequest); err == nil {
 				if *transactionRequest.Verb == POST {
-					if res, err = host.PostTransactions(&transactionRequest); err != nil {
-						host.logger.Error(fmt.Sprintf("ERROR: Failed to post transactions, error: %v", err))
-					}
+					host.PostTransactions(&transactionRequest)
 				} else if *transactionRequest.Verb == PUT {
-					if res, err = host.PutTransactions(&transactionRequest); err != nil {
-						host.logger.Error(fmt.Sprintf("ERROR: Failed to put transactions, error: %v", err))
-					}
+					host.PutTransactions(&transactionRequest)
 				}
-				return
-			}
-			var amountRequest AmountRequest
-			if err = req.GetGob(&amountRequest); err == nil {
-				if res, err = host.Amount(&amountRequest); err != nil {
-					host.logger.Error(fmt.Sprintf("ERROR: Failed to get amount, error: %v", err))
-				}
-				return
-			}
-			var targetRequest TargetRequest
-			if err = req.GetGob(&targetRequest); err == nil {
+			} else if err = req.GetGob(&amountRequest); err == nil {
+				res = host.Amount(&amountRequest)
+			} else if err = req.GetGob(&targetRequest); err == nil {
 				switch *targetRequest.Kind {
 				case PostTargetRequest:
-					if res, err = host.PostTarget(&targetRequest); err != nil {
-						host.logger.Error(fmt.Sprintf("ERROR: Failed to post peer target (IP and port), error: %v", err))
-					}
+					host.PostTarget(&targetRequest)
+				default:
+					unknownRequest = true
 				}
-				return
+			} else {
+				unknownRequest = true
 			}
 
-			host.logger.Error("ERROR: Unknown request")
+			if unknownRequest {
+				host.logger.Error("ERROR: Unknown request")
+			}
 			return
 		})
 

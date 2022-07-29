@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	DefaultPort = 8106
+	DefaultPort = 8107
 
 	MiningDifficulty          = 3
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
@@ -119,10 +119,9 @@ func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) (err error) {
-	err = blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
-
-	if err == nil {
+func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
+	go func() {
+		blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
 		var verb = PUT
@@ -137,14 +136,15 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 		for _, neighbor := range blockchain.neighbors {
 			go neighbor.UpdateTransactions(transactionRequest)
 		}
-	}
-
-	return err
+	}()
 }
 
-func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) (err error) {
+func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
 	transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
-	return blockchain.addTransaction(transaction, signature)
+	err := blockchain.addTransaction(transaction, signature)
+	if err != nil {
+		blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to add transaction\n%v", err))
+	}
 }
 
 func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature *Signature) (err error) {
@@ -163,22 +163,22 @@ func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature
 }
 
 func (blockchain *Blockchain) Mine() {
-	blockchain.mineMutex.Lock()
-	defer blockchain.mineMutex.Unlock()
+	go func() {
+		blockchain.mineMutex.Lock()
+		defer blockchain.mineMutex.Unlock()
 
-	transaction := NewTransaction(MiningRewardSenderAddress, nil, blockchain.address, MiningReward)
-	if err := blockchain.addTransaction(transaction, nil); err != nil {
-		blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to mine, error: %v", err))
-	}
-	nonce := blockchain.proofOfWork()
-	previousHash := blockchain.lastBlock().Hash()
-	blockchain.createBlock(nonce, previousHash)
+		transaction := NewTransaction(MiningRewardSenderAddress, nil, blockchain.address, MiningReward)
+		if err := blockchain.addTransaction(transaction, nil); err != nil {
+			blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to mine, error: %v", err))
+		}
+		nonce := blockchain.proofOfWork()
+		previousHash := blockchain.lastBlock().Hash()
+		blockchain.createBlock(nonce, previousHash)
 
-	for _, neighbor := range blockchain.neighbors {
-		go neighbor.Consensus()
-	}
-
-	return
+		for _, neighbor := range blockchain.neighbors {
+			go neighbor.Consensus()
+		}
+	}()
 }
 
 func (blockchain *Blockchain) StartMining() {
@@ -267,7 +267,7 @@ func (blockchain *Blockchain) ResolveConflicts() {
 		if longestChain != nil {
 			blockchain.blocks = longestChain
 			blockchain.clearTransactions()
-			blockchain.logger.Warn("Conflicts resolved: blockchain replaced")
+			blockchain.logger.Info("Conflicts resolved: blockchain replaced")
 		}
 		blockchain.logger.Info("Conflicts resolved: blockchain kept")
 	}(blockchain.neighbors)
