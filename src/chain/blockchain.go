@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	DefaultPort = 8107
+	DefaultPort = 8106
 
 	MiningDifficulty          = 3
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
