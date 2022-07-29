@@ -189,6 +189,7 @@ func (host *Host) startHost() {
 			var transactionRequest TransactionRequest
 			var amountRequest AmountRequest
 			var targetRequest TargetRequest
+			res = p2p.Data{}
 			if err = req.GetGob(&requestString); err == nil {
 				switch requestString {
 				case GetBlocksRequest:

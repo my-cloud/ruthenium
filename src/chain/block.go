@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -82,4 +83,10 @@ func (block *Block) GetDto() *BlockResponse {
 		PreviousHash: block.previousHash,
 		Transactions: transactions,
 	}
+}
+
+func (block *Block) IsInValid(difficulty int) bool {
+	zeros := strings.Repeat("0", difficulty)
+	hashStr := fmt.Sprintf("%x", block.Hash())
+	return hashStr[:difficulty] != zeros
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net"
 	"ruthenium/src/log"
-	"strings"
 	"sync"
 	"time"
 )
@@ -207,7 +206,7 @@ func (blockchain *Blockchain) StopMining() {
 }
 
 func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) float32 {
-	var totalAmount float32 = 0.0
+	var totalAmount float32
 	for _, block := range blockchain.blocks {
 		for _, transaction := range block.Transactions() {
 			value := transaction.Value()
@@ -238,7 +237,7 @@ func (blockchain *Blockchain) clearTransactions() {
 func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBlocks []*Block) {
 	previousBlock := NewBlockFromDto(blocks[0])
 	currentIndex := 1
-	for currentIndex > len(blocks) {
+	for currentIndex < len(blocks) {
 		currentBlock := blocks[currentIndex]
 		isPreviousHashValid := currentBlock.PreviousHash == previousBlock.Hash()
 		if !isPreviousHashValid {
@@ -249,13 +248,13 @@ func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBloc
 		for _, transaction := range currentBlock.Transactions {
 			currentBlockTransactions = append(currentBlockTransactions, NewTransactionFromDto(transaction))
 		}
-		validBlock := blockchain.GetValidBlock(currentBlock.Nonce, currentBlock.PreviousHash, currentBlockTransactions, MiningDifficulty)
-		if validBlock == nil {
+		block := NewBlockFromDto(currentBlock)
+		if block.IsInValid(MiningDifficulty) {
 			return nil
 		}
 
-		previousBlock = validBlock
-		validBlocks = append(validBlocks, validBlock)
+		previousBlock = block
+		validBlocks = append(validBlocks, block)
 		currentIndex++
 	}
 	return validBlocks
@@ -313,22 +312,11 @@ func (blockchain *Blockchain) copyTransactions() (transactions []*Transaction) {
 	return
 }
 
-func (blockchain *Blockchain) GetValidBlock(nonce int, previousHash [32]byte, transactions []*Transaction, difficulty int) *Block {
-	zeros := strings.Repeat("0", difficulty)
-	block := NewBlock(nonce, previousHash, transactions)
-	hashStr := fmt.Sprintf("%x", block.Hash())
-	if hashStr[:difficulty] == zeros {
-		return block
-	} else {
-		return nil
-	}
-}
-
 func (blockchain *Blockchain) proofOfWork() int {
 	transactions := blockchain.copyTransactions()
 	previousHash := blockchain.lastBlock().Hash()
 	var nonce int
-	for blockchain.GetValidBlock(nonce, previousHash, transactions, MiningDifficulty) == nil {
+	for NewBlock(nonce, previousHash, transactions).IsInValid(MiningDifficulty) {
 		nonce++
 	}
 	return nonce
