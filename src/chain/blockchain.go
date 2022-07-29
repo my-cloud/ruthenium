@@ -76,29 +76,31 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 func (blockchain *Blockchain) FindNeighbors() {
 	blockchain.neighbors = nil
 	for _, neighbor := range blockchain.neighborsByTarget {
-		neighborsIps, err := net.LookupIP(neighbor.Ip())
-		if err != nil {
-			blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery failed on addresse %s: %v", neighbor.Ip(), err))
-			return
-		}
-
-		numNeighbors := len(neighborsIps)
-		if numNeighbors != 1 {
-			blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery did not find a single address (%d addresses found) for the given IP %s", numNeighbors, neighbor.Ip()))
-			return
-		}
-		neighborIp := neighborsIps[0]
-		if (neighborIp.String() != blockchain.ip || neighbor.Port() != blockchain.port) && neighborIp.String() == neighbor.Ip() && neighbor.IsFound() {
-			blockchain.neighbors = append(blockchain.neighbors, neighbor)
-			kind := PostTargetRequest
-			request := TargetRequest{
-				Kind: &kind,
-				Ip:   &blockchain.ip,
-				Port: &blockchain.port,
+		go func(neighbor *Node) {
+			neighborsIps, err := net.LookupIP(neighbor.Ip())
+			if err != nil {
+				blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery failed on addresse %s: %v", neighbor.Ip(), err))
+				return
 			}
-			go neighbor.SendTarget(request)
-			blockchain.ResolveConflicts()
-		}
+
+			numNeighbors := len(neighborsIps)
+			if numNeighbors != 1 {
+				blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery did not find a single address (%d addresses found) for the given IP %s", numNeighbors, neighbor.Ip()))
+				return
+			}
+			neighborIp := neighborsIps[0]
+			if (neighborIp.String() != blockchain.ip || neighbor.Port() != blockchain.port) && neighborIp.String() == neighbor.Ip() && neighbor.IsFound() {
+				blockchain.neighbors = append(blockchain.neighbors, neighbor)
+				kind := PostTargetRequest
+				request := TargetRequest{
+					Kind: &kind,
+					Ip:   &blockchain.ip,
+					Port: &blockchain.port,
+				}
+				go neighbor.SendTarget(request)
+				blockchain.ResolveConflicts()
+			}
+		}(neighbor)
 	}
 }
 
