@@ -43,24 +43,19 @@ func (node *Node) IsFound() bool {
 	return err == nil
 }
 
-func (node *Node) GetBlocks() (blocks []*Block, err error) {
+func (node *Node) GetBlocks() (blockResponses []*BlockResponse, err error) {
 	res, err := node.sendRequest(GetBlocksRequest)
 	if err != nil {
 		return nil, err
 	}
 
-	var blockResponses []*BlockResponse
 	err = res.GetGob(&blockResponses)
 	if err != nil {
 		node.logger.Error(err.Error())
 		return nil, err
 	}
 
-	for _, block := range blockResponses {
-		blocks = append(blocks, NewBlockFromDto(block))
-	}
-
-	return blocks, nil
+	return
 }
 
 func (node *Node) SendTarget(request TargetRequest) (err error) {

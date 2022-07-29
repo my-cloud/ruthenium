@@ -79,11 +79,8 @@ func (host *Host) GetBlockchain() *Blockchain {
 }
 
 func (host *Host) GetBlocks() (res p2p.Data) {
-	var blockResponses []*BlockResponse
 	blockchain := host.GetBlockchain()
-	for _, block := range blockchain.Blocks() {
-		blockResponses = append(blockResponses, block.GetDto())
-	}
+	blockResponses := blockchain.Blocks()
 	err := res.SetGob(blockResponses)
 	if err != nil {
 		host.logger.Error(fmt.Sprintf("ERROR: Failed to get blocks\n%v", err))

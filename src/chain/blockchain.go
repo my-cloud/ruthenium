@@ -26,12 +26,13 @@ const (
 )
 
 type Blockchain struct {
-	transactions  []*Transaction
-	blocks        []*Block
-	address       string
-	mineMutex     sync.Mutex
-	miningStarted bool
-	miningStopped bool
+	transactions   []*Transaction
+	blocks         []*Block
+	blocksResponse []*BlockResponse
+	address        string
+	mineMutex      sync.Mutex
+	miningStarted  bool
+	miningStopped  bool
 
 	ip     string
 	port   uint16
@@ -226,49 +227,60 @@ func (blockchain *Blockchain) Transactions() []*Transaction {
 	return blockchain.transactions
 }
 
-func (blockchain *Blockchain) Blocks() []*Block {
-	return blockchain.blocks
+func (blockchain *Blockchain) Blocks() []*BlockResponse {
+	return blockchain.blocksResponse
 }
 
 func (blockchain *Blockchain) clearTransactions() {
 	blockchain.transactions = nil
 }
 
-func (blockchain *Blockchain) IsValid(blocks []*Block) bool {
-	previousBlock := blocks[0]
+func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBlocks []*Block) {
+	previousBlock := NewBlockFromDto(blocks[0])
 	currentIndex := 1
 	for currentIndex > len(blocks) {
 		currentBlock := blocks[currentIndex]
-		isPreviousHashValid := currentBlock.PreviousHash() == previousBlock.Hash()
+		isPreviousHashValid := currentBlock.PreviousHash == previousBlock.Hash()
 		if !isPreviousHashValid {
-			return false
+			return nil
 		}
 
-		isProofValid := blockchain.isProofValid(currentBlock.Nonce(), currentBlock.PreviousHash(), currentBlock.Transactions(), MiningDifficulty)
-		if !isProofValid {
-			return false
+		var currentBlockTransactions []*Transaction
+		for _, transaction := range currentBlock.Transactions {
+			currentBlockTransactions = append(currentBlockTransactions, NewTransactionFromDto(transaction))
+		}
+		validBlock := blockchain.GetValidBlock(currentBlock.Nonce, currentBlock.PreviousHash, currentBlockTransactions, MiningDifficulty)
+		if validBlock == nil {
+			return nil
 		}
 
-		previousBlock = currentBlock
+		previousBlock = validBlock
+		validBlocks = append(validBlocks, validBlock)
 		currentIndex++
 	}
-	return true
+	return validBlocks
 }
 
 func (blockchain *Blockchain) ResolveConflicts() {
+	var longestChainResponse []*BlockResponse
 	var longestChain []*Block
 	maxLength := len(blockchain.blocks)
 
 	go func(neighbors []*Node) {
 		for _, neighbor := range neighbors {
 			neighborBlocks, err := neighbor.GetBlocks()
-			if err == nil && len(neighborBlocks) > maxLength && blockchain.IsValid(neighborBlocks) {
-				maxLength = len(neighborBlocks)
-				longestChain = neighborBlocks
+			if err == nil && len(neighborBlocks) > maxLength {
+				validBlocks := blockchain.GetValidBlocks(neighborBlocks)
+				if validBlocks != nil {
+					maxLength = len(neighborBlocks)
+					longestChainResponse = neighborBlocks
+					longestChain = validBlocks
+				}
 			}
 		}
 
 		if longestChain != nil {
+			blockchain.blocksResponse = longestChainResponse
 			blockchain.blocks = longestChain
 			blockchain.clearTransactions()
 			blockchain.logger.Info("Conflicts resolved: blockchain replaced")
@@ -280,6 +292,8 @@ func (blockchain *Blockchain) ResolveConflicts() {
 func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *Block {
 	block := NewBlock(nonce, previousHash, blockchain.transactions)
 	blockchain.blocks = append(blockchain.blocks, block)
+	blockResponse := block.GetDto()
+	blockchain.blocksResponse = append(blockchain.blocksResponse, blockResponse)
 	blockchain.clearTransactions()
 	return block
 }
@@ -288,8 +302,7 @@ func (blockchain *Blockchain) lastBlock() *Block {
 	return blockchain.blocks[len(blockchain.blocks)-1]
 }
 
-func (blockchain *Blockchain) copyTransactions() []*Transaction {
-	transactions := make([]*Transaction, 0)
+func (blockchain *Blockchain) copyTransactions() (transactions []*Transaction) {
 	for _, transaction := range blockchain.transactions {
 		transactions = append(transactions,
 			NewTransaction(transaction.SenderAddress(),
@@ -297,21 +310,25 @@ func (blockchain *Blockchain) copyTransactions() []*Transaction {
 				transaction.RecipientAddress(),
 				transaction.Value()))
 	}
-	return transactions
+	return
 }
 
-func (blockchain *Blockchain) isProofValid(nonce int, previousHash [32]byte, transactions []*Transaction, difficulty int) bool {
+func (blockchain *Blockchain) GetValidBlock(nonce int, previousHash [32]byte, transactions []*Transaction, difficulty int) *Block {
 	zeros := strings.Repeat("0", difficulty)
-	guessBlock := NewBlock(nonce, previousHash, transactions)
-	guessHashStr := fmt.Sprintf("%x", guessBlock.Hash())
-	return guessHashStr[:difficulty] == zeros
+	block := NewBlock(nonce, previousHash, transactions)
+	hashStr := fmt.Sprintf("%x", block.Hash())
+	if hashStr[:difficulty] == zeros {
+		return block
+	} else {
+		return nil
+	}
 }
 
 func (blockchain *Blockchain) proofOfWork() int {
 	transactions := blockchain.copyTransactions()
 	previousHash := blockchain.lastBlock().Hash()
 	var nonce int
-	for !blockchain.isProofValid(nonce, previousHash, transactions, MiningDifficulty) {
+	for blockchain.GetValidBlock(nonce, previousHash, transactions, MiningDifficulty) == nil {
 		nonce++
 	}
 	return nonce
