@@ -162,12 +162,13 @@ func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature
 	return
 }
 
-func (blockchain *Blockchain) Mine() (err error) {
+func (blockchain *Blockchain) Mine() {
 	blockchain.mineMutex.Lock()
 	defer blockchain.mineMutex.Unlock()
 
 	transaction := NewTransaction(MiningRewardSenderAddress, nil, blockchain.address, MiningReward)
-	err = blockchain.addTransaction(transaction, nil)
+	err := blockchain.addTransaction(transaction, nil)
+	blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to mine, error: %v", err))
 	nonce := blockchain.proofOfWork()
 	previousHash := blockchain.lastBlock().Hash()
 	blockchain.createBlock(nonce, previousHash)
@@ -189,9 +190,7 @@ func (blockchain *Blockchain) StartMining() {
 
 func (blockchain *Blockchain) mining() {
 	if !blockchain.miningStopped {
-		if err := blockchain.Mine(); err != nil {
-			blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to mine, error: %v", err))
-		}
+		blockchain.Mine()
 		_ = time.AfterFunc(time.Second*MiningTimerSec, blockchain.mining)
 	}
 }
