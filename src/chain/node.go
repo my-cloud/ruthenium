@@ -115,8 +115,6 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 			settings := p2p.NewClientSettings()
 			settings.SetRetry(1, p2p.DefaultDelayTimeout)
 			client.SetSettings(settings)
-
-			res = p2p.Data{}
 			res, err = client.Send("dialog", req)
 		}
 	}
