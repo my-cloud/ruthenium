@@ -38,7 +38,6 @@ type Blockchain struct {
 
 	neighbors         []*Node
 	neighborsMutex    sync.Mutex
-	transactionMutex  sync.Mutex
 	neighborsByTarget map[string]*Node
 }
 
@@ -140,8 +139,6 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 }
 
 func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) (isTransacted bool) {
-	blockchain.transactionMutex.Lock()
-	defer blockchain.transactionMutex.Unlock()
 	transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
 	return blockchain.addTransaction(transaction, signature)
 }
@@ -169,8 +166,6 @@ func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature
 func (blockchain *Blockchain) Mine() bool {
 	blockchain.mineMutex.Lock()
 	defer blockchain.mineMutex.Unlock()
-	blockchain.transactionMutex.Lock()
-	defer blockchain.transactionMutex.Unlock()
 
 	transaction := NewTransaction(MiningRewardSenderAddress, nil, blockchain.address, MiningReward)
 	blockchain.addTransaction(transaction, nil)
@@ -260,8 +255,6 @@ func (blockchain *Blockchain) ResolveConflicts() {
 	maxLength := len(blockchain.blocks)
 
 	go func(neighbors []*Node) {
-		blockchain.transactionMutex.Lock()
-		defer blockchain.transactionMutex.Unlock()
 		for _, neighbor := range blockchain.neighbors {
 			neighborBlocks := neighbor.GetBlocks()
 			if len(neighborBlocks) > maxLength && blockchain.IsValid(neighborBlocks) {
