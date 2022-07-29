@@ -61,7 +61,6 @@ func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *
 
 func (blockchain *Blockchain) Run() {
 	blockchain.StartNeighborsSynchronization()
-	blockchain.ResolveConflicts()
 }
 
 func (blockchain *Blockchain) SynchronizeNeighbors() {
@@ -103,6 +102,7 @@ func (blockchain *Blockchain) FindNeighbors() {
 			}
 		}
 		blockchain.neighbors = neighbors
+		blockchain.ResolveConflicts()
 	}(blockchain.neighborsByTarget)
 }
 
@@ -244,10 +244,6 @@ func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBloc
 			return nil
 		}
 
-		var currentBlockTransactions []*Transaction
-		for _, transaction := range currentBlock.Transactions {
-			currentBlockTransactions = append(currentBlockTransactions, NewTransactionFromDto(transaction))
-		}
 		block := NewBlockFromDto(currentBlock)
 		if block.IsInValid(MiningDifficulty) {
 			return nil
