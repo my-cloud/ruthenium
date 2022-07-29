@@ -20,8 +20,6 @@ const (
 	MiningTimerSec            = 60
 
 	NeighborSynchronizationTimeSecond  = 10
-	HostConnectionTimeoutSecond        = 30
-	HostHandleTimeoutSecond            = 5
 	NeighborClientFindingTimeoutSecond = 5
 )
 

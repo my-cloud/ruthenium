@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"ruthenium/src/log"
 	"strconv"
-	"time"
 )
 
 var cachedBlockchain = make(map[string]*Blockchain)
@@ -232,10 +231,6 @@ func (host *Host) startHost() {
 		host.logger.Fatal(err.Error())
 	} else {
 		server.SetLogger(host.logger)
-		settings := p2p.NewServerSettings()
-		settings.SetConnTimeout(HostConnectionTimeoutSecond * time.Second)
-		settings.SetHandleTimeout(HostHandleTimeoutSecond * time.Second)
-		server.SetSettings(settings)
 
 		server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
 			var requestString string
