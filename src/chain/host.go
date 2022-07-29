@@ -192,7 +192,7 @@ func (host *Host) startHost() {
 			if err = req.GetGob(&requestString); err == nil {
 				switch requestString {
 				case GetBlocksRequest:
-					host.GetBlocks()
+					res = host.GetBlocks()
 				case GetTransactionsRequest:
 					if res, err = host.GetTransactions(); err != nil {
 						host.logger.Error(fmt.Sprintf("ERROR: Failed to get transactions, error: %v", err))
