@@ -256,10 +256,8 @@ func (blockchain *Blockchain) ResolveConflicts() {
 	maxLength := len(blockchain.blocks)
 
 	go func(neighbors []*Node) {
-		for i, neighbor := range blockchain.neighbors {
-			fmt.Println("resolving conflicts")
+		for _, neighbor := range blockchain.neighbors {
 			neighborBlocks := neighbor.GetBlocks()
-			fmt.Printf("neighbor %d blocks: %v\n", i, neighborBlocks)
 			if len(neighborBlocks) > maxLength && blockchain.IsValid(neighborBlocks) {
 				maxLength = len(neighborBlocks)
 				longestChain = neighborBlocks
