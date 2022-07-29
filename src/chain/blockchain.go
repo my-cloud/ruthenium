@@ -49,12 +49,13 @@ func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *
 	blockchain.port = port
 	blockchain.logger = logger
 	blockchain.createBlock(0, new(Block).Hash())
-	seeds := []string{
+	seedsIps := []string{
 		"89.82.76.241",
 	}
 	blockchain.neighborsByTarget = map[string]*Node{}
-	for _, seed := range seeds {
-		blockchain.neighborsByTarget[fmt.Sprintf("%s:%d", seed, DefaultPort)] = NewNode(seed, DefaultPort, logger)
+	for _, seedIp := range seedsIps {
+		seed := NewNode(seedIp, DefaultPort, logger)
+		blockchain.neighborsByTarget[seed.Target()] = seed
 	}
 	return blockchain
 }
