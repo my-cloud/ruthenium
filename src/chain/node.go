@@ -147,7 +147,8 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 	err = req.SetGob(request)
 	if err == nil {
 		tcp := p2p.NewTCP(node.ip, strconv.Itoa(int(node.port)))
-		client, err := p2p.NewClient(tcp)
+		var client *p2p.Client
+		client, err = p2p.NewClient(tcp)
 		if err == nil {
 			client.SetLogger(node.logger)
 			client.SetLogger(node.logger)
