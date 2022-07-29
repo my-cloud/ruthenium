@@ -167,8 +167,9 @@ func (blockchain *Blockchain) Mine() {
 	defer blockchain.mineMutex.Unlock()
 
 	transaction := NewTransaction(MiningRewardSenderAddress, nil, blockchain.address, MiningReward)
-	err := blockchain.addTransaction(transaction, nil)
-	blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to mine, error: %v", err))
+	if err := blockchain.addTransaction(transaction, nil); err != nil {
+		blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to mine, error: %v", err))
+	}
 	nonce := blockchain.proofOfWork()
 	previousHash := blockchain.lastBlock().Hash()
 	blockchain.createBlock(nonce, previousHash)
@@ -255,8 +256,10 @@ func (blockchain *Blockchain) ResolveConflicts() {
 	maxLength := len(blockchain.blocks)
 
 	go func(neighbors []*Node) {
-		for _, neighbor := range blockchain.neighbors {
+		for i, neighbor := range blockchain.neighbors {
+			fmt.Println("resolving conflicts")
 			neighborBlocks := neighbor.GetBlocks()
+			fmt.Printf("neighbor %d blocks: %v\n", i, neighborBlocks)
 			if len(neighborBlocks) > maxLength && blockchain.IsValid(neighborBlocks) {
 				maxLength = len(neighborBlocks)
 				longestChain = neighborBlocks
