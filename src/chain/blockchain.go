@@ -140,13 +140,13 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 }
 
 func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) (isTransacted bool) {
+	blockchain.transactionMutex.Lock()
+	defer blockchain.transactionMutex.Unlock()
 	transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
 	return blockchain.addTransaction(transaction, signature)
 }
 
 func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature *Signature) bool {
-	blockchain.transactionMutex.Lock()
-	defer blockchain.transactionMutex.Unlock()
 	if transaction.SenderAddress() == MiningRewardSenderAddress {
 		blockchain.transactions = append(blockchain.transactions, transaction)
 		return true
@@ -169,6 +169,8 @@ func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature
 func (blockchain *Blockchain) Mine() bool {
 	blockchain.mineMutex.Lock()
 	defer blockchain.mineMutex.Unlock()
+	blockchain.transactionMutex.Lock()
+	defer blockchain.transactionMutex.Unlock()
 
 	transaction := NewTransaction(MiningRewardSenderAddress, nil, blockchain.address, MiningReward)
 	blockchain.addTransaction(transaction, nil)
@@ -228,9 +230,7 @@ func (blockchain *Blockchain) Blocks() []*Block {
 	return blockchain.blocks
 }
 
-func (blockchain *Blockchain) ClearTransactions() {
-	blockchain.transactionMutex.Lock()
-	defer blockchain.transactionMutex.Unlock()
+func (blockchain *Blockchain) clearTransactions() {
 	blockchain.transactions = nil
 }
 
@@ -272,8 +272,8 @@ func (blockchain *Blockchain) ResolveConflicts() {
 
 		if longestChain != nil {
 			blockchain.blocks = longestChain
-			blockchain.ClearTransactions()
-			blockchain.logger.Info("Conflicts resolved: blockchain replaced")
+			blockchain.clearTransactions()
+			blockchain.logger.Warn("Conflicts resolved: blockchain replaced")
 		}
 		blockchain.logger.Info("Conflicts resolved: blockchain kept")
 	}(blockchain.neighbors)
@@ -282,7 +282,7 @@ func (blockchain *Blockchain) ResolveConflicts() {
 func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *Block {
 	block := NewBlock(nonce, previousHash, blockchain.transactions)
 	blockchain.blocks = append(blockchain.blocks, block)
-	blockchain.ClearTransactions()
+	blockchain.clearTransactions()
 	return block
 }
 
