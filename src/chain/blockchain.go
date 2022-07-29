@@ -98,7 +98,7 @@ func (blockchain *Blockchain) FindNeighbors() {
 					Ip:   &blockchain.ip,
 					Port: &blockchain.port,
 				}
-				go neighbor.SendTarget(request)
+				_ = neighbor.SendTarget(request)
 			}
 		}
 		blockchain.neighbors = neighbors
@@ -133,9 +133,11 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 			Value:            &value,
 			Signature:        &signatureStr,
 		}
-		for _, neighbor := range blockchain.neighbors {
-			go neighbor.UpdateTransactions(transactionRequest)
-		}
+		go func(neighbors []*Node) {
+			for _, neighbor := range neighbors {
+				_ = neighbor.UpdateTransactions(transactionRequest)
+			}
+		}(blockchain.neighbors)
 	}()
 }
 
@@ -175,9 +177,11 @@ func (blockchain *Blockchain) Mine() {
 		previousHash := blockchain.lastBlock().Hash()
 		blockchain.createBlock(nonce, previousHash)
 
-		for _, neighbor := range blockchain.neighbors {
-			go neighbor.Consensus()
-		}
+		go func(neighbors []*Node) {
+			for _, neighbor := range neighbors {
+				_ = neighbor.Consensus()
+			}
+		}(blockchain.neighbors)
 	}()
 }
 
@@ -256,9 +260,9 @@ func (blockchain *Blockchain) ResolveConflicts() {
 	maxLength := len(blockchain.blocks)
 
 	go func(neighbors []*Node) {
-		for _, neighbor := range blockchain.neighbors {
-			neighborBlocks := neighbor.GetBlocks()
-			if len(neighborBlocks) > maxLength && blockchain.IsValid(neighborBlocks) {
+		for _, neighbor := range neighbors {
+			neighborBlocks, err := neighbor.GetBlocks()
+			if err == nil && len(neighborBlocks) > maxLength && blockchain.IsValid(neighborBlocks) {
 				maxLength = len(neighborBlocks)
 				longestChain = neighborBlocks
 			}

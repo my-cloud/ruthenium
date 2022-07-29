@@ -46,9 +46,9 @@ func (walletServer *WalletServer) Index(w http.ResponseWriter, req *http.Request
 	case http.MethodGet:
 		t, err := template.ParseFiles(path.Join(templateDir, "index.html"))
 		if err != nil {
-			walletServer.logger.Error("ERROR: Failed to parse the template")
-		} else if err := t.Execute(w, ""); err != nil {
-			walletServer.logger.Error("ERROR: Failed to execute the template")
+			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to parse the template\n%v", err))
+		} else if err = t.Execute(w, ""); err != nil {
+			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to execute the template\n%v", err))
 		}
 	default:
 		walletServer.logger.Error("ERROR: Invalid HTTP Method")
@@ -61,16 +61,16 @@ func (walletServer *WalletServer) Wallet(writer http.ResponseWriter, req *http.R
 		writer.Header().Add("Content-Type", "application/json")
 		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
-			fmt.Printf("ERROR: Failed to generate private key, err%v\n", err)
+			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to generate private key\n%v", err))
 		} else {
 			wallet := chain.NewWallet(privateKey)
 			marshaledWallet, err := wallet.MarshalJSON()
 			if err != nil {
-				walletServer.logger.Error("ERROR: Failed to marshal wallet")
+				walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to marshal wallet\n%v", err))
 			}
 			i, err := io.WriteString(writer, string(marshaledWallet[:]))
 			if err != nil || i == 0 {
-				walletServer.logger.Error("ERROR: Failed to write wallet")
+				walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to write wallet\n%v", err))
 			}
 		}
 	default:
@@ -87,7 +87,7 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 		err := decoder.Decode(&transactionRequest)
 		jsonWriter := rest.NewJsonWriter(writer)
 		if err != nil {
-			walletServer.logger.Error(fmt.Sprintf("ERROR: %v", err))
+			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to decode transaction request\n%v", err))
 			jsonWriter.WriteStatus("fail")
 		}
 		if transactionRequest.IsInvalid() {
@@ -99,7 +99,7 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 		privateKey := chain.NewPrivateKey(*transactionRequest.SenderPrivateKey, publicKey)
 		value, err := strconv.ParseFloat(*transactionRequest.Value, 32)
 		if err != nil {
-			walletServer.logger.Error("ERROR: Failed to parse transaction value")
+			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to parse transaction value\n%v", err))
 			jsonWriter.WriteStatus("fail")
 		}
 		value32 := float32(value)
@@ -120,13 +120,13 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 			Value:            &value32,
 			Signature:        &signatureString,
 		}
-		updated := walletServer.blockchainClient.UpdateTransactions(blockchainTransactionRequest)
-		if updated {
+		err = walletServer.blockchainClient.UpdateTransactions(blockchainTransactionRequest)
+		if err != nil {
+			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to create transaction\n%v", err))
+			jsonWriter.WriteStatus("fail")
+		} else {
 			jsonWriter.WriteStatus("success")
 			return
-		} else {
-			walletServer.logger.Error("ERROR: Failed to create transaction")
-			jsonWriter.WriteStatus("fail")
 		}
 	default:
 		writer.WriteHeader(http.StatusBadRequest)
@@ -139,7 +139,7 @@ func (walletServer *WalletServer) Mine(writer http.ResponseWriter, req *http.Req
 	case http.MethodPost:
 		err := walletServer.blockchainClient.Mine()
 		if err != nil {
-			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to mine, error: %v", err))
+			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to mine\n%v", err))
 			jsonWriter := rest.NewJsonWriter(writer)
 			jsonWriter.WriteStatus("fail")
 		}
@@ -152,9 +152,9 @@ func (walletServer *WalletServer) Mine(writer http.ResponseWriter, req *http.Req
 func (walletServer *WalletServer) StartMining(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		mined := walletServer.blockchainClient.StartMining()
-		if !mined {
-			walletServer.logger.Error("ERROR: Failed to start mining")
+		err := walletServer.blockchainClient.StartMining()
+		if err != nil {
+			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to start mining\n%v", err))
 			jsonWriter := rest.NewJsonWriter(writer)
 			jsonWriter.WriteStatus("fail")
 		}
@@ -167,9 +167,9 @@ func (walletServer *WalletServer) StartMining(writer http.ResponseWriter, req *h
 func (walletServer *WalletServer) StopMining(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		mined := walletServer.blockchainClient.StopMining()
-		if !mined {
-			walletServer.logger.Error("ERROR: Failed to stop mining")
+		err := walletServer.blockchainClient.StopMining()
+		if err != nil {
+			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to stop mining\n%v", err))
 			jsonWriter := rest.NewJsonWriter(writer)
 			jsonWriter.WriteStatus("fail")
 		}
@@ -195,10 +195,13 @@ func (walletServer *WalletServer) WalletAmount(writer http.ResponseWriter, req *
 			return
 		}
 
-		amount := walletServer.blockchainClient.GetAmount(amountRequest)
+		amount, err := walletServer.blockchainClient.GetAmount(amountRequest)
 
 		writer.Header().Add("Content-Type", "application/json")
-		if amount != nil {
+		if err != nil {
+			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to get amount\n%v", err))
+			jsonWriter.WriteStatus("fail")
+		} else {
 			marshaledAmount, err := json.Marshal(struct {
 				Message string  `json:"message"`
 				Amount  float32 `json:"amount"`
@@ -207,14 +210,12 @@ func (walletServer *WalletServer) WalletAmount(writer http.ResponseWriter, req *
 				Amount:  amount.Amount,
 			})
 			if err != nil {
-				walletServer.logger.Error("ERROR: Failed to marshal amount")
+				walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to marshal amount\n%v", err))
 			}
 			i, err := io.WriteString(writer, string(marshaledAmount[:]))
 			if err != nil || i == 0 {
-				walletServer.logger.Error("ERROR: Failed to write amount")
+				walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to write amount\n%v", err))
 			}
-		} else {
-			jsonWriter.WriteStatus("fail")
 		}
 	default:
 		walletServer.logger.Error("ERROR: Invalid HTTP Method")

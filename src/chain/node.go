@@ -43,69 +43,46 @@ func (node *Node) IsFound() bool {
 	return err == nil
 }
 
-func (node *Node) GetBlocks() []*Block {
+func (node *Node) GetBlocks() (blocks []*Block, err error) {
 	res, err := node.sendRequest(GetBlocksRequest)
 	if err != nil {
-		node.logger.Error(err.Error())
-		return nil
+		return nil, err
 	}
 
 	var blockResponses []*BlockResponse
 	err = res.GetGob(&blockResponses)
 	if err != nil {
 		node.logger.Error(err.Error())
-		return nil
+		return nil, err
 	}
 
-	var blocks []*Block
 	for _, block := range blockResponses {
 		blocks = append(blocks, NewBlockFromDto(block))
 	}
 
-	return blocks
+	return blocks, nil
 }
 
-func (node *Node) SendTarget(request TargetRequest) (sent bool) {
-	res, err := node.sendRequest(request)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
-	}
-
-	err = res.GetGob(&sent)
+func (node *Node) SendTarget(request TargetRequest) (err error) {
+	_, err = node.sendRequest(request)
 	return
 }
 
-func (node *Node) Consensus() (consented bool) {
-	res, err := node.sendRequest(ConsensusRequest)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
-	}
-
-	err = res.GetGob(&consented)
+func (node *Node) Consensus() (err error) {
+	_, err = node.sendRequest(ConsensusRequest)
 	return
 }
 
-func (node *Node) UpdateTransactions(request TransactionRequest) (created bool) {
-	res, err := node.sendRequest(request)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
-	}
-
-	err = res.GetGob(&created)
+func (node *Node) UpdateTransactions(request TransactionRequest) (err error) {
+	_, err = node.sendRequest(request)
 	return
 }
 
-func (node *Node) GetAmount(request AmountRequest) (amountResponse *AmountResponse) {
+func (node *Node) GetAmount(request AmountRequest) (amountResponse *AmountResponse, err error) {
 	res, err := node.sendRequest(request)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return nil
+	if err == nil {
+		err = res.GetGob(&amountResponse)
 	}
-
-	err = res.GetGob(&amountResponse)
 	return
 }
 
@@ -114,25 +91,13 @@ func (node *Node) Mine() (err error) {
 	return err
 }
 
-func (node *Node) StartMining() (miningStarted bool) {
-	res, err := node.sendRequest(StartMiningRequest)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
-	}
-
-	err = res.GetGob(&miningStarted)
+func (node *Node) StartMining() (err error) {
+	_, err = node.sendRequest(StartMiningRequest)
 	return
 }
 
-func (node *Node) StopMining() (miningStopped bool) {
-	res, err := node.sendRequest(StopMiningRequest)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
-	}
-
-	err = res.GetGob(&miningStopped)
+func (node *Node) StopMining() (err error) {
+	_, err = node.sendRequest(StopMiningRequest)
 	return
 }
 
