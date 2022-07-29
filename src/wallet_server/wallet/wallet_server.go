@@ -137,9 +137,9 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 func (walletServer *WalletServer) Mine(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		mined := walletServer.blockchainClient.Mine()
-		if !mined {
-			walletServer.logger.Error("ERROR: Failed to mine")
+		err := walletServer.blockchainClient.Mine()
+		if err != nil {
+			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to mine, error: %v", err))
 			jsonWriter := rest.NewJsonWriter(writer)
 			jsonWriter.WriteStatus("fail")
 		}

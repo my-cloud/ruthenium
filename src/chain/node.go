@@ -109,15 +109,9 @@ func (node *Node) GetAmount(request AmountRequest) (amountResponse *AmountRespon
 	return
 }
 
-func (node *Node) Mine() (mined bool) {
-	res, err := node.sendRequest(MineRequest)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
-	}
-
-	err = res.GetGob(&mined)
-	return
+func (node *Node) Mine() (err error) {
+	_, err = node.sendRequest(MineRequest)
+	return err
 }
 
 func (node *Node) StartMining() (miningStarted bool) {

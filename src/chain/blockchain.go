@@ -3,6 +3,7 @@ package chain
 import (
 	"crypto/ecdsa"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"ruthenium/src/log"
@@ -118,10 +119,10 @@ func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) bool {
-	isTransacted := blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
+func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) (err error) {
+	err = blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
 
-	if isTransacted {
+	if err == nil {
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
 		var verb = PUT
@@ -138,40 +139,35 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 		}
 	}
 
-	return isTransacted
+	return err
 }
 
-func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) (isTransacted bool) {
+func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) (err error) {
 	transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
 	return blockchain.addTransaction(transaction, signature)
 }
 
-func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature *Signature) bool {
+func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature *Signature) (err error) {
 	if transaction.SenderAddress() == MiningRewardSenderAddress {
 		blockchain.transactions = append(blockchain.transactions, transaction)
-		return true
-	}
-
-	if transaction.VerifySignature(signature) {
+	} else if transaction.VerifySignature(signature) {
 		if blockchain.CalculateTotalAmount(transaction.SenderAddress()) < transaction.Value() {
-			blockchain.logger.Error("ERROR: Not enough balance in the sender wallet")
-			return false
+			err = errors.New("not enough balance in the sender wallet")
+		} else {
+			blockchain.transactions = append(blockchain.transactions, transaction)
 		}
-		blockchain.transactions = append(blockchain.transactions, transaction)
-		return true
 	} else {
-		blockchain.logger.Error("ERROR: Failed to verify transaction")
+		err = errors.New("failed to verify transaction")
 	}
-	return false
-
+	return
 }
 
-func (blockchain *Blockchain) Mine() bool {
+func (blockchain *Blockchain) Mine() (err error) {
 	blockchain.mineMutex.Lock()
 	defer blockchain.mineMutex.Unlock()
 
 	transaction := NewTransaction(MiningRewardSenderAddress, nil, blockchain.address, MiningReward)
-	blockchain.addTransaction(transaction, nil)
+	err = blockchain.addTransaction(transaction, nil)
 	nonce := blockchain.proofOfWork()
 	previousHash := blockchain.lastBlock().Hash()
 	blockchain.createBlock(nonce, previousHash)
@@ -180,7 +176,7 @@ func (blockchain *Blockchain) Mine() bool {
 		go neighbor.Consensus()
 	}
 
-	return true
+	return
 }
 
 func (blockchain *Blockchain) StartMining() {
@@ -193,7 +189,9 @@ func (blockchain *Blockchain) StartMining() {
 
 func (blockchain *Blockchain) mining() {
 	if !blockchain.miningStopped {
-		blockchain.Mine()
+		if err := blockchain.Mine(); err != nil {
+			blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to mine, error: %v", err))
+		}
 		_ = time.AfterFunc(time.Second*MiningTimerSec, blockchain.mining)
 	}
 }

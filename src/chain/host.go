@@ -125,15 +125,13 @@ func (host *Host) PostTransactions(request *TransactionRequest) (res p2p.Data, e
 	publicKey := NewPublicKey(*request.SenderPublicKey)
 	signature := DecodeSignature(*request.Signature)
 	blockchain := host.GetBlockchain()
-	isCreated := blockchain.CreateTransaction(*request.SenderAddress, *request.RecipientAddress, publicKey, *request.Value, signature)
+	err = blockchain.CreateTransaction(*request.SenderAddress, *request.RecipientAddress, publicKey, *request.Value, signature)
 
-	if !isCreated {
-		err = errors.New("fail")
-		return
-	}
-	res = p2p.Data{}
-	if err = res.SetGob(true); err != nil {
-		return
+	if err == nil {
+		res = p2p.Data{}
+		if err = res.SetGob(true); err != nil {
+			return
+		}
 	}
 	return
 }
@@ -146,32 +144,20 @@ func (host *Host) PutTransactions(request *TransactionRequest) (res p2p.Data, er
 	publicKey := NewPublicKey(*request.SenderPublicKey)
 	signature := DecodeSignature(*request.Signature)
 	blockchain := host.GetBlockchain()
-	isCreated := blockchain.UpdateTransaction(*request.SenderAddress, *request.RecipientAddress, publicKey, *request.Value, signature)
+	err = blockchain.UpdateTransaction(*request.SenderAddress, *request.RecipientAddress, publicKey, *request.Value, signature)
 
-	if !isCreated {
-		err = errors.New("fail")
-		return
-	}
-	res = p2p.Data{}
-	if err = res.SetGob(true); err != nil {
-		return
+	if err == nil {
+		res = p2p.Data{}
+		if err = res.SetGob(true); err != nil {
+			return
+		}
 	}
 	return
 }
 
 func (host *Host) Mine() (res p2p.Data, err error) {
 	blockchain := host.GetBlockchain()
-	isMined := blockchain.Mine()
-	if isMined {
-		res = p2p.Data{}
-		if err = res.SetGob(true); err != nil {
-			return
-		}
-	} else {
-		err = errors.New("fail")
-		return
-	}
-	return
+	return p2p.Data{}, blockchain.Mine()
 }
 
 func (host *Host) StartMining() (res p2p.Data, err error) {
