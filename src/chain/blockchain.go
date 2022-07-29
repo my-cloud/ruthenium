@@ -91,7 +91,7 @@ func (blockchain *Blockchain) FindNeighbors() {
 			}
 			neighborIp := neighborsIps[0]
 			if (neighborIp.String() != blockchain.ip || neighbor.Port() != blockchain.port) && neighborIp.String() == neighbor.Ip() && neighbor.IsFound() {
-				neighbors = append(blockchain.neighbors, neighbor)
+				neighbors = append(neighbors, neighbor)
 				kind := PostTargetRequest
 				request := TargetRequest{
 					Kind: &kind,
