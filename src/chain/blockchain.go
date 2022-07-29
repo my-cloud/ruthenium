@@ -17,12 +17,12 @@ const (
 	MiningDifficulty          = 3
 	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
 	MiningReward              = 10.0
-	MiningTimerSec            = 20
+	MiningTimerSec            = 60
 
-	NeighborSynchronizationTimeSecond  = 5
-	HostConnectionTimeoutSecond        = 10
-	HostHandleTimeoutSecond            = 1
-	NeighborClientFindingTimeoutSecond = 1
+	NeighborSynchronizationTimeSecond  = 10
+	HostConnectionTimeoutSecond        = 30
+	HostHandleTimeoutSecond            = 5
+	NeighborClientFindingTimeoutSecond = 5
 )
 
 type Blockchain struct {
