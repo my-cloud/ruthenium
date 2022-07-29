@@ -43,19 +43,25 @@ func (node *Node) IsFound() bool {
 	return err == nil
 }
 
-func (node *Node) GetBlocks() (blockResponses []*BlockResponse, err error) {
+func (node *Node) GetBlocks() ([]*BlockResponse, error) {
 	res, err := node.sendRequest(GetBlocksRequest)
 	if err != nil {
 		return nil, err
 	}
 
+	var blockResponses []*BlockResponse
 	err = res.GetGob(&blockResponses)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return nil, err
+	if &blockResponses == nil {
+		// FIXME once this issue is solved, try removing the "EOF" muting in the logger
+		node.logger.Error("blocksResponse is nil")
 	}
 
-	return
+	if err != nil {
+		node.logger.Error(err.Error())
+		return blockResponses, err
+	}
+
+	return blockResponses, err
 }
 
 func (node *Node) SendTarget(request TargetRequest) (err error) {
@@ -83,7 +89,7 @@ func (node *Node) GetAmount(request AmountRequest) (amountResponse *AmountRespon
 
 func (node *Node) Mine() (err error) {
 	_, err = node.sendRequest(MineRequest)
-	return err
+	return
 }
 
 func (node *Node) StartMining() (err error) {

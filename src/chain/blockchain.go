@@ -28,7 +28,7 @@ const (
 type Blockchain struct {
 	transactions   []*Transaction
 	blocks         []*Block
-	blocksResponse []*BlockResponse
+	blockResponses []*BlockResponse
 	address        string
 	mineMutex      sync.Mutex
 	miningStarted  bool
@@ -228,7 +228,7 @@ func (blockchain *Blockchain) Transactions() []*Transaction {
 }
 
 func (blockchain *Blockchain) Blocks() []*BlockResponse {
-	return blockchain.blocksResponse
+	return blockchain.blockResponses
 }
 
 func (blockchain *Blockchain) clearTransactions() {
@@ -280,7 +280,7 @@ func (blockchain *Blockchain) ResolveConflicts() {
 		}
 
 		if longestChain != nil {
-			blockchain.blocksResponse = longestChainResponse
+			blockchain.blockResponses = longestChainResponse
 			blockchain.blocks = longestChain
 			blockchain.clearTransactions()
 			blockchain.logger.Info("Conflicts resolved: blockchain replaced")
@@ -293,7 +293,7 @@ func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *Blo
 	block := NewBlock(nonce, previousHash, blockchain.transactions)
 	blockchain.blocks = append(blockchain.blocks, block)
 	blockResponse := block.GetDto()
-	blockchain.blocksResponse = append(blockchain.blocksResponse, blockResponse)
+	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
 	blockchain.clearTransactions()
 	return block
 }
