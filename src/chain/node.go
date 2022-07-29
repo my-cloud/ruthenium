@@ -51,7 +51,7 @@ func (node *Node) GetBlocks() ([]*BlockResponse, error) {
 
 	var blockResponses []*BlockResponse
 	err = res.GetGob(&blockResponses)
-	if &blockResponses == nil {
+	if blockResponses == nil {
 		// FIXME once this issue is solved, try removing the "EOF" muting in the logger
 		node.logger.Error("blocksResponse is nil")
 	}
