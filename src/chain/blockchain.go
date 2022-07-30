@@ -79,6 +79,14 @@ func (blockchain *Blockchain) FindNeighbors() {
 		blockchain.neighborsMutex.Lock()
 		defer blockchain.neighborsMutex.Unlock()
 		var neighbors []*Node
+		var targetRequests []TargetRequest
+		targetRequestKind := PostTargetRequest
+		hostTargetRequest := TargetRequest{
+			Kind: &targetRequestKind,
+			Ip:   &blockchain.ip,
+			Port: &blockchain.port,
+		}
+		targetRequests = append(targetRequests, hostTargetRequest)
 		for _, neighbor := range neighborsByTarget {
 			neighborIp := neighbor.Ip()
 			neighborPort := neighbor.Port()
@@ -97,16 +105,20 @@ func (blockchain *Blockchain) FindNeighbors() {
 			lookedUpNeighborIpString := lookedUpNeighborIp.String()
 			if (lookedUpNeighborIpString != blockchain.ip || neighborPort != blockchain.port) && lookedUpNeighborIpString == neighborIp && neighbor.IsFound() {
 				neighbors = append(neighbors, neighbor)
-				kind := PostTargetRequest
-				request := TargetRequest{
-					Kind: &kind,
+				targetRequest := TargetRequest{
+					Kind: &targetRequestKind,
 					Ip:   &neighborIp,
 					Port: &neighborPort,
 				}
-				_ = neighbor.SendTarget(request)
+				targetRequests = append(targetRequests, targetRequest)
 			}
 		}
 		blockchain.neighbors = neighbors
+		for _, neighbor := range neighbors {
+			for _, targetRequest := range targetRequests {
+				_ = neighbor.SendTarget(targetRequest)
+			}
+		}
 	}(blockchain.neighborsByTarget)
 }
 
