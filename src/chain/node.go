@@ -43,61 +43,66 @@ func (node *Node) IsFound() bool {
 	return err == nil
 }
 
-func (node *Node) GetBlocks() ([]*BlockResponse, error) {
+func (node *Node) GetBlocks() (blockResponses []*BlockResponse, err error) {
+	node.mutex.Lock()
+	defer node.mutex.Unlock()
 	res, err := node.sendRequest(GetBlocksRequest)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		err = res.GetGob(&blockResponses)
 	}
 
-	var blockResponses []*BlockResponse
-	err = res.GetGob(&blockResponses)
-	if blockResponses == nil {
-		// FIXME once this issue is solved, try removing the "EOF" muting in the logger
-		node.logger.Error("blocksResponse is nil")
-	}
-
-	if err != nil {
-		node.logger.Error(err.Error())
-		return blockResponses, err
-	}
-
-	return blockResponses, err
+	return
 }
 
 func (node *Node) SendTarget(request TargetRequest) (err error) {
+	//node.mutex.Lock()
+	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(request)
 	return
 }
 
 func (node *Node) Consensus() (err error) {
+	//node.mutex.Lock()
+	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(ConsensusRequest)
 	return
 }
 
 func (node *Node) UpdateTransactions(request TransactionRequest) (err error) {
+	//node.mutex.Lock()
+	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(request)
 	return
 }
 
 func (node *Node) GetAmount(request AmountRequest) (amountResponse *AmountResponse, err error) {
+	//node.mutex.Lock()
+	//defer node.mutex.Unlock()
 	res, err := node.sendRequest(request)
 	if err == nil {
 		err = res.GetGob(&amountResponse)
 	}
+
 	return
 }
 
 func (node *Node) Mine() (err error) {
+	//node.mutex.Lock()
+	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(MineRequest)
 	return
 }
 
 func (node *Node) StartMining() (err error) {
+	//node.mutex.Lock()
+	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(StartMiningRequest)
 	return
 }
 
 func (node *Node) StopMining() (err error) {
+	//node.mutex.Lock()
+	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(StopMiningRequest)
 	return
 }
@@ -111,10 +116,9 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 		client, err = p2p.NewClient(tcp)
 		if err == nil {
 			client.SetLogger(node.logger)
-			client.SetLogger(node.logger)
-			settings := p2p.NewClientSettings()
-			settings.SetRetry(10, p2p.DefaultDelayTimeout)
-			client.SetSettings(settings)
+			//settings := p2p.NewClientSettings()
+			//settings.SetRetry(10, p2p.DefaultDelayTimeout)
+			//client.SetSettings(settings)
 			res, err = client.Send("dialog", req)
 		}
 	}

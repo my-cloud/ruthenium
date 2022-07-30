@@ -80,25 +80,28 @@ func (blockchain *Blockchain) FindNeighbors() {
 		defer blockchain.neighborsMutex.Unlock()
 		var neighbors []*Node
 		for _, neighbor := range neighborsByTarget {
-			neighborsIps, err := net.LookupIP(neighbor.Ip())
+			neighborIp := neighbor.Ip()
+			neighborPort := neighbor.Port()
+			lookedUpNeighborsIps, err := net.LookupIP(neighborIp)
 			if err != nil {
-				blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery failed on addresse %s: %v", neighbor.Ip(), err))
+				blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery failed on addresse %s: %v", neighborIp, err))
 				return
 			}
 
-			numNeighbors := len(neighborsIps)
-			if numNeighbors != 1 {
-				blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery did not find a single address (%d addresses found) for the given IP %s", numNeighbors, neighbor.Ip()))
+			neighborsCount := len(lookedUpNeighborsIps)
+			if neighborsCount != 1 {
+				blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery did not find a single address (%d addresses found) for the given IP %s", neighborsCount, neighborIp))
 				return
 			}
-			neighborIp := neighborsIps[0]
-			if (neighborIp.String() != blockchain.ip || neighbor.Port() != blockchain.port) && neighborIp.String() == neighbor.Ip() && neighbor.IsFound() {
+			lookedUpNeighborIp := lookedUpNeighborsIps[0]
+			lookedUpNeighborIpString := lookedUpNeighborIp.String()
+			if (lookedUpNeighborIpString != blockchain.ip || neighborPort != blockchain.port) && lookedUpNeighborIpString == neighborIp && neighbor.IsFound() {
 				neighbors = append(neighbors, neighbor)
 				kind := PostTargetRequest
 				request := TargetRequest{
 					Kind: &kind,
-					Ip:   &blockchain.ip,
-					Port: &blockchain.port,
+					Ip:   &neighborIp,
+					Port: &neighborPort,
 				}
 				_ = neighbor.SendTarget(request)
 			}
@@ -113,6 +116,9 @@ func (blockchain *Blockchain) AddTarget(ip string, port uint16) {
 		defer blockchain.neighborsMutex.Unlock()
 		neighbor := NewNode(ip, port, blockchain.logger)
 		blockchain.neighborsByTarget[neighbor.Target()] = neighbor
+		//if _, ok := blockchain.neighborsByTarget[neighbor.Target()]; !ok {
+		//	blockchain.neighborsByTarget[neighbor.Target()] = neighbor
+		//}
 	}()
 }
 
