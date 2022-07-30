@@ -66,8 +66,6 @@ func (blockchain *Blockchain) Run() {
 }
 
 func (blockchain *Blockchain) SynchronizeNeighbors() {
-	blockchain.neighborsMutex.Lock()
-	defer blockchain.neighborsMutex.Unlock()
 	blockchain.FindNeighbors()
 }
 
@@ -78,6 +76,8 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 
 func (blockchain *Blockchain) FindNeighbors() {
 	go func(neighborsByTarget map[string]*Node) {
+		blockchain.neighborsMutex.Lock()
+		defer blockchain.neighborsMutex.Unlock()
 		var neighbors []*Node
 		for _, neighbor := range neighborsByTarget {
 			neighborsIps, err := net.LookupIP(neighbor.Ip())
@@ -108,8 +108,12 @@ func (blockchain *Blockchain) FindNeighbors() {
 }
 
 func (blockchain *Blockchain) AddTarget(ip string, port uint16) {
-	neighbor := NewNode(ip, port, blockchain.logger)
-	blockchain.neighborsByTarget[neighbor.Target()] = neighbor
+	go func() {
+		blockchain.neighborsMutex.Lock()
+		defer blockchain.neighborsMutex.Unlock()
+		neighbor := NewNode(ip, port, blockchain.logger)
+		blockchain.neighborsByTarget[neighbor.Target()] = neighbor
+	}()
 }
 
 func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
