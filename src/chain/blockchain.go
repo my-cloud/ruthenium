@@ -62,7 +62,6 @@ func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *
 
 func (blockchain *Blockchain) Run() {
 	blockchain.StartNeighborsSynchronization()
-	blockchain.ResolveConflicts()
 }
 
 func (blockchain *Blockchain) SynchronizeNeighbors() {
@@ -114,6 +113,9 @@ func (blockchain *Blockchain) FindNeighbors() {
 			}
 		}
 		blockchain.neighbors = neighbors
+
+		// TODO should we really resolve conflicts each time or only the first time discovering a new neighbor?
+		blockchain.ResolveConflicts()
 		for _, neighbor := range neighbors {
 			for _, targetRequest := range targetRequests {
 				_ = neighbor.SendTarget(targetRequest)
