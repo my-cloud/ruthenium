@@ -113,7 +113,7 @@ func (blockchain *Blockchain) FindNeighbors() {
 				}
 				targetRequests = append(targetRequests, targetRequest)
 				for _, oldNeighbor := range blockchain.neighbors {
-					if oldNeighbor.Ip() == neighbor.Ip() && oldNeighbor.Port() == neighbor.Port() {
+					if oldNeighbor.Ip() != neighbor.Ip() && oldNeighbor.Port() != neighbor.Port() {
 						newNeighborFound = true
 						break
 					}
