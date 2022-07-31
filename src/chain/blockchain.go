@@ -62,6 +62,7 @@ func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *
 
 func (blockchain *Blockchain) Run() {
 	blockchain.StartNeighborsSynchronization()
+	blockchain.ResolveConflicts()
 }
 
 func (blockchain *Blockchain) SynchronizeNeighbors() {
@@ -75,6 +76,7 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 
 func (blockchain *Blockchain) FindNeighbors() {
 	go func(neighborsByTarget map[string]*Node) {
+		blockchain.logger.Warn("FindNeighbors start")
 		blockchain.neighborsMutex.Lock()
 		defer blockchain.neighborsMutex.Unlock()
 		var neighbors []*Node
@@ -113,21 +115,18 @@ func (blockchain *Blockchain) FindNeighbors() {
 			}
 		}
 		blockchain.neighbors = neighbors
-
-		// TODO should we really resolve conflicts each time or only the first time discovering a new neighbor?
-		blockchain.ResolveConflicts()
 		for _, neighbor := range neighbors {
 			for _, targetRequest := range targetRequests {
-				if neighbor.Ip() != *targetRequest.Ip && neighbor.Port() != *targetRequest.Port {
-					_ = neighbor.SendTarget(targetRequest)
-				}
+				_ = neighbor.SendTarget(targetRequest)
 			}
 		}
+		blockchain.logger.Warn("FindNeighbors end")
 	}(blockchain.neighborsByTarget)
 }
 
 func (blockchain *Blockchain) AddTarget(ip string, port uint16) {
 	go func() {
+		blockchain.logger.Warn("AddTarget start")
 		blockchain.neighborsMutex.Lock()
 		defer blockchain.neighborsMutex.Unlock()
 		neighbor := NewNode(ip, port, blockchain.logger)
@@ -135,6 +134,7 @@ func (blockchain *Blockchain) AddTarget(ip string, port uint16) {
 		//if _, ok := blockchain.neighborsByTarget[neighbor.Target()]; !ok {
 		//	blockchain.neighborsByTarget[neighbor.Target()] = neighbor
 		//}
+		blockchain.logger.Warn("AddTarget end")
 	}()
 }
 
@@ -147,12 +147,9 @@ func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 }
 
 func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
-	go func(neighbors []*Node) {
-		transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
-		err := blockchain.addTransaction(transaction, signature)
-		if err != nil {
-			blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to add transaction\n%v", err))
-		}
+	go func() {
+		blockchain.logger.Warn("CreateTransaction start")
+		blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
 		var verb = PUT
@@ -164,19 +161,24 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 			Value:            &value,
 			Signature:        &signatureStr,
 		}
-		for _, neighbor := range neighbors {
-			_ = neighbor.UpdateTransactions(transactionRequest)
-		}
-	}(blockchain.neighbors)
+		go func(neighbors []*Node) {
+			for _, neighbor := range neighbors {
+				_ = neighbor.UpdateTransactions(transactionRequest)
+			}
+		}(blockchain.neighbors)
+		blockchain.logger.Warn("CreateTransaction end")
+	}()
 }
 
 func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
 	go func() {
+		blockchain.logger.Warn("UpdateTransaction start")
 		transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
 		err := blockchain.addTransaction(transaction, signature)
 		if err != nil {
 			blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to add transaction\n%v", err))
 		}
+		blockchain.logger.Warn("UpdateTransaction end")
 	}()
 }
 
@@ -196,7 +198,8 @@ func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature
 }
 
 func (blockchain *Blockchain) Mine() {
-	go func(neighbors []*Node) {
+	go func() {
+		blockchain.logger.Warn("Mine start")
 		blockchain.mineMutex.Lock()
 		defer blockchain.mineMutex.Unlock()
 
@@ -208,10 +211,13 @@ func (blockchain *Blockchain) Mine() {
 		previousHash := blockchain.lastBlock().Hash()
 		blockchain.createBlock(nonce, previousHash)
 
-		for _, neighbor := range neighbors {
-			_ = neighbor.Consensus()
-		}
-	}(blockchain.neighbors)
+		go func(neighbors []*Node) {
+			for _, neighbor := range neighbors {
+				_ = neighbor.Consensus()
+			}
+		}(blockchain.neighbors)
+		blockchain.logger.Warn("Mine end")
+	}()
 }
 
 func (blockchain *Blockchain) StartMining() {
@@ -235,6 +241,7 @@ func (blockchain *Blockchain) StopMining() {
 }
 
 func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) float32 {
+	blockchain.logger.Warn("CalculateTotalAmount start")
 	var totalAmount float32
 	for _, block := range blockchain.blocks {
 		for _, transaction := range block.Transactions() {
@@ -248,6 +255,7 @@ func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) flo
 			}
 		}
 	}
+	blockchain.logger.Warn("CalculateTotalAmount end")
 	return totalAmount
 }
 
@@ -292,6 +300,7 @@ func (blockchain *Blockchain) ResolveConflicts() {
 	maxLength := len(blockchain.blocks)
 
 	go func(neighbors []*Node) {
+		blockchain.logger.Warn("ResolveConflicts start")
 		for _, neighbor := range neighbors {
 			neighborBlocks, err := neighbor.GetBlocks()
 			if err == nil && len(neighborBlocks) > maxLength {
@@ -309,8 +318,10 @@ func (blockchain *Blockchain) ResolveConflicts() {
 			blockchain.blocks = longestChain
 			blockchain.clearTransactions()
 			blockchain.logger.Warn("Conflicts resolved: blockchain replaced")
+		} else {
+			blockchain.logger.Warn("Conflicts resolved: blockchain kept")
 		}
-		blockchain.logger.Warn("Conflicts resolved: blockchain kept")
+		blockchain.logger.Warn("ResolveConflicts end")
 	}(blockchain.neighbors)
 }
 
