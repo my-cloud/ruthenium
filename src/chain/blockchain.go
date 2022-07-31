@@ -117,7 +117,9 @@ func (blockchain *Blockchain) FindNeighbors() {
 		blockchain.neighbors = neighbors
 		for _, neighbor := range neighbors {
 			for _, targetRequest := range targetRequests {
-				_ = neighbor.SendTarget(targetRequest)
+				if neighbor.Ip() != *targetRequest.Ip && neighbor.Port() != *targetRequest.Port {
+					_ = neighbor.SendTarget(targetRequest)
+				}
 			}
 		}
 		blockchain.logger.Warn("FindNeighbors end")
