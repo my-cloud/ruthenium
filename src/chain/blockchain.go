@@ -118,7 +118,9 @@ func (blockchain *Blockchain) FindNeighbors() {
 		blockchain.ResolveConflicts()
 		for _, neighbor := range neighbors {
 			for _, targetRequest := range targetRequests {
-				_ = neighbor.SendTarget(targetRequest)
+				if neighbor.Ip() != *targetRequest.Ip && neighbor.Port() != *targetRequest.Port {
+					_ = neighbor.SendTarget(targetRequest)
+				}
 			}
 		}
 	}(blockchain.neighborsByTarget)
