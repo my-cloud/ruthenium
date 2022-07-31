@@ -62,7 +62,6 @@ func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *
 
 func (blockchain *Blockchain) Run() {
 	blockchain.StartNeighborsSynchronization()
-	blockchain.ResolveConflicts()
 }
 
 func (blockchain *Blockchain) SynchronizeNeighbors() {
@@ -88,6 +87,7 @@ func (blockchain *Blockchain) FindNeighbors() {
 			Port: &blockchain.port,
 		}
 		targetRequests = append(targetRequests, hostTargetRequest)
+		var newNeighborFound bool
 		for _, neighbor := range neighborsByTarget {
 			neighborIp := neighbor.Ip()
 			neighborPort := neighbor.Port()
@@ -112,9 +112,18 @@ func (blockchain *Blockchain) FindNeighbors() {
 					Port: &neighborPort,
 				}
 				targetRequests = append(targetRequests, targetRequest)
+				for _, oldNeighbor := range blockchain.neighbors {
+					if oldNeighbor.Ip() == neighbor.Ip() && oldNeighbor.Port() == neighbor.Port() {
+						newNeighborFound = true
+						break
+					}
+				}
 			}
 		}
 		blockchain.neighbors = neighbors
+		if newNeighborFound {
+			blockchain.ResolveConflicts()
+		}
 		for _, neighbor := range neighbors {
 			for _, targetRequest := range targetRequests {
 				if neighbor.Ip() != *targetRequest.Ip && neighbor.Port() != *targetRequest.Port {
@@ -174,6 +183,8 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 
 func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
 	go func() {
+		blockchain.neighborsMutex.Lock()
+		defer blockchain.neighborsMutex.Unlock()
 		blockchain.logger.Warn("UpdateTransaction start")
 		transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
 		err := blockchain.addTransaction(transaction, signature)
