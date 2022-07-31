@@ -127,7 +127,9 @@ func (blockchain *Blockchain) FindNeighbors() {
 		}
 		for _, neighbor := range neighbors {
 			for _, targetRequest := range targetRequests {
-				if neighbor.Ip() != *targetRequest.Ip && neighbor.Port() != *targetRequest.Port {
+				neighborIp := neighbor.Ip()
+				neighborPort := neighbor.Port()
+				if neighborIp != *targetRequest.Ip || neighborPort != *targetRequest.Port {
 					_ = neighbor.SendTarget(targetRequest)
 				}
 			}
@@ -310,10 +312,10 @@ func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBloc
 
 func (blockchain *Blockchain) ResolveConflicts() {
 	go func(neighbors []*Node) {
+		blockchain.logger.Warn("ResolveConflicts start")
 		var longestChainResponse []*BlockResponse
 		var longestChain []*Block
 		maxLength := len(blockchain.blocks)
-		blockchain.logger.Warn("ResolveConflicts start")
 		for _, neighbor := range neighbors {
 			neighborBlocks, err := neighbor.GetBlocks()
 			if err == nil && len(neighborBlocks) > maxLength {
