@@ -112,9 +112,10 @@ func (blockchain *Blockchain) FindNeighbors() {
 					Port: &neighborPort,
 				}
 				targetRequests = append(targetRequests, targetRequest)
+				newNeighborFound = true
 				for _, oldNeighbor := range blockchain.neighbors {
-					if oldNeighbor.Ip() != neighbor.Ip() && oldNeighbor.Port() != neighbor.Port() {
-						newNeighborFound = true
+					if oldNeighbor.Ip() == neighbor.Ip() && oldNeighbor.Port() == neighbor.Port() {
+						newNeighborFound = false
 						break
 					}
 				}
@@ -122,7 +123,7 @@ func (blockchain *Blockchain) FindNeighbors() {
 		}
 		blockchain.neighbors = neighbors
 		if newNeighborFound {
-			blockchain.resolveConflictsInternal(neighbors)
+			blockchain.ResolveConflicts()
 		}
 		for _, neighbor := range neighbors {
 			for _, targetRequest := range targetRequests {
@@ -309,36 +310,32 @@ func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBloc
 
 func (blockchain *Blockchain) ResolveConflicts() {
 	go func(neighbors []*Node) {
-		blockchain.resolveConflictsInternal(neighbors)
-	}(blockchain.neighbors)
-}
-
-func (blockchain *Blockchain) resolveConflictsInternal(neighbors []*Node) {
-	var longestChainResponse []*BlockResponse
-	var longestChain []*Block
-	maxLength := len(blockchain.blocks)
-	blockchain.logger.Warn("ResolveConflicts start")
-	for _, neighbor := range neighbors {
-		neighborBlocks, err := neighbor.GetBlocks()
-		if err == nil && len(neighborBlocks) > maxLength {
-			validBlocks := blockchain.GetValidBlocks(neighborBlocks)
-			if len(validBlocks) > 1 {
-				maxLength = len(neighborBlocks)
-				longestChainResponse = neighborBlocks
-				longestChain = validBlocks
+		var longestChainResponse []*BlockResponse
+		var longestChain []*Block
+		maxLength := len(blockchain.blocks)
+		blockchain.logger.Warn("ResolveConflicts start")
+		for _, neighbor := range neighbors {
+			neighborBlocks, err := neighbor.GetBlocks()
+			if err == nil && len(neighborBlocks) > maxLength {
+				validBlocks := blockchain.GetValidBlocks(neighborBlocks)
+				if len(validBlocks) > 1 {
+					maxLength = len(neighborBlocks)
+					longestChainResponse = neighborBlocks
+					longestChain = validBlocks
+				}
 			}
 		}
-	}
 
-	if longestChain != nil {
-		blockchain.blockResponses = longestChainResponse
-		blockchain.blocks = longestChain
-		blockchain.clearTransactions()
-		blockchain.logger.Warn("Conflicts resolved: blockchain replaced")
-	} else {
-		blockchain.logger.Warn("Conflicts resolved: blockchain kept")
-	}
-	blockchain.logger.Warn("ResolveConflicts end")
+		if longestChain != nil {
+			blockchain.blockResponses = longestChainResponse
+			blockchain.blocks = longestChain
+			blockchain.clearTransactions()
+			blockchain.logger.Warn("Conflicts resolved: blockchain replaced")
+		} else {
+			blockchain.logger.Warn("Conflicts resolved: blockchain kept")
+		}
+		blockchain.logger.Warn("ResolveConflicts end")
+	}(blockchain.neighbors)
 }
 
 func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *Block {
