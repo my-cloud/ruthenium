@@ -143,8 +143,12 @@ func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 }
 
 func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
-	go func() {
-		blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
+	go func(neighbors []*Node) {
+		transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
+		err := blockchain.addTransaction(transaction, signature)
+		if err != nil {
+			blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to add transaction\n%v", err))
+		}
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
 		var verb = PUT
@@ -156,20 +160,20 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 			Value:            &value,
 			Signature:        &signatureStr,
 		}
-		go func(neighbors []*Node) {
-			for _, neighbor := range neighbors {
-				_ = neighbor.UpdateTransactions(transactionRequest)
-			}
-		}(blockchain.neighbors)
-	}()
+		for _, neighbor := range neighbors {
+			_ = neighbor.UpdateTransactions(transactionRequest)
+		}
+	}(blockchain.neighbors)
 }
 
 func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
-	transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
-	err := blockchain.addTransaction(transaction, signature)
-	if err != nil {
-		blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to add transaction\n%v", err))
-	}
+	go func() {
+		transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
+		err := blockchain.addTransaction(transaction, signature)
+		if err != nil {
+			blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to add transaction\n%v", err))
+		}
+	}()
 }
 
 func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature *Signature) (err error) {
@@ -188,7 +192,7 @@ func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature
 }
 
 func (blockchain *Blockchain) Mine() {
-	go func() {
+	go func(neighbors []*Node) {
 		blockchain.mineMutex.Lock()
 		defer blockchain.mineMutex.Unlock()
 
@@ -200,12 +204,10 @@ func (blockchain *Blockchain) Mine() {
 		previousHash := blockchain.lastBlock().Hash()
 		blockchain.createBlock(nonce, previousHash)
 
-		go func(neighbors []*Node) {
-			for _, neighbor := range neighbors {
-				_ = neighbor.Consensus()
-			}
-		}(blockchain.neighbors)
-	}()
+		for _, neighbor := range neighbors {
+			_ = neighbor.Consensus()
+		}
+	}(blockchain.neighbors)
 }
 
 func (blockchain *Blockchain) StartMining() {
