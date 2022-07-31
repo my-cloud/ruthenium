@@ -37,7 +37,7 @@ type Blockchain struct {
 	port   uint16
 	logger *log.Logger
 
-	neighbors         []*Node
+	neighbors         []*Node // TODO manage max neighbors count (Outbound/Inbound)
 	neighborsMutex    sync.Mutex
 	neighborsByTarget map[string]*Node
 }
