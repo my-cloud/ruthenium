@@ -25,13 +25,14 @@ const (
 )
 
 type Blockchain struct {
-	transactions   []*Transaction
-	blocks         []*Block
-	blockResponses []*BlockResponse
-	address        string
-	mineMutex      sync.Mutex
-	miningStarted  bool
-	miningStopped  bool
+	transactions      []*Transaction
+	transactionsMutex sync.RWMutex
+	blocks            []*Block
+	blockResponses    []*BlockResponse
+	address           string
+	mineMutex         sync.Mutex
+	miningStarted     bool
+	miningStopped     bool
 
 	ip     string
 	port   uint16
@@ -49,7 +50,7 @@ func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *
 	blockchain.ip = ip
 	blockchain.port = port
 	blockchain.logger = logger
-	blockchain.createBlock(0, new(Block).Hash())
+	blockchain.addBlock(new(Block))
 	seedsIps := []string{
 		"89.82.76.241",
 	}
@@ -207,11 +208,15 @@ func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientA
 
 func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature *Signature) (err error) {
 	if transaction.SenderAddress() == MiningRewardSenderAddress {
+		blockchain.transactionsMutex.Lock()
+		defer blockchain.transactionsMutex.Unlock()
 		blockchain.transactions = append(blockchain.transactions, transaction)
 	} else if transaction.VerifySignature(signature) {
 		if blockchain.CalculateTotalAmount(transaction.SenderAddress()) < transaction.Value() {
 			err = errors.New("not enough balance in the sender wallet")
 		} else {
+			blockchain.transactionsMutex.Lock()
+			defer blockchain.transactionsMutex.Unlock()
 			blockchain.transactions = append(blockchain.transactions, transaction)
 		}
 	} else {
@@ -230,9 +235,8 @@ func (blockchain *Blockchain) Mine() {
 		if err := blockchain.addTransaction(transaction, nil); err != nil {
 			blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to mine, error: %v", err))
 		}
-		nonce := blockchain.proofOfWork()
-		previousHash := blockchain.lastBlock().Hash()
-		blockchain.createBlock(nonce, previousHash)
+		block := blockchain.createBlock()
+		blockchain.addBlock(block)
 
 		go func(neighbors []*Node) {
 			blockchain.neighborsMutex.RLock()
@@ -285,6 +289,8 @@ func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) flo
 }
 
 func (blockchain *Blockchain) Transactions() []*Transaction {
+	blockchain.transactionsMutex.RLock()
+	defer blockchain.transactionsMutex.RUnlock()
 	return blockchain.transactions
 }
 
@@ -293,6 +299,8 @@ func (blockchain *Blockchain) Blocks() []*BlockResponse {
 }
 
 func (blockchain *Blockchain) clearTransactions() {
+	blockchain.transactionsMutex.Lock()
+	defer blockchain.transactionsMutex.Unlock()
 	blockchain.transactions = nil
 }
 
@@ -351,8 +359,7 @@ func (blockchain *Blockchain) ResolveConflicts() {
 	}(blockchain.neighbors)
 }
 
-func (blockchain *Blockchain) createBlock(nonce int, previousHash [32]byte) *Block {
-	block := NewBlock(nonce, previousHash, blockchain.transactions)
+func (blockchain *Blockchain) addBlock(block *Block) *Block {
 	blockchain.blocks = append(blockchain.blocks, block)
 	blockResponse := block.GetDto()
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
@@ -364,23 +371,17 @@ func (blockchain *Blockchain) lastBlock() *Block {
 	return blockchain.blocks[len(blockchain.blocks)-1]
 }
 
-func (blockchain *Blockchain) copyTransactions() (transactions []*Transaction) {
-	for _, transaction := range blockchain.transactions {
-		transactions = append(transactions,
-			NewTransaction(transaction.SenderAddress(),
-				transaction.SenderPublicKey(),
-				transaction.RecipientAddress(),
-				transaction.Value()))
-	}
-	return
-}
-
-func (blockchain *Blockchain) proofOfWork() int {
-	transactions := blockchain.copyTransactions()
+func (blockchain *Blockchain) createBlock() *Block {
 	previousHash := blockchain.lastBlock().Hash()
 	var nonce int
-	for NewBlock(nonce, previousHash, transactions).IsInValid(MiningDifficulty) {
-		nonce++
+	blockchain.transactionsMutex.RLock()
+	defer blockchain.transactionsMutex.RUnlock()
+	for {
+		block := NewBlock(nonce, previousHash, blockchain.transactions)
+		if block.IsInValid(MiningDifficulty) {
+			nonce++
+		} else {
+			return block
+		}
 	}
-	return nonce
 }
