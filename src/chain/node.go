@@ -54,7 +54,7 @@ func (node *Node) GetBlocks() (blockResponses []*BlockResponse, err error) {
 	return
 }
 
-func (node *Node) SendTarget(request TargetRequest) (err error) {
+func (node *Node) SendTargets(request []TargetRequest) (err error) {
 	//node.mutex.Lock()
 	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(request)

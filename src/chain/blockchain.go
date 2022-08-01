@@ -79,9 +79,7 @@ func (blockchain *Blockchain) FindNeighbors() {
 	go func(neighborsByTarget map[string]*Node) {
 		var neighbors []*Node
 		var targetRequests []TargetRequest
-		targetRequestKind := PostTargetRequest
 		hostTargetRequest := TargetRequest{
-			Kind: &targetRequestKind,
 			Ip:   &blockchain.ip,
 			Port: &blockchain.port,
 		}
@@ -108,7 +106,6 @@ func (blockchain *Blockchain) FindNeighbors() {
 			if (lookedUpNeighborIpString != blockchain.ip || neighborPort != blockchain.port) && lookedUpNeighborIpString == neighborIp && neighbor.IsFound() {
 				neighbors = append(neighbors, neighbor)
 				targetRequest := TargetRequest{
-					Kind: &targetRequestKind,
 					Ip:   &neighborIp,
 					Port: &neighborPort,
 				}
@@ -131,27 +128,30 @@ func (blockchain *Blockchain) FindNeighbors() {
 			blockchain.ResolveConflicts()
 		}
 		for _, neighbor := range neighbors {
+			var neighborTargetRequests []TargetRequest
 			for _, targetRequest := range targetRequests {
 				neighborIp := neighbor.Ip()
 				neighborPort := neighbor.Port()
 				if neighborIp != *targetRequest.Ip || neighborPort != *targetRequest.Port {
-					_ = neighbor.SendTarget(targetRequest)
+					neighborTargetRequests = append(neighborTargetRequests, targetRequest)
 				}
 			}
+			_ = neighbor.SendTargets(neighborTargetRequests)
 		}
 	}(blockchain.neighborsByTarget)
 }
 
-func (blockchain *Blockchain) AddTarget(ip string, port uint16) {
+func (blockchain *Blockchain) AddTargets(targetRequests []TargetRequest) {
 	go func() {
-		neighbor := NewNode(ip, port, blockchain.logger)
 		blockchain.neighborsByTargetMutex.Lock()
 		defer blockchain.neighborsByTargetMutex.Unlock()
-		blockchain.neighborsByTarget[neighbor.Target()] = neighbor
-		//if _, ok := blockchain.neighborsByTarget[neighbor.Target()]; !ok {
-		//  neighbor := NewNode(ip, port, blockchain.logger)
-		//	blockchain.neighborsByTarget[neighbor.Target()] = neighbor
-		//}
+		for _, targetRequest := range targetRequests {
+			neighbor := NewNode(*targetRequest.Ip, *targetRequest.Port, blockchain.logger)
+			blockchain.neighborsByTarget[neighbor.Target()] = neighbor
+			if _, ok := blockchain.neighborsByTarget[neighbor.Target()]; !ok {
+				blockchain.neighborsByTarget[neighbor.Target()] = neighbor
+			}
+		}
 	}()
 }
 
