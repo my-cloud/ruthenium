@@ -131,17 +131,15 @@ func (blockchain *Blockchain) FindNeighbors() {
 		if newNeighborFound {
 			blockchain.ResolveConflicts()
 		}
-		go func() {
-			for _, neighbor := range neighbors {
-				for _, targetRequest := range targetRequests {
-					neighborIp := neighbor.Ip()
-					neighborPort := neighbor.Port()
-					if neighborIp != *targetRequest.Ip || neighborPort != *targetRequest.Port {
-						_ = neighbor.SendTarget(targetRequest)
-					}
+		for _, neighbor := range neighbors {
+			for _, targetRequest := range targetRequests {
+				neighborIp := neighbor.Ip()
+				neighborPort := neighbor.Port()
+				if neighborIp != *targetRequest.Ip || neighborPort != *targetRequest.Port {
+					_ = neighbor.SendTarget(targetRequest)
 				}
 			}
-		}()
+		}
 		blockchain.logger.Warn("FindNeighbors end")
 	}(blockchain.neighborsByTarget)
 }
