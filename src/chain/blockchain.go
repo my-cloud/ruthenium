@@ -37,9 +37,10 @@ type Blockchain struct {
 	port   uint16
 	logger *log.Logger
 
-	neighbors         []*Node // TODO manage max neighbors count (Outbound/Inbound)
-	neighborsMutex    sync.Mutex
-	neighborsByTarget map[string]*Node
+	neighbors              []*Node // TODO manage max neighbors count (Outbound/Inbound)
+	neighborsMutex         sync.RWMutex
+	neighborsByTarget      map[string]*Node
+	neighborsByTargetMutex sync.RWMutex
 }
 
 func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *Blockchain {
@@ -76,8 +77,6 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 func (blockchain *Blockchain) FindNeighbors() {
 	go func(neighborsByTarget map[string]*Node) {
 		blockchain.logger.Warn("FindNeighbors start")
-		blockchain.neighborsMutex.Lock()
-		defer blockchain.neighborsMutex.Unlock()
 		var neighbors []*Node
 		var targetRequests []TargetRequest
 		targetRequestKind := PostTargetRequest
@@ -88,6 +87,8 @@ func (blockchain *Blockchain) FindNeighbors() {
 		}
 		targetRequests = append(targetRequests, hostTargetRequest)
 		var newNeighborFound bool
+		blockchain.neighborsMutex.RLock()
+		blockchain.neighborsByTargetMutex.RLock()
 		for _, neighbor := range neighborsByTarget {
 			neighborIp := neighbor.Ip()
 			neighborPort := neighbor.Port()
@@ -121,7 +122,11 @@ func (blockchain *Blockchain) FindNeighbors() {
 				}
 			}
 		}
+		blockchain.neighborsMutex.RUnlock()
+		blockchain.neighborsByTargetMutex.RUnlock()
+		blockchain.neighborsMutex.Lock()
 		blockchain.neighbors = neighbors
+		blockchain.neighborsMutex.Unlock()
 		if newNeighborFound {
 			blockchain.ResolveConflicts()
 		}
@@ -141,9 +146,9 @@ func (blockchain *Blockchain) FindNeighbors() {
 func (blockchain *Blockchain) AddTarget(ip string, port uint16) {
 	go func() {
 		blockchain.logger.Warn("AddTarget start")
-		blockchain.neighborsMutex.Lock()
-		defer blockchain.neighborsMutex.Unlock()
 		neighbor := NewNode(ip, port, blockchain.logger)
+		blockchain.neighborsByTargetMutex.Lock()
+		defer blockchain.neighborsByTargetMutex.Unlock()
 		blockchain.neighborsByTarget[neighbor.Target()] = neighbor
 		//if _, ok := blockchain.neighborsByTarget[neighbor.Target()]; !ok {
 		//	blockchain.neighborsByTarget[neighbor.Target()] = neighbor
@@ -176,6 +181,8 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 			Signature:        &signatureStr,
 		}
 		go func(neighbors []*Node) {
+			blockchain.neighborsMutex.RLock()
+			defer blockchain.neighborsMutex.RUnlock()
 			for _, neighbor := range neighbors {
 				_ = neighbor.UpdateTransactions(transactionRequest)
 			}
@@ -228,6 +235,8 @@ func (blockchain *Blockchain) Mine() {
 		blockchain.createBlock(nonce, previousHash)
 
 		go func(neighbors []*Node) {
+			blockchain.neighborsMutex.RLock()
+			defer blockchain.neighborsMutex.RUnlock()
 			for _, neighbor := range neighbors {
 				_ = neighbor.Consensus()
 			}
@@ -312,6 +321,8 @@ func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBloc
 
 func (blockchain *Blockchain) ResolveConflicts() {
 	go func(neighbors []*Node) {
+		blockchain.neighborsMutex.RLock()
+		defer blockchain.neighborsMutex.RUnlock()
 		blockchain.logger.Warn("ResolveConflicts start")
 		var longestChainResponse []*BlockResponse
 		var longestChain []*Block
