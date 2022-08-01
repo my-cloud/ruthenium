@@ -136,7 +136,9 @@ func (blockchain *Blockchain) FindNeighbors() {
 				neighborIp := neighbor.Ip()
 				neighborPort := neighbor.Port()
 				if neighborIp != *targetRequest.Ip || neighborPort != *targetRequest.Port {
-					_ = neighbor.SendTarget(targetRequest)
+					go func() {
+						_ = neighbor.SendTarget(targetRequest)
+					}()
 				}
 			}
 		}
