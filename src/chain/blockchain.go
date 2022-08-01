@@ -58,6 +58,9 @@ func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *
 	for _, seedIp := range seedsIps {
 		seed := NewNode(seedIp, DefaultPort, logger)
 		blockchain.neighborsByTarget[seed.Target()] = seed
+		if err := seed.StartClient(); err != nil {
+			blockchain.logger.Error(fmt.Sprintf("Failed to start neighbor client for target %s\n%v", seed.Target(), err))
+		}
 	}
 	return blockchain
 }
@@ -136,7 +139,9 @@ func (blockchain *Blockchain) FindNeighbors() {
 					neighborTargetRequests = append(neighborTargetRequests, targetRequest)
 				}
 			}
-			_ = neighbor.SendTargets(neighborTargetRequests)
+			go func(neighbor *Node) {
+				_ = neighbor.SendTargets(neighborTargetRequests)
+			}(neighbor)
 		}
 	}(blockchain.neighborsByTarget)
 }
@@ -150,6 +155,9 @@ func (blockchain *Blockchain) AddTargets(targetRequests []TargetRequest) {
 			blockchain.neighborsByTarget[neighbor.Target()] = neighbor
 			if _, ok := blockchain.neighborsByTarget[neighbor.Target()]; !ok {
 				blockchain.neighborsByTarget[neighbor.Target()] = neighbor
+				if err := neighbor.StartClient(); err != nil {
+					blockchain.logger.Error(fmt.Sprintf("Failed to start neighbor client for target %s\n%v", neighbor.Target(), err))
+				}
 			}
 		}
 	}()
@@ -339,7 +347,7 @@ func (blockchain *Blockchain) ResolveConflicts() {
 			blockchain.blockResponses = longestChainResponse
 			blockchain.blocks = longestChain
 			blockchain.clearTransactions()
-			blockchain.logger.Info("Conflicts resolved: blockchain replaced")
+			blockchain.logger.Warn("Conflicts resolved: blockchain replaced")
 		} else {
 			blockchain.logger.Warn("Conflicts resolved: blockchain kept")
 		}
