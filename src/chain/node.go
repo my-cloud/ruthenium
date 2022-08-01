@@ -55,29 +55,29 @@ func (node *Node) GetBlocks() (blockResponses []*BlockResponse, err error) {
 }
 
 func (node *Node) SendTargets(request []TargetRequest) (err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
+	node.mutex.Lock()
+	defer node.mutex.Unlock()
 	_, err = node.sendRequest(request)
 	return
 }
 
 func (node *Node) Consensus() (err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
+	node.mutex.Lock()
+	defer node.mutex.Unlock()
 	_, err = node.sendRequest(ConsensusRequest)
 	return
 }
 
 func (node *Node) UpdateTransactions(request TransactionRequest) (err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
+	node.mutex.Lock()
+	defer node.mutex.Unlock()
 	_, err = node.sendRequest(request)
 	return
 }
 
 func (node *Node) GetAmount(request AmountRequest) (amountResponse *AmountResponse, err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
+	node.mutex.Lock()
+	defer node.mutex.Unlock()
 	res, err := node.sendRequest(request)
 	if err == nil {
 		err = res.GetGob(&amountResponse)
@@ -87,22 +87,22 @@ func (node *Node) GetAmount(request AmountRequest) (amountResponse *AmountRespon
 }
 
 func (node *Node) Mine() (err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
+	node.mutex.Lock()
+	defer node.mutex.Unlock()
 	_, err = node.sendRequest(MineRequest)
 	return
 }
 
 func (node *Node) StartMining() (err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
+	node.mutex.Lock()
+	defer node.mutex.Unlock()
 	_, err = node.sendRequest(StartMiningRequest)
 	return
 }
 
 func (node *Node) StopMining() (err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
+	node.mutex.Lock()
+	defer node.mutex.Unlock()
 	_, err = node.sendRequest(StopMiningRequest)
 	return
 }
