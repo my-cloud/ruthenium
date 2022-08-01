@@ -77,7 +77,6 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 
 func (blockchain *Blockchain) FindNeighbors() {
 	go func(neighborsByTarget map[string]*Node) {
-		blockchain.logger.Warn("FindNeighbors start")
 		var neighbors []*Node
 		var targetRequests []TargetRequest
 		targetRequestKind := PostTargetRequest
@@ -140,21 +139,19 @@ func (blockchain *Blockchain) FindNeighbors() {
 				}
 			}
 		}
-		blockchain.logger.Warn("FindNeighbors end")
 	}(blockchain.neighborsByTarget)
 }
 
 func (blockchain *Blockchain) AddTarget(ip string, port uint16) {
 	go func() {
-		blockchain.logger.Warn("AddTarget start")
 		neighbor := NewNode(ip, port, blockchain.logger)
 		blockchain.neighborsByTargetMutex.Lock()
 		defer blockchain.neighborsByTargetMutex.Unlock()
 		blockchain.neighborsByTarget[neighbor.Target()] = neighbor
 		//if _, ok := blockchain.neighborsByTarget[neighbor.Target()]; !ok {
+		//  neighbor := NewNode(ip, port, blockchain.logger)
 		//	blockchain.neighborsByTarget[neighbor.Target()] = neighbor
 		//}
-		blockchain.logger.Warn("AddTarget end")
 	}()
 }
 
@@ -168,7 +165,6 @@ func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 
 func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
 	go func() {
-		blockchain.logger.Warn("CreateTransaction start")
 		blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
@@ -188,7 +184,6 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 				_ = neighbor.UpdateTransactions(transactionRequest)
 			}
 		}(blockchain.neighbors)
-		blockchain.logger.Warn("CreateTransaction end")
 	}()
 }
 
@@ -196,13 +191,11 @@ func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientA
 	go func() {
 		blockchain.neighborsMutex.Lock()
 		defer blockchain.neighborsMutex.Unlock()
-		blockchain.logger.Warn("UpdateTransaction start")
 		transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
 		err := blockchain.addTransaction(transaction, signature)
 		if err != nil {
 			blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to add transaction\n%v", err))
 		}
-		blockchain.logger.Warn("UpdateTransaction end")
 	}()
 }
 
@@ -227,7 +220,6 @@ func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature
 
 func (blockchain *Blockchain) Mine() {
 	go func() {
-		blockchain.logger.Warn("Mine start")
 		blockchain.mineMutex.Lock()
 		defer blockchain.mineMutex.Unlock()
 
@@ -245,7 +237,6 @@ func (blockchain *Blockchain) Mine() {
 				_ = neighbor.Consensus()
 			}
 		}(blockchain.neighbors)
-		blockchain.logger.Warn("Mine end")
 	}()
 }
 
@@ -270,7 +261,6 @@ func (blockchain *Blockchain) StopMining() {
 }
 
 func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) float32 {
-	blockchain.logger.Warn("CalculateTotalAmount start")
 	var totalAmount float32
 	for _, block := range blockchain.blocks {
 		for _, transaction := range block.Transactions() {
@@ -284,7 +274,6 @@ func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) flo
 			}
 		}
 	}
-	blockchain.logger.Warn("CalculateTotalAmount end")
 	return totalAmount
 }
 
@@ -331,7 +320,6 @@ func (blockchain *Blockchain) ResolveConflicts() {
 	go func(neighbors []*Node) {
 		blockchain.neighborsMutex.RLock()
 		defer blockchain.neighborsMutex.RUnlock()
-		blockchain.logger.Warn("ResolveConflicts start")
 		var longestChainResponse []*BlockResponse
 		var longestChain []*Block
 		maxLength := len(blockchain.blocks)
@@ -351,11 +339,10 @@ func (blockchain *Blockchain) ResolveConflicts() {
 			blockchain.blockResponses = longestChainResponse
 			blockchain.blocks = longestChain
 			blockchain.clearTransactions()
-			blockchain.logger.Warn("Conflicts resolved: blockchain replaced")
+			blockchain.logger.Info("Conflicts resolved: blockchain replaced")
 		} else {
 			blockchain.logger.Warn("Conflicts resolved: blockchain kept")
 		}
-		blockchain.logger.Warn("ResolveConflicts end")
 	}(blockchain.neighbors)
 }
 
