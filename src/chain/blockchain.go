@@ -186,13 +186,13 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 			Value:            &value,
 			Signature:        &signatureStr,
 		}
-		go func(neighbors []*Node) {
-			blockchain.neighborsMutex.RLock()
-			defer blockchain.neighborsMutex.RUnlock()
-			for _, neighbor := range neighbors {
+		blockchain.neighborsMutex.RLock()
+		defer blockchain.neighborsMutex.RUnlock()
+		for _, neighbor := range blockchain.neighbors {
+			go func(neighbor *Node) {
 				_ = neighbor.UpdateTransactions(transactionRequest)
-			}
-		}(blockchain.neighbors)
+			}(neighbor)
+		}
 	}()
 }
 
@@ -239,13 +239,13 @@ func (blockchain *Blockchain) Mine() {
 		block := blockchain.createBlock()
 		blockchain.addBlock(block)
 
-		go func(neighbors []*Node) {
-			blockchain.neighborsMutex.RLock()
-			defer blockchain.neighborsMutex.RUnlock()
-			for _, neighbor := range neighbors {
+		blockchain.neighborsMutex.RLock()
+		defer blockchain.neighborsMutex.RUnlock()
+		for _, neighbor := range blockchain.neighbors {
+			go func(neighbor *Node) {
 				_ = neighbor.Consensus()
-			}
-		}(blockchain.neighbors)
+			}(neighbor)
+		}
 	}()
 }
 
@@ -326,13 +326,13 @@ func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBloc
 }
 
 func (blockchain *Blockchain) ResolveConflicts() {
-	go func(neighbors []*Node) {
+	go func() {
 		blockchain.neighborsMutex.RLock()
 		defer blockchain.neighborsMutex.RUnlock()
 		var longestChainResponse []*BlockResponse
 		var longestChain []*Block
 		maxLength := len(blockchain.blocks)
-		for _, neighbor := range neighbors {
+		for _, neighbor := range blockchain.neighbors {
 			neighborBlocks, err := neighbor.GetBlocks()
 			if err == nil && len(neighborBlocks) > maxLength {
 				validBlocks := blockchain.GetValidBlocks(neighborBlocks)
@@ -352,7 +352,7 @@ func (blockchain *Blockchain) ResolveConflicts() {
 		} else {
 			blockchain.logger.Info("Conflicts resolved: blockchain kept")
 		}
-	}(blockchain.neighbors)
+	}()
 }
 
 func (blockchain *Blockchain) addBlock(block *Block) *Block {
