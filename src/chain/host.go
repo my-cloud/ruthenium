@@ -18,7 +18,6 @@ var cachedBlockchain = make(map[string]*Blockchain)
 
 const (
 	GetBlocksRequest       = "GET BLOCKS REQUEST"
-	PostTargetRequest      = "POST IP REQUEST"
 	GetTransactionsRequest = "GET TRANSACTIONS REQUEST"
 	MineRequest            = "MINE REQUEST"
 	StartMiningRequest     = "START MINING REQUEST"
@@ -88,13 +87,9 @@ func (host *Host) GetBlocks() (res p2p.Data) {
 	return
 }
 
-func (host *Host) PostTarget(request *TargetRequest) {
-	if request.IsInvalid() {
-		host.logger.Error("ERROR: Field(s) are missing in target request")
-	} else {
-		blockchain := host.GetBlockchain()
-		blockchain.AddTarget(*request.Ip, *request.Port)
-	}
+func (host *Host) PostTargets(request []TargetRequest) {
+	blockchain := host.GetBlockchain()
+	blockchain.AddTargets(request)
 }
 
 // TODO unused
@@ -178,7 +173,7 @@ func (host *Host) startHost() {
 	if err != nil {
 		host.logger.Fatal(err.Error())
 	} else {
-		server.SetLogger(host.logger)
+		server.SetLogger(log.NewLogger(log.Fatal))
 		settings := p2p.NewServerSettings()
 		settings.SetConnTimeout(HostConnectionTimeoutSecond * time.Second)
 		server.SetSettings(settings)
@@ -188,7 +183,7 @@ func (host *Host) startHost() {
 			var requestString string
 			var transactionRequest TransactionRequest
 			var amountRequest AmountRequest
-			var targetRequest TargetRequest
+			var targetsRequest []TargetRequest
 			res = p2p.Data{}
 			if err = req.GetGob(&requestString); err == nil {
 				switch requestString {
@@ -217,13 +212,8 @@ func (host *Host) startHost() {
 				}
 			} else if err = req.GetGob(&amountRequest); err == nil {
 				res = host.Amount(&amountRequest)
-			} else if err = req.GetGob(&targetRequest); err == nil {
-				switch *targetRequest.Kind {
-				case PostTargetRequest:
-					host.PostTarget(&targetRequest)
-				default:
-					unknownRequest = true
-				}
+			} else if err = req.GetGob(&targetsRequest); err == nil {
+				host.PostTargets(targetsRequest)
 			} else {
 				unknownRequest = true
 			}

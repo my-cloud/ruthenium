@@ -6,15 +6,14 @@ import (
 	"net"
 	"ruthenium/src/log"
 	"strconv"
-	"sync"
 	"time"
 )
 
 type Node struct {
 	ip     string
 	port   uint16
-	mutex  sync.Mutex
 	logger *log.Logger
+	client *p2p.Client
 }
 
 func NewNode(ip string, port uint16, logger *log.Logger) *Node {
@@ -23,6 +22,16 @@ func NewNode(ip string, port uint16, logger *log.Logger) *Node {
 	node.port = port
 	node.logger = logger
 	return node
+}
+
+func (node *Node) StartClient() error {
+	tcp := p2p.NewTCP(node.ip, strconv.Itoa(int(node.port)))
+	client, err := p2p.NewClient(tcp)
+	if err == nil {
+		client.SetLogger(node.logger)
+	}
+	node.client = client
+	return err
 }
 
 func (node *Node) Ip() string {
@@ -44,8 +53,6 @@ func (node *Node) IsFound() bool {
 }
 
 func (node *Node) GetBlocks() (blockResponses []*BlockResponse, err error) {
-	node.mutex.Lock()
-	defer node.mutex.Unlock()
 	res, err := node.sendRequest(GetBlocksRequest)
 	if err == nil {
 		err = res.GetGob(&blockResponses)
@@ -54,30 +61,22 @@ func (node *Node) GetBlocks() (blockResponses []*BlockResponse, err error) {
 	return
 }
 
-func (node *Node) SendTarget(request TargetRequest) (err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
+func (node *Node) SendTargets(request []TargetRequest) (err error) {
 	_, err = node.sendRequest(request)
 	return
 }
 
 func (node *Node) Consensus() (err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(ConsensusRequest)
 	return
 }
 
 func (node *Node) UpdateTransactions(request TransactionRequest) (err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(request)
 	return
 }
 
 func (node *Node) GetAmount(request AmountRequest) (amountResponse *AmountResponse, err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
 	res, err := node.sendRequest(request)
 	if err == nil {
 		err = res.GetGob(&amountResponse)
@@ -87,22 +86,16 @@ func (node *Node) GetAmount(request AmountRequest) (amountResponse *AmountRespon
 }
 
 func (node *Node) Mine() (err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(MineRequest)
 	return
 }
 
 func (node *Node) StartMining() (err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(StartMiningRequest)
 	return
 }
 
 func (node *Node) StopMining() (err error) {
-	//node.mutex.Lock()
-	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(StopMiningRequest)
 	return
 }
@@ -111,16 +104,12 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 	req := p2p.Data{}
 	err = req.SetGob(request)
 	if err == nil {
-		tcp := p2p.NewTCP(node.ip, strconv.Itoa(int(node.port)))
-		var client *p2p.Client
-		client, err = p2p.NewClient(tcp)
-		if err == nil {
-			client.SetLogger(node.logger)
-			//settings := p2p.NewClientSettings()
-			//settings.SetRetry(10, p2p.DefaultDelayTimeout)
-			//client.SetSettings(settings)
-			res, err = client.Send("dialog", req)
+		if node.client == nil {
+			if err = node.StartClient(); err != nil {
+				node.logger.Error(fmt.Sprintf("Failed to start neighbor client for target %s\n%v", node.Target(), err))
+			}
 		}
+		res, err = node.client.Send("dialog", req)
 	}
 
 	return
