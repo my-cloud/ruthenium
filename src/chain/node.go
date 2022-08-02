@@ -61,6 +61,9 @@ func (node *Node) GetBlocks() (blockResponses []*BlockResponse, err error) {
 	//node.mutex.Lock()
 	//defer node.mutex.Unlock()
 	res, err := node.sendRequest(GetBlocksRequest)
+	if err != nil {
+		node.logger.Error("Send request error for GetBlocks")
+	}
 	if err == nil {
 		err = res.GetGob(&blockResponses)
 	}
@@ -72,6 +75,9 @@ func (node *Node) SendTargets(request []TargetRequest) (err error) {
 	//node.mutex.Lock()
 	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(request)
+	if err != nil {
+		node.logger.Error("Send request error for SendTargets")
+	}
 	return
 }
 
@@ -79,6 +85,9 @@ func (node *Node) Consensus() (err error) {
 	//node.mutex.Lock()
 	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(ConsensusRequest)
+	if err != nil {
+		node.logger.Error("Send request error for Consensus")
+	}
 	return
 }
 
@@ -86,6 +95,9 @@ func (node *Node) UpdateTransactions(request TransactionRequest) (err error) {
 	//node.mutex.Lock()
 	//defer node.mutex.Unlock()
 	_, err = node.sendRequest(request)
+	if err != nil {
+		node.logger.Error("Send request error for UpdateTransactions")
+	}
 	return
 }
 
