@@ -6,16 +6,14 @@ import (
 	"net"
 	"ruthenium/src/log"
 	"strconv"
-	"sync"
 	"time"
 )
 
 type Node struct {
 	ip     string
 	port   uint16
-	client *p2p.Client
-	mutex  sync.Mutex
 	logger *log.Logger
+	client *p2p.Client
 }
 
 func NewNode(ip string, port uint16, logger *log.Logger) *Node {
@@ -26,15 +24,14 @@ func NewNode(ip string, port uint16, logger *log.Logger) *Node {
 	return node
 }
 
-func (node *Node) StartClient() {
+func (node *Node) StartClient() error {
 	tcp := p2p.NewTCP(node.ip, strconv.Itoa(int(node.port)))
 	client, err := p2p.NewClient(tcp)
-	if err != nil {
-		node.logger.Error(err.Error())
-	} else {
+	if err == nil {
 		client.SetLogger(node.logger)
-		node.client = client
 	}
+	node.client = client
+	return err
 }
 
 func (node *Node) Ip() string {
@@ -55,129 +52,64 @@ func (node *Node) IsFound() bool {
 	return err == nil
 }
 
-func (node *Node) GetBlocks() []*Block {
+func (node *Node) GetBlocks() (blockResponses []*BlockResponse, err error) {
 	res, err := node.sendRequest(GetBlocksRequest)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return nil
+	if err == nil {
+		err = res.GetGob(&blockResponses)
 	}
 
-	var blockResponses []*BlockResponse
-	err = res.GetGob(&blockResponses)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return nil
-	}
-
-	var blocks []*Block
-	for _, block := range blockResponses {
-		blocks = append(blocks, NewBlockFromDto(block))
-	}
-
-	return blocks
+	return
 }
 
-func (node *Node) SendTarget(request TargetRequest) (sent bool) {
+func (node *Node) SendTargets(request []TargetRequest) (err error) {
+	_, err = node.sendRequest(request)
+	return
+}
+
+func (node *Node) Consensus() (err error) {
+	_, err = node.sendRequest(ConsensusRequest)
+	return
+}
+
+func (node *Node) UpdateTransactions(request TransactionRequest) (err error) {
+	_, err = node.sendRequest(request)
+	return
+}
+
+func (node *Node) GetAmount(request AmountRequest) (amountResponse *AmountResponse, err error) {
 	res, err := node.sendRequest(request)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
+	if err == nil {
+		err = res.GetGob(&amountResponse)
 	}
 
-	err = res.GetGob(&sent)
 	return
 }
 
-func (node *Node) DeleteTransactions() (deleted bool) {
-	res, err := node.sendRequest(DeleteTransactionsRequest)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
-	}
-
-	err = res.GetGob(&deleted)
+func (node *Node) Mine() (err error) {
+	_, err = node.sendRequest(MineRequest)
 	return
 }
 
-func (node *Node) Consensus() (consented bool) {
-	res, err := node.sendRequest(ConsensusRequest)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
-	}
-
-	err = res.GetGob(&consented)
+func (node *Node) StartMining() (err error) {
+	_, err = node.sendRequest(StartMiningRequest)
 	return
 }
 
-func (node *Node) UpdateTransactions(request TransactionRequest) (created bool) {
-	res, err := node.sendRequest(request)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
-	}
-
-	err = res.GetGob(&created)
-	return
-}
-
-func (node *Node) GetAmount(request AmountRequest) (amountResponse *AmountResponse) {
-	res, err := node.sendRequest(request)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return nil
-	}
-
-	err = res.GetGob(&amountResponse)
-	return
-}
-
-func (node *Node) Mine() (mined bool) {
-	res, err := node.sendRequest(MineRequest)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
-	}
-
-	err = res.GetGob(&mined)
-	return
-}
-
-func (node *Node) StartMining() (miningStarted bool) {
-	res, err := node.sendRequest(StartMiningRequest)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
-	}
-
-	err = res.GetGob(&miningStarted)
-	return
-}
-
-func (node *Node) StopMining() (miningStopped bool) {
-	res, err := node.sendRequest(StopMiningRequest)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return false
-	}
-
-	err = res.GetGob(&miningStopped)
+func (node *Node) StopMining() (err error) {
+	_, err = node.sendRequest(StopMiningRequest)
 	return
 }
 
 func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 	req := p2p.Data{}
 	err = req.SetGob(request)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return
-	}
-
-	res = p2p.Data{}
-	res, err = node.client.Send("dialog", req)
-	if err != nil {
-		node.logger.Error(err.Error())
-		return
+	if err == nil {
+		if node.client == nil {
+			if err = node.StartClient(); err != nil {
+				node.logger.Error(fmt.Sprintf("Failed to start neighbor client for target %s\n%v", node.Target(), err))
+			}
+		}
+		res, err = node.client.Send("dialog", req)
 	}
 
 	return
