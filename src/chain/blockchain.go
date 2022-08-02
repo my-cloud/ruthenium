@@ -162,7 +162,6 @@ func (blockchain *Blockchain) Mine() bool {
 	nonce := blockchain.proofOfWork()
 	previousHash := blockchain.lastBlock().Hash()
 	blockchain.createBlock(nonce, previousHash)
-	log.Println("action=mining, status=success")
 
 	for _, neighbor := range blockchain.neighbors {
 		// TODO extract http logic
@@ -213,7 +212,7 @@ func (blockchain *Blockchain) Blocks() []*Block {
 }
 
 func (blockchain *Blockchain) ClearTransactions() {
-	blockchain.transactions = blockchain.transactions[:0]
+	blockchain.transactions = nil
 }
 
 func (blockchain *Blockchain) IsValid(blocks []*Block) bool {
