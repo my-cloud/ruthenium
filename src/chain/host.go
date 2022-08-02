@@ -173,7 +173,7 @@ func (host *Host) startHost() {
 	if err != nil {
 		host.logger.Fatal(err.Error())
 	} else {
-		server.SetLogger(host.logger)
+		server.SetLogger(log.NewLogger(log.Fatal))
 		settings := p2p.NewServerSettings()
 		settings.SetConnTimeout(HostConnectionTimeoutSecond * time.Second)
 		server.SetSettings(settings)

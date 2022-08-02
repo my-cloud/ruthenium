@@ -347,9 +347,9 @@ func (blockchain *Blockchain) ResolveConflicts() {
 			blockchain.blockResponses = longestChainResponse
 			blockchain.blocks = longestChain
 			blockchain.clearTransactions()
-			blockchain.logger.Warn("Conflicts resolved: blockchain replaced")
+			blockchain.logger.Info("Conflicts resolved: blockchain replaced")
 		} else {
-			blockchain.logger.Warn("Conflicts resolved: blockchain kept")
+			blockchain.logger.Info("Conflicts resolved: blockchain kept")
 		}
 	}(blockchain.neighbors)
 }

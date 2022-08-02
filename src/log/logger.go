@@ -49,9 +49,6 @@ func (logger *Logger) Warn(msg string) {
 }
 
 func (logger *Logger) Error(msg string) {
-	if msg == "EOF" {
-		return
-	}
 	if logger.level <= Error {
 		log.Println(msg)
 	}
