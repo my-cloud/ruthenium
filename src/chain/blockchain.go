@@ -34,9 +34,10 @@ type Blockchain struct {
 	miningStarted     bool
 	miningStopped     bool
 
-	ip     string
-	port   uint16
-	logger *log.Logger
+	ip        string
+	port      uint16
+	logger    *log.Logger
+	waitGroup *sync.WaitGroup
 
 	neighbors              []*Node // TODO manage max neighbors count (Outbound/Inbound)
 	neighborsMutex         sync.RWMutex
@@ -44,12 +45,13 @@ type Blockchain struct {
 	neighborsByTargetMutex sync.RWMutex
 }
 
-func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *Blockchain {
+func NewBlockchain(address string, ip string, port uint16, logger *log.Logger, waitGroup *sync.WaitGroup) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.address = address
 	blockchain.ip = ip
 	blockchain.port = port
 	blockchain.logger = logger
+	blockchain.waitGroup = waitGroup
 	blockchain.addBlock(new(Block))
 	seedsIps := []string{
 		"89.82.76.241",
@@ -80,6 +82,7 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 
 func (blockchain *Blockchain) FindNeighbors() {
 	go func(neighborsByTarget map[string]*Node) {
+		defer blockchain.waitGroup.Done()
 		var neighbors []*Node
 		var targetRequests []TargetRequest
 		hostTargetRequest := TargetRequest{
@@ -149,6 +152,7 @@ func (blockchain *Blockchain) FindNeighbors() {
 
 func (blockchain *Blockchain) AddTargets(targetRequests []TargetRequest) {
 	go func() {
+		defer blockchain.waitGroup.Done()
 		blockchain.neighborsByTargetMutex.Lock()
 		defer blockchain.neighborsByTargetMutex.Unlock()
 		for _, targetRequest := range targetRequests {
@@ -174,6 +178,7 @@ func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 
 func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
 	go func() {
+		defer blockchain.waitGroup.Done()
 		blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
@@ -198,6 +203,7 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 
 func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
 	go func() {
+		defer blockchain.waitGroup.Done()
 		blockchain.neighborsMutex.Lock()
 		defer blockchain.neighborsMutex.Unlock()
 		transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
@@ -229,6 +235,7 @@ func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature
 
 func (blockchain *Blockchain) Mine() {
 	go func() {
+		defer blockchain.waitGroup.Done()
 		blockchain.mineMutex.Lock()
 		defer blockchain.mineMutex.Unlock()
 
@@ -327,6 +334,7 @@ func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBloc
 
 func (blockchain *Blockchain) ResolveConflicts() {
 	go func() {
+		defer blockchain.waitGroup.Done()
 		blockchain.neighborsMutex.RLock()
 		defer blockchain.neighborsMutex.RUnlock()
 		var longestChainResponse []*BlockResponse
