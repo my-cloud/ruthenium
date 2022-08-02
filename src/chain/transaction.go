@@ -51,11 +51,11 @@ func (transaction *Transaction) RecipientAddress() string {
 }
 
 func (transaction *Transaction) VerifySignature(signature *Signature) bool {
-	marshaledBlockchain, err := json.Marshal(transaction)
+	marshaledTransaction, err := json.Marshal(transaction)
 	if err != nil {
-		log.Println("ERROR: Failed to marshal blockchain")
+		log.Println("ERROR: Failed to marshal transaction")
 	}
-	hash := sha256.Sum256(marshaledBlockchain)
+	hash := sha256.Sum256(marshaledTransaction)
 	return ecdsa.Verify(transaction.SenderPublicKey(), hash[:], signature.r, signature.s)
 }
 
