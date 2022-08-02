@@ -127,6 +127,7 @@ func (blockchain *Blockchain) FindNeighbors() {
 		blockchain.neighborsMutex.Lock()
 		blockchain.neighbors = neighbors
 		blockchain.neighborsMutex.Unlock()
+		// TODO handle case where a known neighbor have been disconnected for a while (consider it as a new neighbor)
 		if newNeighborFound {
 			blockchain.ResolveConflicts()
 		}
