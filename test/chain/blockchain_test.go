@@ -25,7 +25,7 @@ func Test_Blockchain(t *testing.T) {
 	logger := log.NewLogger(log.Error)
 	blockChain := chain.NewBlockchain(minerWallet.Address(), "", 8106, logger)
 	wg := blockChain.WaitGroup()
-	var value1 float32 = 100.
+	var value1 float32 = 40.
 	for blockChain.CalculateTotalAmount(minerWallet.Address()) < value1 {
 		blockChain.Mine()
 		wg.Wait()

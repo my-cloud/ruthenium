@@ -228,7 +228,7 @@ func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature
 		blockchain.transactionsMutex.Lock()
 		defer blockchain.transactionsMutex.Unlock()
 		blockchain.transactions = append(blockchain.transactions, transaction)
-	} else if transaction.VerifySignature(signature) {
+	} else if transaction.Verify(signature) {
 		if blockchain.CalculateTotalAmount(transaction.SenderAddress()) < transaction.Value() {
 			err = errors.New("not enough balance in the sender wallet")
 		} else {
