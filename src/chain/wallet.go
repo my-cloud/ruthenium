@@ -57,13 +57,13 @@ func CreateAddress(publicKey *ecdsa.PublicKey) string {
 
 func (wallet *Wallet) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		PrivateKey        string `json:"private_key"`
-		PublicKey         string `json:"public_key"`
-		BlockchainAddress string `json:"address"`
+		PublicKey  string `json:"public_key"`
+		PrivateKey string `json:"private_key"`
+		Address    string `json:"address"`
 	}{
-		PrivateKey:        wallet.privateKeyStr(),
-		PublicKey:         wallet.publicKeyStr(),
-		BlockchainAddress: wallet.Address(),
+		PublicKey:  wallet.publicKeyStr(),
+		PrivateKey: wallet.privateKeyStr(),
+		Address:    wallet.Address(),
 	})
 }
 

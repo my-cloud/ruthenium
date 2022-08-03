@@ -70,6 +70,8 @@ func (host *Host) GetBlockchain() *Blockchain {
 			hostWallet := NewWallet(privateKey)
 			blockchain = NewBlockchain(hostWallet.Address(), host.ip, host.port, host.logger)
 			//TODO remove fmt
+			fmt.Println("host public key: " + fmt.Sprintf("%064x%064x", hostWallet.PublicKey().X.Bytes(), hostWallet.PublicKey().Y.Bytes()))
+			fmt.Println("host private key: " + fmt.Sprintf("%x", hostWallet.PrivateKey().D.Bytes()))
 			fmt.Println("host address: " + hostWallet.Address())
 			cachedBlockchain["blockchain"] = blockchain
 		}
