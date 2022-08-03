@@ -86,6 +86,7 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 }
 
 func (blockchain *Blockchain) FindNeighbors() {
+	blockchain.waitGroup.Add(1)
 	go func(neighborsByTarget map[string]*Node) {
 		defer blockchain.waitGroup.Done()
 		var neighbors []*Node
@@ -156,6 +157,7 @@ func (blockchain *Blockchain) FindNeighbors() {
 }
 
 func (blockchain *Blockchain) AddTargets(targetRequests []TargetRequest) {
+	blockchain.waitGroup.Add(1)
 	go func() {
 		defer blockchain.waitGroup.Done()
 		blockchain.neighborsByTargetMutex.Lock()
@@ -182,6 +184,7 @@ func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 }
 
 func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
+	blockchain.waitGroup.Add(1)
 	go func() {
 		defer blockchain.waitGroup.Done()
 		blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
@@ -207,6 +210,7 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 }
 
 func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
+	blockchain.waitGroup.Add(1)
 	go func() {
 		defer blockchain.waitGroup.Done()
 		blockchain.neighborsMutex.Lock()
@@ -239,6 +243,7 @@ func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature
 }
 
 func (blockchain *Blockchain) Mine() {
+	blockchain.waitGroup.Add(1)
 	go func() {
 		defer blockchain.waitGroup.Done()
 		blockchain.mineMutex.Lock()
@@ -338,6 +343,7 @@ func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBloc
 }
 
 func (blockchain *Blockchain) ResolveConflicts() {
+	blockchain.waitGroup.Add(1)
 	go func() {
 		defer blockchain.waitGroup.Done()
 		blockchain.neighborsMutex.RLock()

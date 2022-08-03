@@ -28,29 +28,24 @@ func Test_Blockchain(t *testing.T) {
 	var value1 float32 = 100.
 	for blockChain.CalculateTotalAmount(minerWallet.Address()) < value1 {
 		blockChain.Mine()
-		wg.Add(1)
 		wg.Wait()
 	}
 
 	transaction1 := chain.NewTransaction(minerWallet.Address(), minerWallet.PublicKey(), walletA.Address(), value1)
 	signature1 := chain.NewSignature(transaction1, minerWallet.PrivateKey())
 	blockChain.UpdateTransaction(minerWallet.Address(), walletA.Address(), minerWallet.PublicKey(), value1, signature1)
-	wg.Add(1)
 	wg.Wait()
 	//assert(t, isAdded1, "Failed to add first transaction")
 	blockChain.Mine()
-	wg.Add(1)
 	wg.Wait()
 
 	var value2 float32 = 10.
 	transaction2 := chain.NewTransaction(walletA.Address(), walletA.PublicKey(), walletB.Address(), value2)
 	signature2 := chain.NewSignature(transaction2, walletA.PrivateKey())
 	blockChain.UpdateTransaction(walletA.Address(), walletB.Address(), walletA.PublicKey(), value2, signature2)
-	wg.Add(1)
 	wg.Wait()
 	//assert(t, isAdded2, "Failed to add second transaction")
 	blockChain.Mine()
-	wg.Add(1)
 	wg.Wait()
 
 	fmt.Printf("mine %.1f\n", blockChain.CalculateTotalAmount(minerWallet.Address()))
