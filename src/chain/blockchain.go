@@ -19,9 +19,9 @@ const (
 	MiningReward              = 10.0
 	MiningTimerSec            = 60
 
-	NeighborSynchronizationTimeSecond  = 10
-	HostConnectionTimeoutSecond        = 10
-	NeighborClientFindingTimeoutSecond = 5
+	NeighborSynchronizationTimeSecond = 10
+	HostConnectionTimeoutSecond       = 10
+	NeighborFindingTimeoutSecond      = 5
 )
 
 type Blockchain struct {

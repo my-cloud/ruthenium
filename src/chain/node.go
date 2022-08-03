@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"errors"
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
 	"net"
@@ -48,7 +49,7 @@ func (node *Node) Target() string {
 
 func (node *Node) IsFound() bool {
 	target := fmt.Sprintf("%s:%d", node.ip, node.port)
-	_, err := net.DialTimeout("tcp", target, NeighborClientFindingTimeoutSecond*time.Second)
+	_, err := net.DialTimeout("tcp", target, NeighborFindingTimeoutSecond*time.Second)
 	return err == nil
 }
 
@@ -104,12 +105,14 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 	req := p2p.Data{}
 	err = req.SetGob(request)
 	if err == nil {
-		if node.client == nil {
+		if node.client == nil && node.IsFound() {
 			if err = node.StartClient(); err != nil {
-				node.logger.Error(fmt.Sprintf("Failed to start neighbor client for target %s\n%v", node.Target(), err))
+				node.logger.Error(fmt.Sprintf("Failed to start client for target %s\n%v", node.Target(), err))
 			}
+			res, err = node.client.Send("dialog", req)
+		} else {
+			err = errors.New("unable to find node")
 		}
-		res, err = node.client.Send("dialog", req)
 	}
 
 	return

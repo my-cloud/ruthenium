@@ -28,9 +28,8 @@ func NewWalletServer(port uint16, hostIp string, hostPort uint16, level log.Leve
 	logger := log.NewLogger(level)
 	blockchainClient := chain.NewNode(hostIp, hostPort, logger)
 	if !blockchainClient.IsFound() {
-		logger.Fatal("Unable to find blockchain client")
-	}
-	if err := blockchainClient.StartClient(); err != nil {
+		logger.Error("Unable to find blockchain node")
+	} else if err := blockchainClient.StartClient(); err != nil {
 		logger.Fatal(fmt.Sprintf("Failed to start blockchain client\n%v", err))
 	}
 	return &WalletServer{port, blockchainClient, logger}
