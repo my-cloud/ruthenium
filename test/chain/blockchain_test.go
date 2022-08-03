@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"ruthenium/src/chain"
 	"ruthenium/src/log"
-	"sync"
 	"testing"
 )
 
@@ -24,8 +23,8 @@ func Test_Blockchain(t *testing.T) {
 
 	// Blockchain
 	logger := log.NewLogger(log.Error)
-	var wg sync.WaitGroup
-	blockChain := chain.NewBlockchain(minerWallet.Address(), "", 8106, logger, &wg)
+	blockChain := chain.NewBlockchain(minerWallet.Address(), "", 8106, logger)
+	wg := blockChain.WaitGroup()
 	var value1 float32 = 100.
 	for blockChain.CalculateTotalAmount(minerWallet.Address()) < value1 {
 		blockChain.Mine()

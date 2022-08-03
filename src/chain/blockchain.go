@@ -45,13 +45,14 @@ type Blockchain struct {
 	neighborsByTargetMutex sync.RWMutex
 }
 
-func NewBlockchain(address string, ip string, port uint16, logger *log.Logger, waitGroup *sync.WaitGroup) *Blockchain {
+func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.address = address
 	blockchain.ip = ip
 	blockchain.port = port
 	blockchain.logger = logger
-	blockchain.waitGroup = waitGroup
+	var waitGroup sync.WaitGroup
+	blockchain.waitGroup = &waitGroup
 	blockchain.addBlock(new(Block))
 	seedsIps := []string{
 		"89.82.76.241",
@@ -65,6 +66,10 @@ func NewBlockchain(address string, ip string, port uint16, logger *log.Logger, w
 		}
 	}
 	return blockchain
+}
+
+func (blockchain *Blockchain) WaitGroup() *sync.WaitGroup {
+	return blockchain.waitGroup
 }
 
 func (blockchain *Blockchain) Run() {

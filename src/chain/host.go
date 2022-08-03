@@ -68,7 +68,7 @@ func (host *Host) GetBlockchain() *Blockchain {
 			host.logger.Fatal(fmt.Sprintf("ERROR: Failed to generate private key\n%v", err))
 		} else {
 			hostWallet := NewWallet(privateKey)
-			blockchain = NewBlockchain(hostWallet.Address(), host.ip, host.port, host.logger, nil)
+			blockchain = NewBlockchain(hostWallet.Address(), host.ip, host.port, host.logger)
 			//TODO remove fmt
 			fmt.Println("host address: " + hostWallet.Address())
 			cachedBlockchain["blockchain"] = blockchain
