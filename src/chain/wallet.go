@@ -22,6 +22,11 @@ func NewWallet(privateKey *ecdsa.PrivateKey) *Wallet {
 	return &Wallet{privateKey, publicKey, address}
 }
 
+func PopWallet(publicKey *ecdsa.PublicKey, privateKey *ecdsa.PrivateKey) *Wallet {
+	address := CreateAddress(publicKey)
+	return &Wallet{privateKey, publicKey, address}
+}
+
 func CreateAddress(publicKey *ecdsa.PublicKey) string {
 	// 2. Perform SHA-256 hashing on the public key (32 bytes).
 	h2 := sha256.New()

@@ -26,13 +26,17 @@ const (
 )
 
 type Host struct {
-	ip     string
-	port   uint16
-	logger *log.Logger
+	publicKey  string
+	privateKey string
+	ip         string
+	port       uint16
+	logger     *log.Logger
 }
 
-func NewHost(port uint16, logLevel log.Level) *Host {
+func NewHost(publicKey string, privateKey string, port uint16, logLevel log.Level) *Host {
 	host := new(Host)
+	host.publicKey = publicKey
+	host.privateKey = privateKey
 	host.logger = log.NewLogger(logLevel)
 	ip, err := host.getPublicIp()
 	if err != nil {
@@ -63,18 +67,21 @@ func (host *Host) getPublicIp() (ip string, err error) {
 func (host *Host) GetBlockchain() *Blockchain {
 	blockchain, ok := cachedBlockchain["blockchain"]
 	if !ok {
-		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		if err != nil {
-			host.logger.Fatal(fmt.Sprintf("ERROR: Failed to generate private key\n%v", err))
+		var hostWallet *Wallet
+		if host.privateKey == "" || host.publicKey == "" {
+			privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+			if err != nil {
+				host.logger.Fatal(fmt.Sprintf("ERROR: Failed to generate private key\n%v", err))
+			}
+			hostWallet = NewWallet(privateKey)
 		} else {
-			hostWallet := NewWallet(privateKey)
-			blockchain = NewBlockchain(hostWallet.Address(), host.ip, host.port, host.logger)
-			//TODO remove fmt
-			fmt.Println("host public key: " + fmt.Sprintf("%064x%064x", hostWallet.PublicKey().X.Bytes(), hostWallet.PublicKey().Y.Bytes()))
-			fmt.Println("host private key: " + fmt.Sprintf("%x", hostWallet.PrivateKey().D.Bytes()))
-			fmt.Println("host address: " + hostWallet.Address())
-			cachedBlockchain["blockchain"] = blockchain
+			publicKey := NewPublicKey(host.publicKey)
+			privateKey := NewPrivateKey(host.privateKey, publicKey)
+			hostWallet = PopWallet(publicKey, privateKey)
 		}
+
+		blockchain = NewBlockchain(hostWallet.Address(), host.ip, host.port, host.logger)
+		cachedBlockchain["blockchain"] = blockchain
 	}
 	return blockchain
 }
