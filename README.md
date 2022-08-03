@@ -11,15 +11,13 @@ The blockchain motivating to do local business and to not capitalize tokens.
 
 ## Usage
 
-* In src/blockchain_server, run:
-    * go run main.go
-    * go run main.go -port=5001
 * In src/wallet_server, run:
-    * go run main.go -host-ip=<your ip>
-    * go run main.go -port=8081 -host-ip=<your ip> -host-port=5001
-* In two separated tabs using Mozilla Firefox web browser, go to:
+    * go run main.go -host-ip=<your external IP address>
+* Using Mozilla Firefox web browser, go to:
     * http://localhost:8080
-    * http://localhost:8081
+    * store your public key, private key and wallet address
+* In src/blockchain_server, run:
+    * go run main.go -public-key=<your public key> -private-key=<your private key>
 * Start sending money!
 
 ## Contributing
