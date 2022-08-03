@@ -18,6 +18,16 @@ type Wallet struct {
 func NewWallet(privateKey *ecdsa.PrivateKey) *Wallet {
 	// 1. Create ECDSA public key (64 bytes)
 	publicKey := &privateKey.PublicKey
+	address := CreateAddress(publicKey)
+	return &Wallet{privateKey, publicKey, address}
+}
+
+func PopWallet(publicKey *ecdsa.PublicKey, privateKey *ecdsa.PrivateKey) *Wallet {
+	address := CreateAddress(publicKey)
+	return &Wallet{privateKey, publicKey, address}
+}
+
+func CreateAddress(publicKey *ecdsa.PublicKey) string {
 	// 2. Perform SHA-256 hashing on the public key (32 bytes).
 	h2 := sha256.New()
 	h2.Write(publicKey.X.Bytes())
@@ -46,19 +56,18 @@ func NewWallet(privateKey *ecdsa.PrivateKey) *Wallet {
 	copy(dc8[:21], vd4[:])
 	copy(dc8[21:], checksum[:])
 	// 9. Convert the result from a byte string into base58.
-	address := base58.Encode(dc8)
-	return &Wallet{privateKey, publicKey, address}
+	return base58.Encode(dc8)
 }
 
 func (wallet *Wallet) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		PrivateKey        string `json:"private_key"`
-		PublicKey         string `json:"public_key"`
-		BlockchainAddress string `json:"address"`
+		PublicKey  string `json:"public_key"`
+		PrivateKey string `json:"private_key"`
+		Address    string `json:"address"`
 	}{
-		PrivateKey:        wallet.privateKeyStr(),
-		PublicKey:         wallet.publicKeyStr(),
-		BlockchainAddress: wallet.Address(),
+		PublicKey:  wallet.publicKeyStr(),
+		PrivateKey: wallet.privateKeyStr(),
+		Address:    wallet.Address(),
 	})
 }
 
