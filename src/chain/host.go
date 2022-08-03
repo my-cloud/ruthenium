@@ -68,7 +68,7 @@ func (host *Host) GetBlockchain() *Blockchain {
 	blockchain, ok := cachedBlockchain["blockchain"]
 	if !ok {
 		var hostWallet *Wallet
-		if host.privateKey == "" || host.publicKey == "" {
+		if host.publicKey == "" || host.privateKey == "" {
 			privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 			if err != nil {
 				host.logger.Fatal(fmt.Sprintf("ERROR: Failed to generate private key\n%v", err))

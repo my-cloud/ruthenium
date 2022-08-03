@@ -56,8 +56,7 @@ func CreateAddress(publicKey *ecdsa.PublicKey) string {
 	copy(dc8[:21], vd4[:])
 	copy(dc8[21:], checksum[:])
 	// 9. Convert the result from a byte string into base58.
-	address := base58.Encode(dc8)
-	return address
+	return base58.Encode(dc8)
 }
 
 func (wallet *Wallet) MarshalJSON() ([]byte, error) {

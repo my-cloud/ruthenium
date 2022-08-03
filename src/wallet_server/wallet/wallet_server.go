@@ -19,12 +19,14 @@ import (
 const templateDir = "src/wallet_server/templates"
 
 type WalletServer struct {
+	publicKey        string
+	privateKey       string
 	port             uint16
 	blockchainClient *chain.Node
 	logger           *log.Logger
 }
 
-func NewWalletServer(port uint16, hostIp string, hostPort uint16, level log.Level) *WalletServer {
+func NewWalletServer(publicKey string, privateKey string, port uint16, hostIp string, hostPort uint16, level log.Level) *WalletServer {
 	logger := log.NewLogger(level)
 	blockchainClient := chain.NewNode(hostIp, hostPort, logger)
 	if !blockchainClient.IsFound() {
@@ -32,7 +34,7 @@ func NewWalletServer(port uint16, hostIp string, hostPort uint16, level log.Leve
 	} else if err := blockchainClient.StartClient(); err != nil {
 		logger.Fatal(fmt.Sprintf("Failed to start blockchain client\n%v", err))
 	}
-	return &WalletServer{port, blockchainClient, logger}
+	return &WalletServer{publicKey, privateKey, port, blockchainClient, logger}
 }
 
 func (walletServer *WalletServer) Port() uint16 {
@@ -61,11 +63,21 @@ func (walletServer *WalletServer) Wallet(writer http.ResponseWriter, req *http.R
 	switch req.Method {
 	case http.MethodPost:
 		writer.Header().Add("Content-Type", "application/json")
-		privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		if err != nil {
-			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to generate private key\n%v", err))
+		var wallet *chain.Wallet
+		if walletServer.publicKey == "" || walletServer.privateKey == "" {
+			privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+			if err != nil {
+				walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to generate private key\n%v", err))
+			} else {
+				wallet = chain.NewWallet(privateKey)
+			}
 		} else {
-			wallet := chain.NewWallet(privateKey)
+			publicKey := chain.NewPublicKey(walletServer.publicKey)
+			privateKey := chain.NewPrivateKey(walletServer.privateKey, publicKey)
+			wallet = chain.PopWallet(publicKey, privateKey)
+		}
+
+		if wallet != nil {
 			marshaledWallet, err := wallet.MarshalJSON()
 			if err != nil {
 				walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to marshal wallet\n%v", err))

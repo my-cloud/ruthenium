@@ -105,9 +105,11 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 	req := p2p.Data{}
 	err = req.SetGob(request)
 	if err == nil {
-		if node.client == nil && node.IsFound() {
-			if err = node.StartClient(); err != nil {
-				node.logger.Error(fmt.Sprintf("Failed to start client for target %s\n%v", node.Target(), err))
+		if node.IsFound() {
+			if node.client == nil {
+				if err = node.StartClient(); err != nil {
+					node.logger.Error(fmt.Sprintf("Failed to start client for target %s\n%v", node.Target(), err))
+				}
 			}
 			res, err = node.client.Send("dialog", req)
 		} else {
