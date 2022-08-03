@@ -12,7 +12,7 @@
                 success: function (response) {
                     $('#public_key').val(response['public_key']);
                     $('#private_key').val(response['private_key']);
-                    $('#address').val(response['address']);
+                    $('#sender_address').val(response['address']);
                     console.info(response);
                 },
                 error: function(error) {

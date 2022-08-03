@@ -50,13 +50,20 @@ func (transaction *Transaction) RecipientAddress() string {
 	return transaction.recipientAddress
 }
 
-func (transaction *Transaction) VerifySignature(signature *Signature) bool {
-	marshaledBlockchain, err := json.Marshal(transaction)
+func (transaction *Transaction) Verify(signature *Signature) bool {
+	publicKey := transaction.SenderPublicKey()
+	marshaledTransaction, err := json.Marshal(transaction)
 	if err != nil {
-		log.Println("ERROR: Failed to marshal blockchain")
+		log.Println("ERROR: Failed to marshal transaction")
 	}
-	hash := sha256.Sum256(marshaledBlockchain)
-	return ecdsa.Verify(transaction.SenderPublicKey(), hash[:], signature.r, signature.s)
+	hash := sha256.Sum256(marshaledTransaction)
+	isSignatureValid := ecdsa.Verify(publicKey, hash[:], signature.r, signature.s)
+	var isTransactionValid bool
+	if isSignatureValid {
+		publicKeyAddress := CreateAddress(publicKey)
+		isTransactionValid = transaction.senderAddress == publicKeyAddress
+	}
+	return isTransactionValid
 }
 
 func (transaction *Transaction) GetDto() *TransactionResponse {
