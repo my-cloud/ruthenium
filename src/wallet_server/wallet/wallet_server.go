@@ -31,6 +31,8 @@ func NewWalletServer(publicKey string, privateKey string, port uint16, hostIp st
 	blockchainClient := chain.NewNode(hostIp, hostPort, logger)
 	if !blockchainClient.IsFound() {
 		logger.Error("Unable to find blockchain node")
+	} else if err := blockchainClient.StartClient(); err != nil {
+		logger.Fatal(fmt.Sprintf("Failed to start blockchain client\n%v", err))
 	}
 	return &WalletServer{publicKey, privateKey, port, blockchainClient, logger}
 }
@@ -243,5 +245,5 @@ func (walletServer *WalletServer) Run() {
 	http.HandleFunc("/mine", walletServer.Mine)
 	http.HandleFunc("/mine/start", walletServer.StartMining)
 	http.HandleFunc("/mine/stop", walletServer.StopMining)
-	walletServer.logger.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(int(walletServer.Port())), nil).Error())
+	walletServer.logger.Fatal(http.ListenAndServe("localhost:"+strconv.Itoa(int(walletServer.Port())), nil).Error())
 }
