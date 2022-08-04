@@ -61,9 +61,6 @@ func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *
 	for _, seedIp := range seedsIps {
 		seed := NewNode(seedIp, DefaultPort, logger)
 		blockchain.neighborsByTarget[seed.Target()] = seed
-		if err := seed.StartClient(); err != nil {
-			blockchain.logger.Error(fmt.Sprintf("Failed to start neighbor client for target %s\n%v", seed.Target(), err))
-		}
 	}
 	return blockchain
 }
@@ -164,12 +161,8 @@ func (blockchain *Blockchain) AddTargets(targetRequests []TargetRequest) {
 		defer blockchain.neighborsByTargetMutex.Unlock()
 		for _, targetRequest := range targetRequests {
 			neighbor := NewNode(*targetRequest.Ip, *targetRequest.Port, blockchain.logger)
-			blockchain.neighborsByTarget[neighbor.Target()] = neighbor
 			if _, ok := blockchain.neighborsByTarget[neighbor.Target()]; !ok {
 				blockchain.neighborsByTarget[neighbor.Target()] = neighbor
-				if err := neighbor.StartClient(); err != nil {
-					blockchain.logger.Error(fmt.Sprintf("Failed to start neighbor client for target %s\n%v", neighbor.Target(), err))
-				}
 			}
 		}
 	}()
