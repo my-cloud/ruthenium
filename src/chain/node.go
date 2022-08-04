@@ -28,10 +28,7 @@ func (node *Node) CreateClient() (client *p2p.Client, err error) {
 	tcp := p2p.NewTCP(node.ip, strconv.Itoa(int(node.port)))
 	client, err = p2p.NewClient(tcp)
 	if err == nil {
-		client.SetLogger(node.logger)
-		settings := p2p.NewClientSettings()
-		settings.SetRetry(1, p2p.DefaultDelayTimeout)
-		client.SetSettings(settings)
+		client.SetLogger(log.NewLogger(log.Fatal))
 	}
 	return
 }
