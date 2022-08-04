@@ -25,14 +25,13 @@ func NewNode(ip string, port uint16, logger *log.Logger) *Node {
 	return node
 }
 
-func (node *Node) StartClient() error {
+func (node *Node) CreateClient() (client *p2p.Client, err error) {
 	tcp := p2p.NewTCP(node.ip, strconv.Itoa(int(node.port)))
-	client, err := p2p.NewClient(tcp)
+	client, err = p2p.NewClient(tcp)
 	if err == nil {
 		client.SetLogger(node.logger)
 	}
-	node.client = client
-	return err
+	return
 }
 
 func (node *Node) Ip() string {
@@ -106,12 +105,13 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 	err = req.SetGob(request)
 	if err == nil {
 		if node.IsFound() {
-			if node.client == nil {
-				if err = node.StartClient(); err != nil {
-					node.logger.Error(fmt.Sprintf("Failed to start client for target %s\n%v", node.Target(), err))
-				}
+			var client *p2p.Client
+			client, err = node.CreateClient()
+			if err != nil {
+				node.logger.Error(fmt.Sprintf("Failed to start client for target %s\n%v", node.Target(), err))
+			} else {
+				res, err = client.Send("dialog", req)
 			}
-			res, err = node.client.Send("dialog", req)
 		} else {
 			err = errors.New("unable to find node")
 		}
