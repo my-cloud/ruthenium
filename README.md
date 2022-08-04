@@ -11,6 +11,7 @@ The blockchain motivating to do local business and to not capitalize tokens.
 
 ## Usage
 
+* Open your DNS port 8106
 * In src/wallet_server, run:
     * go run main.go -host-ip=<your external IP address>
 * Using Mozilla Firefox web browser, go to:
