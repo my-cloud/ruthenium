@@ -7,7 +7,6 @@ import (
 	"net"
 	"ruthenium/src/log"
 	"strconv"
-	"sync"
 	"time"
 )
 
@@ -15,8 +14,6 @@ type Node struct {
 	ip     string
 	port   uint16
 	logger *log.Logger
-
-	mutex sync.Mutex
 }
 
 func NewNode(ip string, port uint16, logger *log.Logger) *Node {
@@ -94,8 +91,6 @@ func (node *Node) StopMining() (err error) {
 }
 
 func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
-	node.mutex.Lock()
-	defer node.mutex.Unlock()
 	req := p2p.Data{}
 	err = req.SetGob(request)
 	if err == nil {
