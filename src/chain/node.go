@@ -14,7 +14,6 @@ type Node struct {
 	ip     string
 	port   uint16
 	logger *log.Logger
-	client *p2p.Client
 }
 
 func NewNode(ip string, port uint16, logger *log.Logger) *Node {
@@ -30,6 +29,9 @@ func (node *Node) CreateClient() (client *p2p.Client, err error) {
 	client, err = p2p.NewClient(tcp)
 	if err == nil {
 		client.SetLogger(node.logger)
+		settings := p2p.NewClientSettings()
+		settings.SetRetry(1, p2p.DefaultDelayTimeout)
+		client.SetSettings(settings)
 	}
 	return
 }
