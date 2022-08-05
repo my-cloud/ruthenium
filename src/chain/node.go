@@ -66,6 +66,15 @@ func (node *Node) UpdateTransactions(request TransactionRequest) (err error) {
 	return
 }
 
+func (node *Node) GetTransactions() (transactionResponses []TransactionResponse, err error) {
+	res, err := node.sendRequest(GetTransactionsRequest)
+	if err == nil {
+		err = res.GetGob(&transactionResponses)
+	}
+
+	return
+}
+
 func (node *Node) GetAmount(request AmountRequest) (amountResponse *AmountResponse, err error) {
 	res, err := node.sendRequest(request)
 	if err == nil {
