@@ -146,16 +146,16 @@
     <button id="stop_mining">Stop Mining</button>
     <table>
         <tr>
-            <td>Public Key:</td>
-            <td><textarea id="public_key" rows="1" cols="80"></textarea></td>
+            <td><label for="public_key">Public Key:</label></td>
+            <td><textarea id="public_key" rows="2" cols="80" name="public_key"></textarea></td>
         </tr>
         <tr>
-            <td>Private Key:</td>
-            <td><textarea id="private_key" rows="1" cols="80"></textarea></td>
+            <td><label for="private_key">Private Key:</label></td>
+            <td><textarea id="private_key" rows="1" cols="80" name="private_key"></textarea></td>
         </tr>
         <tr>
-            <td>Address:</td>
-            <td><textarea id="sender_address" rows="1" cols="80"></textarea></td>
+            <td><label for="sender_address">Address:</label></td>
+            <td><textarea id="sender_address" rows="1" cols="80" name="sender_address"></textarea></td>
         </tr>
     </table>
 </div>
@@ -164,12 +164,12 @@
     <h1>Send Money</h1>
     <table>
         <tr>
-            <td>To address:</td>
-            <td><textarea id="recipient_address" rows="1" cols="80"></textarea></td>
+            <td><label for="recipient_address">To address:</label></td>
+            <td><textarea id="recipient_address" rows="1" cols="80" name="recipient_address"></textarea></td>
         </tr>
         <tr>
-            <td>Amount:</td>
-            <td><input id="send_amount" type="text"></td>
+            <td><label for="send_amount">Amount:</label></td>
+            <td><input id="send_amount" type="text" name="send_amount"></td>
         </tr>
     </table>
     <button id="send_money_button">Send</button>
