@@ -146,6 +146,37 @@ func (walletServer *WalletServer) CreateTransaction(writer http.ResponseWriter, 
 	}
 }
 
+func (walletServer *WalletServer) GetTransactions(writer http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		transactions, err := walletServer.blockchainClient.GetTransactions()
+
+		jsonWriter := rest.NewJsonWriter(writer)
+		writer.Header().Add("Content-Type", "application/json")
+		if err != nil {
+			walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to get transactions\n%v", err))
+			jsonWriter.WriteStatus("fail")
+		} else {
+			var marshaledTransactions []byte
+			if transactions == nil {
+				marshaledTransactions, err = json.Marshal([]chain.TransactionResponse{})
+			} else {
+				marshaledTransactions, err = json.Marshal(transactions)
+			}
+			if err != nil {
+				walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to marshal transactions\n%v", err))
+			}
+			i, err := io.WriteString(writer, string(marshaledTransactions[:]))
+			if err != nil || i == 0 {
+				walletServer.logger.Error(fmt.Sprintf("ERROR: Failed to write transactions\n%v", err))
+			}
+		}
+	default:
+		walletServer.logger.Error("ERROR: Invalid HTTP Method")
+		writer.WriteHeader(http.StatusBadRequest)
+	}
+}
+
 func (walletServer *WalletServer) Mine(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
@@ -239,6 +270,7 @@ func (walletServer *WalletServer) Run() {
 	http.HandleFunc("/", walletServer.Index)
 	http.HandleFunc("/wallet", walletServer.Wallet)
 	http.HandleFunc("/transaction", walletServer.CreateTransaction)
+	http.HandleFunc("/transactions", walletServer.GetTransactions)
 	http.HandleFunc("/wallet/amount", walletServer.WalletAmount)
 	http.HandleFunc("/mine", walletServer.Mine)
 	http.HandleFunc("/mine/start", walletServer.StartMining)

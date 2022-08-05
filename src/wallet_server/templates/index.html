@@ -15,12 +15,12 @@
                     $('#sender_address').val(response['address']);
                     console.info(response);
                 },
-                error: function(error) {
+                error: function (error) {
                     console.error(error);
                 }
             })
 
-            $('#send_money_button').click(function() {
+            $('#send_money_button').click(function () {
                 if (!confirm('Are you sure to send?')) {
                     alert('Canceled')
                     return
@@ -65,7 +65,22 @@
                         $('#wallet_amount').text(amount);
                         console.info(amount)
                     },
-                    error: function(error) {
+                    error: function (error) {
+                        console.error(error)
+                    }
+                })
+            }
+
+            function refresh_transactions() {
+                $.ajax({
+                    url: '/transactions',
+                    type: 'GET',
+                    success: function (response) {
+                        $('#transactions_pool').text(JSON.stringify(response, undefined, 4));
+                        console.info(response)
+                        // console.info(response)
+                    },
+                    error: function (error) {
                         console.error(error)
                     }
                 })
@@ -75,7 +90,7 @@
                 $.ajax({
                     url: '/mine',
                     type: 'POST',
-                    error: function(error) {
+                    error: function (error) {
                         console.error(error)
                     }
                 })
@@ -85,7 +100,7 @@
                 $.ajax({
                     url: '/mine/start',
                     type: 'POST',
-                    error: function(error) {
+                    error: function (error) {
                         console.error(error)
                     }
                 })
@@ -95,63 +110,75 @@
                 $.ajax({
                     url: '/mine/stop',
                     type: 'POST',
-                    error: function(error) {
+                    error: function (error) {
                         console.error(error)
                     }
                 })
             }
 
-            $('#refresh_amount').click(function(){
+            $('#refresh_amount').click(function () {
                 refresh_amount();
             });
 
-            $('#mine').click(function(){
+            $('#mine').click(function () {
                 mine();
             });
 
-            $('#start_mining').click(function(){
+            $('#start_mining').click(function () {
                 start_mining();
             });
 
-            $('#stop_mining').click(function(){
+            $('#stop_mining').click(function () {
                 stop_mining();
             });
 
             setInterval(refresh_amount, 1000)
+            setInterval(refresh_transactions, 1000)
         })
     </script>
 </head>
 <body>
+<div>
+    <h1>Wallet</h1>
+    <div id="wallet_amount">0</div>
+    <button id="refresh_amount">Refresh amount</button>
+    <button id="mine">Mine</button>
+    <button id="start_mining">Start Mining</button>
+    <button id="stop_mining">Stop Mining</button>
+    <table>
+        <tr>
+            <td>Public Key:</td>
+            <td><textarea id="public_key" rows="1" cols="80"></textarea></td>
+        </tr>
+        <tr>
+            <td>Private Key:</td>
+            <td><textarea id="private_key" rows="1" cols="80"></textarea></td>
+        </tr>
+        <tr>
+            <td>Address:</td>
+            <td><textarea id="sender_address" rows="1" cols="80"></textarea></td>
+        </tr>
+    </table>
+</div>
 
-    <div>
-        <h1>Wallet</h1>
-        <div id="wallet_amount">0</div>
-        <button id="refresh_amount">Refresh amount</button>
-        <button id="mine">Mine</button>
-        <button id="start_mining">Start Mining</button>
-        <button id="stop_mining">Stop Mining</button>
+<div>
+    <h1>Send Money</h1>
+    <table>
+        <tr>
+            <td>To address:</td>
+            <td><textarea id="recipient_address" rows="1" cols="80"></textarea></td>
+        </tr>
+        <tr>
+            <td>Amount:</td>
+            <td><input id="send_amount" type="text"></td>
+        </tr>
+    </table>
+    <button id="send_money_button">Send</button>
+</div>
 
-        <p>Public  Key</p>
-        <textarea id="public_key" rows="2" cols="100"></textarea>
-
-        <p>Private  Key</p>
-        <textarea id="private_key" rows="1" cols="100"></textarea>
-
-        <p>Address</p>
-        <textarea id="sender_address" rows="1" cols="100"></textarea>
-
-    </div>
-
-    <div>
-        <h1>Send Money</h1>
-        <div>
-            Address: <input id="recipient_address" size="100" type="text">
-            <br>
-            Amount: <input id="send_amount" type="text">
-            <br>
-            <button id="send_money_button">Send</button>
-        </div>
-    </div>
-
+<div>
+    <h1>Transactions Pool</h1>
+    <pre id="transactions_pool"></pre>
+</div>
 </body>
 </html>
