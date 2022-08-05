@@ -78,7 +78,6 @@
                     success: function (response) {
                         $('#transactions_pool').text(JSON.stringify(response, undefined, 4));
                         console.info(response)
-                        // console.info(response)
                     },
                     error: function (error) {
                         console.error(error)
