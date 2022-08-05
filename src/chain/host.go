@@ -101,15 +101,14 @@ func (host *Host) PostTargets(request []TargetRequest) {
 	blockchain.AddTargets(request)
 }
 
-// TODO unused
-func (host *Host) GetTransactions() (res p2p.Data, err error) {
+func (host *Host) GetTransactions() (res p2p.Data) {
 	res = p2p.Data{}
 	var transactionResponses []*TransactionResponse
 	for _, transaction := range host.GetBlockchain().Transactions() {
 		transactionResponses = append(transactionResponses, transaction.GetDto())
 	}
-	if err = res.SetGob(transactionResponses); err != nil {
-		return
+	if err := res.SetGob(transactionResponses); err != nil {
+		host.logger.Error(fmt.Sprintf("ERROR: Failed to get transactions\n%v", err))
 	}
 	return
 }
@@ -199,9 +198,7 @@ func (host *Host) startHost() {
 				case GetBlocksRequest:
 					res = host.GetBlocks()
 				case GetTransactionsRequest:
-					if res, err = host.GetTransactions(); err != nil {
-						host.logger.Error(fmt.Sprintf("ERROR: Failed to get transactions, error: %v", err))
-					}
+					res = host.GetTransactions()
 				case MineRequest:
 					host.Mine()
 				case StartMiningRequest:
