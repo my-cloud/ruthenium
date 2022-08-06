@@ -2,9 +2,6 @@ package chain
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
 	"io/ioutil"
@@ -13,8 +10,6 @@ import (
 	"strconv"
 	"time"
 )
-
-var cachedBlockchain = make(map[string]*Blockchain)
 
 const (
 	GetBlocksRequest       = "GET BLOCKS REQUEST"
@@ -30,6 +25,7 @@ type Host struct {
 	privateKey string
 	ip         string
 	port       uint16
+	blockchain *Blockchain
 	logger     *log.Logger
 }
 
@@ -38,201 +34,187 @@ func NewHost(publicKey string, privateKey string, port uint16, logLevel log.Leve
 	host.publicKey = publicKey
 	host.privateKey = privateKey
 	host.logger = log.NewLogger(logLevel)
-	ip, err := host.getPublicIp()
+	host.port = port
+	ip, err := host.findPublicIp()
 	if err != nil {
-		panic(err)
+		host.logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
 	}
 	host.ip = ip
-	host.port = port
+	wallet, err := NewWallet(host.publicKey, host.privateKey)
+	if err != nil {
+		host.logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
+	} else {
+		host.blockchain = NewBlockchain(wallet.Address(), host.ip, host.port, host.logger)
+	}
 	return host
 }
 
-func (host *Host) getPublicIp() (ip string, err error) {
-	resp, err := http.Get("https://ifconfig.me")
-	if err != nil {
-		return "", err
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err == nil {
-		ip = string(body)
-	}
-	bodyCloseError := resp.Body.Close()
-	if err != nil {
-		host.logger.Error(fmt.Sprintf("ERROR: Failed to close body after getting the public IP\n%v", bodyCloseError))
-	}
-	return
-}
-
-func (host *Host) GetBlockchain() *Blockchain {
-	blockchain, ok := cachedBlockchain["blockchain"]
-	if !ok {
-		var hostWallet *Wallet
-		if host.publicKey == "" || host.privateKey == "" {
-			privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-			if err != nil {
-				host.logger.Fatal(fmt.Sprintf("ERROR: Failed to generate private key\n%v", err))
-			}
-			hostWallet = NewWallet(privateKey)
-		} else {
-			publicKey := NewPublicKey(host.publicKey)
-			privateKey := NewPrivateKey(host.privateKey, publicKey)
-			hostWallet = PopWallet(publicKey, privateKey)
-		}
-
-		blockchain = NewBlockchain(hostWallet.Address(), host.ip, host.port, host.logger)
-		cachedBlockchain["blockchain"] = blockchain
-	}
-	return blockchain
-}
-
 func (host *Host) GetBlocks() (res p2p.Data) {
-	blockchain := host.GetBlockchain()
-	blockResponses := blockchain.Blocks()
+	blockResponses := host.blockchain.Blocks()
 	err := res.SetGob(blockResponses)
 	if err != nil {
-		host.logger.Error(fmt.Sprintf("ERROR: Failed to get blocks\n%v", err))
+		host.logger.Error(fmt.Errorf("failed to get blocks: %w", err).Error())
 	}
 	return
 }
 
 func (host *Host) PostTargets(request []TargetRequest) {
-	blockchain := host.GetBlockchain()
-	blockchain.AddTargets(request)
+	host.blockchain.AddTargets(request)
 }
 
 func (host *Host) GetTransactions() (res p2p.Data) {
-	res = p2p.Data{}
 	var transactionResponses []*TransactionResponse
-	for _, transaction := range host.GetBlockchain().Transactions() {
+	for _, transaction := range host.blockchain.Transactions() {
 		transactionResponses = append(transactionResponses, transaction.GetDto())
 	}
 	if err := res.SetGob(transactionResponses); err != nil {
-		host.logger.Error(fmt.Sprintf("ERROR: Failed to get transactions\n%v", err))
+		host.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
 	}
 	return
 }
 
 func (host *Host) PostTransactions(request *TransactionRequest) {
 	if request.IsInvalid() {
-		host.logger.Error("ERROR: Field(s) are missing in transaction request")
-	} else {
-		publicKey := NewPublicKey(*request.SenderPublicKey)
-		signature := DecodeSignature(*request.Signature)
-		blockchain := host.GetBlockchain()
-		blockchain.CreateTransaction(*request.SenderAddress, *request.RecipientAddress, publicKey, *request.Value, signature)
+		host.logger.Error("field(s) are missing in transaction request")
+		return
 	}
+	publicKey, err := NewPublicKey(*request.SenderPublicKey)
+	if err != nil {
+		host.logger.Error(fmt.Errorf("failed to decode transaction public key: %w", err).Error())
+		return
+	}
+	signature, err := DecodeSignature(*request.Signature)
+	if err != nil {
+		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
+		return
+	}
+	transaction := NewTransaction(publicKey, *request.SenderAddress, *request.RecipientAddress, *request.Value, host.logger)
+	host.blockchain.CreateTransaction(transaction, signature)
 }
 
 func (host *Host) PutTransactions(request *TransactionRequest) {
 	if request.IsInvalid() {
-		host.logger.Error("ERROR: Field(s) are missing in transaction request")
-	} else {
-		publicKey := NewPublicKey(*request.SenderPublicKey)
-		signature := DecodeSignature(*request.Signature)
-		blockchain := host.GetBlockchain()
-		blockchain.UpdateTransaction(*request.SenderAddress, *request.RecipientAddress, publicKey, *request.Value, signature)
+		host.logger.Error("field(s) are missing in transaction request")
+		return
 	}
+	publicKey, err := NewPublicKey(*request.SenderPublicKey)
+	if err != nil {
+		host.logger.Error(fmt.Errorf("failed to decode transaction public key: %w", err).Error())
+		return
+	}
+	signature, err := DecodeSignature(*request.Signature)
+	if err != nil {
+		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
+		return
+	}
+	transaction := NewTransaction(publicKey, *request.SenderAddress, *request.RecipientAddress, *request.Value, host.logger)
+	host.blockchain.AddTransaction(transaction, signature)
 }
 
 func (host *Host) Mine() {
-	blockchain := host.GetBlockchain()
-	blockchain.Mine()
+	host.blockchain.Mine()
 }
 
 func (host *Host) StartMining() {
-	blockchain := host.GetBlockchain()
-	blockchain.StartMining()
+	host.blockchain.StartMining()
 }
 
 func (host *Host) StopMining() {
-	blockchain := host.GetBlockchain()
-	blockchain.StopMining()
+	host.blockchain.StopMining()
 }
 
 func (host *Host) Amount(request *AmountRequest) (res p2p.Data) {
 	if request.IsInvalid() {
-		host.logger.Error("ERROR: Field(s) are missing in amount request")
-	} else {
-		blockchainAddress := *request.Address
-		amount := host.GetBlockchain().CalculateTotalAmount(blockchainAddress)
-		amountResponse := &AmountResponse{amount}
-		if err := res.SetGob(amountResponse); err != nil {
-			host.logger.Error(fmt.Sprintf("ERROR: Failed to get amount\n%v", err))
-		}
+		host.logger.Error("field(s) are missing in amount request")
+		return
+	}
+	blockchainAddress := *request.Address
+	amount := host.blockchain.CalculateTotalAmount(blockchainAddress)
+	amountResponse := &AmountResponse{amount}
+	if err := res.SetGob(amountResponse); err != nil {
+		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
 	}
 	return
 }
 
 func (host *Host) Consensus() {
-	blockchain := host.GetBlockchain()
-	blockchain.ResolveConflicts()
+	host.blockchain.ResolveConflicts()
 }
 
 func (host *Host) Run() {
-	host.GetBlockchain().Run()
-	host.startHost()
+	host.blockchain.Run()
+	host.startServer()
 }
 
-func (host *Host) startHost() {
-	tcp := p2p.NewTCP("0.0.0.0", strconv.Itoa(int(host.port)))
+func (host *Host) findPublicIp() (ip string, err error) {
+	resp, err := http.Get("https://ifconfig.me")
+	if err != nil {
+		return
+	}
+	var body []byte
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	return string(body), resp.Body.Close()
+}
 
+func (host *Host) startServer() {
+	tcp := p2p.NewTCP("0.0.0.0", strconv.Itoa(int(host.port)))
 	server, err := p2p.NewServer(tcp)
 	if err != nil {
-		host.logger.Fatal(err.Error())
-	} else {
-		server.SetLogger(log.NewLogger(log.Fatal))
-		settings := p2p.NewServerSettings()
-		settings.SetConnTimeout(HostConnectionTimeoutSecond * time.Second)
-		server.SetSettings(settings)
-
-		server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
-			var unknownRequest bool
-			var requestString string
-			var transactionRequest TransactionRequest
-			var amountRequest AmountRequest
-			var targetsRequest []TargetRequest
-			res = p2p.Data{}
-			if err = req.GetGob(&requestString); err == nil {
-				switch requestString {
-				case GetBlocksRequest:
-					res = host.GetBlocks()
-				case GetTransactionsRequest:
-					res = host.GetTransactions()
-				case MineRequest:
-					host.Mine()
-				case StartMiningRequest:
-					host.StartMining()
-				case StopMiningRequest:
-					host.StopMining()
-				case ConsensusRequest:
-					host.Consensus()
-				default:
-					unknownRequest = true
-				}
-			} else if err = req.GetGob(&transactionRequest); err == nil {
-				if *transactionRequest.Verb == POST {
-					host.PostTransactions(&transactionRequest)
-				} else if *transactionRequest.Verb == PUT {
-					host.PutTransactions(&transactionRequest)
-				}
-			} else if err = req.GetGob(&amountRequest); err == nil {
-				res = host.Amount(&amountRequest)
-			} else if err = req.GetGob(&targetsRequest); err == nil {
-				host.PostTargets(targetsRequest)
-			} else {
+		host.logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
+		return
+	}
+	server.SetLogger(log.NewLogger(log.Fatal))
+	settings := p2p.NewServerSettings()
+	settings.SetConnTimeout(HostConnectionTimeoutSecond * time.Second)
+	server.SetSettings(settings)
+	server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
+		var unknownRequest bool
+		var requestString string
+		var transactionRequest TransactionRequest
+		var amountRequest AmountRequest
+		var targetsRequest []TargetRequest
+		res = p2p.Data{}
+		if err = req.GetGob(&requestString); err == nil {
+			switch requestString {
+			case GetBlocksRequest:
+				res = host.GetBlocks()
+			case GetTransactionsRequest:
+				res = host.GetTransactions()
+			case MineRequest:
+				host.Mine()
+			case StartMiningRequest:
+				host.StartMining()
+			case StopMiningRequest:
+				host.StopMining()
+			case ConsensusRequest:
+				host.Consensus()
+			default:
 				unknownRequest = true
 			}
-
-			if unknownRequest {
-				host.logger.Error("ERROR: Unknown request")
+		} else if err = req.GetGob(&transactionRequest); err == nil {
+			if *transactionRequest.Verb == POST {
+				host.PostTransactions(&transactionRequest)
+			} else if *transactionRequest.Verb == PUT {
+				host.PutTransactions(&transactionRequest)
 			}
-			return
-		})
-
-		err = server.Serve()
-		if err != nil {
-			host.logger.Fatal(err.Error())
+		} else if err = req.GetGob(&amountRequest); err == nil {
+			res = host.Amount(&amountRequest)
+		} else if err = req.GetGob(&targetsRequest); err == nil {
+			host.PostTargets(targetsRequest)
+		} else {
+			unknownRequest = true
 		}
+
+		if unknownRequest {
+			host.logger.Error("unknown request")
+		}
+		return
+	})
+	err = server.Serve()
+	if err != nil {
+		host.logger.Fatal(fmt.Errorf("failed to start server: %w", err).Error())
 	}
 }

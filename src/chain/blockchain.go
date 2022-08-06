@@ -1,7 +1,6 @@
 package chain
 
 import (
-	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,10 +13,10 @@ import (
 const (
 	DefaultPort = 8106
 
-	MiningDifficulty          = 3
-	MiningRewardSenderAddress = "MINING REWARD SENDER ADDRESS"
-	MiningReward              = 10.0
-	MiningTimerSec            = 60
+	MiningDifficulty                  = 3
+	MiningRewardSenderAddress         = "MINING REWARD SENDER ADDRESS"
+	MiningReward              float32 = 10.
+	MiningTimerSec                    = 60
 
 	NeighborSynchronizationTimeSecond = 10
 	HostConnectionTimeoutSecond       = 10
@@ -101,13 +100,13 @@ func (blockchain *Blockchain) FindNeighbors() {
 			neighborPort := neighbor.Port()
 			lookedUpNeighborsIps, err := net.LookupIP(neighborIp)
 			if err != nil {
-				blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery failed on addresse %s: %v", neighborIp, err))
+				blockchain.logger.Error(fmt.Errorf("DNS discovery failed on addresse %s: %w", neighborIp, err).Error())
 				return
 			}
 
 			neighborsCount := len(lookedUpNeighborsIps)
 			if neighborsCount != 1 {
-				blockchain.logger.Error(fmt.Sprintf("ERROR: DNS discovery did not find a single address (%d addresses found) for the given IP %s", neighborsCount, neighborIp))
+				blockchain.logger.Error(fmt.Errorf("DNS discovery did not find a single address (%d addresses found) for the given IP %s", neighborsCount, neighborIp).Error())
 				return
 			}
 			lookedUpNeighborIp := lookedUpNeighborsIps[0]
@@ -176,11 +175,19 @@ func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
+func (blockchain *Blockchain) CreateTransaction(transaction *Transaction, signature *Signature) {
 	blockchain.waitGroup.Add(1)
 	go func() {
 		defer blockchain.waitGroup.Done()
-		blockchain.UpdateTransaction(senderAddress, recipientAddress, senderPublicKey, value, signature)
+		err := blockchain.addTransaction(transaction, signature)
+		if err != nil {
+			blockchain.logger.Error(fmt.Errorf("failed to create transaction: %w", err).Error())
+			return
+		}
+		senderPublicKey := transaction.SenderPublicKey()
+		senderAddress := transaction.SenderAddress()
+		recipientAddress := transaction.RecipientAddress()
+		value := transaction.Value()
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
 		var verb = PUT
@@ -196,22 +203,19 @@ func (blockchain *Blockchain) CreateTransaction(senderAddress string, recipientA
 		defer blockchain.neighborsMutex.RUnlock()
 		for _, neighbor := range blockchain.neighbors {
 			go func(neighbor *Node) {
-				_ = neighbor.UpdateTransactions(transactionRequest)
+				_ = neighbor.AddTransaction(transactionRequest)
 			}(neighbor)
 		}
 	}()
 }
 
-func (blockchain *Blockchain) UpdateTransaction(senderAddress string, recipientAddress string, senderPublicKey *ecdsa.PublicKey, value float32, signature *Signature) {
+func (blockchain *Blockchain) AddTransaction(transaction *Transaction, signature *Signature) {
 	blockchain.waitGroup.Add(1)
 	go func() {
 		defer blockchain.waitGroup.Done()
-		blockchain.neighborsMutex.Lock()
-		defer blockchain.neighborsMutex.Unlock()
-		transaction := NewTransaction(senderAddress, senderPublicKey, recipientAddress, value)
 		err := blockchain.addTransaction(transaction, signature)
 		if err != nil {
-			blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to add transaction\n%v", err))
+			blockchain.logger.Error(fmt.Errorf("failed to add transaction: %w", err).Error())
 		}
 	}()
 }
@@ -241,14 +245,13 @@ func (blockchain *Blockchain) Mine() {
 		defer blockchain.waitGroup.Done()
 		blockchain.mineMutex.Lock()
 		defer blockchain.mineMutex.Unlock()
-
-		transaction := NewTransaction(MiningRewardSenderAddress, nil, blockchain.address, MiningReward)
+		transaction := NewTransaction(nil, MiningRewardSenderAddress, blockchain.address, MiningReward, blockchain.logger)
 		if err := blockchain.addTransaction(transaction, nil); err != nil {
-			blockchain.logger.Error(fmt.Sprintf("ERROR: Failed to mine, error: %v", err))
+			blockchain.logger.Error(fmt.Errorf("failed to mine: %v", err).Error())
+			return
 		}
 		block := blockchain.createBlock()
 		blockchain.addBlock(block)
-
 		blockchain.neighborsMutex.RLock()
 		defer blockchain.neighborsMutex.RUnlock()
 		for _, neighbor := range blockchain.neighbors {
@@ -287,7 +290,6 @@ func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) flo
 			if blockchainAddress == transaction.RecipientAddress() {
 				totalAmount += value
 			}
-
 			if blockchainAddress == transaction.SenderAddress() {
 				totalAmount -= value
 			}
@@ -313,7 +315,7 @@ func (blockchain *Blockchain) clearTransactions() {
 }
 
 func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBlocks []*Block) {
-	previousBlock := NewBlockFromDto(blocks[0])
+	previousBlock := NewBlockFromDto(blocks[0], blockchain.logger)
 	validBlocks = append(validBlocks, previousBlock)
 	currentIndex := 1
 	for currentIndex < len(blocks) {
@@ -322,12 +324,10 @@ func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBloc
 		if !isPreviousHashValid {
 			return nil
 		}
-
-		block := NewBlockFromDto(currentBlock)
+		block := NewBlockFromDto(currentBlock, blockchain.logger)
 		if block.IsInValid(MiningDifficulty) {
 			return nil
 		}
-
 		previousBlock = block
 		validBlocks = append(validBlocks, block)
 		currentIndex++
@@ -355,14 +355,13 @@ func (blockchain *Blockchain) ResolveConflicts() {
 				}
 			}
 		}
-
 		if longestChain != nil {
 			blockchain.blockResponses = longestChainResponse
 			blockchain.blocks = longestChain
 			blockchain.clearTransactions()
-			blockchain.logger.Info("Conflicts resolved: blockchain replaced")
+			blockchain.logger.Info("conflicts resolved: blockchain replaced")
 		} else {
-			blockchain.logger.Info("Conflicts resolved: blockchain kept")
+			blockchain.logger.Info("conflicts resolved: blockchain kept")
 		}
 	}()
 }
@@ -385,7 +384,7 @@ func (blockchain *Blockchain) createBlock() *Block {
 	blockchain.transactionsMutex.RLock()
 	defer blockchain.transactionsMutex.RUnlock()
 	for {
-		block := NewBlock(nonce, previousHash, blockchain.transactions)
+		block := NewBlock(nonce, previousHash, blockchain.transactions, blockchain.logger)
 		if block.IsInValid(MiningDifficulty) {
 			nonce++
 		} else {
