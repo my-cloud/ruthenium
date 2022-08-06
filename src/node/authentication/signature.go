@@ -47,7 +47,7 @@ func NewPublicKey(publicKeyString string) (*ecdsa.PublicKey, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode public key: %w", err)
 	}
-	return &ecdsa.PublicKey{Curve: elliptic.P256(), X: &x, Y: &y}, nil
+	return &ecdsa.PublicKey{elliptic.P256(), &x, &y}, nil
 }
 
 func NewPrivateKey(privateKeyString string, publicKey *ecdsa.PublicKey) (*ecdsa.PrivateKey, error) {
@@ -57,7 +57,7 @@ func NewPrivateKey(privateKeyString string, publicKey *ecdsa.PublicKey) (*ecdsa.
 	}
 	var bi big.Int
 	_ = bi.SetBytes(b)
-	return &ecdsa.PrivateKey{PublicKey: *publicKey, D: &bi}, nil
+	return &ecdsa.PrivateKey{*publicKey, &bi}, nil
 }
 
 func (signature *Signature) String() string {
