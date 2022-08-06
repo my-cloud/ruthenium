@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"ruthenium/src/chain"
 	"ruthenium/src/log"
+	"ruthenium/src/node/chain"
 )
 
 func main() {

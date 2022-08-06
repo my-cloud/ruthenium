@@ -7,17 +7,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"ruthenium/src/log"
+	"ruthenium/src/node/authentication"
+	"ruthenium/src/node/neighborhood"
 	"strconv"
 	"time"
-)
-
-const (
-	GetBlocksRequest       = "GET BLOCKS REQUEST"
-	GetTransactionsRequest = "GET TRANSACTIONS REQUEST"
-	MineRequest            = "MINE REQUEST"
-	StartMiningRequest     = "START MINING REQUEST"
-	StopMiningRequest      = "STOP MINING REQUEST"
-	ConsensusRequest       = "CONSENSUS REQUEST"
 )
 
 type Host struct {
@@ -40,7 +33,7 @@ func NewHost(publicKey string, privateKey string, port uint16, logLevel log.Leve
 		host.logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
 	}
 	host.ip = ip
-	wallet, err := NewWallet(host.publicKey, host.privateKey)
+	wallet, err := authentication.NewWallet(host.publicKey, host.privateKey)
 	if err != nil {
 		host.logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
 	} else {
@@ -58,12 +51,12 @@ func (host *Host) GetBlocks() (res p2p.Data) {
 	return
 }
 
-func (host *Host) PostTargets(request []TargetRequest) {
+func (host *Host) PostTargets(request []neighborhood.TargetRequest) {
 	host.blockchain.AddTargets(request)
 }
 
 func (host *Host) GetTransactions() (res p2p.Data) {
-	var transactionResponses []*TransactionResponse
+	var transactionResponses []*authentication.TransactionResponse
 	for _, transaction := range host.blockchain.Transactions() {
 		transactionResponses = append(transactionResponses, transaction.GetDto())
 	}
@@ -73,41 +66,41 @@ func (host *Host) GetTransactions() (res p2p.Data) {
 	return
 }
 
-func (host *Host) PostTransactions(request *TransactionRequest) {
+func (host *Host) PostTransactions(request *authentication.TransactionRequest) {
 	if request.IsInvalid() {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
 	}
-	publicKey, err := NewPublicKey(*request.SenderPublicKey)
+	publicKey, err := authentication.NewPublicKey(*request.SenderPublicKey)
 	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to decode transaction public key: %w", err).Error())
 		return
 	}
-	signature, err := DecodeSignature(*request.Signature)
+	signature, err := authentication.DecodeSignature(*request.Signature)
 	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
 		return
 	}
-	transaction := NewTransaction(publicKey, *request.SenderAddress, *request.RecipientAddress, *request.Value, host.logger)
+	transaction := authentication.NewTransaction(publicKey, *request.SenderAddress, *request.RecipientAddress, *request.Value, host.logger)
 	host.blockchain.CreateTransaction(transaction, signature)
 }
 
-func (host *Host) PutTransactions(request *TransactionRequest) {
+func (host *Host) PutTransactions(request *authentication.TransactionRequest) {
 	if request.IsInvalid() {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
 	}
-	publicKey, err := NewPublicKey(*request.SenderPublicKey)
+	publicKey, err := authentication.NewPublicKey(*request.SenderPublicKey)
 	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to decode transaction public key: %w", err).Error())
 		return
 	}
-	signature, err := DecodeSignature(*request.Signature)
+	signature, err := authentication.DecodeSignature(*request.Signature)
 	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
 		return
 	}
-	transaction := NewTransaction(publicKey, *request.SenderAddress, *request.RecipientAddress, *request.Value, host.logger)
+	transaction := authentication.NewTransaction(publicKey, *request.SenderAddress, *request.RecipientAddress, *request.Value, host.logger)
 	host.blockchain.AddTransaction(transaction, signature)
 }
 
@@ -123,14 +116,14 @@ func (host *Host) StopMining() {
 	host.blockchain.StopMining()
 }
 
-func (host *Host) Amount(request *AmountRequest) (res p2p.Data) {
+func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
 	if request.IsInvalid() {
 		host.logger.Error("field(s) are missing in amount request")
 		return
 	}
 	blockchainAddress := *request.Address
 	amount := host.blockchain.CalculateTotalAmount(blockchainAddress)
-	amountResponse := &AmountResponse{amount}
+	amountResponse := &neighborhood.AmountResponse{amount}
 	if err := res.SetGob(amountResponse); err != nil {
 		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
 	}
@@ -173,31 +166,31 @@ func (host *Host) startServer() {
 	server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
 		var unknownRequest bool
 		var requestString string
-		var transactionRequest TransactionRequest
-		var amountRequest AmountRequest
-		var targetsRequest []TargetRequest
+		var transactionRequest authentication.TransactionRequest
+		var amountRequest neighborhood.AmountRequest
+		var targetsRequest []neighborhood.TargetRequest
 		res = p2p.Data{}
 		if err = req.GetGob(&requestString); err == nil {
 			switch requestString {
-			case GetBlocksRequest:
+			case neighborhood.GetBlocksRequest:
 				res = host.GetBlocks()
-			case GetTransactionsRequest:
+			case neighborhood.GetTransactionsRequest:
 				res = host.GetTransactions()
-			case MineRequest:
+			case neighborhood.MineRequest:
 				host.Mine()
-			case StartMiningRequest:
+			case neighborhood.StartMiningRequest:
 				host.StartMining()
-			case StopMiningRequest:
+			case neighborhood.StopMiningRequest:
 				host.StopMining()
-			case ConsensusRequest:
+			case neighborhood.ConsensusRequest:
 				host.Consensus()
 			default:
 				unknownRequest = true
 			}
 		} else if err = req.GetGob(&transactionRequest); err == nil {
-			if *transactionRequest.Verb == POST {
+			if *transactionRequest.Verb == authentication.POST {
 				host.PostTransactions(&transactionRequest)
-			} else if *transactionRequest.Verb == PUT {
+			} else if *transactionRequest.Verb == authentication.PUT {
 				host.PutTransactions(&transactionRequest)
 			}
 		} else if err = req.GetGob(&amountRequest); err == nil {

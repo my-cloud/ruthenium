@@ -1,4 +1,4 @@
-package chain
+package authentication
 
 type TransactionResponse struct {
 	SenderAddress    string

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"ruthenium/src/log"
+	"ruthenium/src/node/authentication"
+	"ruthenium/src/node/neighborhood"
 	"strings"
 	"time"
 )
@@ -13,11 +15,11 @@ type Block struct {
 	timestamp    int64
 	nonce        int
 	previousHash [32]byte
-	transactions []*Transaction
+	transactions []*authentication.Transaction
 	logger       *log.Logger
 }
 
-func NewBlock(nonce int, previousHash [32]byte, transactions []*Transaction, logger *log.Logger) *Block {
+func NewBlock(nonce int, previousHash [32]byte, transactions []*authentication.Transaction, logger *log.Logger) *Block {
 	return &Block{
 		time.Now().UnixNano(),
 		nonce,
@@ -27,10 +29,10 @@ func NewBlock(nonce int, previousHash [32]byte, transactions []*Transaction, log
 	}
 }
 
-func NewBlockFromDto(block *BlockResponse, logger *log.Logger) *Block {
-	var transactions []*Transaction
+func NewBlockFromDto(block *neighborhood.BlockResponse, logger *log.Logger) *Block {
+	var transactions []*authentication.Transaction
 	for _, transaction := range block.Transactions {
-		transactions = append(transactions, NewTransactionFromDto(transaction, logger))
+		transactions = append(transactions, authentication.NewTransactionFromDto(transaction, logger))
 	}
 	return &Block{
 		block.Timestamp,
@@ -58,16 +60,16 @@ func (block *Block) Nonce() int {
 	return block.nonce
 }
 
-func (block *Block) Transactions() []*Transaction {
+func (block *Block) Transactions() []*authentication.Transaction {
 	return block.transactions
 }
 
 func (block *Block) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Timestamp    int64          `json:"timestamp"`
-		Nonce        int            `json:"nonce"`
-		PreviousHash string         `json:"previous_hash"`
-		Transactions []*Transaction `json:"transactions"`
+		Timestamp    int64                         `json:"timestamp"`
+		Nonce        int                           `json:"nonce"`
+		PreviousHash string                        `json:"previous_hash"`
+		Transactions []*authentication.Transaction `json:"transactions"`
 	}{
 		Timestamp:    block.timestamp,
 		Nonce:        block.nonce,
@@ -76,12 +78,12 @@ func (block *Block) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (block *Block) GetDto() *BlockResponse {
-	var transactions []*TransactionResponse
+func (block *Block) GetDto() *neighborhood.BlockResponse {
+	var transactions []*authentication.TransactionResponse
 	for _, transaction := range block.transactions {
 		transactions = append(transactions, transaction.GetDto())
 	}
-	return &BlockResponse{
+	return &neighborhood.BlockResponse{
 		Timestamp:    block.timestamp,
 		Nonce:        block.nonce,
 		PreviousHash: block.previousHash,

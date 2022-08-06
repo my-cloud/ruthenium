@@ -5,16 +5,17 @@ import (
 	"math"
 	"path/filepath"
 	"runtime"
-	"ruthenium/src/chain"
 	"ruthenium/src/log"
+	"ruthenium/src/node/authentication"
+	"ruthenium/src/node/chain"
 	"testing"
 )
 
 func Test_Blockchain(t *testing.T) {
 	// Arrange
-	walletA, _ := chain.NewWallet("", "")
-	walletB, _ := chain.NewWallet("", "")
-	minerWallet, _ := chain.NewWallet("", "")
+	walletA, _ := authentication.NewWallet("", "")
+	walletB, _ := authentication.NewWallet("", "")
+	minerWallet, _ := authentication.NewWallet("", "")
 
 	// Act
 	logger := log.NewLogger(log.Error)
@@ -26,16 +27,16 @@ func Test_Blockchain(t *testing.T) {
 		wg.Wait()
 	}
 
-	transaction1 := chain.NewTransaction(minerWallet.PublicKey(), minerWallet.Address(), walletA.Address(), value1, logger)
-	signature1, _ := chain.NewSignature(transaction1, minerWallet.PrivateKey())
+	transaction1 := authentication.NewTransaction(minerWallet.PublicKey(), minerWallet.Address(), walletA.Address(), value1, logger)
+	signature1, _ := authentication.NewSignature(transaction1, minerWallet.PrivateKey())
 	blockChain.AddTransaction(transaction1, signature1)
 	wg.Wait()
 	blockChain.Mine()
 	wg.Wait()
 
 	var value2 float32 = 10.
-	transaction2 := chain.NewTransaction(walletA.PublicKey(), walletA.Address(), walletB.Address(), value2, logger)
-	signature2, _ := chain.NewSignature(transaction2, walletA.PrivateKey())
+	transaction2 := authentication.NewTransaction(walletA.PublicKey(), walletA.Address(), walletB.Address(), value2, logger)
+	signature2, _ := authentication.NewSignature(transaction2, walletA.PrivateKey())
 	blockChain.AddTransaction(transaction2, signature2)
 	wg.Wait()
 	blockChain.Mine()

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net"
 	"ruthenium/src/log"
+	"ruthenium/src/node/authentication"
+	"ruthenium/src/node/neighborhood"
 	"sync"
 	"time"
 )
@@ -20,14 +22,13 @@ const (
 
 	NeighborSynchronizationTimeSecond = 10
 	HostConnectionTimeoutSecond       = 10
-	NeighborFindingTimeoutSecond      = 5
 )
 
 type Blockchain struct {
-	transactions      []*Transaction
+	transactions      []*authentication.Transaction
 	transactionsMutex sync.RWMutex
 	blocks            []*Block
-	blockResponses    []*BlockResponse
+	blockResponses    []*neighborhood.BlockResponse
 	address           string
 	mineMutex         sync.Mutex
 	miningStarted     bool
@@ -38,9 +39,9 @@ type Blockchain struct {
 	logger    *log.Logger
 	waitGroup *sync.WaitGroup
 
-	neighbors              []*Node // TODO manage max neighbors count (Outbound/Inbound)
+	neighbors              []*neighborhood.Node // TODO manage max neighbors count (Outbound/Inbound)
 	neighborsMutex         sync.RWMutex
-	neighborsByTarget      map[string]*Node
+	neighborsByTarget      map[string]*neighborhood.Node
 	neighborsByTargetMutex sync.RWMutex
 }
 
@@ -56,9 +57,9 @@ func NewBlockchain(address string, ip string, port uint16, logger *log.Logger) *
 	seedsIps := []string{
 		"89.82.76.241",
 	}
-	blockchain.neighborsByTarget = map[string]*Node{}
+	blockchain.neighborsByTarget = map[string]*neighborhood.Node{}
 	for _, seedIp := range seedsIps {
-		seed := NewNode(seedIp, DefaultPort, logger)
+		seed := neighborhood.NewNode(seedIp, DefaultPort, logger)
 		blockchain.neighborsByTarget[seed.Target()] = seed
 	}
 	return blockchain
@@ -83,11 +84,11 @@ func (blockchain *Blockchain) StartNeighborsSynchronization() {
 
 func (blockchain *Blockchain) FindNeighbors() {
 	blockchain.waitGroup.Add(1)
-	go func(neighborsByTarget map[string]*Node) {
+	go func(neighborsByTarget map[string]*neighborhood.Node) {
 		defer blockchain.waitGroup.Done()
-		var neighbors []*Node
-		var targetRequests []TargetRequest
-		hostTargetRequest := TargetRequest{
+		var neighbors []*neighborhood.Node
+		var targetRequests []neighborhood.TargetRequest
+		hostTargetRequest := neighborhood.TargetRequest{
 			Ip:   &blockchain.ip,
 			Port: &blockchain.port,
 		}
@@ -113,7 +114,7 @@ func (blockchain *Blockchain) FindNeighbors() {
 			lookedUpNeighborIpString := lookedUpNeighborIp.String()
 			if (lookedUpNeighborIpString != blockchain.ip || neighborPort != blockchain.port) && lookedUpNeighborIpString == neighborIp && neighbor.IsFound() {
 				neighbors = append(neighbors, neighbor)
-				targetRequest := TargetRequest{
+				targetRequest := neighborhood.TargetRequest{
 					Ip:   &neighborIp,
 					Port: &neighborPort,
 				}
@@ -137,7 +138,7 @@ func (blockchain *Blockchain) FindNeighbors() {
 			blockchain.ResolveConflicts()
 		}
 		for _, neighbor := range neighbors {
-			var neighborTargetRequests []TargetRequest
+			var neighborTargetRequests []neighborhood.TargetRequest
 			for _, targetRequest := range targetRequests {
 				neighborIp := neighbor.Ip()
 				neighborPort := neighbor.Port()
@@ -145,21 +146,21 @@ func (blockchain *Blockchain) FindNeighbors() {
 					neighborTargetRequests = append(neighborTargetRequests, targetRequest)
 				}
 			}
-			go func(neighbor *Node) {
+			go func(neighbor *neighborhood.Node) {
 				_ = neighbor.SendTargets(neighborTargetRequests)
 			}(neighbor)
 		}
 	}(blockchain.neighborsByTarget)
 }
 
-func (blockchain *Blockchain) AddTargets(targetRequests []TargetRequest) {
+func (blockchain *Blockchain) AddTargets(targetRequests []neighborhood.TargetRequest) {
 	blockchain.waitGroup.Add(1)
 	go func() {
 		defer blockchain.waitGroup.Done()
 		blockchain.neighborsByTargetMutex.Lock()
 		defer blockchain.neighborsByTargetMutex.Unlock()
 		for _, targetRequest := range targetRequests {
-			neighbor := NewNode(*targetRequest.Ip, *targetRequest.Port, blockchain.logger)
+			neighbor := neighborhood.NewNode(*targetRequest.Ip, *targetRequest.Port, blockchain.logger)
 			if _, ok := blockchain.neighborsByTarget[neighbor.Target()]; !ok {
 				blockchain.neighborsByTarget[neighbor.Target()] = neighbor
 			}
@@ -175,7 +176,7 @@ func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (blockchain *Blockchain) CreateTransaction(transaction *Transaction, signature *Signature) {
+func (blockchain *Blockchain) CreateTransaction(transaction *authentication.Transaction, signature *authentication.Signature) {
 	blockchain.waitGroup.Add(1)
 	go func() {
 		defer blockchain.waitGroup.Done()
@@ -190,8 +191,8 @@ func (blockchain *Blockchain) CreateTransaction(transaction *Transaction, signat
 		value := transaction.Value()
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
-		var verb = PUT
-		transactionRequest := TransactionRequest{
+		var verb = authentication.PUT
+		transactionRequest := authentication.TransactionRequest{
 			Verb:             &verb,
 			SenderAddress:    &senderAddress,
 			RecipientAddress: &recipientAddress,
@@ -202,14 +203,14 @@ func (blockchain *Blockchain) CreateTransaction(transaction *Transaction, signat
 		blockchain.neighborsMutex.RLock()
 		defer blockchain.neighborsMutex.RUnlock()
 		for _, neighbor := range blockchain.neighbors {
-			go func(neighbor *Node) {
+			go func(neighbor *neighborhood.Node) {
 				_ = neighbor.AddTransaction(transactionRequest)
 			}(neighbor)
 		}
 	}()
 }
 
-func (blockchain *Blockchain) AddTransaction(transaction *Transaction, signature *Signature) {
+func (blockchain *Blockchain) AddTransaction(transaction *authentication.Transaction, signature *authentication.Signature) {
 	blockchain.waitGroup.Add(1)
 	go func() {
 		defer blockchain.waitGroup.Done()
@@ -220,7 +221,7 @@ func (blockchain *Blockchain) AddTransaction(transaction *Transaction, signature
 	}()
 }
 
-func (blockchain *Blockchain) addTransaction(transaction *Transaction, signature *Signature) (err error) {
+func (blockchain *Blockchain) addTransaction(transaction *authentication.Transaction, signature *authentication.Signature) (err error) {
 	if transaction.SenderAddress() == MiningRewardSenderAddress {
 		blockchain.transactionsMutex.Lock()
 		defer blockchain.transactionsMutex.Unlock()
@@ -245,7 +246,7 @@ func (blockchain *Blockchain) Mine() {
 		defer blockchain.waitGroup.Done()
 		blockchain.mineMutex.Lock()
 		defer blockchain.mineMutex.Unlock()
-		transaction := NewTransaction(nil, MiningRewardSenderAddress, blockchain.address, MiningReward, blockchain.logger)
+		transaction := authentication.NewTransaction(nil, MiningRewardSenderAddress, blockchain.address, MiningReward, blockchain.logger)
 		if err := blockchain.addTransaction(transaction, nil); err != nil {
 			blockchain.logger.Error(fmt.Errorf("failed to mine: %v", err).Error())
 			return
@@ -255,7 +256,7 @@ func (blockchain *Blockchain) Mine() {
 		blockchain.neighborsMutex.RLock()
 		defer blockchain.neighborsMutex.RUnlock()
 		for _, neighbor := range blockchain.neighbors {
-			go func(neighbor *Node) {
+			go func(neighbor *neighborhood.Node) {
 				_ = neighbor.Consensus()
 			}(neighbor)
 		}
@@ -298,13 +299,13 @@ func (blockchain *Blockchain) CalculateTotalAmount(blockchainAddress string) flo
 	return totalAmount
 }
 
-func (blockchain *Blockchain) Transactions() []*Transaction {
+func (blockchain *Blockchain) Transactions() []*authentication.Transaction {
 	blockchain.transactionsMutex.RLock()
 	defer blockchain.transactionsMutex.RUnlock()
 	return blockchain.transactions
 }
 
-func (blockchain *Blockchain) Blocks() []*BlockResponse {
+func (blockchain *Blockchain) Blocks() []*neighborhood.BlockResponse {
 	return blockchain.blockResponses
 }
 
@@ -314,7 +315,7 @@ func (blockchain *Blockchain) clearTransactions() {
 	blockchain.transactions = nil
 }
 
-func (blockchain *Blockchain) GetValidBlocks(blocks []*BlockResponse) (validBlocks []*Block) {
+func (blockchain *Blockchain) GetValidBlocks(blocks []*neighborhood.BlockResponse) (validBlocks []*Block) {
 	previousBlock := NewBlockFromDto(blocks[0], blockchain.logger)
 	validBlocks = append(validBlocks, previousBlock)
 	currentIndex := 1
@@ -341,7 +342,7 @@ func (blockchain *Blockchain) ResolveConflicts() {
 		defer blockchain.waitGroup.Done()
 		blockchain.neighborsMutex.RLock()
 		defer blockchain.neighborsMutex.RUnlock()
-		var longestChainResponse []*BlockResponse
+		var longestChainResponse []*neighborhood.BlockResponse
 		var longestChain []*Block
 		maxLength := len(blockchain.blocks)
 		for _, neighbor := range blockchain.neighbors {
