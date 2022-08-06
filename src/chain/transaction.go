@@ -4,22 +4,35 @@ import (
 	"crypto/ecdsa"
 	"crypto/sha256"
 	"encoding/json"
-	"log"
+	"ruthenium/src/log"
 )
 
 type Transaction struct {
-	senderAddress    string
 	senderPublicKey  *ecdsa.PublicKey
+	senderAddress    string
 	recipientAddress string
 	value            float32
+	logger           *log.Logger
 }
 
-func NewTransaction(senderAddress string, senderPublicKey *ecdsa.PublicKey, recipientAddress string, value float32) *Transaction {
-	return &Transaction{senderAddress, senderPublicKey, recipientAddress, value}
+func NewTransaction(senderPublicKey *ecdsa.PublicKey, senderAddress string, recipientAddress string, value float32, logger *log.Logger) *Transaction {
+	return &Transaction{
+		senderPublicKey,
+		senderAddress,
+		recipientAddress,
+		value,
+		logger,
+	}
 }
 
-func NewTransactionFromDto(transaction *TransactionResponse) *Transaction {
-	return &Transaction{transaction.SenderAddress, nil, transaction.RecipientAddress, transaction.Value}
+func NewTransactionFromDto(transaction *TransactionResponse, logger *log.Logger) *Transaction {
+	return &Transaction{
+		nil,
+		transaction.SenderAddress,
+		transaction.RecipientAddress,
+		transaction.Value,
+		logger,
+	}
 }
 
 func (transaction *Transaction) MarshalJSON() ([]byte, error) {
@@ -54,13 +67,14 @@ func (transaction *Transaction) Verify(signature *Signature) bool {
 	publicKey := transaction.SenderPublicKey()
 	marshaledTransaction, err := json.Marshal(transaction)
 	if err != nil {
-		log.Println("ERROR: Failed to marshal transaction")
+		transaction.logger.Error("failed to marshal transaction")
+		return false
 	}
 	hash := sha256.Sum256(marshaledTransaction)
 	isSignatureValid := ecdsa.Verify(publicKey, hash[:], signature.r, signature.s)
 	var isTransactionValid bool
 	if isSignatureValid {
-		publicKeyAddress := CreateAddress(publicKey)
+		publicKeyAddress := NewAddress(publicKey)
 		isTransactionValid = transaction.senderAddress == publicKeyAddress
 	}
 	return isTransactionValid

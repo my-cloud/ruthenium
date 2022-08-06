@@ -1,10 +1,8 @@
 package chain
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"fmt"
+	"math"
 	"path/filepath"
 	"runtime"
 	"ruthenium/src/chain"
@@ -13,15 +11,12 @@ import (
 )
 
 func Test_Blockchain(t *testing.T) {
-	// Wallet
-	privateKey1, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	walletA := chain.NewWallet(privateKey1)
-	privateKey2, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	walletB := chain.NewWallet(privateKey2)
-	minerPrivateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	minerWallet := chain.NewWallet(minerPrivateKey)
+	// Arrange
+	walletA, _ := chain.NewWallet("", "")
+	walletB, _ := chain.NewWallet("", "")
+	minerWallet, _ := chain.NewWallet("", "")
 
-	// Blockchain
+	// Act
 	logger := log.NewLogger(log.Error)
 	blockChain := chain.NewBlockchain(minerWallet.Address(), "", 8106, logger)
 	wg := blockChain.WaitGroup()
@@ -31,26 +26,33 @@ func Test_Blockchain(t *testing.T) {
 		wg.Wait()
 	}
 
-	transaction1 := chain.NewTransaction(minerWallet.Address(), minerWallet.PublicKey(), walletA.Address(), value1)
-	signature1 := chain.NewSignature(transaction1, minerWallet.PrivateKey())
-	blockChain.UpdateTransaction(minerWallet.Address(), walletA.Address(), minerWallet.PublicKey(), value1, signature1)
+	transaction1 := chain.NewTransaction(minerWallet.PublicKey(), minerWallet.Address(), walletA.Address(), value1, logger)
+	signature1, _ := chain.NewSignature(transaction1, minerWallet.PrivateKey())
+	blockChain.AddTransaction(transaction1, signature1)
 	wg.Wait()
-	//assert(t, isAdded1, "Failed to add first transaction")
 	blockChain.Mine()
 	wg.Wait()
 
 	var value2 float32 = 10.
-	transaction2 := chain.NewTransaction(walletA.Address(), walletA.PublicKey(), walletB.Address(), value2)
-	signature2 := chain.NewSignature(transaction2, walletA.PrivateKey())
-	blockChain.UpdateTransaction(walletA.Address(), walletB.Address(), walletA.PublicKey(), value2, signature2)
+	transaction2 := chain.NewTransaction(walletA.PublicKey(), walletA.Address(), walletB.Address(), value2, logger)
+	signature2, _ := chain.NewSignature(transaction2, walletA.PrivateKey())
+	blockChain.AddTransaction(transaction2, signature2)
 	wg.Wait()
-	//assert(t, isAdded2, "Failed to add second transaction")
 	blockChain.Mine()
 	wg.Wait()
 
-	fmt.Printf("mine %.1f\n", blockChain.CalculateTotalAmount(minerWallet.Address()))
-	fmt.Printf("A %.1f\n", blockChain.CalculateTotalAmount(walletA.Address()))
-	fmt.Printf("B %.1f\n", blockChain.CalculateTotalAmount(walletB.Address()))
+	// Assert
+	reward := chain.MiningReward
+	mineOperationsCount := float32(math.Ceil(float64(value1 / reward)))
+	expectedMinerWalletAmount := mineOperationsCount*reward - value1 + 2*reward
+	actualMinerWalletAmount := blockChain.CalculateTotalAmount(minerWallet.Address())
+	assert(t, expectedMinerWalletAmount == actualMinerWalletAmount, fmt.Sprintf("Wrong miner wallet amount. Expected: %f - Actual: %f", expectedMinerWalletAmount, actualMinerWalletAmount))
+	expectedWalletAAmount := value1 - value2
+	actualWalletAAmount := blockChain.CalculateTotalAmount(walletA.Address())
+	assert(t, expectedWalletAAmount == actualWalletAAmount, fmt.Sprintf("Wrong wallet A amount. Expected: %f - Actual: %f", expectedWalletAAmount, actualWalletAAmount))
+	expectedWalletBAmount := value2
+	actualWalletBAmount := blockChain.CalculateTotalAmount(walletB.Address())
+	assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %f - Actual: %f", expectedWalletBAmount, actualWalletBAmount))
 }
 
 func assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
