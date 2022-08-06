@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"ruthenium/src/log"
+	"ruthenium/src/node/neighborhood"
 )
 
 type Transaction struct {
@@ -25,7 +26,7 @@ func NewTransaction(senderPublicKey *ecdsa.PublicKey, senderAddress string, reci
 	}
 }
 
-func NewTransactionFromDto(transaction *TransactionResponse, logger *log.Logger) *Transaction {
+func NewTransactionFromDto(transaction *neighborhood.TransactionResponse, logger *log.Logger) *Transaction {
 	return &Transaction{
 		nil,
 		transaction.SenderAddress,
@@ -80,8 +81,8 @@ func (transaction *Transaction) Verify(signature *Signature) bool {
 	return isTransactionValid
 }
 
-func (transaction *Transaction) GetDto() *TransactionResponse {
-	return &TransactionResponse{
+func (transaction *Transaction) GetDto() *neighborhood.TransactionResponse {
+	return &neighborhood.TransactionResponse{
 		SenderAddress:    transaction.senderAddress,
 		RecipientAddress: transaction.recipientAddress,
 		Value:            transaction.value,

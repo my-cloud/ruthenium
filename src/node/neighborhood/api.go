@@ -5,7 +5,6 @@ import (
 	p2p "github.com/leprosus/golang-p2p"
 	"net"
 	"ruthenium/src/log"
-	"ruthenium/src/node/authentication"
 	"strconv"
 	"time"
 )
@@ -72,12 +71,12 @@ func (node *Node) Consensus() (err error) {
 	return
 }
 
-func (node *Node) AddTransaction(request authentication.TransactionRequest) (err error) {
+func (node *Node) AddTransaction(request TransactionRequest) (err error) {
 	_, err = node.sendRequest(request)
 	return
 }
 
-func (node *Node) GetTransactions() (transactionResponses []authentication.TransactionResponse, err error) {
+func (node *Node) GetTransactions() (transactionResponses []TransactionResponse, err error) {
 	res, err := node.sendRequest(GetTransactionsRequest)
 	if err == nil {
 		err = res.GetGob(&transactionResponses)

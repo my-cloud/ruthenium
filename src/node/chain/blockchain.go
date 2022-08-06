@@ -191,8 +191,8 @@ func (blockchain *Blockchain) CreateTransaction(transaction *authentication.Tran
 		value := transaction.Value()
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := signature.String()
-		var verb = authentication.PUT
-		transactionRequest := authentication.TransactionRequest{
+		var verb = neighborhood.PUT
+		transactionRequest := neighborhood.TransactionRequest{
 			Verb:             &verb,
 			SenderAddress:    &senderAddress,
 			RecipientAddress: &recipientAddress,

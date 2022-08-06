@@ -56,7 +56,7 @@ func (host *Host) PostTargets(request []neighborhood.TargetRequest) {
 }
 
 func (host *Host) GetTransactions() (res p2p.Data) {
-	var transactionResponses []*authentication.TransactionResponse
+	var transactionResponses []*neighborhood.TransactionResponse
 	for _, transaction := range host.blockchain.Transactions() {
 		transactionResponses = append(transactionResponses, transaction.GetDto())
 	}
@@ -66,7 +66,7 @@ func (host *Host) GetTransactions() (res p2p.Data) {
 	return
 }
 
-func (host *Host) PostTransactions(request *authentication.TransactionRequest) {
+func (host *Host) PostTransactions(request *neighborhood.TransactionRequest) {
 	if request.IsInvalid() {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
@@ -85,7 +85,7 @@ func (host *Host) PostTransactions(request *authentication.TransactionRequest) {
 	host.blockchain.CreateTransaction(transaction, signature)
 }
 
-func (host *Host) PutTransactions(request *authentication.TransactionRequest) {
+func (host *Host) PutTransactions(request *neighborhood.TransactionRequest) {
 	if request.IsInvalid() {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
@@ -166,7 +166,7 @@ func (host *Host) startServer() {
 	server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
 		var unknownRequest bool
 		var requestString string
-		var transactionRequest authentication.TransactionRequest
+		var transactionRequest neighborhood.TransactionRequest
 		var amountRequest neighborhood.AmountRequest
 		var targetsRequest []neighborhood.TargetRequest
 		res = p2p.Data{}
@@ -188,9 +188,9 @@ func (host *Host) startServer() {
 				unknownRequest = true
 			}
 		} else if err = req.GetGob(&transactionRequest); err == nil {
-			if *transactionRequest.Verb == authentication.POST {
+			if *transactionRequest.Verb == neighborhood.POST {
 				host.PostTransactions(&transactionRequest)
-			} else if *transactionRequest.Verb == authentication.PUT {
+			} else if *transactionRequest.Verb == neighborhood.PUT {
 				host.PutTransactions(&transactionRequest)
 			}
 		} else if err = req.GetGob(&amountRequest); err == nil {

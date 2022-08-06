@@ -1,4 +1,4 @@
-package authentication
+package neighborhood
 
 const (
 	GET    = "GET"

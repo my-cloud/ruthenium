@@ -79,7 +79,7 @@ func (block *Block) MarshalJSON() ([]byte, error) {
 }
 
 func (block *Block) GetDto() *neighborhood.BlockResponse {
-	var transactions []*authentication.TransactionResponse
+	var transactions []*neighborhood.TransactionResponse
 	for _, transaction := range block.transactions {
 		transactions = append(transactions, transaction.GetDto())
 	}

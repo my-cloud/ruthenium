@@ -112,8 +112,8 @@ func (api *Api) CreateTransaction(writer http.ResponseWriter, req *http.Request)
 			api.logger.Error(fmt.Errorf("failed to generate signature: %w", err).Error())
 		}
 		signatureString := signature.String()
-		var verb = authentication.POST
-		blockchainTransactionRequest := authentication.TransactionRequest{
+		var verb = neighborhood.POST
+		blockchainTransactionRequest := neighborhood.TransactionRequest{
 			Verb:             &verb,
 			SenderAddress:    transactionRequest.SenderAddress,
 			RecipientAddress: transactionRequest.RecipientAddress,
