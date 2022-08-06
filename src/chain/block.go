@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"log"
+	"ruthenium/src/log"
 	"strings"
 	"time"
 )
@@ -14,34 +14,38 @@ type Block struct {
 	nonce        int
 	previousHash [32]byte
 	transactions []*Transaction
+	logger       *log.Logger
 }
 
-func NewBlock(nonce int, previousHash [32]byte, transactions []*Transaction) *Block {
+func NewBlock(nonce int, previousHash [32]byte, transactions []*Transaction, logger *log.Logger) *Block {
 	return &Block{
 		time.Now().UnixNano(),
 		nonce,
 		previousHash,
 		transactions,
+		logger,
 	}
 }
 
-func NewBlockFromDto(block *BlockResponse) *Block {
+func NewBlockFromDto(block *BlockResponse, logger *log.Logger) *Block {
 	var transactions []*Transaction
 	for _, transaction := range block.Transactions {
-		transactions = append(transactions, NewTransactionFromDto(transaction))
+		transactions = append(transactions, NewTransactionFromDto(transaction, logger))
 	}
 	return &Block{
 		block.Timestamp,
 		block.Nonce,
 		block.PreviousHash,
 		transactions,
+		logger,
 	}
 }
 
 func (block *Block) Hash() [32]byte {
 	marshaledBlock, err := json.Marshal(block)
 	if err != nil {
-		log.Println("ERROR: Failed to marshal block")
+		block.logger.Error(fmt.Errorf("failed to marshal block: %w", err).Error())
+		return [32]byte{}
 	}
 	return sha256.Sum256(marshaledBlock)
 }

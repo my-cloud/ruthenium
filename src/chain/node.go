@@ -1,7 +1,6 @@
 package chain
 
 import (
-	"errors"
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
 	"net"
@@ -61,7 +60,7 @@ func (node *Node) Consensus() (err error) {
 	return
 }
 
-func (node *Node) UpdateTransactions(request TransactionRequest) (err error) {
+func (node *Node) AddTransaction(request TransactionRequest) (err error) {
 	_, err = node.sendRequest(request)
 	return
 }
@@ -109,16 +108,13 @@ func (node *Node) sendRequest(request interface{}) (res p2p.Data, err error) {
 			client, err = p2p.NewClient(tcp)
 			if err == nil {
 				client.SetLogger(log.NewLogger(log.Fatal))
-			}
-			if err != nil {
-				node.logger.Error(fmt.Sprintf("Failed to start client for target %s\n%v", node.Target(), err))
-			} else {
 				res, err = client.Send("dialog", req)
+			} else {
+				err = fmt.Errorf("failed to start client for target %s: %w", node.Target(), err)
 			}
 		} else {
-			err = errors.New("unable to find node")
+			err = fmt.Errorf("unable to find node for target %s: %w", node.Target(), err)
 		}
 	}
-
 	return
 }
