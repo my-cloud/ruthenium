@@ -14,20 +14,19 @@ import (
 	"strconv"
 )
 
-const templateDir = "src/ui/templates"
-
 type Api struct {
 	publicKey        string
 	privateKey       string
 	port             uint16
 	blockchainClient *neighborhood.Node
+	templatesPath    string
 	logger           *log.Logger
 }
 
-func NewApi(publicKey string, privateKey string, port uint16, hostIp string, hostPort uint16, level log.Level) *Api {
+func NewApi(publicKey string, privateKey string, port uint16, hostIp string, hostPort uint16, templatesPath string,level log.Level) *Api {
 	logger := log.NewLogger(level)
 	blockchainClient := neighborhood.NewNode(hostIp, hostPort, logger)
-	return &Api{publicKey, privateKey, port, blockchainClient, logger}
+	return &Api{publicKey, privateKey, port, blockchainClient, templatesPath, logger}
 }
 
 func (api *Api) Port() uint16 {
@@ -41,7 +40,7 @@ func (api *Api) BlockchainClient() *neighborhood.Node {
 func (api *Api) Index(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		t, err := template.ParseFiles(path.Join(templateDir, "index.html"))
+		t, err := template.ParseFiles(path.Join(api.templatesPath, "index.html"))
 		if err != nil {
 			api.logger.Error(fmt.Errorf("failed to parse the template: %w", err).Error())
 			return

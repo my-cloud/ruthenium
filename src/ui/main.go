@@ -14,10 +14,11 @@ func main() {
 	port := flag.Uint("port", 8080, "The UI server TCP port number")
 	hostIp := flag.String("host-ip", "", "The blockchain host IP address")
 	hostPort := flag.Uint("host-port", chain.DefaultPort, "The blockchain host port")
+	templatesPath := flag.String("templates-path", "src/ui/templates", "The UI templates path")
 	logLevel := flag.String("log-level", "warn", "The log level")
 	flag.Parse()
 
-	app := server.NewApi(*publicKey, *privateKey, uint16(*port), *hostIp, uint16(*hostPort), log.ParseLevel(*logLevel))
+	app := server.NewApi(*publicKey, *privateKey, uint16(*port), *hostIp, uint16(*hostPort), *templatesPath, log.ParseLevel(*logLevel))
 	fmt.Println("Running...")
 	app.Run()
 }
