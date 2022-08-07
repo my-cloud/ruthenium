@@ -38,7 +38,7 @@ For an incredibly simple [P2P go library](https://github.com/leprosus/golang-p2p
 
 ## License
 
-![img.png](img.png)
+![img.png](doc/img.png)
 
 http://unlicense.org/
 
