@@ -1,0 +1,4 @@
+apiVersion: v1
+name: ruthenium
+appVersion: 0.0.0
+version: 0.0.0
