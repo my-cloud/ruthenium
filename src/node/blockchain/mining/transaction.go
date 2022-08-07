@@ -1,4 +1,4 @@
-package mine
+package mining
 
 import (
 	"encoding/json"

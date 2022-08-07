@@ -8,7 +8,7 @@ import (
 	"ruthenium/src/log"
 	"ruthenium/src/node/authentication"
 	"ruthenium/src/node/blockchain"
-	"ruthenium/src/node/blockchain/mine"
+	"ruthenium/src/node/blockchain/mining"
 	"testing"
 )
 
@@ -28,7 +28,7 @@ func Test_Blockchain(t *testing.T) {
 		wg.Wait()
 	}
 
-	transaction1 := mine.NewTransaction(minerWallet.Address(), walletA.Address(), value1)
+	transaction1 := mining.NewTransaction(minerWallet.Address(), walletA.Address(), value1)
 	signature1, _ := transaction1.Sign(minerWallet.PrivateKey())
 	blockChain.AddTransaction(transaction1, minerWallet.PublicKey(), signature1)
 	wg.Wait()
@@ -36,7 +36,7 @@ func Test_Blockchain(t *testing.T) {
 	wg.Wait()
 
 	var value2 float32 = 10.
-	transaction2 := mine.NewTransaction(walletA.Address(), walletB.Address(), value2)
+	transaction2 := mining.NewTransaction(walletA.Address(), walletB.Address(), value2)
 	signature2, _ := transaction2.Sign(walletA.PrivateKey())
 	blockChain.AddTransaction(transaction2, walletA.PublicKey(), signature2)
 	wg.Wait()

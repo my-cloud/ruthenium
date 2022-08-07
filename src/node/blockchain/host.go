@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"ruthenium/src/log"
 	"ruthenium/src/node/authentication"
-	"ruthenium/src/node/blockchain/mine"
+	"ruthenium/src/node/blockchain/mining"
 	"ruthenium/src/node/neighborhood"
 	"strconv"
 	"time"
@@ -82,7 +82,7 @@ func (host *Host) PostTransactions(request *neighborhood.TransactionRequest) {
 		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
 		return
 	}
-	transaction := mine.NewTransaction(*request.SenderAddress, *request.RecipientAddress, *request.Value)
+	transaction := mining.NewTransaction(*request.SenderAddress, *request.RecipientAddress, *request.Value)
 	host.blockchain.CreateTransaction(transaction, publicKey, signature)
 }
 
@@ -101,7 +101,7 @@ func (host *Host) PutTransactions(request *neighborhood.TransactionRequest) {
 		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
 		return
 	}
-	transaction := mine.NewTransaction(*request.SenderAddress, *request.RecipientAddress, *request.Value)
+	transaction := mining.NewTransaction(*request.SenderAddress, *request.RecipientAddress, *request.Value)
 	host.blockchain.AddTransaction(transaction, publicKey, signature)
 }
 

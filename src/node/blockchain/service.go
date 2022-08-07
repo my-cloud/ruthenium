@@ -7,7 +7,7 @@ import (
 	"net"
 	"ruthenium/src/log"
 	"ruthenium/src/node/authentication"
-	"ruthenium/src/node/blockchain/mine"
+	"ruthenium/src/node/blockchain/mining"
 	"ruthenium/src/node/neighborhood"
 	"sync"
 	"time"
@@ -25,9 +25,9 @@ const (
 )
 
 type Service struct {
-	transactions      []*mine.Transaction
+	transactions      []*mining.Transaction
 	transactionsMutex sync.RWMutex
-	blocks            []*mine.Block
+	blocks            []*mining.Block
 	blockResponses    []*neighborhood.BlockResponse
 	blocksMutex       sync.RWMutex
 	address           string
@@ -40,30 +40,30 @@ type Service struct {
 	logger    *log.Logger
 	waitGroup *sync.WaitGroup
 
-	neighbors              []*neighborhood.Node // TODO manage max neighbors count (Outbound/Inbound)
+	neighbors              []*neighborhood.Neighbor // TODO manage max neighbors count (Outbound/Inbound)
 	neighborsMutex         sync.RWMutex
-	neighborsByTarget      map[string]*neighborhood.Node
+	neighborsByTarget      map[string]*neighborhood.Neighbor
 	neighborsByTargetMutex sync.RWMutex
 }
 
 func NewService(address string, ip string, port uint16, logger *log.Logger) *Service {
-	blockchain := new(Service)
-	blockchain.address = address
-	blockchain.ip = ip
-	blockchain.port = port
-	blockchain.logger = logger
+	service := new(Service)
+	service.address = address
+	service.ip = ip
+	service.port = port
+	service.logger = logger
 	var waitGroup sync.WaitGroup
-	blockchain.waitGroup = &waitGroup
-	blockchain.addBlock(new(mine.Block))
+	service.waitGroup = &waitGroup
+	service.addBlock(new(mining.Block))
 	seedsIps := []string{
 		"89.82.76.241",
 	}
-	blockchain.neighborsByTarget = map[string]*neighborhood.Node{}
+	service.neighborsByTarget = map[string]*neighborhood.Neighbor{}
 	for _, seedIp := range seedsIps {
-		seed := neighborhood.NewNode(seedIp, DefaultPort, logger)
-		blockchain.neighborsByTarget[seed.Target()] = seed
+		seed := neighborhood.NewNeighbor(seedIp, DefaultPort, logger)
+		service.neighborsByTarget[seed.Target()] = seed
 	}
-	return blockchain
+	return service
 }
 
 func (service *Service) WaitGroup() *sync.WaitGroup {
@@ -85,9 +85,9 @@ func (service *Service) StartNeighborsSynchronization() {
 
 func (service *Service) FindNeighbors() {
 	service.waitGroup.Add(1)
-	go func(neighborsByTarget map[string]*neighborhood.Node) {
+	go func(neighborsByTarget map[string]*neighborhood.Neighbor) {
 		defer service.waitGroup.Done()
-		var neighbors []*neighborhood.Node
+		var neighbors []*neighborhood.Neighbor
 		var targetRequests []neighborhood.TargetRequest
 		hostTargetRequest := neighborhood.TargetRequest{
 			Ip:   &service.ip,
@@ -147,7 +147,7 @@ func (service *Service) FindNeighbors() {
 					neighborTargetRequests = append(neighborTargetRequests, targetRequest)
 				}
 			}
-			go func(neighbor *neighborhood.Node) {
+			go func(neighbor *neighborhood.Neighbor) {
 				_ = neighbor.SendTargets(neighborTargetRequests)
 			}(neighbor)
 		}
@@ -161,7 +161,7 @@ func (service *Service) AddTargets(targetRequests []neighborhood.TargetRequest) 
 		service.neighborsByTargetMutex.Lock()
 		defer service.neighborsByTargetMutex.Unlock()
 		for _, targetRequest := range targetRequests {
-			neighbor := neighborhood.NewNode(*targetRequest.Ip, *targetRequest.Port, service.logger)
+			neighbor := neighborhood.NewNeighbor(*targetRequest.Ip, *targetRequest.Port, service.logger)
 			if _, ok := service.neighborsByTarget[neighbor.Target()]; !ok {
 				service.neighborsByTarget[neighbor.Target()] = neighbor
 			}
@@ -171,13 +171,13 @@ func (service *Service) AddTargets(targetRequests []neighborhood.TargetRequest) 
 
 func (service *Service) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Blocks []*mine.Block `json:"blocks"`
+		Blocks []*mining.Block `json:"blocks"`
 	}{
 		Blocks: service.blocks,
 	})
 }
 
-func (service *Service) CreateTransaction(transaction *mine.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) {
+func (service *Service) CreateTransaction(transaction *mining.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) {
 	service.waitGroup.Add(1)
 	go func() {
 		defer service.waitGroup.Done()
@@ -203,14 +203,14 @@ func (service *Service) CreateTransaction(transaction *mine.Transaction, publicK
 		service.neighborsMutex.RLock()
 		defer service.neighborsMutex.RUnlock()
 		for _, neighbor := range service.neighbors {
-			go func(neighbor *neighborhood.Node) {
+			go func(neighbor *neighborhood.Neighbor) {
 				_ = neighbor.AddTransaction(transactionRequest)
 			}(neighbor)
 		}
 	}()
 }
 
-func (service *Service) AddTransaction(transaction *mine.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) {
+func (service *Service) AddTransaction(transaction *mining.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) {
 	service.waitGroup.Add(1)
 	go func() {
 		defer service.waitGroup.Done()
@@ -221,7 +221,7 @@ func (service *Service) AddTransaction(transaction *mine.Transaction, publicKey 
 	}()
 }
 
-func (service *Service) addTransaction(transaction *mine.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) (err error) {
+func (service *Service) addTransaction(transaction *mining.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) (err error) {
 	marshaledTransaction, err := json.Marshal(transaction)
 	if err != nil {
 		err = fmt.Errorf("failed to marshal transaction, %w", err)
@@ -248,7 +248,7 @@ func (service *Service) Mine() {
 		defer service.waitGroup.Done()
 		service.mineMutex.Lock()
 		defer service.mineMutex.Unlock()
-		transaction := mine.NewTransaction(MiningRewardSenderAddress, service.address, MiningReward)
+		transaction := mining.NewTransaction(MiningRewardSenderAddress, service.address, MiningReward)
 		service.transactionsMutex.Lock()
 		service.transactions = append(service.transactions, transaction)
 		service.transactionsMutex.Unlock()
@@ -263,7 +263,7 @@ func (service *Service) Mine() {
 		service.neighborsMutex.RLock()
 		defer service.neighborsMutex.RUnlock()
 		for _, neighbor := range service.neighbors {
-			go func(neighbor *neighborhood.Node) {
+			go func(neighbor *neighborhood.Neighbor) {
 				_ = neighbor.Consensus()
 			}(neighbor)
 		}
@@ -308,7 +308,7 @@ func (service *Service) CalculateTotalAmount(blockchainAddress string) float32 {
 	return totalAmount
 }
 
-func (service *Service) Transactions() []*mine.Transaction {
+func (service *Service) Transactions() []*mining.Transaction {
 	service.transactionsMutex.RLock()
 	defer service.transactionsMutex.RUnlock()
 	return service.transactions
@@ -324,8 +324,8 @@ func (service *Service) clearTransactions() {
 	service.transactions = nil
 }
 
-func (service *Service) GetValidBlocks(blocks []*neighborhood.BlockResponse) (validBlocks []*mine.Block) {
-	previousBlock := mine.NewBlockFromDto(blocks[0])
+func (service *Service) GetValidBlocks(blocks []*neighborhood.BlockResponse) (validBlocks []*mining.Block) {
+	previousBlock := mining.NewBlockFromDto(blocks[0])
 	validBlocks = append(validBlocks, previousBlock)
 	currentIndex := 1
 	for currentIndex < len(blocks) {
@@ -338,8 +338,8 @@ func (service *Service) GetValidBlocks(blocks []*neighborhood.BlockResponse) (va
 		if !isPreviousHashValid {
 			return nil
 		}
-		block := mine.NewBlockFromDto(currentBlock)
-		var pow *mine.ProofOfWork
+		block := mining.NewBlockFromDto(currentBlock)
+		var pow *mining.ProofOfWork
 		if pow, err = block.ProofOfWork(); err != nil {
 			service.logger.Error(fmt.Errorf("failed to get proof of work: %w", err).Error())
 			return nil
@@ -362,7 +362,7 @@ func (service *Service) ResolveConflicts() {
 		service.neighborsMutex.RLock()
 		defer service.neighborsMutex.RUnlock()
 		var longestChainResponse []*neighborhood.BlockResponse
-		var longestChain []*mine.Block
+		var longestChain []*mining.Block
 		maxLength := len(service.blocks)
 		for _, neighbor := range service.neighbors {
 			neighborBlocks, err := neighbor.GetBlocks()
@@ -388,7 +388,7 @@ func (service *Service) ResolveConflicts() {
 	}()
 }
 
-func (service *Service) addBlock(block *mine.Block) *mine.Block {
+func (service *Service) addBlock(block *mining.Block) *mining.Block {
 	service.blocks = append(service.blocks, block)
 	blockResponse := block.GetDto()
 	service.blockResponses = append(service.blockResponses, blockResponse)
@@ -396,7 +396,7 @@ func (service *Service) addBlock(block *mine.Block) *mine.Block {
 	return block
 }
 
-func (service *Service) createBlock() (block *mine.Block, err error) {
+func (service *Service) createBlock() (block *mining.Block, err error) {
 	lastBlock := service.blocks[len(service.blocks)-1]
 	lastBlockHash, err := lastBlock.Hash()
 	if err != nil {
@@ -405,6 +405,6 @@ func (service *Service) createBlock() (block *mine.Block, err error) {
 	}
 	service.transactionsMutex.RLock()
 	defer service.transactionsMutex.RUnlock()
-	block, err = mine.NewBlock(lastBlockHash, service.transactions)
+	block, err = mining.NewBlock(lastBlockHash, service.transactions)
 	return
 }

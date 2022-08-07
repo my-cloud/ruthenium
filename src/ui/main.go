@@ -18,7 +18,7 @@ func main() {
 	logLevel := flag.String("log-level", "warn", "The log level")
 	flag.Parse()
 
-	app := server.NewApi(*publicKey, *privateKey, uint16(*port), *hostIp, uint16(*hostPort), *templatesPath, log.ParseLevel(*logLevel))
+	app := server.NewController(*publicKey, *privateKey, uint16(*port), *hostIp, uint16(*hostPort), *templatesPath, log.ParseLevel(*logLevel))
 	fmt.Println("Running...")
 	app.Run()
 }
