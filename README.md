@@ -12,13 +12,13 @@ The blockchain motivating to do local business and to not capitalize tokens.
 ## Usage
 
 * Open your DNS port 8106
-* In src/wallet_server, run:
-    * go run main.go -host-ip=<your external IP address>
+* At root level (ruthenium folder), run:
+    * go run src/ui/main.go -host-ip=<your external IP address>
 * Using a web browser, go to:
     * http://localhost:8080
     * store your public key, private key and wallet address
 * In src/blockchain_server, run:
-    * go run main.go -public-key=<your public key> -private-key=<your private key>
+    * go run src/node/main.go -public-key=<your public key> -private-key=<your private key>
 * Start sending money!
 
 ## Contributing

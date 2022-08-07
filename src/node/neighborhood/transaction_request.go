@@ -1,4 +1,4 @@
-package chain
+package neighborhood
 
 const (
 	GET    = "GET"

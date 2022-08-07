@@ -38,24 +38,24 @@ func NewLogger(level Level) *Logger {
 
 func (logger *Logger) Info(msg string) {
 	if logger.level <= Info {
-		log.Println("INFO: ", msg)
+		log.Println("INFO:", msg)
 	}
 }
 
 func (logger *Logger) Warn(msg string) {
 	if logger.level <= Warn {
-		log.Println("WARN: ", msg)
+		log.Println("WARN:", msg)
 	}
 }
 
 func (logger *Logger) Error(msg string) {
 	if logger.level <= Error {
-		log.Println("ERROR: ", msg)
+		log.Println("ERROR:", msg)
 	}
 }
 
 func (logger *Logger) Fatal(msg string) {
 	if logger.level <= Fatal {
-		log.Panicln("FATAL: ", msg)
+		log.Panicln("FATAL:", msg)
 	}
 }

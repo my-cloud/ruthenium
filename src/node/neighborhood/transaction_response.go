@@ -1,4 +1,4 @@
-package chain
+package neighborhood
 
 type TransactionResponse struct {
 	SenderAddress    string
