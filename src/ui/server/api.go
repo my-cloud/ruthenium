@@ -9,6 +9,7 @@ import (
 	"path"
 	"ruthenium/src/log"
 	"ruthenium/src/node/authentication"
+	"ruthenium/src/node/chain/mine"
 	"ruthenium/src/node/neighborhood"
 	"strconv"
 )
@@ -64,6 +65,7 @@ func (api *Api) Wallet(writer http.ResponseWriter, req *http.Request) {
 		marshaledWallet, err := wallet.MarshalJSON()
 		if err != nil {
 			api.logger.Error(fmt.Errorf("failed to marshal wallet: %w", err).Error())
+			return
 		}
 		writer.Header().Add("Content-Type", "application/json")
 		api.write(writer, string(marshaledWallet[:]))
@@ -92,11 +94,13 @@ func (api *Api) CreateTransaction(writer http.ResponseWriter, req *http.Request)
 		publicKey, err := authentication.NewPublicKey(*transactionRequest.SenderPublicKey)
 		if err != nil {
 			api.logger.Error(fmt.Errorf("failed to decode transaction public key: %w", err).Error())
+			api.write(writer, "fail")
 			return
 		}
 		privateKey, err := authentication.NewPrivateKey(*transactionRequest.SenderPrivateKey, publicKey)
 		if err != nil {
 			api.logger.Error(fmt.Errorf("failed to decode transaction private key: %w", err).Error())
+			api.write(writer, "fail")
 			return
 		}
 		value, err := strconv.ParseFloat(*transactionRequest.Value, 32)
@@ -106,10 +110,18 @@ func (api *Api) CreateTransaction(writer http.ResponseWriter, req *http.Request)
 			return
 		}
 		value32 := float32(value)
-		transaction := authentication.NewTransaction(publicKey, *transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, value32, api.logger)
-		signature, err := authentication.NewSignature(transaction, privateKey)
+		transaction := mine.NewTransaction(*transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, value32)
+		marshaledTransaction, err := json.Marshal(transaction)
+		if err != nil {
+			api.logger.Error(fmt.Errorf("failed to marshal transaction: %w", err).Error())
+			api.write(writer, "fail")
+			return
+		}
+		signature, err := authentication.NewSignature(marshaledTransaction, privateKey)
 		if err != nil {
 			api.logger.Error(fmt.Errorf("failed to generate signature: %w", err).Error())
+			api.write(writer, "fail")
+			return
 		}
 		signatureString := signature.String()
 		var verb = neighborhood.POST
@@ -147,6 +159,7 @@ func (api *Api) GetTransactions(writer http.ResponseWriter, req *http.Request) {
 		marshaledTransactions, err = json.Marshal(transactions)
 		if err != nil {
 			api.logger.Error(fmt.Errorf("failed to marshal transactions: %w", err).Error())
+			api.write(writer, "fail")
 			return
 		}
 		writer.Header().Add("Content-Type", "application/json")
@@ -221,6 +234,7 @@ func (api *Api) WalletAmount(writer http.ResponseWriter, req *http.Request) {
 		marshaledAmount, err = json.Marshal(amountResponse)
 		if err != nil {
 			api.logger.Error(fmt.Errorf("failed to marshal amountResponse: %w", err).Error())
+			api.write(writer, "fail")
 			return
 		}
 		writer.Header().Add("Content-Type", "application/json")

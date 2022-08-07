@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"math/big"
 )
@@ -21,11 +20,7 @@ type Signature struct {
 	s *big.Int
 }
 
-func NewSignature(transaction *Transaction, privateKey *ecdsa.PrivateKey) (*Signature, error) {
-	marshaledTransaction, err := json.Marshal(transaction)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal transaction: %w", err)
-	}
+func NewSignature(marshaledTransaction []byte, privateKey *ecdsa.PrivateKey) (*Signature, error) {
 	hash := sha256.Sum256(marshaledTransaction)
 	r, s, err := ecdsa.Sign(rand.Reader, privateKey, hash[:])
 	if err != nil {
@@ -62,6 +57,17 @@ func NewPrivateKey(privateKeyString string, publicKey *ecdsa.PublicKey) (*ecdsa.
 
 func (signature *Signature) String() string {
 	return fmt.Sprintf("%064x%064x", signature.r, signature.s)
+}
+
+func (signature *Signature) Verify(marshaledTransaction []byte, publicKey *ecdsa.PublicKey, transactionSenderAddress string) bool {
+	hash := sha256.Sum256(marshaledTransaction)
+	isSignatureValid := ecdsa.Verify(publicKey, hash[:], signature.r, signature.s)
+	var isTransactionValid bool
+	if isSignatureValid {
+		publicKeyAddress := NewAddress(publicKey)
+		isTransactionValid = transactionSenderAddress == publicKeyAddress
+	}
+	return isTransactionValid
 }
 
 func string2BigIntTuple(s string) (big.Int, big.Int, error) {
