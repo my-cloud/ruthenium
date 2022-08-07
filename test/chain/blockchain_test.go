@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"ruthenium/src/log"
 	"ruthenium/src/node/authentication"
-	"ruthenium/src/node/chain"
-	"ruthenium/src/node/chain/mine"
+	"ruthenium/src/node/blockchain"
+	"ruthenium/src/node/blockchain/mine"
 	"testing"
 )
 
@@ -20,7 +20,7 @@ func Test_Blockchain(t *testing.T) {
 
 	// Act
 	logger := log.NewLogger(log.Error)
-	blockChain := chain.NewBlockchain(minerWallet.Address(), "", 8106, logger)
+	blockChain := blockchain.NewService(minerWallet.Address(), "", 8106, logger)
 	wg := blockChain.WaitGroup()
 	var value1 float32 = 40.
 	for blockChain.CalculateTotalAmount(minerWallet.Address()) < value1 {
@@ -44,7 +44,7 @@ func Test_Blockchain(t *testing.T) {
 	wg.Wait()
 
 	// Assert
-	reward := chain.MiningReward
+	reward := blockchain.MiningReward
 	mineOperationsCount := float32(math.Ceil(float64(value1 / reward)))
 	expectedMinerWalletAmount := mineOperationsCount*reward - value1 + 2*reward
 	actualMinerWalletAmount := blockChain.CalculateTotalAmount(minerWallet.Address())

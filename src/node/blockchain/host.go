@@ -1,4 +1,4 @@
-package chain
+package blockchain
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"ruthenium/src/log"
 	"ruthenium/src/node/authentication"
-	"ruthenium/src/node/chain/mine"
+	"ruthenium/src/node/blockchain/mine"
 	"ruthenium/src/node/neighborhood"
 	"strconv"
 	"time"
@@ -19,7 +19,7 @@ type Host struct {
 	privateKey string
 	ip         string
 	port       uint16
-	blockchain *Blockchain
+	blockchain *Service
 	logger     *log.Logger
 }
 
@@ -38,7 +38,7 @@ func NewHost(publicKey string, privateKey string, port uint16, logLevel log.Leve
 	if err != nil {
 		host.logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
 	} else {
-		host.blockchain = NewBlockchain(wallet.Address(), host.ip, host.port, host.logger)
+		host.blockchain = NewService(wallet.Address(), host.ip, host.port, host.logger)
 	}
 	return host
 }

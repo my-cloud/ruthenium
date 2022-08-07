@@ -9,7 +9,7 @@ import (
 	"path"
 	"ruthenium/src/log"
 	"ruthenium/src/node/authentication"
-	"ruthenium/src/node/chain/mine"
+	"ruthenium/src/node/blockchain/mine"
 	"ruthenium/src/node/neighborhood"
 	"strconv"
 )
@@ -23,7 +23,7 @@ type Api struct {
 	logger           *log.Logger
 }
 
-func NewApi(publicKey string, privateKey string, port uint16, hostIp string, hostPort uint16, templatesPath string,level log.Level) *Api {
+func NewApi(publicKey string, privateKey string, port uint16, hostIp string, hostPort uint16, templatesPath string, level log.Level) *Api {
 	logger := log.NewLogger(level)
 	blockchainClient := neighborhood.NewNode(hostIp, hostPort, logger)
 	return &Api{publicKey, privateKey, port, blockchainClient, templatesPath, logger}
