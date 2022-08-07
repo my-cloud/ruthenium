@@ -1,4 +1,4 @@
-package chain
+package neighborhood
 
 type AmountRequest struct {
 	Address *string

@@ -1,22 +1,19 @@
-package chain
+package authentication
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 )
 
 type Wallet struct {
-	publicKey  *ecdsa.PublicKey
-	privateKey *ecdsa.PrivateKey
+	publicKey  *PublicKey
+	privateKey *PrivateKey
 	address    string
 }
 
 func NewWallet(publicKeyString string, privateKeyString string) (*Wallet, error) {
-	var publicKey *ecdsa.PublicKey
-	var privateKey *ecdsa.PrivateKey
+	var publicKey *PublicKey
+	var privateKey *PrivateKey
 	var address string
 	var err error
 	if publicKeyString != "" && privateKeyString != "" {
@@ -29,10 +26,10 @@ func NewWallet(publicKeyString string, privateKeyString string) (*Wallet, error)
 			return nil, fmt.Errorf("failed to decode transaction private key: %w", err)
 		}
 		address = NewAddress(publicKey)
-	} else if privateKey, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader); err != nil {
+	} else if privateKey, err = GeneratePrivateKey(); err != nil {
 		return nil, fmt.Errorf("failed to generate private key: %w", err)
 	} else {
-		publicKey = &privateKey.PublicKey
+		publicKey = privateKey.ExtractPublicKey()
 		address = NewAddress(publicKey)
 	}
 	return &Wallet{publicKey, privateKey, address}, nil
@@ -44,28 +41,20 @@ func (wallet *Wallet) MarshalJSON() ([]byte, error) {
 		PrivateKey string `json:"private_key"`
 		Address    string `json:"address"`
 	}{
-		PublicKey:  wallet.publicKeyStr(),
-		PrivateKey: wallet.privateKeyStr(),
+		PublicKey:  wallet.publicKey.String(),
+		PrivateKey: wallet.privateKey.String(),
 		Address:    wallet.Address(),
 	})
 }
 
-func (wallet *Wallet) PublicKey() *ecdsa.PublicKey {
+func (wallet *Wallet) PublicKey() *PublicKey {
 	return wallet.publicKey
 }
 
-func (wallet *Wallet) PrivateKey() *ecdsa.PrivateKey {
+func (wallet *Wallet) PrivateKey() *PrivateKey {
 	return wallet.privateKey
 }
 
 func (wallet *Wallet) Address() string {
 	return wallet.address
-}
-
-func (wallet *Wallet) privateKeyStr() string {
-	return fmt.Sprintf("%x", wallet.privateKey.D.Bytes())
-}
-
-func (wallet *Wallet) publicKeyStr() string {
-	return fmt.Sprintf("%064x%064x", wallet.publicKey.X.Bytes(), wallet.publicKey.Y.Bytes())
 }
