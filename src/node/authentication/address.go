@@ -1,13 +1,12 @@
 package authentication
 
 import (
-	"crypto/ecdsa"
 	"crypto/sha256"
 	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/ripemd160"
 )
 
-func NewAddress(publicKey *ecdsa.PublicKey) string {
+func NewAddress(publicKey *PublicKey) string {
 	// Perform SHA-256 hashing on the public key (32 bytes).
 	h2 := sha256.New()
 	h2.Write(publicKey.X.Bytes())

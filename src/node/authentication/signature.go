@@ -2,7 +2,6 @@ package authentication
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -20,9 +19,9 @@ type Signature struct {
 	s *big.Int
 }
 
-func NewSignature(marshaledTransaction []byte, privateKey *ecdsa.PrivateKey) (*Signature, error) {
+func NewSignature(marshaledTransaction []byte, privateKey *PrivateKey) (*Signature, error) {
 	hash := sha256.Sum256(marshaledTransaction)
-	r, s, err := ecdsa.Sign(rand.Reader, privateKey, hash[:])
+	r, s, err := ecdsa.Sign(rand.Reader, privateKey.PrivateKey, hash[:])
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign transaction: %w", err)
 	}
@@ -37,31 +36,13 @@ func DecodeSignature(signatureString string) (*Signature, error) {
 	return &Signature{&r, &s}, nil
 }
 
-func NewPublicKey(publicKeyString string) (*ecdsa.PublicKey, error) {
-	x, y, err := string2BigIntTuple(publicKeyString)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode public key: %w", err)
-	}
-	return &ecdsa.PublicKey{elliptic.P256(), &x, &y}, nil
-}
-
-func NewPrivateKey(privateKeyString string, publicKey *ecdsa.PublicKey) (*ecdsa.PrivateKey, error) {
-	b, err := hex.DecodeString(privateKeyString[:])
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode private key: %w", err)
-	}
-	var bi big.Int
-	_ = bi.SetBytes(b)
-	return &ecdsa.PrivateKey{*publicKey, &bi}, nil
-}
-
 func (signature *Signature) String() string {
 	return fmt.Sprintf("%064x%064x", signature.r, signature.s)
 }
 
-func (signature *Signature) Verify(marshaledTransaction []byte, publicKey *ecdsa.PublicKey, transactionSenderAddress string) bool {
+func (signature *Signature) Verify(marshaledTransaction []byte, publicKey *PublicKey, transactionSenderAddress string) bool {
 	hash := sha256.Sum256(marshaledTransaction)
-	isSignatureValid := ecdsa.Verify(publicKey, hash[:], signature.r, signature.s)
+	isSignatureValid := ecdsa.Verify(publicKey.PublicKey, hash[:], signature.r, signature.s)
 	var isTransactionValid bool
 	if isSignatureValid {
 		publicKeyAddress := NewAddress(publicKey)

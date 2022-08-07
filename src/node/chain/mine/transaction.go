@@ -1,7 +1,6 @@
 package mine
 
 import (
-	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
 	"ruthenium/src/node/authentication"
@@ -54,7 +53,7 @@ func (transaction *Transaction) RecipientAddress() string {
 	return transaction.recipientAddress
 }
 
-func (transaction *Transaction) Sign(privateKey *ecdsa.PrivateKey) (signature *authentication.Signature, err error) {
+func (transaction *Transaction) Sign(privateKey *authentication.PrivateKey) (signature *authentication.Signature, err error) {
 	marshaledTransaction, err := json.Marshal(transaction)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal transaction: %w", err)

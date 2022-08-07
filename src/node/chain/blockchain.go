@@ -1,7 +1,6 @@
 package chain
 
 import (
-	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -178,7 +177,7 @@ func (blockchain *Blockchain) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (blockchain *Blockchain) CreateTransaction(transaction *mine.Transaction, publicKey *ecdsa.PublicKey, signature *authentication.Signature) {
+func (blockchain *Blockchain) CreateTransaction(transaction *mine.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) {
 	blockchain.waitGroup.Add(1)
 	go func() {
 		defer blockchain.waitGroup.Done()
@@ -190,8 +189,7 @@ func (blockchain *Blockchain) CreateTransaction(transaction *mine.Transaction, p
 		senderAddress := transaction.SenderAddress()
 		recipientAddress := transaction.RecipientAddress()
 		value := transaction.Value()
-		// TODO create an object Public key holding the following statement
-		publicKeyStr := fmt.Sprintf("%064x%064x", publicKey.X.Bytes(), publicKey.Y.Bytes())
+		publicKeyStr := publicKey.String()
 		signatureStr := signature.String()
 		var verb = neighborhood.PUT
 		transactionRequest := neighborhood.TransactionRequest{
@@ -212,7 +210,7 @@ func (blockchain *Blockchain) CreateTransaction(transaction *mine.Transaction, p
 	}()
 }
 
-func (blockchain *Blockchain) AddTransaction(transaction *mine.Transaction, publicKey *ecdsa.PublicKey, signature *authentication.Signature) {
+func (blockchain *Blockchain) AddTransaction(transaction *mine.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) {
 	blockchain.waitGroup.Add(1)
 	go func() {
 		defer blockchain.waitGroup.Done()
@@ -223,7 +221,7 @@ func (blockchain *Blockchain) AddTransaction(transaction *mine.Transaction, publ
 	}()
 }
 
-func (blockchain *Blockchain) addTransaction(transaction *mine.Transaction, publicKey *ecdsa.PublicKey, signature *authentication.Signature) (err error) {
+func (blockchain *Blockchain) addTransaction(transaction *mine.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) (err error) {
 	marshaledTransaction, err := json.Marshal(transaction)
 	if err != nil {
 		err = fmt.Errorf("failed to marshal transaction, %w", err)
