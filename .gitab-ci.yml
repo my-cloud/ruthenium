@@ -1,0 +1,18 @@
+---
+include:
+  - project: coinsmaster/common/pipeline-manifests
+    file: container-build-manifest.yaml
+
+
+stages:
+  - build
+  - scan
+
+build:
+  stage: build
+  extends: .container_kaniko_build
+
+scan:
+  stage: scan
+  extends: .docker_kaniko_trivy
+
