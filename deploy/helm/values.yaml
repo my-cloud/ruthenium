@@ -1,0 +1,6 @@
+publicKey: "e8a69e527ced6653f54cffff67e0a1a3cae6632043f10829c8c77aba59e1f252940f36c5f47b5c7b54392a37d56e7d30a5d1c302879e5a738bb27f5fec70d0b7"
+privateKey: "e278d665e03c87d1e89d6cc0591ba7850dab3ee85a95cae00c23e02870f72b1d"
+templatesPath: "/app/templates"
+image: registry.gitlab.com/coinsmaster/ruthenium:latest
+imagePullSecrets:
+  - gitlab-registry-secret
