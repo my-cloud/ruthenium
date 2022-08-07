@@ -1,4 +1,4 @@
-package wallet
+package server
 
 type TransactionRequest struct {
 	SenderPrivateKey *string `json:"sender_private_key"`
