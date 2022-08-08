@@ -20,5 +20,6 @@ scan:
 
 test:
   stage: test
+    - build
   script:
     - go test -v ./test/...
