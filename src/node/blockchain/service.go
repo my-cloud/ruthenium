@@ -264,7 +264,7 @@ func (service *Service) Mine() {
 		defer service.mineMutex.Unlock()
 		amount := service.CalculateTotalAmount(time.Now().UnixNano(), service.address)
 		var reward float32
-		if amount > 1 {
+		if float64(amount) > 1/RewardFactor {
 			reward = float32(math.Log10(float64(amount)*RewardFactor) / MinutesCountPerDay)
 		} else {
 			reward = 0
