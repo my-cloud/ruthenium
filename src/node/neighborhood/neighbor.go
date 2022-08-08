@@ -124,7 +124,7 @@ func (neighbor *Neighbor) sendRequest(request interface{}) (res p2p.Data, err er
 				err = fmt.Errorf("failed to start client for target %s: %w", neighbor.Target(), err)
 			}
 		} else {
-			err = fmt.Errorf("unable to find node for target %s: %w", neighbor.Target(), err)
+			err = fmt.Errorf("unable to find node for target %s", neighbor.Target())
 		}
 	}
 	return
