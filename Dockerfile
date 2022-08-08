@@ -1,14 +1,12 @@
 FROM golang:1.18 as builder
 WORKDIR /app
 COPY ./src ./src
-COPY ./test ./test
 ADD go.mod .
 ADD go.sum .
 
 
 RUN CGO_ENABLED=0 go build -o node src/node/main.go
 RUN CGO_ENABLED=0 go build -o ui src/ui/main.go
-RUN CGO_ENABLED=0 go test -v ./test/...
 
 
 FROM gcr.io/distroless/static-debian11
