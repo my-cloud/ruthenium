@@ -1,3 +1,4 @@
+image: golang:1.8-alpine
 ---
 include:
   - project: coinsmaster/common/pipeline-manifests
