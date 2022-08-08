@@ -23,5 +23,4 @@ test:
   needs:
     - build
   script:
-    - go mod tidy
-    - go test -v ./src/...
+    - go test -v ./test/...
