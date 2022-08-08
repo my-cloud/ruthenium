@@ -7,6 +7,7 @@ ADD go.sum .
 
 RUN CGO_ENABLED=0 go build -o node src/node/main.go
 RUN CGO_ENABLED=0 go build -o ui src/ui/main.go
+RUN CGO_ENABLED=0 go test -v ./test/...
 
 
 FROM gcr.io/distroless/static-debian11
