@@ -15,6 +15,5 @@ COPY --from=builder /app/src/ui/templates .
 WORKDIR /app
 COPY --from=builder /app/node /app
 COPY --from=builder /app/ui /app
-COPY --from=builder /app/src /app
 
 
