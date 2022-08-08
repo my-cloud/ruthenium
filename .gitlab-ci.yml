@@ -19,3 +19,7 @@ scan:
 
 test:
   stage: test
+  needs:
+    - build
+  script:
+    - go test test/node/blockchain/service_test.go
