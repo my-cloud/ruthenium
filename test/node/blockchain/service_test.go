@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"ruthenium/src/node/authentication"
 	"testing"
 )
 
 func Test_Blockchain(t *testing.T) {
 	// Arrange
-	//walletA, _ := authentication.NewWallet("", "")
+	walletA, _ := authentication.NewWallet("", "")
+	fmt.Println(walletA.Address())
 	//walletB, _ := authentication.NewWallet("", "")
 	//minerWallet, _ := authentication.NewWallet("", "")
 	//
