@@ -23,7 +23,7 @@ func Test_Blockchain(t *testing.T) {
 	blockChain := blockchain.NewService(minerWallet.Address(), "", 8106, logger)
 	wg := blockChain.WaitGroup()
 	var value1 float32 = 40.
-	for blockChain.CalculateTotalAmount(minerWallet.Address()) < value1 {
+	for blockChain.CalculateTotalAmount(0, minerWallet.Address()) < value1 {
 		blockChain.Mine()
 		wg.Wait()
 	}
@@ -44,16 +44,16 @@ func Test_Blockchain(t *testing.T) {
 	wg.Wait()
 
 	// Assert
-	reward := blockchain.MiningReward
+	reward := blockchain.GenesisAmount
 	mineOperationsCount := float32(math.Ceil(float64(value1 / reward)))
 	expectedMinerWalletAmount := mineOperationsCount*reward - value1 + 2*reward
-	actualMinerWalletAmount := blockChain.CalculateTotalAmount(minerWallet.Address())
+	actualMinerWalletAmount := blockChain.CalculateTotalAmount(0, minerWallet.Address())
 	assert(t, expectedMinerWalletAmount == actualMinerWalletAmount, fmt.Sprintf("Wrong miner wallet amount. Expected: %f - Actual: %f", expectedMinerWalletAmount, actualMinerWalletAmount))
 	expectedWalletAAmount := value1 - value2
-	actualWalletAAmount := blockChain.CalculateTotalAmount(walletA.Address())
+	actualWalletAAmount := blockChain.CalculateTotalAmount(0, walletA.Address())
 	assert(t, expectedWalletAAmount == actualWalletAAmount, fmt.Sprintf("Wrong wallet A amount. Expected: %f - Actual: %f", expectedWalletAAmount, actualWalletAAmount))
 	expectedWalletBAmount := value2
-	actualWalletBAmount := blockChain.CalculateTotalAmount(walletB.Address())
+	actualWalletBAmount := blockChain.CalculateTotalAmount(0, walletB.Address())
 	assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %f - Actual: %f", expectedWalletBAmount, actualWalletBAmount))
 }
 

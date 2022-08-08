@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"ruthenium/src/log"
 	"ruthenium/src/node/authentication"
@@ -17,8 +18,11 @@ const (
 	DefaultPort = 8106
 
 	MiningRewardSenderAddress         = "MINING REWARD SENDER ADDRESS"
-	MiningReward              float32 = 10.
+	GenesisAmount             float32 = 2
+	RewardFactor              float64 = 1000
 	MiningTimerSec                    = 60
+	MinutesCountPerDay                = 1440
+	HalfLifeDay                       = 373.59
 
 	NeighborSynchronizationTimeSecond = 10
 	HostConnectionTimeoutSecond       = 10
@@ -44,6 +48,8 @@ type Service struct {
 	neighborsMutex         sync.RWMutex
 	neighborsByTarget      map[string]*neighborhood.Neighbor
 	neighborsByTargetMutex sync.RWMutex
+
+	lambda float64
 }
 
 func NewService(address string, ip string, port uint16, logger *log.Logger) *Service {
@@ -54,7 +60,10 @@ func NewService(address string, ip string, port uint16, logger *log.Logger) *Ser
 	service.logger = logger
 	var waitGroup sync.WaitGroup
 	service.waitGroup = &waitGroup
-	service.addBlock(new(mining.Block))
+	var transactions []*mining.Transaction
+	transactions = append(transactions, mining.NewTransaction(MiningRewardSenderAddress, service.address, GenesisAmount))
+	genesisBlock, _ := mining.NewBlock([32]byte{}, transactions)
+	service.addBlock(genesisBlock)
 	seedsIps := []string{
 		"89.82.76.241",
 	}
@@ -63,6 +72,8 @@ func NewService(address string, ip string, port uint16, logger *log.Logger) *Ser
 		seed := neighborhood.NewNeighbor(seedIp, DefaultPort, logger)
 		service.neighborsByTarget[seed.Target()] = seed
 	}
+	halfLife := float64(time.Minute.Nanoseconds()) * HalfLifeDay * MinutesCountPerDay
+	service.lambda = math.Log(2) / halfLife
 	return service
 }
 
@@ -72,6 +83,7 @@ func (service *Service) WaitGroup() *sync.WaitGroup {
 
 func (service *Service) Run() {
 	service.StartNeighborsSynchronization()
+	service.StartMining()
 }
 
 func (service *Service) SynchronizeNeighbors() {
@@ -186,6 +198,7 @@ func (service *Service) CreateTransaction(transaction *mining.Transaction, publi
 			service.logger.Error(fmt.Errorf("failed to create transaction: %w", err).Error())
 			return
 		}
+		timestamp := transaction.Timestamp()
 		senderAddress := transaction.SenderAddress()
 		recipientAddress := transaction.RecipientAddress()
 		value := transaction.Value()
@@ -194,6 +207,7 @@ func (service *Service) CreateTransaction(transaction *mining.Transaction, publi
 		var verb = neighborhood.PUT
 		transactionRequest := neighborhood.TransactionRequest{
 			Verb:             &verb,
+			Timestamp:        &timestamp,
 			SenderAddress:    &senderAddress,
 			RecipientAddress: &recipientAddress,
 			SenderPublicKey:  &publicKeyStr,
@@ -231,7 +245,7 @@ func (service *Service) addTransaction(transaction *mining.Transaction, publicKe
 		err = errors.New("failed to verify transaction")
 		return
 	}
-	insufficientBalance := service.CalculateTotalAmount(transaction.SenderAddress()) < transaction.Value()
+	insufficientBalance := service.CalculateTotalAmount(transaction.Timestamp(), transaction.SenderAddress()) < transaction.Value()
 	if insufficientBalance {
 		err = errors.New("not enough balance in the sender wallet")
 		return
@@ -248,7 +262,14 @@ func (service *Service) Mine() {
 		defer service.waitGroup.Done()
 		service.mineMutex.Lock()
 		defer service.mineMutex.Unlock()
-		transaction := mining.NewTransaction(MiningRewardSenderAddress, service.address, MiningReward)
+		amount := service.CalculateTotalAmount(time.Now().UnixNano(), service.address)
+		var reward float32
+		if amount > 1 {
+			reward = float32(math.Log10(float64(amount)*RewardFactor) / MinutesCountPerDay)
+		} else {
+			reward = 0
+		}
+		transaction := mining.NewTransaction(MiningRewardSenderAddress, service.address, reward)
 		service.transactionsMutex.Lock()
 		service.transactions = append(service.transactions, transaction)
 		service.transactionsMutex.Unlock()
@@ -290,22 +311,41 @@ func (service *Service) StopMining() {
 	service.miningStopped = true
 }
 
-func (service *Service) CalculateTotalAmount(blockchainAddress string) float32 {
+func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) float32 {
 	var totalAmount float32
 	service.blocksMutex.RLock()
 	defer service.blocksMutex.RUnlock()
+	var lastTimestamp int64
 	for _, block := range service.blocks {
 		for _, transaction := range block.Transactions() {
 			value := transaction.Value()
 			if blockchainAddress == transaction.RecipientAddress() {
+				totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
 				totalAmount += value
+				lastTimestamp = transaction.Timestamp()
 			}
 			if blockchainAddress == transaction.SenderAddress() {
+				totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
+				if totalAmount < value {
+					service.logger.Error(fmt.Errorf("historical transaction should not have been validated: wallet amount=%f, transaction value=%f", totalAmount, value).Error())
+				}
 				totalAmount -= value
+				lastTimestamp = transaction.Timestamp()
 			}
 		}
 	}
+	totalAmount = service.decay(lastTimestamp, currentTimestamp, totalAmount)
 	return totalAmount
+}
+
+func (service *Service) decay(lastTimestamp int64, newTimestamp int64, amount float32) float32 {
+	elapsedTimestamp := newTimestamp - lastTimestamp
+	decay := float32(float64(amount) * math.Exp(-service.lambda*float64(elapsedTimestamp)))
+	if decay > amount {
+		return 0
+	} else {
+		return decay
+	}
 }
 
 func (service *Service) Transactions() []*mining.Transaction {

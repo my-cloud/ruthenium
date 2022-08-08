@@ -124,8 +124,10 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 		}
 		signatureString := signature.String()
 		var verb = neighborhood.POST
+		timestamp := transaction.Timestamp()
 		blockchainTransactionRequest := neighborhood.TransactionRequest{
 			Verb:             &verb,
+			Timestamp:        &timestamp,
 			SenderAddress:    transactionRequest.SenderAddress,
 			RecipientAddress: transactionRequest.RecipientAddress,
 			SenderPublicKey:  transactionRequest.SenderPublicKey,

@@ -82,7 +82,7 @@ func (host *Host) PostTransactions(request *neighborhood.TransactionRequest) {
 		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
 		return
 	}
-	transaction := mining.NewTransaction(*request.SenderAddress, *request.RecipientAddress, *request.Value)
+	transaction := mining.NewTransactionFromRequest(request)
 	host.blockchain.CreateTransaction(transaction, publicKey, signature)
 }
 
@@ -101,7 +101,7 @@ func (host *Host) PutTransactions(request *neighborhood.TransactionRequest) {
 		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
 		return
 	}
-	transaction := mining.NewTransaction(*request.SenderAddress, *request.RecipientAddress, *request.Value)
+	transaction := mining.NewTransactionFromRequest(request)
 	host.blockchain.AddTransaction(transaction, publicKey, signature)
 }
 
@@ -123,7 +123,7 @@ func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
 		return
 	}
 	blockchainAddress := *request.Address
-	amount := host.blockchain.CalculateTotalAmount(blockchainAddress)
+	amount := host.blockchain.CalculateTotalAmount(time.Now().UnixNano(), blockchainAddress)
 	amountResponse := &neighborhood.AmountResponse{amount}
 	if err := res.SetGob(amountResponse); err != nil {
 		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
