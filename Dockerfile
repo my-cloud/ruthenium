@@ -13,6 +13,7 @@ FROM gcr.io/distroless/static-debian11
 WORKDIR /app/templates
 COPY --from=builder /app/src/ui/templates .
 WORKDIR /app
+COPY --from=builder /app/log /app
 COPY --from=builder /app/node /app
 COPY --from=builder /app/ui /app
 
