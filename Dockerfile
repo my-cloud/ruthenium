@@ -1,6 +1,7 @@
 FROM golang:1.18 as builder
 WORKDIR /app
 COPY ./src ./src
+COPY ./test ./test
 ADD go.mod .
 ADD go.sum .
 
