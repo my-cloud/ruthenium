@@ -18,7 +18,7 @@ const (
 	DefaultPort = 8106
 
 	MiningRewardSenderAddress         = "MINING REWARD SENDER ADDRESS"
-	GenesisAmount             float32 = 2
+	GenesisAmount             float32 = 8610.083
 	RewardFactor              float64 = 1000
 	MiningTimerSec                    = 60
 	MinutesCountPerDay                = 1440
@@ -341,12 +341,7 @@ func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainA
 
 func (service *Service) decay(lastTimestamp int64, newTimestamp int64, amount float32) float32 {
 	elapsedTimestamp := newTimestamp - lastTimestamp
-	decay := float32(float64(amount) * math.Exp(-service.lambda*float64(elapsedTimestamp)))
-	if decay > amount {
-		return 0
-	} else {
-		return decay
-	}
+	return float32(float64(amount) * math.Exp(-service.lambda*float64(elapsedTimestamp)))
 }
 
 func (service *Service) Transactions() []*mining.Transaction {
