@@ -17,12 +17,12 @@ import (
 const (
 	DefaultPort = 8106
 
-	MiningRewardSenderAddress         = "MINING REWARD SENDER ADDRESS"
+	MiningRewardSenderAddress        = "MINING REWARD SENDER ADDRESS"
 	GenesisAmount             uint64 = 861008300000
 	RewardFactor              uint64 = 1000
-	MiningTimerSec                    = 60
-	MinutesCountPerDay                = 1440
-	HalfLifeDay                       = 373.59
+	MiningTimerSec                   = 60
+	MinutesCountPerDay               = 1440
+	HalfLifeDay                      = 373.59
 
 	NeighborSynchronizationTimeSecond = 10
 	HostConnectionTimeoutSecond       = 10
