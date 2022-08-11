@@ -22,7 +22,7 @@ func Test_Blockchain(t *testing.T) {
 	logger := log.NewLogger(log.Error)
 	blockChain := blockchain.NewService(minerWallet.Address(), "", 8106, logger)
 	wg := blockChain.WaitGroup()
-	var value1 float32 = 40.
+	var value1 uint64 = 4000000000
 	for blockChain.CalculateTotalAmount(minerWallet.Address()) < value1 {
 		blockChain.Mine()
 		wg.Wait()
@@ -35,7 +35,7 @@ func Test_Blockchain(t *testing.T) {
 	blockChain.Mine()
 	wg.Wait()
 
-	var value2 float32 = 10.
+	var value2 uint64 = 1000000000
 	transaction2 := mining.NewTransaction(walletA.Address(), walletB.Address(), value2)
 	signature2, _ := transaction2.Sign(walletA.PrivateKey())
 	blockChain.AddTransaction(transaction2, walletA.PublicKey(), signature2)
@@ -45,16 +45,16 @@ func Test_Blockchain(t *testing.T) {
 
 	// Assert
 	reward := blockchain.MiningReward
-	mineOperationsCount := float32(math.Ceil(float64(value1 / reward)))
+	mineOperationsCount := uint64(math.Ceil(float64(value1 / reward)))
 	expectedMinerWalletAmount := mineOperationsCount*reward - value1 + 2*reward
 	actualMinerWalletAmount := blockChain.CalculateTotalAmount(minerWallet.Address())
-	assert(t, expectedMinerWalletAmount == actualMinerWalletAmount, fmt.Sprintf("Wrong miner wallet amount. Expected: %f - Actual: %f", expectedMinerWalletAmount, actualMinerWalletAmount))
+	assert(t, expectedMinerWalletAmount == actualMinerWalletAmount, fmt.Sprintf("Wrong miner wallet amount. Expected: %d - Actual: %d", expectedMinerWalletAmount, actualMinerWalletAmount))
 	expectedWalletAAmount := value1 - value2
 	actualWalletAAmount := blockChain.CalculateTotalAmount(walletA.Address())
-	assert(t, expectedWalletAAmount == actualWalletAAmount, fmt.Sprintf("Wrong wallet A amount. Expected: %f - Actual: %f", expectedWalletAAmount, actualWalletAAmount))
+	assert(t, expectedWalletAAmount == actualWalletAAmount, fmt.Sprintf("Wrong wallet A amount. Expected: %d - Actual: %d", expectedWalletAAmount, actualWalletAAmount))
 	expectedWalletBAmount := value2
 	actualWalletBAmount := blockChain.CalculateTotalAmount(walletB.Address())
-	assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %f - Actual: %f", expectedWalletBAmount, actualWalletBAmount))
+	assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %d - Actual: %d", expectedWalletBAmount, actualWalletBAmount))
 }
 
 func assert(tb testing.TB, condition bool, msg string, v ...interface{}) {

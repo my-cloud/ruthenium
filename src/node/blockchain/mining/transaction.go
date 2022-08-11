@@ -10,10 +10,10 @@ import (
 type Transaction struct {
 	senderAddress    string
 	recipientAddress string
-	value            float32
+	value            uint64
 }
 
-func NewTransaction(senderAddress string, recipientAddress string, value float32) *Transaction {
+func NewTransaction(senderAddress string, recipientAddress string, value uint64) *Transaction {
 	return &Transaction{
 		senderAddress,
 		recipientAddress,
@@ -31,9 +31,9 @@ func NewTransactionFromDto(transaction *neighborhood.TransactionResponse) *Trans
 
 func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Sender    string  `json:"sender_address"`
-		Recipient string  `json:"recipient_address"`
-		Value     float32 `json:"value"`
+		Sender    string `json:"sender_address"`
+		Recipient string `json:"recipient_address"`
+		Value     uint64 `json:"value"`
 	}{
 		Sender:    transaction.senderAddress,
 		Recipient: transaction.recipientAddress,
@@ -41,7 +41,7 @@ func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (transaction *Transaction) Value() float32 {
+func (transaction *Transaction) Value() uint64 {
 	return transaction.value
 }
 
