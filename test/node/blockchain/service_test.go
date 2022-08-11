@@ -22,7 +22,7 @@ func Test_Blockchain(t *testing.T) {
 	logger := log.NewLogger(log.Error)
 	blockChain := blockchain.NewService(minerWallet.Address(), "", 8106, logger)
 	wg := blockChain.WaitGroup()
-	var value1 uint64 = 40
+	var value1 uint64 = 4000000000
 	for blockChain.CalculateTotalAmount(minerWallet.Address()) < value1 {
 		blockChain.Mine()
 		wg.Wait()
@@ -35,7 +35,7 @@ func Test_Blockchain(t *testing.T) {
 	blockChain.Mine()
 	wg.Wait()
 
-	var value2 uint64 = 10
+	var value2 uint64 = 1000000000
 	transaction2 := mining.NewTransaction(walletA.Address(), walletB.Address(), value2)
 	signature2, _ := transaction2.Sign(walletA.PrivateKey())
 	blockChain.AddTransaction(transaction2, walletA.PublicKey(), signature2)
