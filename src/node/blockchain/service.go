@@ -16,9 +16,9 @@ import (
 const (
 	DefaultPort = 8106
 
-	MiningRewardSenderAddress         = "MINING REWARD SENDER ADDRESS"
-	MiningReward              float32 = 10.
-	MiningTimerSec                    = 60
+	MiningRewardSenderAddress        = "MINING REWARD SENDER ADDRESS"
+	MiningReward              uint64 = 1000000000
+	MiningTimerSec                   = 60
 
 	NeighborSynchronizationTimeSecond = 10
 	HostConnectionTimeoutSecond       = 10
@@ -290,8 +290,8 @@ func (service *Service) StopMining() {
 	service.miningStopped = true
 }
 
-func (service *Service) CalculateTotalAmount(blockchainAddress string) float32 {
-	var totalAmount float32
+func (service *Service) CalculateTotalAmount(blockchainAddress string) uint64 {
+	var totalAmount uint64
 	service.blocksMutex.RLock()
 	defer service.blocksMutex.RUnlock()
 	for _, block := range service.blocks {

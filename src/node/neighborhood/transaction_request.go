@@ -12,7 +12,7 @@ type TransactionRequest struct {
 	SenderAddress    *string
 	RecipientAddress *string
 	SenderPublicKey  *string
-	Value            *float32
+	Value            *uint64
 	Signature        *string
 }
 
