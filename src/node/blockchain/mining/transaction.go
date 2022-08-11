@@ -12,10 +12,10 @@ type Transaction struct {
 	timestamp        int64
 	senderAddress    string
 	recipientAddress string
-	value            float32
+	value            uint64
 }
 
-func NewTransaction(senderAddress string, recipientAddress string, value float32) *Transaction {
+func NewTransaction(senderAddress string, recipientAddress string, value uint64) *Transaction {
 	return &Transaction{
 		time.Now().UnixNano(),
 		senderAddress,
@@ -44,10 +44,10 @@ func NewTransactionFromResponse(transaction *neighborhood.TransactionResponse) *
 
 func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Timestamp int64   `json:"timestamp"`
-		Sender    string  `json:"sender_address"`
-		Recipient string  `json:"recipient_address"`
-		Value     float32 `json:"value"`
+		Timestamp int64  `json:"timestamp"`
+		Sender    string `json:"sender_address"`
+		Recipient string `json:"recipient_address"`
+		Value     uint64 `json:"value"`
 	}{
 		Timestamp: transaction.timestamp,
 		Sender:    transaction.senderAddress,
@@ -56,7 +56,7 @@ func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (transaction *Transaction) Value() float32 {
+func (transaction *Transaction) Value() uint64 {
 	return transaction.value
 }
 

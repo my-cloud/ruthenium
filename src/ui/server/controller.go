@@ -12,7 +12,10 @@ import (
 	"ruthenium/src/node/blockchain/mining"
 	"ruthenium/src/node/neighborhood"
 	"strconv"
+	"strings"
 )
+
+const ParticlesCount = 100000000
 
 type Controller struct {
 	publicKey        string
@@ -69,8 +72,8 @@ func (controller *Controller) Wallet(writer http.ResponseWriter, req *http.Reque
 		writer.Header().Add("Content-Type", "application/json")
 		controller.write(writer, string(marshaledWallet[:]))
 	default:
-		writer.WriteHeader(http.StatusBadRequest)
 		controller.logger.Error("invalid HTTP method")
+		writer.WriteHeader(http.StatusBadRequest)
 	}
 }
 
@@ -82,44 +85,51 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 		err := decoder.Decode(&transactionRequest)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to decode transaction request: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusBadRequest)
+			controller.write(writer, "invalid transaction request")
 			return
 		}
 		if transactionRequest.IsInvalid() {
-			controller.logger.Error("field(s) are missing in transaction request")
-			controller.write(writer, "fail")
+			errorMessage := "field(s) are missing in transaction request"
+			controller.logger.Error(errorMessage)
+			writer.WriteHeader(http.StatusBadRequest)
+			controller.write(writer, errorMessage)
 			return
 		}
 		publicKey, err := authentication.NewPublicKey(*transactionRequest.SenderPublicKey)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to decode transaction public key: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusBadRequest)
+			controller.write(writer, "invalid public key")
 			return
 		}
 		privateKey, err := authentication.NewPrivateKey(*transactionRequest.SenderPrivateKey, publicKey)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to decode transaction private key: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusBadRequest)
+			controller.write(writer, "invalid private key")
 			return
 		}
-		value, err := strconv.ParseFloat(*transactionRequest.Value, 32)
+		value, err := controller.atomsToParticles(*transactionRequest.Value)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to parse transaction value: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusBadRequest)
+			controller.write(writer, "invalid transaction value")
 			return
 		}
-		value32 := float32(value)
-		transaction := mining.NewTransaction(*transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, value32)
+		transaction := mining.NewTransaction(*transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, value)
 		marshaledTransaction, err := json.Marshal(transaction)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to marshal transaction: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusBadRequest)
+			controller.write(writer, "invalid transaction request")
 			return
 		}
 		signature, err := authentication.NewSignature(marshaledTransaction, privateKey)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to generate signature: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusBadRequest)
+			controller.write(writer, "invalid signature")
 			return
 		}
 		signatureString := signature.String()
@@ -131,19 +141,19 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 			SenderAddress:    transactionRequest.SenderAddress,
 			RecipientAddress: transactionRequest.RecipientAddress,
 			SenderPublicKey:  transactionRequest.SenderPublicKey,
-			Value:            &value32,
+			Value:            &value,
 			Signature:        &signatureString,
 		}
 		err = controller.blockchainClient.AddTransaction(blockchainTransactionRequest)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to create transaction: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		controller.write(writer, "success")
 	default:
-		writer.WriteHeader(http.StatusBadRequest)
 		controller.logger.Error("invalid HTTP method")
+		writer.WriteHeader(http.StatusBadRequest)
 	}
 }
 
@@ -153,14 +163,18 @@ func (controller *Controller) GetTransactions(writer http.ResponseWriter, req *h
 		transactions, err := controller.blockchainClient.GetTransactions()
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		var marshaledTransactions []byte
-		marshaledTransactions, err = json.Marshal(transactions)
+		if transactions == nil || len(transactions) == 0 {
+			marshaledTransactions, err = json.Marshal("empty")
+		} else {
+			marshaledTransactions, err = json.Marshal(transactions)
+		}
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to marshal transactions: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		writer.Header().Add("Content-Type", "application/json")
@@ -177,11 +191,11 @@ func (controller *Controller) Mine(writer http.ResponseWriter, req *http.Request
 		err := controller.blockchainClient.Mine()
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to mine: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusInternalServerError)
 		}
 	default:
-		writer.WriteHeader(http.StatusBadRequest)
 		controller.logger.Error("invalid HTTP method")
+		writer.WriteHeader(http.StatusBadRequest)
 	}
 }
 
@@ -191,11 +205,11 @@ func (controller *Controller) StartMining(writer http.ResponseWriter, req *http.
 		err := controller.blockchainClient.StartMining()
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to start mining: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusInternalServerError)
 		}
 	default:
-		writer.WriteHeader(http.StatusBadRequest)
 		controller.logger.Error("invalid HTTP method")
+		writer.WriteHeader(http.StatusBadRequest)
 	}
 }
 
@@ -205,11 +219,11 @@ func (controller *Controller) StopMining(writer http.ResponseWriter, req *http.R
 		err := controller.blockchainClient.StopMining()
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to stop mining: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusInternalServerError)
 		}
 	default:
-		writer.WriteHeader(http.StatusBadRequest)
 		controller.logger.Error("invalid HTTP method")
+		writer.WriteHeader(http.StatusBadRequest)
 	}
 }
 
@@ -222,20 +236,22 @@ func (controller *Controller) WalletAmount(writer http.ResponseWriter, req *http
 		}
 		if amountRequest.IsInvalid() {
 			controller.logger.Error("field(s) are missing in amount request")
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		amountResponse, err := controller.blockchainClient.GetAmount(amountRequest)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to get amountResponse: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		var marshaledAmount []byte
-		marshaledAmount, err = json.Marshal(amountResponse)
+		marshaledAmount, err = json.Marshal(&AmountResponse{
+			Amount: float64(amountResponse.Amount) / ParticlesCount,
+		})
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to marshal amountResponse: %w", err).Error())
-			controller.write(writer, "fail")
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		writer.Header().Add("Content-Type", "application/json")
@@ -263,4 +279,42 @@ func (controller *Controller) write(writer http.ResponseWriter, message string) 
 	if err != nil || i == 0 {
 		controller.logger.Error(fmt.Errorf("failed to write message: %s", message).Error())
 	}
+}
+
+func (controller *Controller) atomsToParticles(atoms string) (particles uint64, err error) {
+	const decimalSeparator = "."
+	i := strings.Index(atoms, decimalSeparator)
+	if i > 12 || (i == -1 && len(atoms) > 12) {
+		err = fmt.Errorf("transaction value is too big")
+		return
+	}
+	if i > -1 {
+		unitsString := atoms[:i]
+		var units uint64
+		units, err = parseUint64(unitsString)
+		if err != nil {
+			return
+		}
+		decimalsString := atoms[i+1:]
+		trailingZerosCount := len(strconv.Itoa(ParticlesCount)) - 1 - len(decimalsString)
+		trailedDecimalsString := fmt.Sprintf("%s%s", decimalsString, strings.Repeat("0", trailingZerosCount))
+		var decimals uint64
+		decimals, err = parseUint64(trailedDecimalsString)
+		if err != nil {
+			return
+		}
+		particles = units*ParticlesCount + decimals
+	} else {
+		var units uint64
+		units, err = parseUint64(atoms)
+		if err != nil {
+			return
+		}
+		particles = units * ParticlesCount
+	}
+	return
+}
+
+func parseUint64(valueString string) (value uint64, err error) {
+	return strconv.ParseUint(valueString, 10, 64)
 }

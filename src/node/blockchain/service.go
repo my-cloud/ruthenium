@@ -18,8 +18,8 @@ const (
 	DefaultPort = 8106
 
 	MiningRewardSenderAddress         = "MINING REWARD SENDER ADDRESS"
-	GenesisAmount             float32 = 8610.083
-	RewardFactor              float64 = 1000
+	GenesisAmount             uint64 = 861008300000
+	RewardFactor              uint64 = 1000
 	MiningTimerSec                    = 60
 	MinutesCountPerDay                = 1440
 	HalfLifeDay                       = 373.59
@@ -263,10 +263,11 @@ func (service *Service) Mine() {
 		service.mineMutex.Lock()
 		defer service.mineMutex.Unlock()
 		amount := service.CalculateTotalAmount(time.Now().UnixNano(), service.address)
-		var reward float32
-		amountForReward := float64(amount) * RewardFactor
+		var reward uint64
+		amountForReward := amount * RewardFactor
 		if amountForReward > 1 {
-			reward = float32(math.Log10(amountForReward) / MinutesCountPerDay)
+			// TODO check conversion from uint64 to float64
+			reward = uint64(math.Log10(float64(amountForReward)) / MinutesCountPerDay)
 		} else {
 			reward = 0
 		}
@@ -312,8 +313,8 @@ func (service *Service) StopMining() {
 	service.miningStopped = true
 }
 
-func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) float32 {
-	var totalAmount float32
+func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64 {
+	var totalAmount uint64
 	service.blocksMutex.RLock()
 	defer service.blocksMutex.RUnlock()
 	var lastTimestamp int64
@@ -339,9 +340,9 @@ func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainA
 	return totalAmount
 }
 
-func (service *Service) decay(lastTimestamp int64, newTimestamp int64, amount float32) float32 {
+func (service *Service) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
 	elapsedTimestamp := newTimestamp - lastTimestamp
-	return float32(float64(amount) * math.Exp(-service.lambda*float64(elapsedTimestamp)))
+	return uint64(float64(amount) * math.Exp(-service.lambda*float64(elapsedTimestamp)))
 }
 
 func (service *Service) Transactions() []*mining.Transaction {
