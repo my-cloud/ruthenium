@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	DefaultPort = 8109
+	DefaultPort = 8106
 
 	MiningRewardSenderAddress        = "MINING REWARD SENDER ADDRESS"
 	MiningReward              uint64 = 1000000000
