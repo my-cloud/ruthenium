@@ -18,8 +18,9 @@ const (
 	DefaultPort = 8106
 
 	MiningRewardSenderAddress        = "MINING REWARD SENDER ADDRESS"
-	GenesisAmount             uint64 = 861008300000
+	GenesisAmount             uint64 = 1080773088389
 	RewardFactor              uint64 = 1000
+	ParticlesCount                   = 100000000
 	MiningTimerSec                   = 60
 	MinutesCountPerDay               = 1440
 	HalfLifeDay                      = 373.59
@@ -267,7 +268,7 @@ func (service *Service) Mine() {
 		amountForReward := amount * RewardFactor
 		if amountForReward > 1 {
 			// TODO check conversion from uint64 to float64
-			reward = uint64(math.Log10(float64(amountForReward)) / MinutesCountPerDay)
+			reward = uint64(math.Log10(float64(amountForReward)) * ParticlesCount / MinutesCountPerDay)
 		} else {
 			reward = 0
 		}
@@ -329,7 +330,7 @@ func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainA
 			if blockchainAddress == transaction.SenderAddress() {
 				totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
 				if totalAmount < value {
-					service.logger.Error(fmt.Errorf("historical transaction should not have been validated: wallet amount=%f, transaction value=%f", totalAmount, value).Error())
+					service.logger.Error(fmt.Errorf("historical transaction should not have been validated: wallet amount=%d, transaction value=%d", totalAmount, value).Error())
 				}
 				totalAmount -= value
 				lastTimestamp = transaction.Timestamp()

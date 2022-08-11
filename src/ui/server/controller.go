@@ -9,13 +9,12 @@ import (
 	"path"
 	"ruthenium/src/log"
 	"ruthenium/src/node/authentication"
+	"ruthenium/src/node/blockchain"
 	"ruthenium/src/node/blockchain/mining"
 	"ruthenium/src/node/neighborhood"
 	"strconv"
 	"strings"
 )
-
-const ParticlesCount = 100000000
 
 type Controller struct {
 	publicKey        string
@@ -247,7 +246,7 @@ func (controller *Controller) WalletAmount(writer http.ResponseWriter, req *http
 		}
 		var marshaledAmount []byte
 		marshaledAmount, err = json.Marshal(&AmountResponse{
-			Amount: float64(amountResponse.Amount) / ParticlesCount,
+			Amount: float64(amountResponse.Amount) / blockchain.ParticlesCount,
 		})
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to marshal amountResponse: %w", err).Error())
@@ -296,21 +295,21 @@ func (controller *Controller) atomsToParticles(atoms string) (particles uint64, 
 			return
 		}
 		decimalsString := atoms[i+1:]
-		trailingZerosCount := len(strconv.Itoa(ParticlesCount)) - 1 - len(decimalsString)
+		trailingZerosCount := len(strconv.Itoa(blockchain.ParticlesCount)) - 1 - len(decimalsString)
 		trailedDecimalsString := fmt.Sprintf("%s%s", decimalsString, strings.Repeat("0", trailingZerosCount))
 		var decimals uint64
 		decimals, err = parseUint64(trailedDecimalsString)
 		if err != nil {
 			return
 		}
-		particles = units*ParticlesCount + decimals
+		particles = units*blockchain.ParticlesCount + decimals
 	} else {
 		var units uint64
 		units, err = parseUint64(atoms)
 		if err != nil {
 			return
 		}
-		particles = units * ParticlesCount
+		particles = units * blockchain.ParticlesCount
 	}
 	return
 }
