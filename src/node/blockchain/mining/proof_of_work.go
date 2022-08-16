@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-const MiningDifficulty = 3
+const Difficulty = 3
 
 type ProofOfWork struct {
 	hash [32]byte
@@ -17,6 +17,6 @@ func NewProofOfWork(hash [32]byte) *ProofOfWork {
 
 func (pow *ProofOfWork) IsInValid() bool {
 	hashStr := fmt.Sprintf("%x", pow.hash)
-	zeros := strings.Repeat("0", MiningDifficulty)
-	return hashStr[:MiningDifficulty] != zeros
+	zeros := strings.Repeat("0", Difficulty)
+	return hashStr[:Difficulty] != zeros
 }

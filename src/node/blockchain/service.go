@@ -345,7 +345,7 @@ func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainA
 
 func (service *Service) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
 	elapsedTimestamp := newTimestamp - lastTimestamp
-	return uint64(math.Ceil(float64(amount) * math.Exp(-service.lambda*float64(elapsedTimestamp))))
+	return uint64(math.Floor(float64(amount) * math.Exp(-service.lambda*float64(elapsedTimestamp))))
 }
 
 func (service *Service) Transactions() []*mining.Transaction {
