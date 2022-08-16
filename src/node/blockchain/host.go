@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+const HostConnectionTimeoutInSeconds = 10
+
 type Host struct {
 	publicKey  string
 	privateKey string
@@ -162,7 +164,7 @@ func (host *Host) startServer() {
 	}
 	server.SetLogger(log.NewLogger(log.Fatal))
 	settings := p2p.NewServerSettings()
-	settings.SetConnTimeout(HostConnectionTimeoutSecond * time.Second)
+	settings.SetConnTimeout(HostConnectionTimeoutInSeconds * time.Second)
 	server.SetSettings(settings)
 	server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
 		var unknownRequest bool

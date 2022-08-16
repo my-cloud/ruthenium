@@ -20,13 +20,12 @@ const (
 	MiningRewardSenderAddress        = "MINING REWARD SENDER ADDRESS"
 	ParticlesCount                   = 100000000
 	GenesisAmount             uint64 = 100000 * ParticlesCount
-	RewardExponent                   = 1 / 1.8281
-	MiningTimerSec                   = 60
+	RewardExponent                   = 1 / 1.828393
+	MiningTimerInSeconds             = 60
 	MinutesCountPerDay               = 1440
-	HalfLifeDay                      = 373.59
+	HalfLifeInDays                   = 373.59
 
-	NeighborSynchronizationTimeSecond = 10
-	HostConnectionTimeoutSecond       = 10
+	NeighborSynchronizationTimeInSeconds = 10
 )
 
 type Service struct {
@@ -73,7 +72,7 @@ func NewService(address string, ip string, port uint16, logger *log.Logger) *Ser
 		seed := neighborhood.NewNeighbor(seedIp, DefaultPort, logger)
 		service.neighborsByTarget[seed.Target()] = seed
 	}
-	halfLife := float64(time.Minute.Nanoseconds()) * HalfLifeDay * MinutesCountPerDay
+	halfLife := HalfLifeInDays * MinutesCountPerDay * float64(time.Minute.Nanoseconds())
 	service.lambda = math.Log(2) / halfLife
 	return service
 }
@@ -93,7 +92,7 @@ func (service *Service) SynchronizeNeighbors() {
 
 func (service *Service) StartNeighborsSynchronization() {
 	service.SynchronizeNeighbors()
-	_ = time.AfterFunc(time.Second*NeighborSynchronizationTimeSecond, service.StartNeighborsSynchronization)
+	_ = time.AfterFunc(time.Second*NeighborSynchronizationTimeInSeconds, service.StartNeighborsSynchronization)
 }
 
 func (service *Service) FindNeighbors() {
@@ -246,7 +245,8 @@ func (service *Service) addTransaction(transaction *mining.Transaction, publicKe
 		err = errors.New("failed to verify transaction")
 		return
 	}
-	insufficientBalance := service.CalculateTotalAmount(transaction.Timestamp(), transaction.SenderAddress()) < transaction.Value()
+	senderWalletAmount := service.CalculateTotalAmount(transaction.Timestamp(), transaction.SenderAddress())
+	insufficientBalance := senderWalletAmount < transaction.Value()
 	if insufficientBalance {
 		err = errors.New("not enough balance in the sender wallet")
 		return
@@ -270,6 +270,7 @@ func (service *Service) Mine() {
 		} else {
 			reward = 0
 		}
+		service.logger.Info(fmt.Sprintf("amount: %d - reward: %d - total: %d", amount, reward, amount+reward))
 		transaction := mining.NewTransaction(MiningRewardSenderAddress, service.address, reward)
 		service.transactionsMutex.Lock()
 		service.transactions = append(service.transactions, transaction)
@@ -296,14 +297,14 @@ func (service *Service) StartMining() {
 	if !service.miningStarted {
 		service.miningStarted = true
 		service.miningStopped = false
-		_ = time.AfterFunc(time.Second*MiningTimerSec, service.mining)
+		_ = time.AfterFunc(time.Second*MiningTimerInSeconds, service.mining)
 	}
 }
 
 func (service *Service) mining() {
 	if !service.miningStopped {
 		service.Mine()
-		_ = time.AfterFunc(time.Second*MiningTimerSec, service.mining)
+		_ = time.AfterFunc(time.Second*MiningTimerInSeconds, service.mining)
 	}
 }
 
@@ -314,19 +315,23 @@ func (service *Service) StopMining() {
 
 func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64 {
 	var totalAmount uint64
+	var lastTimestamp int64
 	service.blocksMutex.RLock()
 	defer service.blocksMutex.RUnlock()
-	var lastTimestamp int64
 	for _, block := range service.blocks {
 		for _, transaction := range block.Transactions() {
 			value := transaction.Value()
 			if blockchainAddress == transaction.RecipientAddress() {
-				totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
+				if totalAmount > 0 {
+					totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
+				}
 				totalAmount += value
 				lastTimestamp = transaction.Timestamp()
 			}
 			if blockchainAddress == transaction.SenderAddress() {
-				totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
+				if totalAmount > 0 {
+					totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
+				}
 				if totalAmount < value {
 					service.logger.Error(fmt.Errorf("historical transaction should not have been validated: wallet amount=%d, transaction value=%d", totalAmount, value).Error())
 				}
@@ -335,8 +340,7 @@ func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainA
 			}
 		}
 	}
-	totalAmount = service.decay(lastTimestamp, currentTimestamp, totalAmount)
-	return totalAmount
+	return service.decay(lastTimestamp, currentTimestamp, totalAmount)
 }
 
 func (service *Service) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
