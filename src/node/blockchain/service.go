@@ -38,6 +38,8 @@ type Service struct {
 	mineMutex         sync.Mutex
 	miningStarted     bool
 	miningStopped     bool
+	mineRequested     bool
+	miningTicker      <-chan time.Time
 
 	ip        string
 	port      uint16
@@ -54,6 +56,7 @@ type Service struct {
 
 func NewService(address string, ip string, port uint16, logger *log.Logger) *Service {
 	service := new(Service)
+	service.miningTicker = time.Tick(MiningTimerInSeconds * time.Second)
 	service.address = address
 	service.ip = ip
 	service.port = port
@@ -258,53 +261,66 @@ func (service *Service) addTransaction(transaction *mining.Transaction, publicKe
 }
 
 func (service *Service) Mine() {
+	if service.miningStarted || service.mineRequested {
+		return
+	}
+	service.mineRequested = true
 	service.waitGroup.Add(1)
 	go func() {
 		defer service.waitGroup.Done()
-		service.mineMutex.Lock()
-		defer service.mineMutex.Unlock()
-		amount := service.CalculateTotalAmount(time.Now().UnixNano(), service.address)
-		var reward uint64
-		if amount > 0 {
-			reward = uint64(math.Round(math.Pow(float64(amount), RewardExponent)))
-		} else {
-			reward = 0
-		}
-		service.logger.Info(fmt.Sprintf("amount: %d - reward: %d - total: %d", amount, reward, amount+reward))
-		transaction := mining.NewTransaction(MiningRewardSenderAddress, service.address, reward)
-		service.transactionsMutex.Lock()
-		service.transactions = append(service.transactions, transaction)
-		service.transactionsMutex.Unlock()
-		service.blocksMutex.Lock()
-		block, err := service.createBlock()
-		if err != nil {
-			service.logger.Error(fmt.Errorf("failed to create newly mined block: %v", err).Error())
-			return
-		}
-		service.addBlock(block)
-		service.blocksMutex.Unlock()
-		service.neighborsMutex.RLock()
-		defer service.neighborsMutex.RUnlock()
-		for _, neighbor := range service.neighbors {
-			go func(neighbor *neighborhood.Neighbor) {
-				_ = neighbor.Consensus()
-			}(neighbor)
-		}
+		<-service.miningTicker
+		service.mine()
+		service.mineRequested = false
 	}()
+}
+
+func (service *Service) mine() {
+	service.mineMutex.Lock()
+	defer service.mineMutex.Unlock()
+	amount := service.CalculateTotalAmount(time.Now().UnixNano(), service.address)
+	var reward uint64
+	if amount > 0 {
+		reward = uint64(math.Round(math.Pow(float64(amount), RewardExponent)))
+	} else {
+		reward = 0
+	}
+	service.logger.Info(fmt.Sprintf("amount: %d - reward: %d - total: %d", amount, reward, amount+reward))
+	transaction := mining.NewTransaction(MiningRewardSenderAddress, service.address, reward)
+	service.transactionsMutex.Lock()
+	service.transactions = append(service.transactions, transaction)
+	service.transactionsMutex.Unlock()
+	service.blocksMutex.Lock()
+	block, err := service.createBlock()
+	if err != nil {
+		service.logger.Error(fmt.Errorf("failed to create newly mined block: %v", err).Error())
+		return
+	}
+	service.addBlock(block)
+	service.blocksMutex.Unlock()
+	service.neighborsMutex.RLock()
+	defer service.neighborsMutex.RUnlock()
+	for _, neighbor := range service.neighbors {
+		go func(neighbor *neighborhood.Neighbor) {
+			_ = neighbor.Consensus()
+		}(neighbor)
+	}
 }
 
 func (service *Service) StartMining() {
 	if !service.miningStarted {
 		service.miningStarted = true
 		service.miningStopped = false
-		_ = time.AfterFunc(time.Second*MiningTimerInSeconds, service.mining)
+		go service.mining()
 	}
 }
 
 func (service *Service) mining() {
-	if !service.miningStopped {
-		service.Mine()
-		_ = time.AfterFunc(time.Second*MiningTimerInSeconds, service.mining)
+	for {
+		<-service.miningTicker
+		if service.miningStopped {
+			break
+		}
+		service.mine()
 	}
 }
 
