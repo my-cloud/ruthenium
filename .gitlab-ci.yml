@@ -12,7 +12,8 @@ stages:
 test:
   stage: test
   script:
-    - CGO_ENABLED=0 go test -v ./test/...
+    - go get ./...
+    - go test -v ./test/...
 
 build:
   stage: build
