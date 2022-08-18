@@ -15,13 +15,12 @@ import (
 )
 
 const (
-	DefaultPort = 8106
+	DefaultPort = 8105
 
 	MiningRewardSenderAddress        = "MINING REWARD SENDER ADDRESS"
 	ParticlesCount                   = 100000000
 	GenesisAmount             uint64 = 100000 * ParticlesCount
 	RewardExponent                   = 1 / 1.828393264
-	MiningTimerInSeconds             = 60
 	MinutesCountPerDay               = 1440
 	HalfLifeInDays                   = 373.59
 
@@ -54,9 +53,9 @@ type Service struct {
 	lambda float64
 }
 
-func NewService(address string, ip string, port uint16, logger *log.Logger) *Service {
+func NewService(address string, ip string, port uint16, miningTimer time.Duration, logger *log.Logger) *Service {
 	service := new(Service)
-	service.miningTicker = time.Tick(MiningTimerInSeconds * time.Second)
+	service.miningTicker = time.Tick(miningTimer)
 	service.address = address
 	service.ip = ip
 	service.port = port

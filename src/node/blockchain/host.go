@@ -14,7 +14,10 @@ import (
 	"time"
 )
 
-const HostConnectionTimeoutInSeconds = 10
+const (
+	HostConnectionTimeoutInSeconds = 10
+	MiningTimerInSeconds           = 60
+)
 
 type Host struct {
 	publicKey  string
@@ -40,7 +43,7 @@ func NewHost(publicKey string, privateKey string, port uint16, logLevel log.Leve
 	if err != nil {
 		host.logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
 	} else {
-		host.blockchain = NewService(wallet.Address(), host.ip, host.port, host.logger)
+		host.blockchain = NewService(wallet.Address(), host.ip, host.port, MiningTimerInSeconds*time.Second, host.logger)
 	}
 	return host
 }

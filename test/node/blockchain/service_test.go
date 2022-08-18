@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"fmt"
-	"math"
 	"path/filepath"
 	"runtime"
 	"ruthenium/src/log"
@@ -10,33 +9,32 @@ import (
 	"ruthenium/src/node/blockchain"
 	"ruthenium/src/node/blockchain/mining"
 	"testing"
+	"time"
 )
 
 func Test_Blockchain(t *testing.T) {
 	// Arrange
-	walletA, _ := authentication.NewWallet("", "")
-	walletB, _ := authentication.NewWallet("", "")
 	minerWallet, _ := authentication.NewWallet("", "")
+	minerWalletAddress := minerWallet.Address()
+	walletA, _ := authentication.NewWallet("", "")
+	walletAAddress := walletA.Address()
+	walletB, _ := authentication.NewWallet("", "")
+	walletBAddress := walletB.Address()
+	logger := log.NewLogger(log.Error)
+	blockChain := blockchain.NewService(minerWalletAddress, "", 8106, time.Nanosecond, logger)
+	wg := blockChain.WaitGroup()
 
 	// Act
-	logger := log.NewLogger(log.Error)
-	blockChain := blockchain.NewService(minerWallet.Address(), "", 8106, logger)
-	wg := blockChain.WaitGroup()
-	var value1 uint64 = 4000000000
-	for blockChain.CalculateTotalAmount(0, minerWallet.Address()) < value1 {
-		blockChain.Mine()
-		wg.Wait()
-	}
-
-	transaction1 := mining.NewTransaction(minerWallet.Address(), walletA.Address(), value1)
+	var value1 uint64 = 40 * blockchain.ParticlesCount
+	transaction1 := mining.NewTransaction(0, minerWalletAddress, walletAAddress, value1)
 	signature1, _ := transaction1.Sign(minerWallet.PrivateKey())
 	blockChain.AddTransaction(transaction1, minerWallet.PublicKey(), signature1)
 	wg.Wait()
 	blockChain.Mine()
 	wg.Wait()
 
-	var value2 uint64 = 1000000000
-	transaction2 := mining.NewTransaction(walletA.Address(), walletB.Address(), value2)
+	var value2 uint64 = 10 * blockchain.ParticlesCount
+	transaction2 := mining.NewTransaction(0, walletAAddress, walletBAddress, value2)
 	signature2, _ := transaction2.Sign(walletA.PrivateKey())
 	blockChain.AddTransaction(transaction2, walletA.PublicKey(), signature2)
 	wg.Wait()
@@ -44,16 +42,11 @@ func Test_Blockchain(t *testing.T) {
 	wg.Wait()
 
 	// Assert
-	reward := blockchain.GenesisAmount
-	mineOperationsCount := uint64(math.Ceil(float64(value1 / reward)))
-	expectedMinerWalletAmount := mineOperationsCount*reward - value1 + 2*reward
-	actualMinerWalletAmount := blockChain.CalculateTotalAmount(0, minerWallet.Address())
-	assert(t, expectedMinerWalletAmount == actualMinerWalletAmount, fmt.Sprintf("Wrong miner wallet amount. Expected: %d - Actual: %d", expectedMinerWalletAmount, actualMinerWalletAmount))
 	expectedWalletAAmount := value1 - value2
-	actualWalletAAmount := blockChain.CalculateTotalAmount(0, walletA.Address())
+	actualWalletAAmount := blockChain.CalculateTotalAmount(0, walletAAddress)
 	assert(t, expectedWalletAAmount == actualWalletAAmount, fmt.Sprintf("Wrong wallet A amount. Expected: %d - Actual: %d", expectedWalletAAmount, actualWalletAAmount))
 	expectedWalletBAmount := value2
-	actualWalletBAmount := blockChain.CalculateTotalAmount(0, walletB.Address())
+	actualWalletBAmount := blockChain.CalculateTotalAmount(0, walletBAddress)
 	assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %d - Actual: %d", expectedWalletBAmount, actualWalletBAmount))
 }
 
