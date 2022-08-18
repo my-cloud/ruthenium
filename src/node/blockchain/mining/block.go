@@ -96,10 +96,10 @@ func (block *Block) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (block *Block) GetDto() *neighborhood.BlockResponse {
+func (block *Block) GetResponse() *neighborhood.BlockResponse {
 	var transactions []*neighborhood.TransactionResponse
 	for _, transaction := range block.transactions {
-		transactions = append(transactions, transaction.GetDto())
+		transactions = append(transactions, transaction.GetResponse())
 	}
 	return &neighborhood.BlockResponse{
 		Timestamp:    block.timestamp,

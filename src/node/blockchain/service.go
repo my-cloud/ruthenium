@@ -447,7 +447,7 @@ func (service *Service) ResolveConflicts() {
 
 func (service *Service) addBlock(block *mining.Block) *mining.Block {
 	service.blocks = append(service.blocks, block)
-	blockResponse := block.GetDto()
+	blockResponse := block.GetResponse()
 	service.blockResponses = append(service.blockResponses, blockResponse)
 	service.clearTransactions()
 	return block

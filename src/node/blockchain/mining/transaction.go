@@ -79,7 +79,7 @@ func (transaction *Transaction) Sign(privateKey *authentication.PrivateKey) (sig
 	return authentication.NewSignature(marshaledTransaction, privateKey)
 }
 
-func (transaction *Transaction) GetDto() *neighborhood.TransactionResponse {
+func (transaction *Transaction) GetResponse() *neighborhood.TransactionResponse {
 	return &neighborhood.TransactionResponse{
 		Timestamp:        transaction.timestamp,
 		SenderAddress:    transaction.senderAddress,

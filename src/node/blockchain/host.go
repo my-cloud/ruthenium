@@ -64,7 +64,7 @@ func (host *Host) PostTargets(request []neighborhood.TargetRequest) {
 func (host *Host) GetTransactions() (res p2p.Data) {
 	var transactionResponses []*neighborhood.TransactionResponse
 	for _, transaction := range host.blockchain.Transactions() {
-		transactionResponses = append(transactionResponses, transaction.GetDto())
+		transactionResponses = append(transactionResponses, transaction.GetResponse())
 	}
 	if err := res.SetGob(transactionResponses); err != nil {
 		host.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
