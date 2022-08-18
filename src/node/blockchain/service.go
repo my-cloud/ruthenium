@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -15,7 +14,7 @@ import (
 )
 
 const (
-	DefaultPort = 8106
+	DefaultPort = 8105
 
 	MiningRewardSenderAddress        = "MINING REWARD SENDER ADDRESS"
 	ParticlesCount                   = 100000000
@@ -184,14 +183,6 @@ func (service *Service) AddTargets(targetRequests []neighborhood.TargetRequest) 
 	}()
 }
 
-func (service *Service) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Blocks []*mining.Block `json:"blocks"`
-	}{
-		Blocks: service.blocks,
-	})
-}
-
 func (service *Service) CreateTransaction(transaction *mining.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) {
 	service.waitGroup.Add(1)
 	go func() {
@@ -239,7 +230,7 @@ func (service *Service) AddTransaction(transaction *mining.Transaction, publicKe
 }
 
 func (service *Service) addTransaction(transaction *mining.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) (err error) {
-	marshaledTransaction, err := json.Marshal(transaction)
+	marshaledTransaction, err := transaction.MarshalJSON()
 	if err != nil {
 		err = fmt.Errorf("failed to marshal transaction, %w", err)
 		return

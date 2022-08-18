@@ -51,7 +51,7 @@ func NewBlockFromResponse(block *neighborhood.BlockResponse) *Block {
 }
 
 func (block *Block) Hash() (hash [32]byte, err error) {
-	marshaledBlock, err := json.Marshal(block)
+	marshaledBlock, err := block.MarshalJSON()
 	if err != nil {
 		err = fmt.Errorf("failed to marshal block: %w", err)
 		return
