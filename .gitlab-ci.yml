@@ -11,7 +11,7 @@ stages:
 
 before_script:
   - mkdir -p /go/src/gitlab.com
-  - ln -s /builds/user /go/src/gitlab.com/coinsmaster
+  - ln -s /builds/coinsmaster /go/src/gitlab.com/coinsmaster
 coverage:
   stage: test
   script:
