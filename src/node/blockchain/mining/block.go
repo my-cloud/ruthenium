@@ -1,10 +1,10 @@
 package mining
 
 import (
-	"coinsmaster/ruthenium/src/node/neighborhood"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 	"time"
 )
 

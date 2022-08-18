@@ -1,10 +1,10 @@
 package main
 
 import (
-	"coinsmaster/ruthenium/src/log"
-	"coinsmaster/ruthenium/src/node/blockchain"
 	"flag"
 	"fmt"
+	"gitlab.com/coinsmaster/ruthenium/src/log"
+	"gitlab.com/coinsmaster/ruthenium/src/node/blockchain"
 )
 
 func main() {

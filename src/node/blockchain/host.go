@@ -1,13 +1,13 @@
 package blockchain
 
 import (
-	"coinsmaster/ruthenium/src/log"
-	"coinsmaster/ruthenium/src/node/authentication"
-	"coinsmaster/ruthenium/src/node/blockchain/mining"
-	"coinsmaster/ruthenium/src/node/neighborhood"
 	"context"
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
+	"gitlab.com/coinsmaster/ruthenium/src/log"
+	"gitlab.com/coinsmaster/ruthenium/src/node/authentication"
+	"gitlab.com/coinsmaster/ruthenium/src/node/blockchain/mining"
+	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 	"io/ioutil"
 	"net/http"
 	"strconv"
