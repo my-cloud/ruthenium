@@ -166,12 +166,7 @@ func (controller *Controller) GetTransactions(writer http.ResponseWriter, req *h
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var marshaledTransactions []byte
-		if transactions == nil || len(transactions) == 0 {
-			marshaledTransactions, err = json.Marshal("empty")
-		} else {
-			marshaledTransactions, err = json.Marshal(transactions)
-		}
+		marshaledTransactions, err := json.Marshal(transactions)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to marshal transactions: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)

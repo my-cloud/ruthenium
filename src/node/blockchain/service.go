@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	DefaultPort = 8105
+	DefaultPort = 8106
 
 	MiningRewardSenderAddress        = "MINING REWARD SENDER ADDRESS"
 	ParticlesCount                   = 100000000
