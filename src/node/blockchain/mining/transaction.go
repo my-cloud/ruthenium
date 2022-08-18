@@ -55,8 +55,8 @@ func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (transaction *Transaction) Value() uint64 {
-	return transaction.value
+func (transaction *Transaction) Timestamp() int64 {
+	return transaction.timestamp
 }
 
 func (transaction *Transaction) SenderAddress() string {
@@ -67,8 +67,8 @@ func (transaction *Transaction) RecipientAddress() string {
 	return transaction.recipientAddress
 }
 
-func (transaction *Transaction) Timestamp() int64 {
-	return transaction.timestamp
+func (transaction *Transaction) Value() uint64 {
+	return transaction.value
 }
 
 func (transaction *Transaction) Sign(privateKey *authentication.PrivateKey) (signature *authentication.Signature, err error) {
