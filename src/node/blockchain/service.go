@@ -20,7 +20,7 @@ const (
 	MiningRewardSenderAddress        = "MINING REWARD SENDER ADDRESS"
 	ParticlesCount                   = 100000000
 	GenesisAmount             uint64 = 100000 * ParticlesCount
-	RewardExponent                   = 1 / 1.828393
+	RewardExponent                   = 1 / 1.828393264
 	MiningTimerInSeconds             = 60
 	MinutesCountPerDay               = 1440
 	HalfLifeInDays                   = 373.59
@@ -64,7 +64,8 @@ func NewService(address string, ip string, port uint16, logger *log.Logger) *Ser
 	var waitGroup sync.WaitGroup
 	service.waitGroup = &waitGroup
 	var transactions []*mining.Transaction
-	transactions = append(transactions, mining.NewTransaction(MiningRewardSenderAddress, service.address, GenesisAmount))
+	now := time.Now().Unix() * time.Second.Nanoseconds()
+	transactions = append(transactions, mining.NewTransaction(now, MiningRewardSenderAddress, service.address, GenesisAmount))
 	genesisBlock, _ := mining.NewBlock([32]byte{}, transactions)
 	service.addBlock(genesisBlock)
 	seedsIps := []string{
@@ -277,7 +278,8 @@ func (service *Service) Mine() {
 func (service *Service) mine() {
 	service.mineMutex.Lock()
 	defer service.mineMutex.Unlock()
-	amount := service.CalculateTotalAmount(time.Now().UnixNano(), service.address)
+	now := time.Now().Unix() * time.Second.Nanoseconds()
+	amount := service.CalculateTotalAmount(now, service.address)
 	var reward uint64
 	if amount > 0 {
 		reward = uint64(math.Round(math.Pow(float64(amount), RewardExponent)))
@@ -285,7 +287,7 @@ func (service *Service) mine() {
 		reward = 0
 	}
 	service.logger.Info(fmt.Sprintf("amount: %d - reward: %d - total: %d", amount, reward, amount+reward))
-	transaction := mining.NewTransaction(MiningRewardSenderAddress, service.address, reward)
+	transaction := mining.NewTransaction(now, MiningRewardSenderAddress, service.address, reward)
 	service.transactionsMutex.Lock()
 	service.transactions = append(service.transactions, transaction)
 	service.transactionsMutex.Unlock()

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"ruthenium/src/node/authentication"
 	"ruthenium/src/node/neighborhood"
-	"time"
 )
 
 type Transaction struct {
@@ -15,9 +14,9 @@ type Transaction struct {
 	value            uint64
 }
 
-func NewTransaction(senderAddress string, recipientAddress string, value uint64) *Transaction {
+func NewTransaction(timestamp int64, senderAddress string, recipientAddress string, value uint64) *Transaction {
 	return &Transaction{
-		time.Now().UnixNano(),
+		timestamp,
 		senderAddress,
 		recipientAddress,
 		value,

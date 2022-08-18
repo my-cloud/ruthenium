@@ -14,6 +14,7 @@ import (
 	"ruthenium/src/node/neighborhood"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Controller struct {
@@ -116,7 +117,7 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 			controller.write(writer, "invalid transaction value")
 			return
 		}
-		transaction := mining.NewTransaction(*transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, value)
+		transaction := mining.NewTransaction(time.Now().UnixNano(), *transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, value)
 		marshaledTransaction, err := json.Marshal(transaction)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to marshal transaction: %w", err).Error())
