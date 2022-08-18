@@ -9,13 +9,13 @@ import (
 	"path"
 	"ruthenium/src/log"
 	"ruthenium/src/node/authentication"
+	"ruthenium/src/node/blockchain"
 	"ruthenium/src/node/blockchain/mining"
 	"ruthenium/src/node/neighborhood"
 	"strconv"
 	"strings"
+	"time"
 )
-
-const ParticlesCount = 100000000
 
 type Controller struct {
 	publicKey        string
@@ -117,7 +117,7 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 			controller.write(writer, "invalid transaction value")
 			return
 		}
-		transaction := mining.NewTransaction(*transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, value)
+		transaction := mining.NewTransaction(time.Now().UnixNano(), *transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, value)
 		marshaledTransaction, err := json.Marshal(transaction)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to marshal transaction: %w", err).Error())
@@ -134,8 +134,10 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 		}
 		signatureString := signature.String()
 		var verb = neighborhood.POST
+		timestamp := transaction.Timestamp()
 		blockchainTransactionRequest := neighborhood.TransactionRequest{
 			Verb:             &verb,
+			Timestamp:        &timestamp,
 			SenderAddress:    transactionRequest.SenderAddress,
 			RecipientAddress: transactionRequest.RecipientAddress,
 			SenderPublicKey:  transactionRequest.SenderPublicKey,
@@ -164,12 +166,7 @@ func (controller *Controller) GetTransactions(writer http.ResponseWriter, req *h
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var marshaledTransactions []byte
-		if transactions == nil || len(transactions) == 0 {
-			marshaledTransactions, err = json.Marshal("empty")
-		} else {
-			marshaledTransactions, err = json.Marshal(transactions)
-		}
+		marshaledTransactions, err := json.Marshal(transactions)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to marshal transactions: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -245,7 +242,7 @@ func (controller *Controller) WalletAmount(writer http.ResponseWriter, req *http
 		}
 		var marshaledAmount []byte
 		marshaledAmount, err = json.Marshal(&AmountResponse{
-			Amount: float64(amountResponse.Amount) / ParticlesCount,
+			Amount: float64(amountResponse.Amount) / blockchain.ParticlesCount,
 		})
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to marshal amountResponse: %w", err).Error())
@@ -294,21 +291,21 @@ func (controller *Controller) atomsToParticles(atoms string) (particles uint64, 
 			return
 		}
 		decimalsString := atoms[i+1:]
-		trailingZerosCount := len(strconv.Itoa(ParticlesCount)) - 1 - len(decimalsString)
+		trailingZerosCount := len(strconv.Itoa(blockchain.ParticlesCount)) - 1 - len(decimalsString)
 		trailedDecimalsString := fmt.Sprintf("%s%s", decimalsString, strings.Repeat("0", trailingZerosCount))
 		var decimals uint64
 		decimals, err = parseUint64(trailedDecimalsString)
 		if err != nil {
 			return
 		}
-		particles = units*ParticlesCount + decimals
+		particles = units*blockchain.ParticlesCount + decimals
 	} else {
 		var units uint64
 		units, err = parseUint64(atoms)
 		if err != nil {
 			return
 		}
-		particles = units * ParticlesCount
+		particles = units * blockchain.ParticlesCount
 	}
 	return
 }
