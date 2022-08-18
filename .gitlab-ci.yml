@@ -4,11 +4,15 @@ include:
   - project: coinsmaster/common/pipeline-manifests
     file: container-build-manifest.yaml
 
-
 stages:
+  - test
   - build
   - scan
-  - test
+
+test:
+  stage: test
+  script:
+    - go test -v ./test/...
 
 build:
   stage: build
@@ -17,10 +21,3 @@ build:
 scan:
   stage: scan
   extends: .docker_kaniko_trivy
-
-test:
-  stage: test
-  needs:
-    - build
-  script:
-    - go test -v ./test/...
