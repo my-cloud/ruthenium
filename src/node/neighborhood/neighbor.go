@@ -57,7 +57,6 @@ func (neighbor *Neighbor) GetBlocks() (blockResponses []*BlockResponse, err erro
 	if err == nil {
 		err = res.GetGob(&blockResponses)
 	}
-
 	return
 }
 
@@ -78,10 +77,13 @@ func (neighbor *Neighbor) AddTransaction(request TransactionRequest) (err error)
 
 func (neighbor *Neighbor) GetTransactions() (transactionResponses []TransactionResponse, err error) {
 	res, err := neighbor.sendRequest(GetTransactionsRequest)
-	if err == nil {
-		err = res.GetGob(&transactionResponses)
+	if err != nil {
+		return
 	}
-
+	err = res.GetGob(&transactionResponses)
+	if transactionResponses == nil {
+		return []TransactionResponse{}, err
+	}
 	return
 }
 
@@ -90,7 +92,6 @@ func (neighbor *Neighbor) GetAmount(request AmountRequest) (amountResponse *Amou
 	if err == nil {
 		err = res.GetGob(&amountResponse)
 	}
-
 	return
 }
 

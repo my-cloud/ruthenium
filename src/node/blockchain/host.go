@@ -14,6 +14,11 @@ import (
 	"time"
 )
 
+const (
+	HostConnectionTimeoutInSeconds = 10
+	MiningTimerInSeconds           = 60
+)
+
 type Host struct {
 	publicKey  string
 	privateKey string
@@ -38,7 +43,7 @@ func NewHost(publicKey string, privateKey string, port uint16, logLevel log.Leve
 	if err != nil {
 		host.logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
 	} else {
-		host.blockchain = NewService(wallet.Address(), host.ip, host.port, host.logger)
+		host.blockchain = NewService(wallet.Address(), host.ip, host.port, MiningTimerInSeconds*time.Second, host.logger)
 	}
 	return host
 }
@@ -59,7 +64,7 @@ func (host *Host) PostTargets(request []neighborhood.TargetRequest) {
 func (host *Host) GetTransactions() (res p2p.Data) {
 	var transactionResponses []*neighborhood.TransactionResponse
 	for _, transaction := range host.blockchain.Transactions() {
-		transactionResponses = append(transactionResponses, transaction.GetDto())
+		transactionResponses = append(transactionResponses, transaction.GetResponse())
 	}
 	if err := res.SetGob(transactionResponses); err != nil {
 		host.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
@@ -82,7 +87,7 @@ func (host *Host) PostTransactions(request *neighborhood.TransactionRequest) {
 		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
 		return
 	}
-	transaction := mining.NewTransaction(*request.SenderAddress, *request.RecipientAddress, *request.Value)
+	transaction := mining.NewTransactionFromRequest(request)
 	host.blockchain.CreateTransaction(transaction, publicKey, signature)
 }
 
@@ -101,7 +106,7 @@ func (host *Host) PutTransactions(request *neighborhood.TransactionRequest) {
 		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
 		return
 	}
-	transaction := mining.NewTransaction(*request.SenderAddress, *request.RecipientAddress, *request.Value)
+	transaction := mining.NewTransactionFromRequest(request)
 	host.blockchain.AddTransaction(transaction, publicKey, signature)
 }
 
@@ -123,7 +128,7 @@ func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
 		return
 	}
 	blockchainAddress := *request.Address
-	amount := host.blockchain.CalculateTotalAmount(blockchainAddress)
+	amount := host.blockchain.CalculateTotalAmount(time.Now().UnixNano(), blockchainAddress)
 	amountResponse := &neighborhood.AmountResponse{amount}
 	if err := res.SetGob(amountResponse); err != nil {
 		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
@@ -162,7 +167,7 @@ func (host *Host) startServer() {
 	}
 	server.SetLogger(log.NewLogger(log.Fatal))
 	settings := p2p.NewServerSettings()
-	settings.SetConnTimeout(HostConnectionTimeoutSecond * time.Second)
+	settings.SetConnTimeout(HostConnectionTimeoutInSeconds * time.Second)
 	server.SetSettings(settings)
 	server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
 		var unknownRequest bool

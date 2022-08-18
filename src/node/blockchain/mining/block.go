@@ -37,10 +37,10 @@ func NewBlock(previousHash [32]byte, transactions []*Transaction) (block *Block,
 	}
 }
 
-func NewBlockFromDto(block *neighborhood.BlockResponse) *Block {
+func NewBlockFromResponse(block *neighborhood.BlockResponse) *Block {
 	var transactions []*Transaction
 	for _, transaction := range block.Transactions {
-		transactions = append(transactions, NewTransactionFromDto(transaction))
+		transactions = append(transactions, NewTransactionFromResponse(transaction))
 	}
 	return &Block{
 		block.Timestamp,
@@ -51,7 +51,7 @@ func NewBlockFromDto(block *neighborhood.BlockResponse) *Block {
 }
 
 func (block *Block) Hash() (hash [32]byte, err error) {
-	marshaledBlock, err := json.Marshal(block)
+	marshaledBlock, err := block.MarshalJSON()
 	if err != nil {
 		err = fmt.Errorf("failed to marshal block: %w", err)
 		return
@@ -96,10 +96,10 @@ func (block *Block) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (block *Block) GetDto() *neighborhood.BlockResponse {
+func (block *Block) GetResponse() *neighborhood.BlockResponse {
 	var transactions []*neighborhood.TransactionResponse
 	for _, transaction := range block.transactions {
-		transactions = append(transactions, transaction.GetDto())
+		transactions = append(transactions, transaction.GetResponse())
 	}
 	return &neighborhood.BlockResponse{
 		Timestamp:    block.timestamp,
