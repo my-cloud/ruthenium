@@ -20,7 +20,6 @@ const (
 	ParticlesCount                   = 100000000
 	GenesisAmount             uint64 = 100000 * ParticlesCount
 	RewardExponent                   = 1 / 1.828393264
-	MinutesCountPerDay               = 1440
 	HalfLifeInDays                   = 373.59
 
 	NeighborSynchronizationTimeInSeconds = 10
@@ -74,7 +73,8 @@ func NewService(address string, ip string, port uint16, miningTimer time.Duratio
 		seed := neighborhood.NewNeighbor(seedIp, DefaultPort, logger)
 		service.neighborsByTarget[seed.Target()] = seed
 	}
-	halfLife := HalfLifeInDays * MinutesCountPerDay * float64(time.Minute.Nanoseconds())
+	const hoursADay = 24
+	halfLife := HalfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
 	service.lambda = math.Log(2) / halfLife
 	return service
 }
