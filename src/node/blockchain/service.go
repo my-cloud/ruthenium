@@ -382,7 +382,7 @@ func (service *Service) clearTransactions() {
 }
 
 func (service *Service) GetValidBlocks(blocks []*neighborhood.BlockResponse) (validBlocks []*mining.Block) {
-	previousBlock := mining.NewBlockFromDto(blocks[0])
+	previousBlock := mining.NewBlockFromResponse(blocks[0])
 	validBlocks = append(validBlocks, previousBlock)
 	currentIndex := 1
 	for currentIndex < len(blocks) {
@@ -395,7 +395,7 @@ func (service *Service) GetValidBlocks(blocks []*neighborhood.BlockResponse) (va
 		if !isPreviousHashValid {
 			return nil
 		}
-		block := mining.NewBlockFromDto(currentBlock)
+		block := mining.NewBlockFromResponse(currentBlock)
 		var pow *mining.ProofOfWork
 		if pow, err = block.ProofOfWork(); err != nil {
 			service.logger.Error(fmt.Errorf("failed to get proof of work: %w", err).Error())

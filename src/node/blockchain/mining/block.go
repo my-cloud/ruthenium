@@ -37,7 +37,7 @@ func NewBlock(previousHash [32]byte, transactions []*Transaction) (block *Block,
 	}
 }
 
-func NewBlockFromDto(block *neighborhood.BlockResponse) *Block {
+func NewBlockFromResponse(block *neighborhood.BlockResponse) *Block {
 	var transactions []*Transaction
 	for _, transaction := range block.Transactions {
 		transactions = append(transactions, NewTransactionFromResponse(transaction))
