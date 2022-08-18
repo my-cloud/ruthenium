@@ -1,4 +1,4 @@
-module ruthenium
+module coinsmaster/ruthenium
 
 go 1.16
 

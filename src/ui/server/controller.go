@@ -1,17 +1,17 @@
 package server
 
 import (
+	"coinsmaster/ruthenium/src/log"
+	"coinsmaster/ruthenium/src/node/authentication"
+	"coinsmaster/ruthenium/src/node/blockchain"
+	"coinsmaster/ruthenium/src/node/blockchain/mining"
+	"coinsmaster/ruthenium/src/node/neighborhood"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
 	"net/http"
 	"path"
-	"ruthenium/src/log"
-	"ruthenium/src/node/authentication"
-	"ruthenium/src/node/blockchain"
-	"ruthenium/src/node/blockchain/mining"
-	"ruthenium/src/node/neighborhood"
 	"strconv"
 	"strings"
 	"time"

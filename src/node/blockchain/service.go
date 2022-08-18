@@ -1,14 +1,14 @@
 package blockchain
 
 import (
+	"coinsmaster/ruthenium/src/log"
+	"coinsmaster/ruthenium/src/node/authentication"
+	"coinsmaster/ruthenium/src/node/blockchain/mining"
+	"coinsmaster/ruthenium/src/node/neighborhood"
 	"errors"
 	"fmt"
 	"math"
 	"net"
-	"ruthenium/src/log"
-	"ruthenium/src/node/authentication"
-	"ruthenium/src/node/blockchain/mining"
-	"ruthenium/src/node/neighborhood"
 	"sync"
 	"time"
 )

@@ -1,10 +1,10 @@
 package mining
 
 import (
+	"coinsmaster/ruthenium/src/node/authentication"
+	"coinsmaster/ruthenium/src/node/neighborhood"
 	"encoding/json"
 	"fmt"
-	"ruthenium/src/node/authentication"
-	"ruthenium/src/node/neighborhood"
 )
 
 type Transaction struct {
