@@ -12,7 +12,7 @@ stages:
 test:
   stage: test
   script:
-    - go test -v ./test/...
+    - CGO_ENABLED=0 go test -v ./test/...
 
 build:
   stage: build
