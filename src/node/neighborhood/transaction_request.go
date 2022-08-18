@@ -19,7 +19,7 @@ type TransactionRequest struct {
 
 func (transactionRequest *TransactionRequest) IsInvalid() bool {
 	return transactionRequest.Verb == nil || len(*transactionRequest.Verb) == 0 ||
-		transactionRequest.Timestamp == nil || *transactionRequest.Timestamp == 0 ||
+		transactionRequest.Timestamp == nil ||
 		transactionRequest.SenderAddress == nil || len(*transactionRequest.SenderAddress) == 0 ||
 		transactionRequest.RecipientAddress == nil || len(*transactionRequest.RecipientAddress) == 0 ||
 		transactionRequest.SenderPublicKey == nil || len(*transactionRequest.SenderPublicKey) == 0 ||
