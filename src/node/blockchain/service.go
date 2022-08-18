@@ -270,12 +270,7 @@ func (service *Service) mine() {
 	defer service.mineMutex.Unlock()
 	now := time.Now().Unix() * time.Second.Nanoseconds()
 	amount := service.CalculateTotalAmount(now, service.address)
-	var reward uint64
-	if amount > 0 {
-		reward = uint64(math.Round(math.Pow(float64(amount), RewardExponent)))
-	} else {
-		reward = 0
-	}
+	reward := uint64(math.Round(math.Pow(float64(amount), RewardExponent)))
 	service.logger.Info(fmt.Sprintf("amount: %d - reward: %d - total: %d", amount, reward, amount+reward))
 	transaction := mining.NewTransaction(now, MiningRewardSenderAddress, service.address, reward)
 	service.transactionsMutex.Lock()
