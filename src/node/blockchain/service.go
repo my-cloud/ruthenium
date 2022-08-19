@@ -3,12 +3,12 @@ package blockchain
 import (
 	"errors"
 	"fmt"
+	"gitlab.com/coinsmaster/ruthenium/src/log"
+	"gitlab.com/coinsmaster/ruthenium/src/node/authentication"
+	"gitlab.com/coinsmaster/ruthenium/src/node/blockchain/mining"
+	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 	"math"
 	"net"
-	"ruthenium/src/log"
-	"ruthenium/src/node/authentication"
-	"ruthenium/src/node/blockchain/mining"
-	"ruthenium/src/node/neighborhood"
 	"sync"
 	"time"
 )

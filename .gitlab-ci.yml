@@ -1,12 +1,19 @@
 ---
+image: golang:latest
 include:
   - project: coinsmaster/common/pipeline-manifests
     file: container-build-manifest.yaml
 
-
 stages:
+  - test
   - build
   - scan
+
+test:
+  stage: test
+  script:
+    - go get ./...
+    - go test -v ./test/...
 
 build:
   stage: build
@@ -15,4 +22,3 @@ build:
 scan:
   stage: scan
   extends: .docker_kaniko_trivy
-

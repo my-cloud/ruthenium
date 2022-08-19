@@ -1,9 +1,9 @@
-module ruthenium
+module gitlab.com/coinsmaster/ruthenium
 
-go 1.16
+go 1.19
 
 require (
-	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
+	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/leprosus/golang-p2p v1.3.11
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 )
