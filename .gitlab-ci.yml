@@ -1,7 +1,7 @@
 ---
 image: golang:latest
 include:
-  - project: coinsmaster/common/pipeline-manifests
+  - project: coinsmaster/common/pipeline-manifests//
     file: container-build-manifest.yaml
 
 stages:
