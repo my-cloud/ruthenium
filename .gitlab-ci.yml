@@ -9,13 +9,9 @@ stages:
   - build
   - scan
 
-before_script:
-  - mkdir -p /go/src/gitlab.com
-  - ln -s /builds/coinsmaster /go/src/gitlab.com/coinsmaster
 test:
   stage: test
   script:
-    - cd /go/src/gitlab.com/coinsmaster/ruthenium
     - go get ./...
     - go test -v ./test/...
 
