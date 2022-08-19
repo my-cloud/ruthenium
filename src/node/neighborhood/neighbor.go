@@ -3,8 +3,8 @@ package neighborhood
 import (
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
+	"gitlab.com/coinsmaster/ruthenium/src/log"
 	"net"
-	"ruthenium/src/log"
 	"strconv"
 	"time"
 )

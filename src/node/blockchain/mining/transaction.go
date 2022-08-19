@@ -3,8 +3,8 @@ package mining
 import (
 	"encoding/json"
 	"fmt"
-	"ruthenium/src/node/authentication"
-	"ruthenium/src/node/neighborhood"
+	"gitlab.com/coinsmaster/ruthenium/src/node/authentication"
+	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 )
 
 type Transaction struct {

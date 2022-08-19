@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"ruthenium/src/log"
-	"ruthenium/src/node/blockchain"
-	"ruthenium/src/ui/server"
+	"gitlab.com/coinsmaster/ruthenium/src/log"
+	"gitlab.com/coinsmaster/ruthenium/src/node/blockchain"
+	"gitlab.com/coinsmaster/ruthenium/src/ui/server"
 )
 
 func main() {

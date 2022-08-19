@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"ruthenium/src/log"
-	"ruthenium/src/node/blockchain"
+	"gitlab.com/coinsmaster/ruthenium/src/log"
+	"gitlab.com/coinsmaster/ruthenium/src/node/blockchain"
 )
 
 func main() {
