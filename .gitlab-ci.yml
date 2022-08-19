@@ -1,5 +1,5 @@
 ---
-image: golang:1.6-alpine
+image: golang:1.9-alpine
 include:
   - project: coinsmaster/common/pipeline-manifests
     file: container-build-manifest.yaml
