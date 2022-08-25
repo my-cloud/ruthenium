@@ -272,7 +272,7 @@ func (controller *Controller) Run() {
 func (controller *Controller) write(writer http.ResponseWriter, message string) {
 	i, err := io.WriteString(writer, message)
 	if err != nil || i == 0 {
-		controller.logger.Error(fmt.Errorf("failed to write message: %s", message).Error())
+		controller.logger.Error(fmt.Sprintf("failed to write message: %s", message))
 	}
 }
 

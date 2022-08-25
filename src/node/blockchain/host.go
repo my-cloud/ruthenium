@@ -150,12 +150,18 @@ func (host *Host) findPublicIp() (ip string, err error) {
 	if err != nil {
 		return
 	}
+	defer func() {
+		if bodyCloseError := resp.Body.Close(); bodyCloseError != nil {
+			host.logger.Error(fmt.Errorf("failed to close public IP request body: %w", bodyCloseError).Error())
+		}
+	}()
 	var body []byte
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
-	return string(body), resp.Body.Close()
+	ip = string(body)
+	return
 }
 
 func (host *Host) startServer() {
