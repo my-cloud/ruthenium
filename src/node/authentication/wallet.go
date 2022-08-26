@@ -6,53 +6,54 @@ import (
 )
 
 type Wallet struct {
-	publicKey  *PublicKey
 	privateKey *PrivateKey
+	publicKey  *PublicKey
 	address    string
 }
 
-func NewWallet(publicKeyString string, privateKeyString string) (*Wallet, error) {
-	var publicKey *PublicKey
+func NewWallet() (*Wallet, error) {
+	return DecodeWallet("", "", "", "")
+}
+
+func DecodeWallet(mnemonicString string, derivationPath string, password string, privateKeyString string) (*Wallet, error) {
 	var privateKey *PrivateKey
+	var publicKey *PublicKey
 	var address string
 	var err error
-	if publicKeyString != "" && privateKeyString != "" {
-		publicKey, err = NewPublicKey(publicKeyString)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode wallet public key: %w", err)
-		}
-		privateKey, err = NewPrivateKey(privateKeyString, publicKey)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode transaction private key: %w", err)
-		}
-		address = NewAddress(publicKey)
-	} else if privateKey, err = GeneratePrivateKey(); err != nil {
-		return nil, fmt.Errorf("failed to generate private key: %w", err)
+	if mnemonicString != "" {
+		mnemonic := NewMnemonic(mnemonicString)
+		privateKey, err = mnemonic.PrivateKey(derivationPath, password)
+	} else if privateKeyString != "" {
+		privateKey, err = DecodePrivateKey(privateKeyString)
 	} else {
-		publicKey = privateKey.ExtractPublicKey()
-		address = NewAddress(publicKey)
+		privateKey, err = NewPrivateKey()
 	}
-	return &Wallet{publicKey, privateKey, address}, nil
+	if err != nil {
+		return nil, fmt.Errorf("failed to create private key: %w", err)
+	}
+	publicKey = NewPublicKey(privateKey)
+	address = publicKey.Address()
+	return &Wallet{privateKey, publicKey, address}, nil
 }
 
 func (wallet *Wallet) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		PublicKey  string `json:"public_key"`
 		PrivateKey string `json:"private_key"`
+		PublicKey  string `json:"public_key"`
 		Address    string `json:"address"`
 	}{
-		PublicKey:  wallet.publicKey.String(),
 		PrivateKey: wallet.privateKey.String(),
+		PublicKey:  wallet.publicKey.String(),
 		Address:    wallet.Address(),
 	})
 }
 
-func (wallet *Wallet) PublicKey() *PublicKey {
-	return wallet.publicKey
-}
-
 func (wallet *Wallet) PrivateKey() *PrivateKey {
 	return wallet.privateKey
+}
+
+func (wallet *Wallet) PublicKey() *PublicKey {
+	return wallet.publicKey
 }
 
 func (wallet *Wallet) Address() string {

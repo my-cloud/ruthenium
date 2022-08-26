@@ -15,13 +15,13 @@ import (
 
 func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	// Arrange
-	minerWallet, _ := authentication.NewWallet("", "")
+	minerWallet, _ := authentication.NewWallet()
 	minerWalletAddress := minerWallet.Address()
-	walletA, _ := authentication.NewWallet("", "")
+	walletA, _ := authentication.NewWallet()
 	walletAAddress := walletA.Address()
-	walletB, _ := authentication.NewWallet("", "")
+	walletB, _ := authentication.NewWallet()
 	walletBAddress := walletB.Address()
-	logger := log.NewLogger(log.Error)
+	logger := log.NewLogger(log.Fatal)
 	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, logger)
 
 	// Act
@@ -46,13 +46,13 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 
 func Test_AddTransaction_Allowed_TransactionNotAdded(t *testing.T) {
 	// Arrange
-	minerWallet, _ := authentication.NewWallet("", "")
+	minerWallet, _ := authentication.NewWallet()
 	minerWalletAddress := minerWallet.Address()
-	walletA, _ := authentication.NewWallet("", "")
+	walletA, _ := authentication.NewWallet()
 	walletAAddress := walletA.Address()
-	walletB, _ := authentication.NewWallet("", "")
+	walletB, _ := authentication.NewWallet()
 	walletBAddress := walletB.Address()
-	logger := log.NewLogger(log.Error)
+	logger := log.NewLogger(log.Fatal)
 	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, logger)
 
 	// Act

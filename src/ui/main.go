@@ -9,7 +9,9 @@ import (
 )
 
 func main() {
-	publicKey := flag.String("public-key", "", "The public key (will be generated if not provided")
+	mnemonic := flag.String("mnemonic", "", "The mnemonic (optional)")
+	derivationPath := flag.String("derivationPath", "m/44'/60'/0'/0/0", "The derivation path (unused if the mnemonic is omitted)")
+	password := flag.String("password", "", "The mnemonic password (unused if the mnemonic is omitted)")
 	privateKey := flag.String("private-key", "", "The private key (will be generated if not provided")
 	port := flag.Uint("port", 8080, "The UI server TCP port number")
 	hostIp := flag.String("host-ip", "", "The blockchain host IP address")
@@ -18,7 +20,7 @@ func main() {
 	logLevel := flag.String("log-level", "warn", "The log level")
 	flag.Parse()
 
-	app := server.NewController(*publicKey, *privateKey, uint16(*port), *hostIp, uint16(*hostPort), *templatesPath, log.ParseLevel(*logLevel))
+	app := server.NewController(*mnemonic, *derivationPath, *password, *privateKey, uint16(*port), *hostIp, uint16(*hostPort), *templatesPath, log.ParseLevel(*logLevel))
 	fmt.Println("Running...")
 	app.Run()
 }
