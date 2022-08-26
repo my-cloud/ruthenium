@@ -45,7 +45,7 @@ func (signature *Signature) Verify(marshaledTransaction []byte, publicKey *Publi
 	isSignatureValid := ecdsa.Verify(publicKey.PublicKey, hash[:], signature.r, signature.s)
 	var isTransactionValid bool
 	if isSignatureValid {
-		publicKeyAddress := NewAddress(publicKey)
+		publicKeyAddress := publicKey.Address()
 		isTransactionValid = transactionSenderAddress == publicKeyAddress
 	}
 	return isTransactionValid

@@ -2,22 +2,36 @@ package authentication
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type PublicKey struct {
 	*ecdsa.PublicKey
 }
 
-func NewPublicKey(publicKeyString string) (*PublicKey, error) {
-	x, y, err := string2BigIntTuple(publicKeyString)
+func NewPublicKey(privateKey *PrivateKey) *PublicKey {
+	return &PublicKey{privateKey.Public().(*ecdsa.PublicKey)}
+}
+
+func DecodePublicKey(publicKeyString string) (*PublicKey, error) {
+	bytes, err := hexutil.Decode(publicKeyString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode public key: %w", err)
 	}
-	return &PublicKey{&ecdsa.PublicKey{elliptic.P256(), &x, &y}}, nil
+	ecdsaPublicKey, err := crypto.UnmarshalPubkey(bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal public key: %w", err)
+	}
+	return &PublicKey{ecdsaPublicKey}, nil
+}
+
+func (publicKey *PublicKey) Address() string {
+	return crypto.PubkeyToAddress(*publicKey.PublicKey).Hex()
 }
 
 func (publicKey *PublicKey) String() string {
-	return fmt.Sprintf("%064x%064x", publicKey.X.Bytes(), publicKey.Y.Bytes())
+	publicKeyBytes := crypto.FromECDSAPub(publicKey.PublicKey)
+	return hexutil.Encode(publicKeyBytes)
 }
