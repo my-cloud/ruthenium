@@ -2,39 +2,33 @@ package authentication
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
-	"math/big"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type PrivateKey struct {
 	*ecdsa.PrivateKey
 }
 
-func NewPrivateKey(privateKeyString string, publicKey *PublicKey) (*PrivateKey, error) {
-	b, err := hex.DecodeString(privateKeyString[:])
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode private key: %w", err)
-	}
-	var bi big.Int
-	_ = bi.SetBytes(b)
-	return &PrivateKey{&ecdsa.PrivateKey{*publicKey.PublicKey, &bi}}, nil
-}
-
-func GeneratePrivateKey() (*PrivateKey, error) {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+func NewPrivateKey() (*PrivateKey, error) {
+	privateKey, err := crypto.GenerateKey()
 	if err != nil {
 		return nil, err
 	}
 	return &PrivateKey{privateKey}, err
 }
 
-func (privateKey *PrivateKey) ExtractPublicKey() *PublicKey {
-	return &PublicKey{&privateKey.PublicKey}
+func DecodePrivateKey(privateKeyString string) (*PrivateKey, error) {
+	bytes, _ := hexutil.Decode(privateKeyString)
+	ecdsaPrivateKey, err := crypto.ToECDSA(bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode private key: %w", err)
+	}
+	return &PrivateKey{ecdsaPrivateKey}, nil
 }
 
 func (privateKey *PrivateKey) String() string {
-	return fmt.Sprintf("%x", privateKey.D.Bytes())
+	privateKeyBytes := crypto.FromECDSA(privateKey.PrivateKey)
+	return hexutil.Encode(privateKeyBytes)
 }

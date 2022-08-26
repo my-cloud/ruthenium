@@ -20,18 +20,14 @@ const (
 )
 
 type Host struct {
-	publicKey  string
-	privateKey string
 	ip         string
 	port       uint16
 	blockchain *Service
 	logger     *log.Logger
 }
 
-func NewHost(publicKey string, privateKey string, port uint16, logLevel log.Level) *Host {
+func NewHost(mnemonic string, derivationPath string, password string, privateKey string, port uint16, logLevel log.Level) *Host {
 	host := new(Host)
-	host.publicKey = publicKey
-	host.privateKey = privateKey
 	host.logger = log.NewLogger(logLevel)
 	host.port = port
 	ip, err := host.findPublicIp()
@@ -39,7 +35,7 @@ func NewHost(publicKey string, privateKey string, port uint16, logLevel log.Leve
 		host.logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
 	}
 	host.ip = ip
-	wallet, err := authentication.NewWallet(host.publicKey, host.privateKey)
+	wallet, err := authentication.DecodeWallet(mnemonic, derivationPath, password, privateKey)
 	if err != nil {
 		host.logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
 	} else {
@@ -77,7 +73,7 @@ func (host *Host) PostTransactions(request *neighborhood.TransactionRequest) {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
 	}
-	publicKey, err := authentication.NewPublicKey(*request.SenderPublicKey)
+	publicKey, err := authentication.DecodePublicKey(*request.SenderPublicKey)
 	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to decode transaction public key: %w", err).Error())
 		return
@@ -96,7 +92,7 @@ func (host *Host) PutTransactions(request *neighborhood.TransactionRequest) {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
 	}
-	publicKey, err := authentication.NewPublicKey(*request.SenderPublicKey)
+	publicKey, err := authentication.DecodePublicKey(*request.SenderPublicKey)
 	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to decode transaction public key: %w", err).Error())
 		return
@@ -150,12 +146,18 @@ func (host *Host) findPublicIp() (ip string, err error) {
 	if err != nil {
 		return
 	}
+	defer func() {
+		if bodyCloseError := resp.Body.Close(); bodyCloseError != nil {
+			host.logger.Error(fmt.Errorf("failed to close public IP request body: %w", bodyCloseError).Error())
+		}
+	}()
 	var body []byte
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
-	return string(body), resp.Body.Close()
+	ip = string(body)
+	return
 }
 
 func (host *Host) startServer() {
