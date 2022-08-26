@@ -8,13 +8,15 @@ import (
 )
 
 func main() {
-	publicKey := flag.String("public-key", "", "The public key (will be generated if not provided")
-	privateKey := flag.String("private-key", "", "The private key (will be generated if not provided")
+	mnemonic := flag.String("mnemonic", "", "The mnemonic (optional)")
+	derivationPath := flag.String("derivationPath", "m/44'/60'/0'/0/0", "The derivation path (unused if the mnemonic is omitted)")
+	password := flag.String("password", "", "The mnemonic password (unused if the mnemonic is omitted)")
+	privateKey := flag.String("private-key", "", "The private key (will be generated if not provided)")
 	port := flag.Uint("port", blockchain.DefaultPort, "TCP port number for blockchain server")
 	logLevel := flag.String("log-level", "warn", "The log level")
 
 	flag.Parse()
-	app := blockchain.NewHost(*publicKey, *privateKey, uint16(*port), log.ParseLevel(*logLevel))
+	app := blockchain.NewHost(*mnemonic, *derivationPath, *password, *privateKey, uint16(*port), log.ParseLevel(*logLevel))
 	fmt.Println("Running...")
 	app.Run()
 }

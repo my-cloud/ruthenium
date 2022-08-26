@@ -18,7 +18,9 @@ import (
 )
 
 type Controller struct {
-	publicKey        string
+	mnemonic         string
+	derivationPath   string
+	password         string
 	privateKey       string
 	port             uint16
 	blockchainClient *neighborhood.Neighbor
@@ -26,10 +28,10 @@ type Controller struct {
 	logger           *log.Logger
 }
 
-func NewController(publicKey string, privateKey string, port uint16, hostIp string, hostPort uint16, templatesPath string, level log.Level) *Controller {
+func NewController(mnemonic string, derivationPath string, password string, privateKey string, port uint16, hostIp string, hostPort uint16, templatesPath string, level log.Level) *Controller {
 	logger := log.NewLogger(level)
 	blockchainClient := neighborhood.NewNeighbor(hostIp, hostPort, logger)
-	return &Controller{publicKey, privateKey, port, blockchainClient, templatesPath, logger}
+	return &Controller{mnemonic, derivationPath, password, privateKey, port, blockchainClient, templatesPath, logger}
 }
 
 func (controller *Controller) Port() uint16 {
@@ -59,7 +61,7 @@ func (controller *Controller) Index(w http.ResponseWriter, req *http.Request) {
 func (controller *Controller) Wallet(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		wallet, err := authentication.NewWallet(controller.publicKey, controller.privateKey)
+		wallet, err := authentication.DecodeWallet(controller.mnemonic, controller.derivationPath, controller.password, controller.privateKey)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to create wallet: %w", err).Error())
 			return
@@ -96,14 +98,7 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 			controller.write(writer, errorMessage)
 			return
 		}
-		publicKey, err := authentication.NewPublicKey(*transactionRequest.SenderPublicKey)
-		if err != nil {
-			controller.logger.Error(fmt.Errorf("failed to decode transaction public key: %w", err).Error())
-			writer.WriteHeader(http.StatusBadRequest)
-			controller.write(writer, "invalid public key")
-			return
-		}
-		privateKey, err := authentication.NewPrivateKey(*transactionRequest.SenderPrivateKey, publicKey)
+		privateKey, err := authentication.DecodePrivateKey(*transactionRequest.SenderPrivateKey)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to decode transaction private key: %w", err).Error())
 			writer.WriteHeader(http.StatusBadRequest)
