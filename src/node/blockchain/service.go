@@ -4,8 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"gitlab.com/coinsmaster/ruthenium/src/log"
-	"gitlab.com/coinsmaster/ruthenium/src/node/authentication"
-	"gitlab.com/coinsmaster/ruthenium/src/node/blockchain/mining"
+	"gitlab.com/coinsmaster/ruthenium/src/node/encryption"
 	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 	"math"
 	"net"
@@ -26,9 +25,9 @@ const (
 )
 
 type Service struct {
-	transactions      []*mining.Transaction
+	transactions      []*Transaction
 	transactionsMutex sync.RWMutex
-	blocks            []*mining.Block
+	blocks            []*Block
 	blockResponses    []*neighborhood.BlockResponse
 	blocksMutex       sync.RWMutex
 	address           string
@@ -60,10 +59,10 @@ func NewService(address string, ip string, port uint16, miningTimer time.Duratio
 	service.logger = logger
 	var waitGroup sync.WaitGroup
 	service.waitGroup = &waitGroup
-	var transactions []*mining.Transaction
+	var transactions []*Transaction
 	now := time.Now().Unix() * time.Second.Nanoseconds()
-	transactions = append(transactions, mining.NewTransaction(now, MiningRewardSenderAddress, service.address, GenesisAmount))
-	genesisBlock, _ := mining.NewBlock([32]byte{}, transactions)
+	transactions = append(transactions, NewTransaction(now, MiningRewardSenderAddress, address, GenesisAmount))
+	genesisBlock := NewBlock([32]byte{}, transactions)
 	service.addBlock(genesisBlock)
 	seedsIps := []string{
 		"89.82.76.241",
@@ -122,7 +121,7 @@ func (service *Service) FindNeighbors() {
 
 			neighborsCount := len(lookedUpNeighborsIps)
 			if neighborsCount != 1 {
-				service.logger.Error(fmt.Errorf("DNS discovery did not find a single address (%d addresses found) for the given IP %s", neighborsCount, neighborIp).Error())
+				service.logger.Error(fmt.Sprintf("DNS discovery did not find a single address (%d addresses found) for the given IP %s", neighborsCount, neighborIp))
 				return
 			}
 			lookedUpNeighborIp := lookedUpNeighborsIps[0]
@@ -183,7 +182,7 @@ func (service *Service) AddTargets(targetRequests []neighborhood.TargetRequest) 
 	}()
 }
 
-func (service *Service) CreateTransaction(transaction *mining.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) {
+func (service *Service) CreateTransaction(transaction *Transaction, publicKey *encryption.PublicKey, signature *encryption.Signature) {
 	service.waitGroup.Add(1)
 	go func() {
 		defer service.waitGroup.Done()
@@ -218,7 +217,7 @@ func (service *Service) CreateTransaction(transaction *mining.Transaction, publi
 	}()
 }
 
-func (service *Service) AddTransaction(transaction *mining.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) {
+func (service *Service) AddTransaction(transaction *Transaction, publicKey *encryption.PublicKey, signature *encryption.Signature) {
 	service.waitGroup.Add(1)
 	go func() {
 		defer service.waitGroup.Done()
@@ -229,7 +228,7 @@ func (service *Service) AddTransaction(transaction *mining.Transaction, publicKe
 	}()
 }
 
-func (service *Service) addTransaction(transaction *mining.Transaction, publicKey *authentication.PublicKey, signature *authentication.Signature) (err error) {
+func (service *Service) addTransaction(transaction *Transaction, publicKey *encryption.PublicKey, signature *encryption.Signature) (err error) {
 	marshaledTransaction, err := transaction.MarshalJSON()
 	if err != nil {
 		err = fmt.Errorf("failed to marshal transaction, %w", err)
@@ -272,7 +271,7 @@ func (service *Service) mine() {
 	amount := service.CalculateTotalAmount(now, service.address)
 	reward := uint64(math.Round(math.Pow(float64(amount), RewardExponent)))
 	service.logger.Info(fmt.Sprintf("amount: %d - reward: %d - total: %d", amount, reward, amount+reward))
-	transaction := mining.NewTransaction(now, MiningRewardSenderAddress, service.address, reward)
+	transaction := NewTransaction(now, MiningRewardSenderAddress, service.address, reward)
 	service.transactionsMutex.Lock()
 	service.transactions = append(service.transactions, transaction)
 	service.transactionsMutex.Unlock()
@@ -336,7 +335,7 @@ func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainA
 					totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
 				}
 				if totalAmount < value {
-					service.logger.Error(fmt.Errorf("historical transaction should not have been validated: wallet amount=%d, transaction value=%d", totalAmount, value).Error())
+					service.logger.Error(fmt.Sprintf("historical transaction should not have been validated: wallet amount=%d, transaction value=%d", totalAmount, value))
 				}
 				totalAmount -= value
 				lastTimestamp = transaction.Timestamp()
@@ -351,7 +350,7 @@ func (service *Service) decay(lastTimestamp int64, newTimestamp int64, amount ui
 	return uint64(math.Floor(float64(amount) * math.Exp(-service.lambda*float64(elapsedTimestamp))))
 }
 
-func (service *Service) Transactions() []*mining.Transaction {
+func (service *Service) Transactions() []*Transaction {
 	service.transactionsMutex.RLock()
 	defer service.transactionsMutex.RUnlock()
 	return service.transactions
@@ -367,33 +366,29 @@ func (service *Service) clearTransactions() {
 	service.transactions = nil
 }
 
-func (service *Service) GetValidBlocks(blocks []*neighborhood.BlockResponse) (validBlocks []*mining.Block) {
-	previousBlock := mining.NewBlockFromResponse(blocks[0])
+func (service *Service) GetValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block) {
+	previousBlock := NewBlockFromResponse(neighborBlocks[0])
 	validBlocks = append(validBlocks, previousBlock)
-	currentIndex := 1
-	for currentIndex < len(blocks) {
-		currentBlock := blocks[currentIndex]
+	// TODO verify mining reward timestamp
+	for i := 1; i < len(neighborBlocks); i++ {
+		currentBlock := neighborBlocks[i]
 		previousBlockHash, err := previousBlock.Hash()
 		if err != nil {
-			service.logger.Error(fmt.Errorf("failed calculate previous block hash: %w", err).Error())
+			service.logger.Error(fmt.Errorf("failed to calculate previous block hash: %w", err).Error())
 		}
 		isPreviousHashValid := currentBlock.PreviousHash == previousBlockHash
 		if !isPreviousHashValid {
 			return nil
 		}
-		block := mining.NewBlockFromResponse(currentBlock)
-		var pow *mining.ProofOfWork
-		if pow, err = block.ProofOfWork(); err != nil {
-			service.logger.Error(fmt.Errorf("failed to get proof of work: %w", err).Error())
-			return nil
+		neighborBlock := NewBlockFromResponse(currentBlock)
+		if i == len(neighborBlocks)-1 {
+			if err = neighborBlock.IsProofOfHumanityValid(); err != nil {
+				service.logger.Error(fmt.Errorf("failed to get valid proof of humanity: %w", err).Error())
+				return nil
+			}
 		}
-		if pow.IsInValid() {
-			service.logger.Info("proof of work is invalid")
-			return nil
-		}
-		previousBlock = block
-		validBlocks = append(validBlocks, block)
-		currentIndex++
+		previousBlock = neighborBlock
+		validBlocks = append(validBlocks, neighborBlock)
 	}
 	return validBlocks
 }
@@ -405,8 +400,9 @@ func (service *Service) ResolveConflicts() {
 		service.neighborsMutex.RLock()
 		defer service.neighborsMutex.RUnlock()
 		var longestChainResponse []*neighborhood.BlockResponse
-		var longestChain []*mining.Block
+		var longestChain []*Block
 		maxLength := len(service.blocks)
+		// TODO verify last blocks previous hash
 		for _, neighbor := range service.neighbors {
 			neighborBlocks, err := neighbor.GetBlocks()
 			if err == nil && len(neighborBlocks) > maxLength {
@@ -431,7 +427,7 @@ func (service *Service) ResolveConflicts() {
 	}()
 }
 
-func (service *Service) addBlock(block *mining.Block) *mining.Block {
+func (service *Service) addBlock(block *Block) *Block {
 	service.blocks = append(service.blocks, block)
 	blockResponse := block.GetResponse()
 	service.blockResponses = append(service.blockResponses, blockResponse)
@@ -439,7 +435,7 @@ func (service *Service) addBlock(block *mining.Block) *mining.Block {
 	return block
 }
 
-func (service *Service) createBlock() (block *mining.Block, err error) {
+func (service *Service) createBlock() (block *Block, err error) {
 	lastBlock := service.blocks[len(service.blocks)-1]
 	lastBlockHash, err := lastBlock.Hash()
 	if err != nil {
@@ -448,6 +444,6 @@ func (service *Service) createBlock() (block *mining.Block, err error) {
 	}
 	service.transactionsMutex.RLock()
 	defer service.transactionsMutex.RUnlock()
-	block, err = mining.NewBlock(lastBlockHash, service.transactions)
+	block = NewBlock(lastBlockHash, service.transactions)
 	return
 }

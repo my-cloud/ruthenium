@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"gitlab.com/coinsmaster/ruthenium/src/log"
-	"gitlab.com/coinsmaster/ruthenium/src/node/authentication"
 	"gitlab.com/coinsmaster/ruthenium/src/node/blockchain"
-	"gitlab.com/coinsmaster/ruthenium/src/node/blockchain/mining"
+	"gitlab.com/coinsmaster/ruthenium/src/node/encryption"
 	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 	"html/template"
 	"io"
@@ -61,7 +60,7 @@ func (controller *Controller) Index(w http.ResponseWriter, req *http.Request) {
 func (controller *Controller) Wallet(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		wallet, err := authentication.DecodeWallet(controller.mnemonic, controller.derivationPath, controller.password, controller.privateKey)
+		wallet, err := encryption.DecodeWallet(controller.mnemonic, controller.derivationPath, controller.password, controller.privateKey)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to create wallet: %w", err).Error())
 			return
@@ -98,7 +97,7 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 			controller.write(writer, errorMessage)
 			return
 		}
-		privateKey, err := authentication.DecodePrivateKey(*transactionRequest.SenderPrivateKey)
+		privateKey, err := encryption.DecodePrivateKey(*transactionRequest.SenderPrivateKey)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to decode transaction private key: %w", err).Error())
 			writer.WriteHeader(http.StatusBadRequest)
@@ -112,7 +111,7 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 			controller.write(writer, "invalid transaction value")
 			return
 		}
-		transaction := mining.NewTransaction(time.Now().UnixNano(), *transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, value)
+		transaction := blockchain.NewTransaction(time.Now().UnixNano(), *transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, value)
 		marshaledTransaction, err := json.Marshal(transaction)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to marshal transaction: %w", err).Error())
@@ -120,7 +119,7 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 			controller.write(writer, "invalid transaction request")
 			return
 		}
-		signature, err := authentication.NewSignature(marshaledTransaction, privateKey)
+		signature, err := encryption.NewSignature(marshaledTransaction, privateKey)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to generate signature: %w", err).Error())
 			writer.WriteHeader(http.StatusBadRequest)

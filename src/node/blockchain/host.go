@@ -5,8 +5,7 @@ import (
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
 	"gitlab.com/coinsmaster/ruthenium/src/log"
-	"gitlab.com/coinsmaster/ruthenium/src/node/authentication"
-	"gitlab.com/coinsmaster/ruthenium/src/node/blockchain/mining"
+	"gitlab.com/coinsmaster/ruthenium/src/node/encryption"
 	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 	"io/ioutil"
 	"net/http"
@@ -35,7 +34,7 @@ func NewHost(mnemonic string, derivationPath string, password string, privateKey
 		host.logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
 	}
 	host.ip = ip
-	wallet, err := authentication.DecodeWallet(mnemonic, derivationPath, password, privateKey)
+	wallet, err := encryption.DecodeWallet(mnemonic, derivationPath, password, privateKey)
 	if err != nil {
 		host.logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
 	} else {
@@ -73,17 +72,17 @@ func (host *Host) PostTransactions(request *neighborhood.TransactionRequest) {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
 	}
-	publicKey, err := authentication.DecodePublicKey(*request.SenderPublicKey)
+	publicKey, err := encryption.DecodePublicKey(*request.SenderPublicKey)
 	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to decode transaction public key: %w", err).Error())
 		return
 	}
-	signature, err := authentication.DecodeSignature(*request.Signature)
+	signature, err := encryption.DecodeSignature(*request.Signature)
 	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
 		return
 	}
-	transaction := mining.NewTransactionFromRequest(request)
+	transaction := NewTransactionFromRequest(request)
 	host.blockchain.CreateTransaction(transaction, publicKey, signature)
 }
 
@@ -92,17 +91,17 @@ func (host *Host) PutTransactions(request *neighborhood.TransactionRequest) {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
 	}
-	publicKey, err := authentication.DecodePublicKey(*request.SenderPublicKey)
+	publicKey, err := encryption.DecodePublicKey(*request.SenderPublicKey)
 	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to decode transaction public key: %w", err).Error())
 		return
 	}
-	signature, err := authentication.DecodeSignature(*request.Signature)
+	signature, err := encryption.DecodeSignature(*request.Signature)
 	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
 		return
 	}
-	transaction := mining.NewTransactionFromRequest(request)
+	transaction := NewTransactionFromRequest(request)
 	host.blockchain.AddTransaction(transaction, publicKey, signature)
 }
 
