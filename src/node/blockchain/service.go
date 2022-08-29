@@ -8,6 +8,7 @@ import (
 	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 	"math"
 	"net"
+	"sort"
 	"sync"
 	"time"
 )
@@ -59,11 +60,9 @@ func NewService(address string, ip string, port uint16, miningTimer time.Duratio
 	service.logger = logger
 	var waitGroup sync.WaitGroup
 	service.waitGroup = &waitGroup
-	var transactions []*Transaction
 	now := time.Now().Unix() * time.Second.Nanoseconds()
-	transactions = append(transactions, NewTransaction(now, MiningRewardSenderAddress, address, GenesisAmount))
-	genesisBlock := NewBlock([32]byte{}, transactions)
-	service.addBlock(genesisBlock)
+	genesisTransaction := NewTransaction(now, MiningRewardSenderAddress, address, GenesisAmount)
+	service.createBlock(genesisTransaction)
 	seedsIps := []string{
 		"89.82.76.241",
 	}
@@ -107,7 +106,6 @@ func (service *Service) FindNeighbors() {
 			Port: &service.port,
 		}
 		targetRequests = append(targetRequests, hostTargetRequest)
-		var newNeighborFound bool
 		service.neighborsMutex.RLock()
 		service.neighborsByTargetMutex.RLock()
 		for _, neighbor := range neighborsByTarget {
@@ -133,13 +131,6 @@ func (service *Service) FindNeighbors() {
 					Port: &neighborPort,
 				}
 				targetRequests = append(targetRequests, targetRequest)
-				newNeighborFound = true
-				for _, oldNeighbor := range service.neighbors {
-					if oldNeighbor.Ip() == neighbor.Ip() && oldNeighbor.Port() == neighbor.Port() {
-						newNeighborFound = false
-						break
-					}
-				}
 			}
 		}
 		service.neighborsMutex.RUnlock()
@@ -147,10 +138,6 @@ func (service *Service) FindNeighbors() {
 		service.neighborsMutex.Lock()
 		service.neighbors = neighbors
 		service.neighborsMutex.Unlock()
-		// TODO handle case where a known neighbor have been disconnected for a while (consider it as a new neighbor)
-		if newNeighborFound {
-			service.ResolveConflicts()
-		}
 		for _, neighbor := range neighbors {
 			var neighborTargetRequests []neighborhood.TargetRequest
 			for _, targetRequest := range targetRequests {
@@ -271,18 +258,8 @@ func (service *Service) mine() {
 	amount := service.CalculateTotalAmount(now, service.address)
 	reward := uint64(math.Round(math.Pow(float64(amount), RewardExponent)))
 	service.logger.Info(fmt.Sprintf("amount: %d - reward: %d - total: %d", amount, reward, amount+reward))
-	transaction := NewTransaction(now, MiningRewardSenderAddress, service.address, reward)
-	service.transactionsMutex.Lock()
-	service.transactions = append(service.transactions, transaction)
-	service.transactionsMutex.Unlock()
-	service.blocksMutex.Lock()
-	block, err := service.createBlock()
-	if err != nil {
-		service.logger.Error(fmt.Errorf("failed to create newly mined block: %v", err).Error())
-		return
-	}
-	service.addBlock(block)
-	service.blocksMutex.Unlock()
+	rewardTransaction := NewTransaction(now, MiningRewardSenderAddress, service.address, reward)
+	service.createBlock(rewardTransaction)
 	service.neighborsMutex.RLock()
 	defer service.neighborsMutex.RUnlock()
 	for _, neighbor := range service.neighbors {
@@ -360,12 +337,6 @@ func (service *Service) Blocks() []*neighborhood.BlockResponse {
 	return service.blockResponses
 }
 
-func (service *Service) clearTransactions() {
-	service.transactionsMutex.Lock()
-	defer service.transactionsMutex.Unlock()
-	service.transactions = nil
-}
-
 func (service *Service) GetValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block) {
 	previousBlock := NewBlockFromResponse(neighborBlocks[0])
 	validBlocks = append(validBlocks, previousBlock)
@@ -397,53 +368,144 @@ func (service *Service) ResolveConflicts() {
 	service.waitGroup.Add(1)
 	go func() {
 		defer service.waitGroup.Done()
+
+		// Select valid blocks
+		blockResponseByNeighbor := make(map[*neighborhood.Neighbor][]*neighborhood.BlockResponse)
+		blocksByNeighbor := make(map[*neighborhood.Neighbor][]*Block)
+		var selectedNeighbors []*neighborhood.Neighbor
+		if len(service.blocks) > 1 {
+			host := neighborhood.NewNeighbor(service.ip, service.port, service.logger)
+			blockResponseByNeighbor[host] = service.blockResponses
+			blocksByNeighbor[host] = service.blocks
+			selectedNeighbors = append(selectedNeighbors, host)
+		}
 		service.neighborsMutex.RLock()
-		defer service.neighborsMutex.RUnlock()
-		var longestChainResponse []*neighborhood.BlockResponse
-		var longestChain []*Block
-		maxLength := len(service.blocks)
-		// TODO verify last blocks previous hash
 		for _, neighbor := range service.neighbors {
 			neighborBlocks, err := neighbor.GetBlocks()
-			if err == nil && len(neighborBlocks) > maxLength {
+			blockResponseByNeighbor[neighbor] = neighborBlocks
+			if err == nil && len(neighborBlocks) > 1 {
 				validBlocks := service.GetValidBlocks(neighborBlocks)
-				if len(validBlocks) > 1 {
-					maxLength = len(neighborBlocks)
-					longestChainResponse = neighborBlocks
-					longestChain = validBlocks
+				if validBlocks != nil {
+					blocksByNeighbor[neighbor] = validBlocks
+					selectedNeighbors = append(selectedNeighbors, neighbor)
 				}
 			}
 		}
-		if longestChain != nil {
-			service.blocksMutex.Lock()
-			defer service.blocksMutex.Unlock()
-			service.blockResponses = longestChainResponse
-			service.blocks = longestChain
-			service.clearTransactions()
-			service.logger.Info("conflicts resolved: blockchain replaced")
-		} else {
-			service.logger.Info("conflicts resolved: blockchain kept")
+		service.neighborsMutex.RUnlock()
+
+		// Select blockchain with consensus for the previous hash
+		var selectedBlocksResponse []*neighborhood.BlockResponse
+		var selectedBlocks []*Block
+		if selectedNeighbors != nil {
+			service.sortByBlockLength(selectedNeighbors, blocksByNeighbor)
+			for len(blocksByNeighbor) > 0 {
+				fiftyOnePercent := len(blocksByNeighbor)/2 + 1
+				shortestBlocks := blocksByNeighbor[selectedNeighbors[fiftyOnePercent-1]]
+				shortestBlocksLength := len(shortestBlocks)
+				shortestBlocksSlicePreviousHash := shortestBlocks[len(shortestBlocks)-1].PreviousHash()
+				var samePreviousHashesCount int
+				for i := 0; i < fiftyOnePercent; i++ {
+					if blocksByNeighbor[selectedNeighbors[i]][shortestBlocksLength-1].PreviousHash() == shortestBlocksSlicePreviousHash {
+						samePreviousHashesCount++
+					}
+				}
+				var rejectedNeighbors []*neighborhood.Neighbor
+				if samePreviousHashesCount == fiftyOnePercent {
+					// Reject neighbors which have added more than one block since the consensus
+					for i := 0; i < fiftyOnePercent; i++ {
+						selectedNeighbor := selectedNeighbors[i]
+						if len(blocksByNeighbor[selectedNeighbor]) > shortestBlocksLength+1 {
+							delete(blocksByNeighbor, selectedNeighbor)
+							delete(blockResponseByNeighbor, selectedNeighbor)
+							rejectedNeighbors = append(rejectedNeighbors, selectedNeighbor)
+						}
+					}
+					// Keep the longest chain (the 2 last blocks might have a hash not shared by 51% neighbors)
+					maxLength := len(service.blocks)
+					for neighbor, blocks := range blocksByNeighbor {
+						if len(blocks) > maxLength {
+							maxLength = len(blocks)
+							selectedBlocksResponse = blockResponseByNeighbor[neighbor]
+							selectedBlocks = blocks
+						}
+					}
+					break
+				}
+				if samePreviousHashesCount < fiftyOnePercent/2+1 {
+					// The previous hash of the blockchain used to compare is not shared by less than 51% neighbors, reject it and all neighbors with the same previous hash
+					for i := 0; i < fiftyOnePercent; i++ {
+						selectedNeighbor := selectedNeighbors[i]
+						if blocksByNeighbor[selectedNeighbor][shortestBlocksLength-1].PreviousHash() == shortestBlocksSlicePreviousHash {
+							delete(blocksByNeighbor, selectedNeighbor)
+							delete(blockResponseByNeighbor, selectedNeighbor)
+							rejectedNeighbors = append(rejectedNeighbors, selectedNeighbor)
+						}
+					}
+				} else {
+					// The previous hash of the blockchain used to compare is shared by at least 51% neighbors, reject other neighbors
+					for i := 0; i < fiftyOnePercent; i++ {
+						selectedNeighbor := selectedNeighbors[i]
+						if blocksByNeighbor[selectedNeighbor][shortestBlocksLength-1].PreviousHash() != shortestBlocksSlicePreviousHash {
+							delete(blocksByNeighbor, selectedNeighbor)
+							delete(blockResponseByNeighbor, selectedNeighbor)
+							rejectedNeighbors = append(rejectedNeighbors, selectedNeighbor)
+						}
+					}
+				}
+				for _, rejectedNeighbor := range rejectedNeighbors {
+					remove(selectedNeighbors, rejectedNeighbor)
+				}
+			}
+			if selectedBlocks != nil {
+				service.blocksMutex.Lock()
+				defer service.blocksMutex.Unlock()
+				service.transactionsMutex.Lock()
+				defer service.transactionsMutex.Unlock()
+				service.blockResponses = selectedBlocksResponse
+				service.blocks = selectedBlocks
+				service.transactions = nil
+			}
 		}
+		service.logger.Info("conflicts resolved")
 	}()
 }
 
-func (service *Service) addBlock(block *Block) *Block {
+func (service *Service) sortByBlockLength(selectedNeighbors []*neighborhood.Neighbor, blocksByNeighbor map[*neighborhood.Neighbor][]*Block) {
+	sort.Slice(selectedNeighbors, func(i, j int) bool {
+		return len(blocksByNeighbor[selectedNeighbors[i]]) > len(blocksByNeighbor[selectedNeighbors[j]])
+	})
+}
+
+func remove(neighbors []*neighborhood.Neighbor, removedNeighbor *neighborhood.Neighbor) []*neighborhood.Neighbor {
+	for i, neighbor := range neighbors {
+		if neighbor == removedNeighbor {
+			neighbors = append(neighbors[:i], neighbors[i+1:]...)
+			return neighbors
+		}
+	}
+	return neighbors
+}
+
+func (service *Service) createBlock(rewardTransaction *Transaction) *Block {
+	service.transactionsMutex.Lock()
+	defer service.transactionsMutex.Unlock()
+	service.blocksMutex.Lock()
+	defer service.blocksMutex.Unlock()
+	service.transactions = append(service.transactions, rewardTransaction)
+	var lastBlockHash [32]byte
+	if service.blocks != nil {
+		lastBlock := service.blocks[len(service.blocks)-1]
+		var err error
+		lastBlockHash, err = lastBlock.Hash()
+		if err != nil {
+			service.logger.Error(fmt.Errorf("failed calculate last block hash: %w", err).Error())
+			return nil
+		}
+	}
+	block := NewBlock(lastBlockHash, service.transactions)
+	service.transactions = nil
 	service.blocks = append(service.blocks, block)
 	blockResponse := block.GetResponse()
 	service.blockResponses = append(service.blockResponses, blockResponse)
-	service.clearTransactions()
 	return block
-}
-
-func (service *Service) createBlock() (block *Block, err error) {
-	lastBlock := service.blocks[len(service.blocks)-1]
-	lastBlockHash, err := lastBlock.Hash()
-	if err != nil {
-		err = fmt.Errorf("failed calculate last block hash: %w", err)
-		return
-	}
-	service.transactionsMutex.RLock()
-	defer service.transactionsMutex.RUnlock()
-	block = NewBlock(lastBlockHash, service.transactions)
-	return
 }
