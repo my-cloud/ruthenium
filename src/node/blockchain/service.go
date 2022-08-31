@@ -208,6 +208,19 @@ func (service *Service) AddTransaction(transaction *Transaction, publicKey *encr
 	service.waitGroup.Add(1)
 	go func() {
 		defer service.waitGroup.Done()
+		service.blocksMutex.RLock()
+		if len(service.blocks) > 2 {
+			for i := len(service.blocks) - 2; i < len(service.blocks)-1; i++ {
+				for _, validatedTransaction := range service.blocks[i].transactions {
+					if validatedTransaction.Equals(transaction) {
+						service.logger.Error("failed to add transaction: the transaction already is in the blockchain")
+						return
+					}
+				}
+			}
+		}
+		service.blocksMutex.RUnlock()
+
 		err := service.addTransaction(transaction, publicKey, signature)
 		if err != nil {
 			service.logger.Error(fmt.Errorf("failed to add transaction: %w", err).Error())
@@ -340,6 +353,11 @@ func (service *Service) Blocks() []*neighborhood.BlockResponse {
 func (service *Service) GetValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block) {
 	previousBlock := NewBlockFromResponse(neighborBlocks[0])
 	validBlocks = append(validBlocks, previousBlock)
+	lastNeighborBlock := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
+	if err := lastNeighborBlock.IsProofOfHumanityValid(); err != nil {
+		service.logger.Error(fmt.Errorf("failed to get valid proof of humanity: %w", err).Error())
+		return nil
+	}
 	// TODO verify mining reward timestamp
 	for i := 1; i < len(neighborBlocks); i++ {
 		currentBlock := neighborBlocks[i]
@@ -349,17 +367,11 @@ func (service *Service) GetValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 		}
 		isPreviousHashValid := currentBlock.PreviousHash == previousBlockHash
 		if !isPreviousHashValid {
+			service.logger.Info("a hash is invalid for a neighbor")
 			return nil
 		}
-		neighborBlock := NewBlockFromResponse(currentBlock)
-		if i == len(neighborBlocks)-1 {
-			if err = neighborBlock.IsProofOfHumanityValid(); err != nil {
-				service.logger.Error(fmt.Errorf("failed to get valid proof of humanity: %w", err).Error())
-				return nil
-			}
-		}
-		previousBlock = neighborBlock
-		validBlocks = append(validBlocks, neighborBlock)
+		previousBlock = lastNeighborBlock
+		validBlocks = append(validBlocks, lastNeighborBlock)
 	}
 	return validBlocks
 }
@@ -370,19 +382,19 @@ func (service *Service) ResolveConflicts() {
 		defer service.waitGroup.Done()
 
 		// Select valid blocks
-		blockResponseByNeighbor := make(map[*neighborhood.Neighbor][]*neighborhood.BlockResponse)
+		blockResponsesByNeighbor := make(map[*neighborhood.Neighbor][]*neighborhood.BlockResponse)
 		blocksByNeighbor := make(map[*neighborhood.Neighbor][]*Block)
 		var selectedNeighbors []*neighborhood.Neighbor
 		if len(service.blocks) > 1 {
 			host := neighborhood.NewNeighbor(service.ip, service.port, service.logger)
-			blockResponseByNeighbor[host] = service.blockResponses
+			blockResponsesByNeighbor[host] = service.blockResponses
 			blocksByNeighbor[host] = service.blocks
 			selectedNeighbors = append(selectedNeighbors, host)
 		}
 		service.neighborsMutex.RLock()
 		for _, neighbor := range service.neighbors {
 			neighborBlocks, err := neighbor.GetBlocks()
-			blockResponseByNeighbor[neighbor] = neighborBlocks
+			blockResponsesByNeighbor[neighbor] = neighborBlocks
 			if err == nil && len(neighborBlocks) > 1 {
 				validBlocks := service.GetValidBlocks(neighborBlocks)
 				if validBlocks != nil {
@@ -416,7 +428,7 @@ func (service *Service) ResolveConflicts() {
 						selectedNeighbor := selectedNeighbors[i]
 						if len(blocksByNeighbor[selectedNeighbor]) > shortestBlocksLength+1 {
 							delete(blocksByNeighbor, selectedNeighbor)
-							delete(blockResponseByNeighbor, selectedNeighbor)
+							delete(blockResponsesByNeighbor, selectedNeighbor)
 							rejectedNeighbors = append(rejectedNeighbors, selectedNeighbor)
 						}
 					}
@@ -425,7 +437,7 @@ func (service *Service) ResolveConflicts() {
 					for neighbor, blocks := range blocksByNeighbor {
 						if len(blocks) > maxLength {
 							maxLength = len(blocks)
-							selectedBlocksResponse = blockResponseByNeighbor[neighbor]
+							selectedBlocksResponse = blockResponsesByNeighbor[neighbor]
 							selectedBlocks = blocks
 						}
 					}
@@ -437,7 +449,7 @@ func (service *Service) ResolveConflicts() {
 						selectedNeighbor := selectedNeighbors[i]
 						if blocksByNeighbor[selectedNeighbor][shortestBlocksLength-1].PreviousHash() == shortestBlocksSlicePreviousHash {
 							delete(blocksByNeighbor, selectedNeighbor)
-							delete(blockResponseByNeighbor, selectedNeighbor)
+							delete(blockResponsesByNeighbor, selectedNeighbor)
 							rejectedNeighbors = append(rejectedNeighbors, selectedNeighbor)
 						}
 					}
@@ -447,7 +459,7 @@ func (service *Service) ResolveConflicts() {
 						selectedNeighbor := selectedNeighbors[i]
 						if blocksByNeighbor[selectedNeighbor][shortestBlocksLength-1].PreviousHash() != shortestBlocksSlicePreviousHash {
 							delete(blocksByNeighbor, selectedNeighbor)
-							delete(blockResponseByNeighbor, selectedNeighbor)
+							delete(blockResponsesByNeighbor, selectedNeighbor)
 							rejectedNeighbors = append(rejectedNeighbors, selectedNeighbor)
 						}
 					}
@@ -457,16 +469,67 @@ func (service *Service) ResolveConflicts() {
 				}
 			}
 			if selectedBlocks != nil {
-				service.blocksMutex.Lock()
-				defer service.blocksMutex.Unlock()
+				// Check if blockchain is replaced
+				var blockchainReplaced bool
+				lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()
+				penultimateNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-2].Hash()
+				if newBlockHashError != nil {
+					service.logger.Error("failed to calculate new block hash")
+				} else {
+					lastOldBlockHash, oldBlockHashError := service.blocks[len(service.blocks)-1].Hash()
+					penultimateOldBlockHash, oldBlockHashError := service.blocks[len(service.blocks)-2].Hash()
+					if oldBlockHashError != nil {
+						service.logger.Error("failed to calculate old block hash")
+						blockchainReplaced = true
+					} else {
+						blockchainReplaced = penultimateOldBlockHash != penultimateNewBlockHash || lastOldBlockHash != lastNewBlockHash
+					}
+				}
+				if blockchainReplaced {
+					service.blocksMutex.RLock()
+					if len(service.blocks) > 2 {
+						oldTransactions := service.transactions
+						// Add transactions which are not in the new blocks
+						for i := len(service.blocks) - 2; i < len(service.blocks)-1; i++ {
+							for _, invalidatedTransaction := range service.blocks[i].transactions {
+								oldTransactions = append(oldTransactions, invalidatedTransaction)
+							}
+						}
+						// Remove transactions which are in the new blocks
+						newTransactions := oldTransactions
+						for i := len(service.blocks) - 2; i < len(selectedBlocks)-1; i++ {
+							for _, validatedTransaction := range selectedBlocks[i].transactions {
+								for j, transaction := range newTransactions {
+									if validatedTransaction.Equals(transaction) {
+										newTransactions[j] = newTransactions[len(newTransactions)-1]
+										newTransactions = newTransactions[:len(newTransactions)-1]
+									}
+								}
+							}
+						}
+						service.transactionsMutex.Lock()
+						service.transactions = newTransactions
+						service.transactionsMutex.Unlock()
+					}
+					service.blocksMutex.RUnlock()
+					service.blocksMutex.Lock()
+					defer service.blocksMutex.Unlock()
+					service.blockResponses = selectedBlocksResponse
+					service.blocks = selectedBlocks
+					service.logger.Info("conflicts resolved: blockchain replaced")
+				} else {
+					service.transactionsMutex.Lock()
+					service.transactions = nil
+					service.transactionsMutex.Unlock()
+					service.logger.Info("conflicts resolved: blockchain kept")
+				}
+			} else {
 				service.transactionsMutex.Lock()
-				defer service.transactionsMutex.Unlock()
-				service.blockResponses = selectedBlocksResponse
-				service.blocks = selectedBlocks
 				service.transactions = nil
+				service.transactionsMutex.Unlock()
+				service.logger.Info("conflicts resolved: blockchain kept")
 			}
 		}
-		service.logger.Info("conflicts resolved")
 	}()
 }
 

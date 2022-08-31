@@ -87,3 +87,10 @@ func (transaction *Transaction) GetResponse() *neighborhood.TransactionResponse 
 		Value:            transaction.value,
 	}
 }
+
+func (transaction *Transaction) Equals(other *Transaction) bool {
+	return transaction.timestamp == other.timestamp &&
+		transaction.senderAddress == other.senderAddress &&
+		transaction.recipientAddress == other.recipientAddress &&
+		transaction.value == other.value
+}
