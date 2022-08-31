@@ -370,8 +370,8 @@ func (service *Service) GetValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 			service.logger.Info("a hash is invalid for a neighbor")
 			return nil
 		}
-		previousBlock = lastNeighborBlock
-		validBlocks = append(validBlocks, lastNeighborBlock)
+		previousBlock = NewBlockFromResponse(currentBlock)
+		validBlocks = append(validBlocks, previousBlock)
 	}
 	return validBlocks
 }
