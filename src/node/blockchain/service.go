@@ -366,8 +366,6 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 	if len(service.blocks) < 3 || len(neighborBlocks) < len(service.blocks) {
 		return
 	}
-	previousBlock := NewBlockFromResponse(neighborBlocks[0])
-	validBlocks = append(validBlocks, previousBlock)
 	lastNeighborBlock := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
 	if err := lastNeighborBlock.IsProofOfHumanityValid(); err != nil {
 		service.logger.Error(fmt.Errorf("failed to get valid proof of humanity: %w", err).Error())
@@ -389,16 +387,31 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 		}
 	}
 	// TODO verify mining reward timestamp
+	previousBlock := NewBlockFromResponse(neighborBlocks[0])
+	validBlocks = append(validBlocks, previousBlock)
 	for i := 1; i < len(neighborBlocks); i++ {
 		currentBlock := neighborBlocks[i]
 		previousBlockHash, err := previousBlock.Hash()
 		if err != nil {
 			service.logger.Error(fmt.Errorf("failed to calculate previous block hash: %w", err).Error())
+			return
 		}
 		isPreviousHashValid := currentBlock.PreviousHash == previousBlockHash
 		if !isPreviousHashValid {
 			service.logger.Info("a hash is invalid for a neighbor")
 			return
+		}
+		if len(service.blocks) > 3 && i == len(service.blocks)-2 {
+			var antePenultimateServiceBlockHash [32]byte
+			antePenultimateServiceBlockHash, err = service.blocks[len(service.blocks)-3].Hash()
+			if err != nil {
+				service.logger.Error(fmt.Errorf("failed to calculate antepenultimate block hash: %w", err).Error())
+				return
+			}
+			if previousBlockHash != antePenultimateServiceBlockHash {
+				service.logger.Error("blockchain replacement attack")
+				return
+			}
 		}
 
 		previousBlock = NewBlockFromResponse(currentBlock)
