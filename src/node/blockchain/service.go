@@ -23,20 +23,23 @@ const (
 	HalfLifeInDays                   = 373.59
 
 	NeighborSynchronizationTimeInSeconds = 10
+	OutboundsCount                       = 6
 )
 
 type Service struct {
-	transactions      []*Transaction
-	transactionsMutex sync.RWMutex
-	blocks            []*Block
-	blockResponses    []*neighborhood.BlockResponse
-	blocksMutex       sync.RWMutex
-	address           string
-	mineMutex         sync.Mutex
-	miningStarted     bool
-	miningStopped     bool
-	mineRequested     bool
-	miningTicker      <-chan time.Time
+	transactions          []*Transaction
+	transactionsMutex     sync.RWMutex
+	blocks                []*Block
+	blockResponses        []*neighborhood.BlockResponse
+	blocksMutex           sync.RWMutex
+	address               string
+	mineMutex             sync.Mutex
+	miningStarted         bool
+	miningStopped         bool
+	mineRequested         bool
+	miningTimer           time.Duration
+	miningTicker          *time.Ticker
+	hasMiningTimerChanged bool
 
 	ip        string
 	port      uint16
@@ -53,7 +56,8 @@ type Service struct {
 
 func NewService(address string, ip string, port uint16, miningTimer time.Duration, logger *log.Logger) *Service {
 	service := new(Service)
-	service.miningTicker = time.Tick(miningTimer)
+	service.miningTimer = miningTimer
+	service.miningTicker = time.NewTicker(miningTimer)
 	service.address = address
 	service.ip = ip
 	service.port = port
@@ -258,7 +262,11 @@ func (service *Service) Mine() {
 	service.waitGroup.Add(1)
 	go func() {
 		defer service.waitGroup.Done()
-		<-service.miningTicker
+		<-service.miningTicker.C
+		if service.hasMiningTimerChanged {
+			service.miningTicker.Reset(service.miningTimer)
+			service.hasMiningTimerChanged = false
+		}
 		service.mine()
 		service.mineRequested = false
 	}()
@@ -292,7 +300,11 @@ func (service *Service) StartMining() {
 
 func (service *Service) mining() {
 	for {
-		<-service.miningTicker
+		<-service.miningTicker.C
+		if service.hasMiningTimerChanged {
+			service.miningTicker.Reset(service.miningTimer)
+			service.hasMiningTimerChanged = false
+		}
 		if service.miningStopped {
 			break
 		}
@@ -358,6 +370,22 @@ func (service *Service) GetValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 		service.logger.Error(fmt.Errorf("failed to get valid proof of humanity: %w", err).Error())
 		return nil
 	}
+	penultimateNeighborBlock := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-2])
+	for _, block := range []*Block{lastNeighborBlock, penultimateNeighborBlock} {
+		var rewarded bool
+		for _, transaction := range block.Transactions() {
+			if transaction.SenderAddress() == MiningRewardSenderAddress {
+				// Check that there is only one reward by block
+				// FIXME check the reward amount
+				if rewarded {
+					service.logger.Error("multiple rewards attempt for the same block")
+					return nil
+				}
+				rewarded = true
+			}
+		}
+	}
+	// Check that a same node is not rewarded two times in a row
 	// TODO verify mining reward timestamp
 	for i := 1; i < len(neighborBlocks); i++ {
 		currentBlock := neighborBlocks[i]
@@ -395,7 +423,7 @@ func (service *Service) ResolveConflicts() {
 		for _, neighbor := range service.neighbors {
 			neighborBlocks, err := neighbor.GetBlocks()
 			blockResponsesByNeighbor[neighbor] = neighborBlocks
-			if err == nil && len(neighborBlocks) > 1 {
+			if err == nil && len(neighborBlocks) > 2 {
 				validBlocks := service.GetValidBlocks(neighborBlocks)
 				if validBlocks != nil {
 					blocksByNeighbor[neighbor] = validBlocks
@@ -498,9 +526,22 @@ func (service *Service) ResolveConflicts() {
 						// Add transactions which are not in the new blocks but the rewards
 						for i := len(service.blocks) - 2; i < len(service.blocks); i++ {
 							for _, invalidatedTransaction := range service.blocks[i].transactions {
-								if invalidatedTransaction.senderAddress != MiningRewardSenderAddress {
+								if invalidatedTransaction.SenderAddress() != MiningRewardSenderAddress {
 									oldTransactions = append(oldTransactions, invalidatedTransaction)
 								}
+							}
+						}
+						// Reset mining ticker if the host was the last rewarded
+						lastBlock := service.blocks[len(service.blocks)-1]
+						// TODO avoid escaping error even if the hash already have been calculated and should not return error
+						lastSelectedBlockHash, _ := selectedBlocks[len(service.blocks)-1].Hash()
+						lastBlockHash, _ := lastBlock.Hash()
+						if len(lastBlock.Transactions()) > 0 && lastSelectedBlockHash != lastBlockHash {
+							lastTransaction := lastBlock.Transactions()[len(lastBlock.Transactions())-1]
+							if lastTransaction.SenderAddress() == MiningRewardSenderAddress && lastTransaction.RecipientAddress() == service.address {
+								service.miningTicker.Reset(service.miningTimer / OutboundsCount)
+								service.hasMiningTimerChanged = true
+								service.logger.Info("mining timer changed")
 							}
 						}
 						// Remove transactions which are in the new blocks
