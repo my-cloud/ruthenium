@@ -210,7 +210,7 @@ func (service *Service) AddTransaction(transaction *Transaction, publicKey *encr
 		defer service.waitGroup.Done()
 		service.blocksMutex.RLock()
 		if len(service.blocks) > 2 {
-			for i := len(service.blocks) - 2; i < len(service.blocks)-1; i++ {
+			for i := len(service.blocks) - 2; i < len(service.blocks); i++ {
 				for _, validatedTransaction := range service.blocks[i].transactions {
 					if validatedTransaction.Equals(transaction) {
 						service.logger.Error("failed to add transaction: the transaction already is in the blockchain")
@@ -471,33 +471,41 @@ func (service *Service) ResolveConflicts() {
 			if selectedBlocks != nil {
 				// Check if blockchain is replaced
 				var blockchainReplaced bool
-				lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()
-				penultimateNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-2].Hash()
-				if newBlockHashError != nil {
-					service.logger.Error("failed to calculate new block hash")
-				} else {
-					lastOldBlockHash, oldBlockHashError := service.blocks[len(service.blocks)-1].Hash()
-					penultimateOldBlockHash, oldBlockHashError := service.blocks[len(service.blocks)-2].Hash()
-					if oldBlockHashError != nil {
-						service.logger.Error("failed to calculate old block hash")
+				if len(selectedBlocks) >= 2 {
+					if len(service.blocks) < 2 {
 						blockchainReplaced = true
 					} else {
-						blockchainReplaced = penultimateOldBlockHash != penultimateNewBlockHash || lastOldBlockHash != lastNewBlockHash
+						lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()
+						penultimateNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-2].Hash()
+						if newBlockHashError != nil {
+							service.logger.Error("failed to calculate new block hash")
+						} else {
+							lastOldBlockHash, oldBlockHashError := service.blocks[len(service.blocks)-1].Hash()
+							penultimateOldBlockHash, oldBlockHashError := service.blocks[len(service.blocks)-2].Hash()
+							if oldBlockHashError != nil {
+								service.logger.Error("failed to calculate old block hash")
+								blockchainReplaced = true
+							} else {
+								blockchainReplaced = penultimateOldBlockHash != penultimateNewBlockHash || lastOldBlockHash != lastNewBlockHash
+							}
+						}
 					}
 				}
 				if blockchainReplaced {
 					service.blocksMutex.RLock()
 					if len(service.blocks) > 2 {
 						oldTransactions := service.transactions
-						// Add transactions which are not in the new blocks
-						for i := len(service.blocks) - 2; i < len(service.blocks)-1; i++ {
+						// Add transactions which are not in the new blocks but the rewards
+						for i := len(service.blocks) - 2; i < len(service.blocks); i++ {
 							for _, invalidatedTransaction := range service.blocks[i].transactions {
-								oldTransactions = append(oldTransactions, invalidatedTransaction)
+								if invalidatedTransaction.senderAddress != MiningRewardSenderAddress {
+									oldTransactions = append(oldTransactions, invalidatedTransaction)
+								}
 							}
 						}
 						// Remove transactions which are in the new blocks
 						newTransactions := oldTransactions
-						for i := len(service.blocks) - 2; i < len(selectedBlocks)-1; i++ {
+						for i := len(service.blocks) - 2; i < len(selectedBlocks); i++ {
 							for _, validatedTransaction := range selectedBlocks[i].transactions {
 								for j, transaction := range newTransactions {
 									if validatedTransaction.Equals(transaction) {
