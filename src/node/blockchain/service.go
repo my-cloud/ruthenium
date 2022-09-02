@@ -362,24 +362,27 @@ func (service *Service) Blocks() []*neighborhood.BlockResponse {
 	return service.blockResponses
 }
 
-func (service *Service) GetValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block) {
+func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block) {
+	if len(service.blocks) < 3 || len(neighborBlocks) < len(service.blocks) {
+		return
+	}
 	previousBlock := NewBlockFromResponse(neighborBlocks[0])
 	validBlocks = append(validBlocks, previousBlock)
 	lastNeighborBlock := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
 	if err := lastNeighborBlock.IsProofOfHumanityValid(); err != nil {
 		service.logger.Error(fmt.Errorf("failed to get valid proof of humanity: %w", err).Error())
-		return nil
+		return
 	}
-	penultimateNeighborBlock := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-2])
-	for _, block := range []*Block{lastNeighborBlock, penultimateNeighborBlock} {
+	newBlocks := neighborBlocks[len(service.blockResponses)-2:]
+	for _, block := range newBlocks {
 		var rewarded bool
-		for _, transaction := range block.Transactions() {
-			if transaction.SenderAddress() == MiningRewardSenderAddress {
+		for _, transaction := range block.Transactions {
+			if transaction.SenderAddress == MiningRewardSenderAddress {
 				// Check that there is only one reward by block
 				// FIXME check the reward amount
 				if rewarded {
 					service.logger.Error("multiple rewards attempt for the same block")
-					return nil
+					return
 				}
 				rewarded = true
 			}
@@ -395,12 +398,13 @@ func (service *Service) GetValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 		isPreviousHashValid := currentBlock.PreviousHash == previousBlockHash
 		if !isPreviousHashValid {
 			service.logger.Info("a hash is invalid for a neighbor")
-			return nil
+			return
 		}
+
 		previousBlock = NewBlockFromResponse(currentBlock)
 		validBlocks = append(validBlocks, previousBlock)
 	}
-	return validBlocks
+	return
 }
 
 func (service *Service) ResolveConflicts() {
@@ -422,8 +426,8 @@ func (service *Service) ResolveConflicts() {
 		for _, neighbor := range service.neighbors {
 			neighborBlocks, err := neighbor.GetBlocks()
 			blockResponsesByNeighbor[neighbor] = neighborBlocks
-			if err == nil && len(neighborBlocks) > 2 {
-				validBlocks := service.GetValidBlocks(neighborBlocks)
+			if err == nil {
+				validBlocks := service.getValidBlocks(neighborBlocks)
 				if validBlocks != nil {
 					blocksByNeighbor[neighbor] = validBlocks
 					selectedNeighbors = append(selectedNeighbors, neighbor)
