@@ -385,7 +385,6 @@ func (service *Service) GetValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 			}
 		}
 	}
-	// Check that a same node is not rewarded two times in a row
 	// TODO verify mining reward timestamp
 	for i := 1; i < len(neighborBlocks); i++ {
 		currentBlock := neighborBlocks[i]
@@ -449,18 +448,8 @@ func (service *Service) ResolveConflicts() {
 						samePreviousHashesCount++
 					}
 				}
-				var rejectedNeighbors []*neighborhood.Neighbor
 				if samePreviousHashesCount == fiftyOnePercent {
-					// Reject neighbors which have added more than one block since the consensus
-					for i := 0; i < fiftyOnePercent; i++ {
-						selectedNeighbor := selectedNeighbors[i]
-						if len(blocksByNeighbor[selectedNeighbor]) > shortestBlocksLength+1 {
-							delete(blocksByNeighbor, selectedNeighbor)
-							delete(blockResponsesByNeighbor, selectedNeighbor)
-							rejectedNeighbors = append(rejectedNeighbors, selectedNeighbor)
-						}
-					}
-					// Keep the longest chain (the 2 last blocks might have a hash not shared by 51% neighbors)
+					// Keep the longest chain (the 2 last blocks might be replaced by blocks that have a hash not shared by 51% neighbors)
 					maxLength := len(service.blocks)
 					for neighbor, blocks := range blocksByNeighbor {
 						if len(blocks) > maxLength {
@@ -471,6 +460,7 @@ func (service *Service) ResolveConflicts() {
 					}
 					break
 				}
+				var rejectedNeighbors []*neighborhood.Neighbor
 				if samePreviousHashesCount < fiftyOnePercent/2+1 {
 					// The previous hash of the blockchain used to compare is not shared by less than 51% neighbors, reject it and all neighbors with the same previous hash
 					for i := 0; i < fiftyOnePercent; i++ {
