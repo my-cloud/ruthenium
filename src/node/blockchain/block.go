@@ -19,7 +19,7 @@ type Block struct {
 
 func NewBlock(previousHash [32]byte, transactions []*Transaction) *Block {
 	return &Block{
-		time.Now().UnixNano(),
+		time.Now().Unix() * time.Second.Nanoseconds(),
 		previousHash,
 		transactions,
 	}
@@ -48,7 +48,7 @@ func (block *Block) Hash() (hash [32]byte, err error) {
 }
 
 func (block *Block) IsProofOfHumanityValid() (err error) {
-	proofOfHumanity := block.MinerAddress()
+	proofOfHumanity := block.minerAddress()
 	resp, err := http.Get("https://api.poh.dev/profiles/" + proofOfHumanity)
 	if err != nil {
 		err = fmt.Errorf("failed to get proof of humanity: %w", err)
@@ -73,6 +73,10 @@ func (block *Block) IsProofOfHumanityValid() (err error) {
 	return
 }
 
+func (block *Block) Timestamp() int64 {
+	return block.timestamp
+}
+
 func (block *Block) PreviousHash() [32]byte {
 	return block.previousHash
 }
@@ -81,12 +85,8 @@ func (block *Block) Transactions() []*Transaction {
 	return block.transactions
 }
 
-func (block *Block) MinerAddress() string {
+func (block *Block) minerAddress() string {
 	return block.lastTransaction().RecipientAddress()
-}
-
-func (block *Block) MinerTimestamp() int64 {
-	return block.lastTransaction().Timestamp()
 }
 
 func (block *Block) lastTransaction() *Transaction {
