@@ -626,8 +626,8 @@ func (service *Service) ResolveConflicts() {
 						newTransactions := oldTransactions
 						for i := len(service.blocks) - 2; i < len(selectedBlocks); i++ {
 							for _, validatedTransaction := range selectedBlocks[i].transactions {
-								for j, transaction := range newTransactions {
-									if validatedTransaction.Equals(transaction) {
+								for j := 0; j < len(newTransactions); j++ {
+									if validatedTransaction.Equals(newTransactions[j]) {
 										newTransactions[j] = newTransactions[len(newTransactions)-1]
 										newTransactions = newTransactions[:len(newTransactions)-1]
 									}
