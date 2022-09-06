@@ -212,6 +212,7 @@ func (host *Host) startServer() {
 		}
 		return
 	})
+	host.logger.Warn("Running...")
 	err = server.Serve()
 	if err != nil {
 		host.logger.Fatal(fmt.Errorf("failed to start server: %w", err).Error())
