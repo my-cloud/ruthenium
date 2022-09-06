@@ -630,6 +630,7 @@ func (service *Service) ResolveConflicts() {
 									if validatedTransaction.Equals(newTransactions[j]) {
 										newTransactions[j] = newTransactions[len(newTransactions)-1]
 										newTransactions = newTransactions[:len(newTransactions)-1]
+										j--
 									}
 								}
 							}
@@ -667,9 +668,10 @@ func (service *Service) sortByBlockLength(selectedNeighbors []*neighborhood.Neig
 }
 
 func remove(neighbors []*neighborhood.Neighbor, removedNeighbor *neighborhood.Neighbor) []*neighborhood.Neighbor {
-	for i, neighbor := range neighbors {
-		if neighbor == removedNeighbor {
+	for i := 0; i < len(neighbors); i++ {
+		if neighbors[i] == removedNeighbor {
 			neighbors = append(neighbors[:i], neighbors[i+1:]...)
+			i--
 			return neighbors
 		}
 	}
