@@ -343,6 +343,7 @@ func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainA
 	var lastTimestamp int64
 	var isValidatorKnown bool
 	var totalReward uint64
+	var rewardRecipientAddresses []string
 	for _, block := range blocks {
 		for _, transaction := range block.Transactions() {
 			value := transaction.Value()
@@ -353,13 +354,19 @@ func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainA
 				totalAmount += value
 				lastTimestamp = transaction.Timestamp()
 				if transaction.SenderAddress() == MiningRewardSenderAddress {
-					if isValidatorKnown {
-						totalReward = 0
-					} else {
+					totalReward = 0
+					if !isValidatorKnown {
 						isValidatorKnown = true
+						rewardRecipientAddresses = nil
 					}
 				}
 			} else if transaction.SenderAddress() == MiningRewardSenderAddress {
+				for _, rewardRecipientAddress := range rewardRecipientAddresses {
+					if transaction.RecipientAddress() == rewardRecipientAddress {
+						isValidatorKnown = false
+					}
+				}
+				rewardRecipientAddresses = append(rewardRecipientAddresses, transaction.RecipientAddress())
 				if isValidatorKnown {
 					reward := calculateReward(totalAmount)
 					totalReward = service.decay(lastTimestamp, transaction.Timestamp(), totalReward) + reward
