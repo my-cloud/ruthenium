@@ -1,9 +1,9 @@
-package mining
+package blockchain
 
 import (
 	"encoding/json"
 	"fmt"
-	"gitlab.com/coinsmaster/ruthenium/src/node/authentication"
+	"gitlab.com/coinsmaster/ruthenium/src/node/encryption"
 	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 )
 
@@ -71,12 +71,12 @@ func (transaction *Transaction) Value() uint64 {
 	return transaction.value
 }
 
-func (transaction *Transaction) Sign(privateKey *authentication.PrivateKey) (signature *authentication.Signature, err error) {
+func (transaction *Transaction) Sign(privateKey *encryption.PrivateKey) (signature *encryption.Signature, err error) {
 	marshaledTransaction, err := json.Marshal(transaction)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal transaction: %w", err)
 	}
-	return authentication.NewSignature(marshaledTransaction, privateKey)
+	return encryption.NewSignature(marshaledTransaction, privateKey)
 }
 
 func (transaction *Transaction) GetResponse() *neighborhood.TransactionResponse {
@@ -86,4 +86,11 @@ func (transaction *Transaction) GetResponse() *neighborhood.TransactionResponse 
 		RecipientAddress: transaction.recipientAddress,
 		Value:            transaction.value,
 	}
+}
+
+func (transaction *Transaction) Equals(other *Transaction) bool {
+	return transaction.timestamp == other.timestamp &&
+		transaction.senderAddress == other.senderAddress &&
+		transaction.recipientAddress == other.recipientAddress &&
+		transaction.value == other.value
 }
