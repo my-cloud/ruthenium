@@ -17,7 +17,6 @@ const (
 	DefaultPort = 8106
 
 	MiningRewardSenderAddress        = "MINING REWARD SENDER ADDRESS"
-	MiningTimerInSeconds             = 60
 	ParticlesCount                   = 100000000
 	GenesisAmount             uint64 = 100000 * ParticlesCount
 	RewardExponent                   = 1 / 1.828393264
@@ -37,6 +36,7 @@ type Service struct {
 	miningStarted     bool
 	mineRequested     bool
 	miningTicker      *time.Ticker
+	miningTimer       time.Duration
 
 	ip        string
 	port      uint16
@@ -51,11 +51,13 @@ type Service struct {
 	lambda float64
 }
 
-func NewService(address string, ip string, port uint16, logger *log.Logger) *Service {
+func NewService(address string, ip string, port uint16, miningTimer time.Duration, logger *log.Logger) *Service {
 	service := new(Service)
 	service.address = address
 	service.ip = ip
 	service.port = port
+	service.miningTimer = miningTimer
+	service.miningTicker = time.NewTicker(service.miningTimer)
 	service.logger = logger
 	var waitGroup sync.WaitGroup
 	service.waitGroup = &waitGroup
@@ -81,9 +83,7 @@ func (service *Service) Run() {
 	service.StartNeighborsSynchronization()
 	go func() {
 		now := time.Now()
-		miningTimer := MiningTimerInSeconds * time.Second
-		service.miningTicker = time.NewTicker(miningTimer)
-		parsedStartDate := now.Truncate(miningTimer).Add(miningTimer)
+		parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
 		deadline := parsedStartDate.Sub(now)
 		service.miningTicker.Reset(deadline)
 		<-service.miningTicker.C
@@ -265,8 +265,7 @@ func (service *Service) Mine() {
 		return
 	}
 	now := time.Now()
-	miningTimer := MiningTimerInSeconds * time.Second
-	parsedStartDate := now.Truncate(miningTimer).Add(miningTimer)
+	parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
 	deadline := parsedStartDate.Sub(now)
 	service.miningTicker.Reset(deadline)
 	service.mineRequested = true
@@ -278,8 +277,7 @@ func (service *Service) Mine() {
 		service.mineRequested = false
 		if service.miningStarted {
 			newNow := time.Now()
-			newMiningTimer := MiningTimerInSeconds * time.Second
-			newParsedStartDate := newNow.Truncate(newMiningTimer).Add(newMiningTimer)
+			newParsedStartDate := newNow.Truncate(service.miningTimer).Add(service.miningTimer)
 			newDeadline := newParsedStartDate.Sub(newNow)
 			service.miningTicker.Reset(newDeadline)
 		} else {
@@ -314,8 +312,7 @@ func (service *Service) StartMining() {
 
 func (service *Service) mining() {
 	now := time.Now()
-	miningTimer := MiningTimerInSeconds * time.Second
-	parsedStartDate := now.Truncate(miningTimer).Add(miningTimer)
+	parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
 	deadline := parsedStartDate.Sub(now)
 	service.miningTicker.Reset(deadline)
 	miningTickerReset := true
@@ -326,7 +323,7 @@ func (service *Service) mining() {
 			return
 		}
 		if miningTickerReset {
-			service.miningTicker.Reset(miningTimer)
+			service.miningTicker.Reset(service.miningTimer)
 			miningTickerReset = false
 		}
 		service.mine()
@@ -491,9 +488,8 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 					rewarded = true
 					currentBlockTimestamp := currentBlock.Timestamp()
 					previousBlockTimestamp := previousBlock.Timestamp()
-					miningTimer := int64(MiningTimerInSeconds * time.Second)
 					now := time.Now().UnixNano()
-					if currentBlockTimestamp < previousBlockTimestamp+miningTimer || currentBlockTimestamp > now {
+					if currentBlockTimestamp < previousBlockTimestamp+int64(service.miningTimer) || currentBlockTimestamp > now {
 						service.logger.Error("reward timestamp is invalid")
 						return
 					}

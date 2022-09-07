@@ -21,9 +21,14 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	walletBAddress := walletB.Address()
 	logger := log.NewLogger(log.Fatal)
 	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, logger)
+	wg := service.WaitGroup()
+	var amount1 uint64 = 40 * blockchain.ParticlesCount
+	for service.CalculateTotalAmount(0, minerWallet.Address()) < amount1 {
+		service.Mine()
+		wg.Wait()
+	}
 
 	// Act
-	var amount1 uint64 = 40 * blockchain.ParticlesCount
 	transaction1 := blockchain.NewTransaction(0, minerWalletAddress, walletAAddress, amount1)
 	signature1, _ := transaction1.Sign(minerWallet.PrivateKey())
 	addTransaction(service, minerWallet.PublicKey(), transaction1, signature1)
@@ -52,9 +57,14 @@ func Test_AddTransaction_Allowed_TransactionNotAdded(t *testing.T) {
 	walletBAddress := walletB.Address()
 	logger := log.NewLogger(log.Fatal)
 	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, logger)
+	wg := service.WaitGroup()
+	var amount1 uint64 = 40 * blockchain.ParticlesCount
+	for service.CalculateTotalAmount(0, minerWallet.Address()) < amount1 {
+		service.Mine()
+		wg.Wait()
+	}
 
 	// Act
-	var amount1 uint64 = 40 * blockchain.ParticlesCount
 	transaction1 := blockchain.NewTransaction(0, minerWalletAddress, walletAAddress, amount1)
 	signature1, _ := transaction1.Sign(minerWallet.PrivateKey())
 	addTransaction(service, minerWallet.PublicKey(), transaction1, signature1)
