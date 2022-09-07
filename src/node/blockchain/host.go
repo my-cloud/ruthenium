@@ -137,6 +137,8 @@ func (host *Host) Consensus() {
 
 func (host *Host) Run() {
 	host.blockchain.Run()
+	host.blockchain.WaitGroup().Wait()
+	host.blockchain.StartMining()
 	host.startServer()
 }
 

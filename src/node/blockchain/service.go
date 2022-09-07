@@ -80,8 +80,9 @@ func (service *Service) WaitGroup() *sync.WaitGroup {
 }
 
 func (service *Service) Run() {
-	service.StartNeighborsSynchronization()
+	service.waitGroup.Add(1)
 	go func() {
+		defer service.waitGroup.Done()
 		now := time.Now()
 		parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
 		deadline := parsedStartDate.Sub(now)
@@ -89,15 +90,8 @@ func (service *Service) Run() {
 		<-service.miningTicker.C
 		genesisTransaction := NewTransaction(parsedStartDate.Unix()*time.Second.Nanoseconds(), MiningRewardSenderAddress, service.address, GenesisAmount)
 		service.addBlock(genesisTransaction)
-		if !service.miningStarted {
-			service.miningStarted = true
-			service.mining()
-		}
 	}()
-}
-
-func (service *Service) SynchronizeNeighbors() {
-	service.FindNeighbors()
+	service.StartNeighborsSynchronization()
 }
 
 func (service *Service) StartNeighborsSynchronization() {
@@ -105,10 +99,8 @@ func (service *Service) StartNeighborsSynchronization() {
 	_ = time.AfterFunc(time.Second*NeighborSynchronizationTimeInSeconds, service.StartNeighborsSynchronization)
 }
 
-func (service *Service) FindNeighbors() {
-	service.waitGroup.Add(1)
+func (service *Service) SynchronizeNeighbors() {
 	go func(neighborsByTarget map[string]*neighborhood.Neighbor) {
-		defer service.waitGroup.Done()
 		var neighbors []*neighborhood.Neighbor
 		var targetRequests []neighborhood.TargetRequest
 		hostTargetRequest := neighborhood.TargetRequest{
