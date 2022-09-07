@@ -35,7 +35,6 @@ type Service struct {
 	address           string
 	mineMutex         sync.Mutex
 	miningStarted     bool
-	miningStopped     bool
 	mineRequested     bool
 	miningTicker      *time.Ticker
 
@@ -80,15 +79,21 @@ func (service *Service) WaitGroup() *sync.WaitGroup {
 
 func (service *Service) Run() {
 	service.StartNeighborsSynchronization()
-	now := time.Now()
-	miningTimer := MiningTimerInSeconds * time.Second
-	parsedStartDate := now.Truncate(miningTimer).Add(miningTimer)
-	deadline := parsedStartDate.Sub(now)
-	time.Sleep(deadline)
-	service.miningTicker = time.NewTicker(miningTimer)
-	genesisTransaction := NewTransaction(now.Unix()*time.Second.Nanoseconds(), MiningRewardSenderAddress, service.address, GenesisAmount)
-	service.addBlock(genesisTransaction)
-	service.StartMining()
+	go func() {
+		now := time.Now()
+		miningTimer := MiningTimerInSeconds * time.Second
+		service.miningTicker = time.NewTicker(miningTimer)
+		parsedStartDate := now.Truncate(miningTimer).Add(miningTimer)
+		deadline := parsedStartDate.Sub(now)
+		service.miningTicker.Reset(deadline)
+		<-service.miningTicker.C
+		genesisTransaction := NewTransaction(parsedStartDate.Unix()*time.Second.Nanoseconds(), MiningRewardSenderAddress, service.address, GenesisAmount)
+		service.addBlock(genesisTransaction)
+		if !service.miningStarted {
+			service.miningStarted = true
+			service.mining()
+		}
+	}()
 }
 
 func (service *Service) SynchronizeNeighbors() {
@@ -259,6 +264,11 @@ func (service *Service) Mine() {
 	if service.miningStarted || service.mineRequested {
 		return
 	}
+	now := time.Now()
+	miningTimer := MiningTimerInSeconds * time.Second
+	parsedStartDate := now.Truncate(miningTimer).Add(miningTimer)
+	deadline := parsedStartDate.Sub(now)
+	service.miningTicker.Reset(deadline)
 	service.mineRequested = true
 	service.waitGroup.Add(1)
 	go func() {
@@ -266,6 +276,15 @@ func (service *Service) Mine() {
 		<-service.miningTicker.C
 		service.mine()
 		service.mineRequested = false
+		if service.miningStarted {
+			newNow := time.Now()
+			newMiningTimer := MiningTimerInSeconds * time.Second
+			newParsedStartDate := newNow.Truncate(newMiningTimer).Add(newMiningTimer)
+			newDeadline := newParsedStartDate.Sub(newNow)
+			service.miningTicker.Reset(newDeadline)
+		} else {
+			service.miningTicker.Stop()
+		}
 	}()
 }
 
@@ -289,16 +308,26 @@ func (service *Service) mine() {
 func (service *Service) StartMining() {
 	if !service.miningStarted {
 		service.miningStarted = true
-		service.miningStopped = false
 		go service.mining()
 	}
 }
 
 func (service *Service) mining() {
+	now := time.Now()
+	miningTimer := MiningTimerInSeconds * time.Second
+	parsedStartDate := now.Truncate(miningTimer).Add(miningTimer)
+	deadline := parsedStartDate.Sub(now)
+	service.miningTicker.Reset(deadline)
+	miningTickerReset := true
 	for {
 		<-service.miningTicker.C
-		if service.miningStopped {
-			break
+		if !service.miningStarted {
+			service.miningTicker.Stop()
+			return
+		}
+		if miningTickerReset {
+			service.miningTicker.Reset(miningTimer)
+			miningTickerReset = false
 		}
 		service.mine()
 	}
@@ -306,7 +335,7 @@ func (service *Service) mining() {
 
 func (service *Service) StopMining() {
 	service.miningStarted = false
-	service.miningStopped = true
+	service.miningTicker.Reset(time.Nanosecond)
 }
 
 func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64 {
