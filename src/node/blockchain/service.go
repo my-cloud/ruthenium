@@ -90,16 +90,17 @@ func (service *Service) Run() {
 		service.logger.Info("the blockchain is now up to date")
 		service.AddGenesisBlock()
 		service.StartMining()
+		service.StartConflictsResolution()
 	}()
 }
 
 func (service *Service) AddGenesisBlock() {
+	now := time.Now()
+	parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
+	deadline := parsedStartDate.Sub(now)
+	service.miningTicker.Reset(deadline)
+	<-service.miningTicker.C
 	if service.blocks == nil {
-		now := time.Now()
-		parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
-		deadline := parsedStartDate.Sub(now)
-		service.miningTicker.Reset(deadline)
-		<-service.miningTicker.C
 		genesisTransaction := NewTransaction(parsedStartDate.Unix()*time.Second.Nanoseconds(), MiningRewardSenderAddress, service.address, GenesisAmount)
 		service.addBlock(genesisTransaction)
 		service.logger.Debug("genesis block added")
@@ -300,17 +301,6 @@ func (service *Service) mine() {
 	service.logger.Debug(fmt.Sprintf("reward: %d", reward))
 	rewardTransaction := NewTransaction(now, MiningRewardSenderAddress, service.address, reward)
 	service.addBlock(rewardTransaction)
-	var consensusTimer time.Duration
-	if service.miningTimer/6 > 0 {
-		consensusTimer = service.miningTimer / 6
-	} else {
-		consensusTimer = time.Nanosecond
-	}
-	service.consensusTicker = time.NewTicker(consensusTimer)
-	for i := 0; i < 5; i++ {
-		<-service.consensusTicker.C
-		service.ResolveConflicts()
-	}
 }
 
 func (service *Service) StartMining() {
@@ -516,6 +506,21 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 		previousBlock = currentBlock
 	}
 	return
+}
+
+func (service *Service) StartConflictsResolution() {
+	consensusTimer := service.miningTimer / 6
+	service.consensusTicker = time.NewTicker(consensusTimer)
+	go func() {
+		for {
+			for i := 0; i < 6; i++ {
+				if i > 0 || !service.miningStarted {
+					service.ResolveConflicts()
+				}
+				<-service.consensusTicker.C
+			}
+		}
+	}()
 }
 
 func (service *Service) ResolveConflicts() {
