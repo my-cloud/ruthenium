@@ -1,39 +1,27 @@
-package mining
+package blockchain
 
 import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"time"
 )
 
 type Block struct {
 	timestamp    int64
-	nonce        int
 	previousHash [32]byte
 	transactions []*Transaction
 }
 
-func NewBlock(previousHash [32]byte, transactions []*Transaction) (block *Block, err error) {
-	var nonce int
-	for {
-		block = &Block{
-			time.Now().UnixNano(),
-			nonce,
-			previousHash,
-			transactions,
-		}
-		var pow *ProofOfWork
-		if pow, err = block.ProofOfWork(); err != nil {
-			err = fmt.Errorf("failed to get proof of work: %w", err)
-			return
-		}
-		if pow.IsInValid() {
-			nonce++
-		} else {
-			return
-		}
+func NewBlock(previousHash [32]byte, transactions []*Transaction) *Block {
+	return &Block{
+		time.Now().Unix() * time.Second.Nanoseconds(),
+		previousHash,
+		transactions,
 	}
 }
 
@@ -44,7 +32,6 @@ func NewBlockFromResponse(block *neighborhood.BlockResponse) *Block {
 	}
 	return &Block{
 		block.Timestamp,
-		block.Nonce,
 		block.PreviousHash,
 		transactions,
 	}
@@ -60,37 +47,59 @@ func (block *Block) Hash() (hash [32]byte, err error) {
 	return
 }
 
-func (block *Block) ProofOfWork() (pow *ProofOfWork, err error) {
-	hash, err := block.Hash()
+func (block *Block) IsProofOfHumanityValid() (err error) {
+	proofOfHumanity := block.minerAddress()
+	resp, err := http.Get("https://api.poh.dev/profiles/" + proofOfHumanity)
 	if err != nil {
-		err = fmt.Errorf("failed to calculate block hash: %w", err)
+		err = fmt.Errorf("failed to get proof of humanity: %w", err)
 		return
 	}
-	pow = NewProofOfWork(hash)
+	defer func() {
+		if bodyCloseError := resp.Body.Close(); bodyCloseError != nil {
+			// TODO extract this code or log it properly
+			fmt.Println(fmt.Errorf("failed to close proof of humanity request body: %w", bodyCloseError).Error())
+		}
+	}()
+	var body []byte
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		err = fmt.Errorf("failed to read proof of humanity response: %w", err)
+		return
+	}
+	if !strings.Contains(string(body), "\"registered\":true") {
+		err = fmt.Errorf("the miner is currently not registered as a real human: %w", err)
+		return
+	}
 	return
+}
+
+func (block *Block) Timestamp() int64 {
+	return block.timestamp
 }
 
 func (block *Block) PreviousHash() [32]byte {
 	return block.previousHash
 }
 
-func (block *Block) Nonce() int {
-	return block.nonce
-}
-
 func (block *Block) Transactions() []*Transaction {
 	return block.transactions
+}
+
+func (block *Block) minerAddress() string {
+	return block.lastTransaction().RecipientAddress()
+}
+
+func (block *Block) lastTransaction() *Transaction {
+	return block.transactions[len(block.transactions)-1]
 }
 
 func (block *Block) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Timestamp    int64          `json:"timestamp"`
-		Nonce        int            `json:"nonce"`
 		PreviousHash string         `json:"previous_hash"`
 		Transactions []*Transaction `json:"transactions"`
 	}{
 		Timestamp:    block.timestamp,
-		Nonce:        block.nonce,
 		PreviousHash: fmt.Sprintf("%x", block.previousHash),
 		Transactions: block.transactions,
 	})
@@ -103,7 +112,6 @@ func (block *Block) GetResponse() *neighborhood.BlockResponse {
 	}
 	return &neighborhood.BlockResponse{
 		Timestamp:    block.timestamp,
-		Nonce:        block.nonce,
 		PreviousHash: block.previousHash,
 		Transactions: transactions,
 	}
