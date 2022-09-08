@@ -514,7 +514,7 @@ func (service *Service) StartConflictsResolution() {
 	go func() {
 		for {
 			for i := 0; i < 6; i++ {
-				if i > 0 || !service.miningStarted {
+				if i > 0 || !service.miningStarted || !service.mineRequested {
 					service.ResolveConflicts()
 				}
 				<-service.consensusTicker.C
