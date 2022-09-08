@@ -22,7 +22,7 @@ const (
 	RewardExponent                   = 1 / 1.828393264
 	HalfLifeInDays                   = 373.59
 
-	NeighborSynchronizationTimeInSeconds = 10
+	NeighborSynchronizationTimeInSeconds = 5
 )
 
 type Service struct {
@@ -58,6 +58,7 @@ func NewService(address string, ip string, port uint16, miningTimer time.Duratio
 	service.ip = ip
 	service.port = port
 	service.miningTimer = miningTimer
+	service.miningTicker = time.NewTicker(miningTimer)
 	service.logger = logger
 	var waitGroup sync.WaitGroup
 	service.waitGroup = &waitGroup
@@ -80,14 +81,29 @@ func (service *Service) WaitGroup() *sync.WaitGroup {
 }
 
 func (service *Service) Run() {
-	now := time.Now()
-	parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
-	deadline := parsedStartDate.Sub(now)
-	service.miningTicker = time.NewTicker(deadline)
-	<-service.miningTicker.C
-	genesisTransaction := NewTransaction(parsedStartDate.Unix()*time.Second.Nanoseconds(), MiningRewardSenderAddress, service.address, GenesisAmount)
-	service.addBlock(genesisTransaction)
-	service.StartNeighborsSynchronization()
+	go func() {
+		service.logger.Info("updating the blockchain...")
+		service.StartNeighborsSynchronization()
+		service.WaitGroup().Wait()
+		service.ResolveConflicts()
+		service.WaitGroup().Wait()
+		service.logger.Info("the blockchain is now up to date")
+		service.AddGenesisBlock()
+		service.StartMining()
+	}()
+}
+
+func (service *Service) AddGenesisBlock() {
+	if service.blocks == nil {
+		now := time.Now()
+		parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
+		deadline := parsedStartDate.Sub(now)
+		service.miningTicker.Reset(deadline)
+		<-service.miningTicker.C
+		genesisTransaction := NewTransaction(parsedStartDate.Unix()*time.Second.Nanoseconds(), MiningRewardSenderAddress, service.address, GenesisAmount)
+		service.addBlock(genesisTransaction)
+		service.logger.Debug("genesis block added")
+	}
 }
 
 func (service *Service) StartNeighborsSynchronization() {
@@ -96,7 +112,9 @@ func (service *Service) StartNeighborsSynchronization() {
 }
 
 func (service *Service) SynchronizeNeighbors() {
+	service.waitGroup.Add(1)
 	go func(neighborsByTarget map[string]*neighborhood.Neighbor) {
+		defer service.waitGroup.Done()
 		var neighbors []*neighborhood.Neighbor
 		var targetRequests []neighborhood.TargetRequest
 		hostTargetRequest := neighborhood.TargetRequest{
@@ -279,7 +297,7 @@ func (service *Service) mine() {
 	defer service.mineMutex.Unlock()
 	now := time.Now().Unix() * time.Second.Nanoseconds()
 	reward := service.calculateTotalReward(now, service.address, service.blocks)
-	service.logger.Info(fmt.Sprintf("reward: %d", reward))
+	service.logger.Debug(fmt.Sprintf("reward: %d", reward))
 	rewardTransaction := NewTransaction(now, MiningRewardSenderAddress, service.address, reward)
 	service.addBlock(rewardTransaction)
 	var consensusTimer time.Duration
@@ -388,6 +406,8 @@ func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainA
 				if isValidatorKnown {
 					reward := calculateReward(totalAmount)
 					totalReward = service.decay(lastTimestamp, transaction.Timestamp(), totalReward) + reward
+				} else {
+					totalReward = 0
 				}
 			}
 			if blockchainAddress == transaction.SenderAddress() {
@@ -427,7 +447,7 @@ func (service *Service) Blocks() []*neighborhood.BlockResponse {
 }
 
 func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block) {
-	if len(service.blocks) < 3 || len(neighborBlocks) < len(service.blocks) {
+	if len(neighborBlocks) < len(service.blocks) {
 		return
 	}
 	lastNeighborBlock := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
@@ -446,13 +466,13 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 		}
 		isPreviousHashValid := currentBlock.PreviousHash() == previousBlockHash
 		if !isPreviousHashValid {
-			service.logger.Info("a hash is invalid for a neighbor")
+			service.logger.Debug("a hash is invalid for a neighbor")
 			return
 		}
 		var isNewBlock bool
 		if i >= len(service.blocks) {
 			isNewBlock = true
-		} else {
+		} else if len(service.blocks) > 2 {
 			var hostBlockHash [32]byte
 			var currentBlockHash [32]byte
 			currentBlockHash, err = currentBlock.Hash()
@@ -507,7 +527,7 @@ func (service *Service) ResolveConflicts() {
 		blockResponsesByNeighbor := make(map[*neighborhood.Neighbor][]*neighborhood.BlockResponse)
 		blocksByNeighbor := make(map[*neighborhood.Neighbor][]*Block)
 		var selectedNeighbors []*neighborhood.Neighbor
-		if len(service.blocks) > 1 {
+		if len(service.blocks) > 2 {
 			host := neighborhood.NewNeighbor(service.ip, service.port, service.logger)
 			blockResponsesByNeighbor[host] = service.blockResponses
 			blocksByNeighbor[host] = service.blocks
@@ -530,7 +550,7 @@ func (service *Service) ResolveConflicts() {
 		// Select blockchain with consensus for the previous hash
 		var selectedBlocksResponse []*neighborhood.BlockResponse
 		var selectedBlocks []*Block
-		if selectedNeighbors != nil {
+		if selectedNeighbors != nil && service.neighbors != nil {
 			service.sortByBlockLength(selectedNeighbors, blocksByNeighbor)
 			for len(blocksByNeighbor) > 0 {
 				fiftyOnePercent := len(blocksByNeighbor)/2 + 1
@@ -668,18 +688,18 @@ func (service *Service) ResolveConflicts() {
 					defer service.blocksMutex.Unlock()
 					service.blockResponses = selectedBlocksResponse
 					service.blocks = selectedBlocks
-					service.logger.Info("conflicts resolved: blockchain replaced")
+					service.logger.Debug("conflicts resolved: blockchain replaced")
 				} else {
 					service.transactionsMutex.Lock()
 					service.transactions = nil
 					service.transactionsMutex.Unlock()
-					service.logger.Info("conflicts resolved: blockchain kept")
+					service.logger.Debug("conflicts resolved: blockchain kept")
 				}
 			} else {
 				service.transactionsMutex.Lock()
 				service.transactions = nil
 				service.transactionsMutex.Unlock()
-				service.logger.Info("conflicts resolved: blockchain kept")
+				service.logger.Debug("conflicts resolved: blockchain kept")
 			}
 		}
 	}()

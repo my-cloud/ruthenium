@@ -16,7 +16,7 @@ func main() {
 	hostIp := flag.String("host-ip", "", "The blockchain host IP address")
 	hostPort := flag.Uint("host-port", blockchain.DefaultPort, "The blockchain host port")
 	templatesPath := flag.String("templates-path", "src/ui/templates", "The UI templates path")
-	logLevel := flag.String("log-level", "warn", "The log level")
+	logLevel := flag.String("log-level", "info", "The log level")
 	flag.Parse()
 
 	app := server.NewController(*mnemonic, *derivationPath, *password, *privateKey, uint16(*port), *hostIp, uint16(*hostPort), *templatesPath, log.ParseLevel(*logLevel))

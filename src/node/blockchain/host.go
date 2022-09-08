@@ -137,8 +137,6 @@ func (host *Host) Consensus() {
 
 func (host *Host) Run() {
 	host.blockchain.Run()
-	host.blockchain.WaitGroup().Wait()
-	host.blockchain.StartMining()
 	host.startServer()
 }
 
@@ -215,7 +213,7 @@ func (host *Host) startServer() {
 		}
 		return
 	})
-	host.logger.Warn("Running...")
+	host.logger.Info("host server is running...")
 	err = server.Serve()
 	if err != nil {
 		host.logger.Fatal(fmt.Errorf("failed to start server: %w", err).Error())

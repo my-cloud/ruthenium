@@ -260,7 +260,7 @@ func (controller *Controller) Run() {
 	http.HandleFunc("/mine", controller.Mine)
 	http.HandleFunc("/mine/start", controller.StartMining)
 	http.HandleFunc("/mine/stop", controller.StopMining)
-	controller.logger.Warn("Running...")
+	controller.logger.Info("user interface server is running...")
 	controller.logger.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(int(controller.Port())), nil).Error())
 }
 

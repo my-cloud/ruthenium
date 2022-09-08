@@ -21,7 +21,7 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	walletBAddress := walletB.Address()
 	logger := log.NewLogger(log.Fatal)
 	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, logger)
-	service.Run()
+	service.AddGenesisBlock()
 
 	// Act
 	var amount1 uint64 = 40 * blockchain.ParticlesCount
@@ -53,7 +53,7 @@ func Test_AddTransaction_Allowed_TransactionNotAdded(t *testing.T) {
 	walletBAddress := walletB.Address()
 	logger := log.NewLogger(log.Fatal)
 	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, logger)
-	service.Run()
+	service.AddGenesisBlock()
 
 	// Act
 	var amount1 uint64 = 40 * blockchain.ParticlesCount
