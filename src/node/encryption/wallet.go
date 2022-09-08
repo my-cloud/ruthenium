@@ -1,4 +1,4 @@
-package authentication
+package encryption
 
 import (
 	"encoding/json"

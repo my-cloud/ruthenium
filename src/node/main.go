@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"gitlab.com/coinsmaster/ruthenium/src/log"
 	"gitlab.com/coinsmaster/ruthenium/src/node/blockchain"
 )
@@ -17,6 +16,5 @@ func main() {
 
 	flag.Parse()
 	app := blockchain.NewHost(*mnemonic, *derivationPath, *password, *privateKey, uint16(*port), log.ParseLevel(*logLevel))
-	fmt.Println("Running...")
 	app.Run()
 }

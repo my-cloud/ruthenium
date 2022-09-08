@@ -1,4 +1,4 @@
-package authentication
+package encryption
 
 import (
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
