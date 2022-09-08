@@ -37,6 +37,7 @@ type Service struct {
 	mineRequested     bool
 	miningTicker      *time.Ticker
 	miningTimer       time.Duration
+	consensusTicker   *time.Ticker
 
 	ip        string
 	port      uint16
@@ -57,7 +58,6 @@ func NewService(address string, ip string, port uint16, miningTimer time.Duratio
 	service.ip = ip
 	service.port = port
 	service.miningTimer = miningTimer
-	service.miningTicker = time.NewTicker(service.miningTimer)
 	service.logger = logger
 	var waitGroup sync.WaitGroup
 	service.waitGroup = &waitGroup
@@ -80,17 +80,13 @@ func (service *Service) WaitGroup() *sync.WaitGroup {
 }
 
 func (service *Service) Run() {
-	service.waitGroup.Add(1)
-	go func() {
-		defer service.waitGroup.Done()
-		now := time.Now()
-		parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
-		deadline := parsedStartDate.Sub(now)
-		service.miningTicker.Reset(deadline)
-		<-service.miningTicker.C
-		genesisTransaction := NewTransaction(parsedStartDate.Unix()*time.Second.Nanoseconds(), MiningRewardSenderAddress, service.address, GenesisAmount)
-		service.addBlock(genesisTransaction)
-	}()
+	now := time.Now()
+	parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
+	deadline := parsedStartDate.Sub(now)
+	service.miningTicker = time.NewTicker(deadline)
+	<-service.miningTicker.C
+	genesisTransaction := NewTransaction(parsedStartDate.Unix()*time.Second.Nanoseconds(), MiningRewardSenderAddress, service.address, GenesisAmount)
+	service.addBlock(genesisTransaction)
 	service.StartNeighborsSynchronization()
 }
 
@@ -286,12 +282,16 @@ func (service *Service) mine() {
 	service.logger.Info(fmt.Sprintf("reward: %d", reward))
 	rewardTransaction := NewTransaction(now, MiningRewardSenderAddress, service.address, reward)
 	service.addBlock(rewardTransaction)
-	service.neighborsMutex.RLock()
-	defer service.neighborsMutex.RUnlock()
-	for _, neighbor := range service.neighbors {
-		go func(neighbor *neighborhood.Neighbor) {
-			_ = neighbor.Consensus()
-		}(neighbor)
+	var consensusTimer time.Duration
+	if service.miningTimer/6 > 0 {
+		consensusTimer = service.miningTimer / 6
+	} else {
+		consensusTimer = time.Nanosecond
+	}
+	service.consensusTicker = time.NewTicker(consensusTimer)
+	for i := 0; i < 5; i++ {
+		<-service.consensusTicker.C
+		service.ResolveConflicts()
 	}
 }
 
@@ -373,9 +373,9 @@ func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainA
 				lastTimestamp = transaction.Timestamp()
 				if transaction.SenderAddress() == MiningRewardSenderAddress {
 					totalReward = 0
+					rewardRecipientAddresses = nil
 					if !isValidatorKnown {
 						isValidatorKnown = true
-						rewardRecipientAddresses = nil
 					}
 				}
 			} else if transaction.SenderAddress() == MiningRewardSenderAddress {

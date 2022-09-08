@@ -22,7 +22,6 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	logger := log.NewLogger(log.Fatal)
 	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, logger)
 	service.Run()
-	service.WaitGroup().Wait()
 
 	// Act
 	var amount1 uint64 = 40 * blockchain.ParticlesCount
@@ -55,7 +54,6 @@ func Test_AddTransaction_Allowed_TransactionNotAdded(t *testing.T) {
 	logger := log.NewLogger(log.Fatal)
 	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, logger)
 	service.Run()
-	service.WaitGroup().Wait()
 
 	// Act
 	var amount1 uint64 = 40 * blockchain.ParticlesCount
