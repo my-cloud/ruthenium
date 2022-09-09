@@ -7,6 +7,7 @@ import (
 	"gitlab.com/coinsmaster/ruthenium/src/node/encryption"
 	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 	"math"
+	"math/rand"
 	"net"
 	"sort"
 	"sync"
@@ -23,6 +24,7 @@ const (
 	HalfLifeInDays                   = 373.59
 
 	NeighborSynchronizationTimeInSeconds = 5
+	MaxOutboundsCount                    = 8
 )
 
 type Service struct {
@@ -44,7 +46,7 @@ type Service struct {
 	logger    *log.Logger
 	waitGroup *sync.WaitGroup
 
-	neighbors              []*neighborhood.Neighbor // TODO manage max neighbors count (Outbound/Inbound)
+	neighbors              []*neighborhood.Neighbor
 	neighborsMutex         sync.RWMutex
 	neighborsByTarget      map[string]*neighborhood.Neighbor
 	neighborsByTargetMutex sync.RWMutex
@@ -113,6 +115,10 @@ func (service *Service) StartNeighborsSynchronization() {
 }
 
 func (service *Service) SynchronizeNeighbors() {
+	service.neighborsByTargetMutex.Lock()
+	neighborsByTarget := service.neighborsByTarget
+	service.neighborsByTarget = map[string]*neighborhood.Neighbor{}
+	service.neighborsByTargetMutex.Unlock()
 	service.waitGroup.Add(1)
 	go func(neighborsByTarget map[string]*neighborhood.Neighbor) {
 		defer service.waitGroup.Done()
@@ -124,7 +130,6 @@ func (service *Service) SynchronizeNeighbors() {
 		}
 		targetRequests = append(targetRequests, hostTargetRequest)
 		service.neighborsMutex.RLock()
-		service.neighborsByTargetMutex.RLock()
 		for _, neighbor := range neighborsByTarget {
 			neighborIp := neighbor.Ip()
 			neighborPort := neighbor.Port()
@@ -151,11 +156,13 @@ func (service *Service) SynchronizeNeighbors() {
 			}
 		}
 		service.neighborsMutex.RUnlock()
-		service.neighborsByTargetMutex.RUnlock()
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(len(neighbors), func(i, j int) { neighbors[i], neighbors[j] = neighbors[j], neighbors[i] })
+		outboundsCount := int(math.Min(float64(len(neighbors)), MaxOutboundsCount))
 		service.neighborsMutex.Lock()
-		service.neighbors = neighbors
+		service.neighbors = neighbors[:outboundsCount]
 		service.neighborsMutex.Unlock()
-		for _, neighbor := range neighbors {
+		for _, neighbor := range neighbors[:outboundsCount] {
 			var neighborTargetRequests []neighborhood.TargetRequest
 			for _, targetRequest := range targetRequests {
 				neighborIp := neighbor.Ip()
@@ -168,7 +175,7 @@ func (service *Service) SynchronizeNeighbors() {
 				_ = neighbor.SendTargets(neighborTargetRequests)
 			}(neighbor)
 		}
-	}(service.neighborsByTarget)
+	}(neighborsByTarget)
 }
 
 func (service *Service) AddTargets(targetRequests []neighborhood.TargetRequest) {
@@ -437,7 +444,7 @@ func (service *Service) Blocks() []*neighborhood.BlockResponse {
 }
 
 func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block) {
-	if len(neighborBlocks) < len(service.blocks) {
+	if len(neighborBlocks) == 0 || len(neighborBlocks) < len(service.blocks) {
 		return
 	}
 	lastNeighborBlock := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
@@ -514,7 +521,7 @@ func (service *Service) StartConflictsResolution() {
 	go func() {
 		for {
 			for i := 0; i < 6; i++ {
-				if i > 0 || !service.miningStarted || !service.mineRequested {
+				if i > 0 || (!service.miningStarted && !service.mineRequested) {
 					service.ResolveConflicts()
 				}
 				<-service.consensusTicker.C
