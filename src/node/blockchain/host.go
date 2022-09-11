@@ -131,10 +131,6 @@ func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
 	return
 }
 
-func (host *Host) Consensus() {
-	host.blockchain.resolveConflicts()
-}
-
 func (host *Host) Run() {
 	host.blockchain.Run()
 	host.startServer()
@@ -189,8 +185,6 @@ func (host *Host) startServer() {
 				host.StartMining()
 			case neighborhood.StopMiningRequest:
 				host.StopMining()
-			case neighborhood.ConsensusRequest:
-				host.Consensus()
 			default:
 				unknownRequest = true
 			}
