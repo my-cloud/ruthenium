@@ -131,14 +131,8 @@ func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
 	return
 }
 
-func (host *Host) Consensus() {
-	host.blockchain.ResolveConflicts()
-}
-
 func (host *Host) Run() {
 	host.blockchain.Run()
-	host.blockchain.WaitGroup().Wait()
-	host.blockchain.StartMining()
 	host.startServer()
 }
 
@@ -191,8 +185,6 @@ func (host *Host) startServer() {
 				host.StartMining()
 			case neighborhood.StopMiningRequest:
 				host.StopMining()
-			case neighborhood.ConsensusRequest:
-				host.Consensus()
 			default:
 				unknownRequest = true
 			}
@@ -215,7 +207,7 @@ func (host *Host) startServer() {
 		}
 		return
 	})
-	host.logger.Warn("Running...")
+	host.logger.Info("host server is running...")
 	err = server.Serve()
 	if err != nil {
 		host.logger.Fatal(fmt.Errorf("failed to start server: %w", err).Error())

@@ -12,7 +12,7 @@ func main() {
 	password := flag.String("password", "", "The mnemonic password (unused if the mnemonic is omitted)")
 	privateKey := flag.String("private-key", "", "The private key (will be generated if not provided)")
 	port := flag.Uint("port", blockchain.DefaultPort, "TCP port number for blockchain server")
-	logLevel := flag.String("log-level", "warn", "The log level")
+	logLevel := flag.String("log-level", "info", "The log level")
 
 	flag.Parse()
 	app := blockchain.NewHost(*mnemonic, *derivationPath, *password, *privateKey, uint16(*port), log.ParseLevel(*logLevel))
