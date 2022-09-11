@@ -132,7 +132,7 @@ func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
 }
 
 func (host *Host) Consensus() {
-	host.blockchain.ResolveConflicts()
+	host.blockchain.resolveConflicts()
 }
 
 func (host *Host) Run() {
