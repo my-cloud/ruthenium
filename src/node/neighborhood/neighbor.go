@@ -15,7 +15,6 @@ const (
 	MineRequest            = "MINE REQUEST"
 	StartMiningRequest     = "START MINING REQUEST"
 	StopMiningRequest      = "STOP MINING REQUEST"
-	ConsensusRequest       = "CONSENSUS REQUEST"
 
 	NeighborFindingTimeoutSecond = 5
 )
@@ -62,11 +61,6 @@ func (neighbor *Neighbor) GetBlocks() (blockResponses []*BlockResponse, err erro
 
 func (neighbor *Neighbor) SendTargets(request []TargetRequest) (err error) {
 	_, err = neighbor.sendRequest(request)
-	return
-}
-
-func (neighbor *Neighbor) Consensus() (err error) {
-	_, err = neighbor.sendRequest(ConsensusRequest)
 	return
 }
 

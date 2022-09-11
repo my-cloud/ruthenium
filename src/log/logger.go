@@ -8,7 +8,8 @@ import (
 type Level uint32
 
 const (
-	Info Level = iota
+	Debug Level = iota
+	Info
 	Warn
 	Error
 	Fatal
@@ -16,6 +17,8 @@ const (
 
 func ParseLevel(level string) Level {
 	switch strings.ToLower(level) {
+	case "debug":
+		return Debug
 	case "info":
 		return Info
 	case "warn":
@@ -34,6 +37,12 @@ type Logger struct {
 
 func NewLogger(level Level) *Logger {
 	return &Logger{level}
+}
+
+func (logger *Logger) Debug(msg string) {
+	if logger.level <= Debug {
+		log.Println("DEBUG:", msg)
+	}
 }
 
 func (logger *Logger) Info(msg string) {
