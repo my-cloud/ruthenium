@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"time"
 )
 
 type Block struct {
@@ -17,9 +16,9 @@ type Block struct {
 	transactions []*Transaction
 }
 
-func NewBlock(previousHash [32]byte, transactions []*Transaction) *Block {
+func NewBlock(timestamp int64, previousHash [32]byte, transactions []*Transaction) *Block {
 	return &Block{
-		time.Now().Unix() * time.Second.Nanoseconds(),
+		timestamp,
 		previousHash,
 		transactions,
 	}
