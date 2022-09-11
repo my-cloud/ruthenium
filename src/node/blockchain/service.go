@@ -23,7 +23,7 @@ const (
 	RewardExponent                   = 1 / 1.828393264
 	HalfLifeInDays                   = 373.59
 
-	NeighborSynchronizationTimeInSeconds = 5
+	NeighborSynchronizationTimeInSeconds = 10
 	MaxOutboundsCount                    = 8
 )
 
