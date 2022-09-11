@@ -327,18 +327,15 @@ func (service *Service) mining() {
 	parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
 	deadline := parsedStartDate.Sub(now)
 	service.miningTicker.Reset(deadline)
-	miningTickerReset := true
+	<-service.miningTicker.C
+	service.miningTicker.Reset(service.miningTimer)
 	for {
-		<-service.miningTicker.C
 		if !service.miningStarted {
 			service.miningTicker.Stop()
 			return
 		}
-		if miningTickerReset {
-			service.miningTicker.Reset(service.miningTimer)
-			miningTickerReset = false
-		}
 		service.mine()
+		<-service.miningTicker.C
 	}
 }
 
