@@ -309,7 +309,7 @@ func (service *Service) Mine() {
 func (service *Service) mine() {
 	service.blocksMutex.Lock()
 	defer service.blocksMutex.Unlock()
-	now := time.Now().Unix() * time.Second.Nanoseconds()
+	now := time.Now().Round(service.miningTimer).UnixNano()
 	reward := service.calculateTotalReward(now, service.address, service.blocks)
 	service.logger.Debug(fmt.Sprintf("reward: %d", reward))
 	rewardTransaction := NewTransaction(now, MiningRewardSenderAddress, service.address, reward)
