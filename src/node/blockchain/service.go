@@ -38,7 +38,6 @@ type Service struct {
 	mineRequested     bool
 	miningTicker      *time.Ticker
 	miningTimer       time.Duration
-	consensusTicker   *time.Ticker
 
 	ip        string
 	port      uint16
@@ -523,14 +522,14 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 
 func (service *Service) StartConflictsResolution() {
 	consensusTimer := service.miningTimer / 6
-	service.consensusTicker = time.NewTicker(consensusTimer)
+	consensusTicker := time.Tick(consensusTimer)
 	go func() {
 		for {
 			for i := 0; i < 6; i++ {
 				if i > 0 || (!service.miningStarted && !service.mineRequested) {
 					service.resolveConflicts()
 				}
-				<-service.consensusTicker.C
+				<-consensusTicker
 			}
 		}
 	}()
