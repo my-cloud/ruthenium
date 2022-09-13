@@ -426,23 +426,22 @@ func (service *Service) Blocks() []*neighborhood.BlockResponse {
 	return service.blockResponses
 }
 
-func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block) {
+func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block, err error) {
 	if len(neighborBlocks) == 0 || len(neighborBlocks) < len(service.blocks) {
 		return
 	}
 	lastNeighborBlock, err := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
 	if err != nil {
-		// TODO return error and log it at upper level precising the involved neighbor
-		service.logger.Error(fmt.Errorf("failed to instantiate last neighbor block: %w", err).Error())
+		err = fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 		return
 	}
 	if err = lastNeighborBlock.IsProofOfHumanityValid(); err != nil {
-		service.logger.Error(fmt.Errorf("failed to get valid proof of humanity: %w", err).Error())
+		err = fmt.Errorf("failed to get valid neighbor proof of humanity: %w", err)
 		return
 	}
 	previousBlock, err := NewBlockFromResponse(neighborBlocks[0])
 	if err != nil {
-		service.logger.Error(fmt.Errorf("failed to instantiate first neighbor block: %w", err).Error())
+		err = fmt.Errorf("failed to instantiate first neighbor block: %w", err)
 		return
 	}
 	validBlocks = append(validBlocks, previousBlock)
@@ -450,18 +449,18 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 		var currentBlock *Block
 		currentBlock, err = NewBlockFromResponse(neighborBlocks[i])
 		if err != nil {
-			service.logger.Error(fmt.Errorf("failed to instantiate last neighbor block: %w", err).Error())
+			err = fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 			return
 		}
 		var previousBlockHash [32]byte
 		previousBlockHash, err = previousBlock.Hash()
 		if err != nil {
-			service.logger.Error(fmt.Errorf("failed to calculate previous block hash: %w", err).Error())
+			err = fmt.Errorf("failed to calculate previous neighbor block hash: %w", err)
 			return
 		}
 		isPreviousHashValid := currentBlock.PreviousHash() == previousBlockHash
 		if !isPreviousHashValid {
-			service.logger.Debug("a hash is invalid for a neighbor")
+			err = errors.New("a previous neighbor block hash is invalid")
 			return
 		}
 		var isNewBlock bool
@@ -472,12 +471,12 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 			var currentBlockHash [32]byte
 			currentBlockHash, err = currentBlock.Hash()
 			if err != nil {
-				service.logger.Error(fmt.Errorf("failed to calculate neighbor block hash: %w", err).Error())
+				err = fmt.Errorf("failed to calculate neighbor block hash: %w", err)
 				return
 			}
 			hostBlockHash, err = service.blocks[i].Hash()
 			if err != nil {
-				service.logger.Error(fmt.Errorf("failed to calculate host block hash: %w", err).Error())
+				err = fmt.Errorf("failed to calculate host block hash: %w", err)
 			} else if currentBlockHash != hostBlockHash {
 				isNewBlock = true
 			}
@@ -489,7 +488,7 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 				if transaction.SenderAddress() == RewardSenderAddress {
 					// Check that there is only one reward by block
 					if rewarded {
-						service.logger.Error("multiple rewards attempt for the same block")
+						err = errors.New("multiple rewards attempt for the same neighbor block")
 						return
 					}
 					rewarded = true
@@ -497,11 +496,11 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 					previousBlockTimestamp := previousBlock.Timestamp()
 					now := time.Now().UnixNano()
 					if currentBlockTimestamp != previousBlockTimestamp+int64(service.miningTimer) || currentBlockTimestamp > now {
-						service.logger.Error("reward timestamp is invalid")
+						err = errors.New("neighbor block reward timestamp is invalid")
 						return
 					}
 					if transaction.Value() > service.calculateTotalReward(currentBlockTimestamp, transaction.RecipientAddress(), validBlocks) {
-						service.logger.Error("reward exceeds the consented one")
+						err = errors.New("neighbor block reward exceeds the consented one")
 						return
 					}
 				}
@@ -541,7 +540,11 @@ func (service *Service) resolveConflicts() {
 			neighborBlocks, err := neighbor.GetBlocks()
 			blockResponsesByNeighbor[neighbor] = neighborBlocks
 			if err == nil {
-				validBlocks := service.getValidBlocks(neighborBlocks)
+				var validBlocks []*Block
+				validBlocks, err = service.getValidBlocks(neighborBlocks)
+				if err != nil {
+					service.logger.Debug(fmt.Errorf("failed to validate blocks for neighbor %s: %w", neighbor.Target(), err).Error())
+				}
 				if validBlocks != nil {
 					blocksByNeighbor[neighbor] = validBlocks
 					selectedNeighbors = append(selectedNeighbors, neighbor)
