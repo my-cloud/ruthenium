@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
+	"gitlab.com/coinsmaster/ruthenium/src/clock"
 	"gitlab.com/coinsmaster/ruthenium/src/log"
 	"gitlab.com/coinsmaster/ruthenium/src/node/encryption"
 	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
@@ -38,7 +39,7 @@ func NewHost(mnemonic string, derivationPath string, password string, privateKey
 	if err != nil {
 		host.logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
 	} else {
-		host.blockchain = NewService(wallet.Address(), host.ip, host.port, MiningTimerInSeconds*time.Second, host.logger)
+		host.blockchain = NewService(wallet.Address(), host.ip, host.port, MiningTimerInSeconds*time.Second, clock.NewWatch(), host.logger)
 	}
 	return host
 }
