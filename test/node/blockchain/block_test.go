@@ -8,7 +8,7 @@ import (
 
 func Test_IsProofOfHumanityValid_Invalid_ReturnsFalse(t *testing.T) {
 	senderAddress := blockchain.RewardSenderAddress
-	recipientAddress := "0x1234567890123456789012345678901234567890"
+	recipientAddress := "0x0000000000000000000000000000000000000001"
 	transactions := []*blockchain.Transaction{blockchain.NewTransaction(recipientAddress, senderAddress, nil, 0, 1)}
 	block := blockchain.NewBlock(0, [32]byte{}, transactions)
 	err := block.IsProofOfHumanityValid()
@@ -17,7 +17,7 @@ func Test_IsProofOfHumanityValid_Invalid_ReturnsFalse(t *testing.T) {
 
 func Test_IsProofOfHumanityValid_Valid_ReturnsTrue(t *testing.T) {
 	senderAddress := blockchain.RewardSenderAddress
-	recipientAddress := "0xD70eFbfC9cF73dC1aB5f8292E7273D916D38c916"
+	recipientAddress := "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
 	transactions := []*blockchain.Transaction{blockchain.NewTransaction(recipientAddress, senderAddress, nil, 0, 1)}
 	block := blockchain.NewBlock(0, [32]byte{}, transactions)
 	err := block.IsProofOfHumanityValid()
