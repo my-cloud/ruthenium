@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"gitlab.com/coinsmaster/ruthenium/src/log"
-	"gitlab.com/coinsmaster/ruthenium/src/node/encryption"
 	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 	"math"
 	"math/rand"
@@ -17,11 +16,11 @@ import (
 const (
 	DefaultPort = 8106
 
-	MiningRewardSenderAddress        = "MINING REWARD SENDER ADDRESS"
-	ParticlesCount                   = 100000000
-	GenesisAmount             uint64 = 100000 * ParticlesCount
-	RewardExponent                   = 1 / 1.828393264
-	HalfLifeInDays                   = 373.59
+	RewardSenderAddress        = "REWARD SENDER ADDRESS"
+	ParticlesCount             = 100000000
+	GenesisAmount       uint64 = 100000 * ParticlesCount
+	RewardExponent             = 1 / 1.828393264
+	HalfLifeInDays             = 373.59
 
 	NeighborSynchronizationTimeInSeconds = 10
 	MaxOutboundsCount                    = 8
@@ -103,7 +102,7 @@ func (service *Service) AddGenesisBlock() {
 	service.miningTicker.Reset(deadline)
 	<-service.miningTicker.C
 	if service.blocks == nil {
-		genesisTransaction := NewTransaction(parsedStartDate.UnixNano(), MiningRewardSenderAddress, service.address, GenesisAmount)
+		genesisTransaction := NewTransaction(service.address, RewardSenderAddress, nil, parsedStartDate.UnixNano(), GenesisAmount)
 		service.addBlock(parsedStartDate.UnixNano(), genesisTransaction)
 		service.logger.Debug("genesis block added")
 	}
@@ -198,31 +197,16 @@ func (service *Service) AddTargets(targetRequests []neighborhood.TargetRequest) 
 	}()
 }
 
-func (service *Service) CreateTransaction(transaction *Transaction, publicKey *encryption.PublicKey, signature *encryption.Signature) {
+func (service *Service) CreateTransaction(transaction *Transaction) {
 	service.waitGroup.Add(1)
 	go func() {
 		defer service.waitGroup.Done()
-		err := service.addTransaction(transaction, publicKey, signature)
+		err := service.addTransaction(transaction)
 		if err != nil {
 			service.logger.Error(fmt.Errorf("failed to create transaction: %w", err).Error())
 			return
 		}
-		timestamp := transaction.Timestamp()
-		senderAddress := transaction.SenderAddress()
-		recipientAddress := transaction.RecipientAddress()
-		value := transaction.Value()
-		publicKeyStr := publicKey.String()
-		signatureStr := signature.String()
-		var verb = neighborhood.PUT
-		transactionRequest := neighborhood.TransactionRequest{
-			Verb:             &verb,
-			Timestamp:        &timestamp,
-			SenderAddress:    &senderAddress,
-			RecipientAddress: &recipientAddress,
-			SenderPublicKey:  &publicKeyStr,
-			Value:            &value,
-			Signature:        &signatureStr,
-		}
+		transactionRequest := transaction.GetRequest(neighborhood.PUT)
 		service.neighborsMutex.RLock()
 		defer service.neighborsMutex.RUnlock()
 		for _, neighbor := range service.neighbors {
@@ -233,7 +217,7 @@ func (service *Service) CreateTransaction(transaction *Transaction, publicKey *e
 	}()
 }
 
-func (service *Service) AddTransaction(transaction *Transaction, publicKey *encryption.PublicKey, signature *encryption.Signature) {
+func (service *Service) AddTransaction(transaction *Transaction) {
 	service.waitGroup.Add(1)
 	go func() {
 		defer service.waitGroup.Done()
@@ -250,20 +234,15 @@ func (service *Service) AddTransaction(transaction *Transaction, publicKey *encr
 		}
 		service.blocksMutex.RUnlock()
 
-		err := service.addTransaction(transaction, publicKey, signature)
+		err := service.addTransaction(transaction)
 		if err != nil {
 			service.logger.Error(fmt.Errorf("failed to add transaction: %w", err).Error())
 		}
 	}()
 }
 
-func (service *Service) addTransaction(transaction *Transaction, publicKey *encryption.PublicKey, signature *encryption.Signature) (err error) {
-	marshaledTransaction, err := transaction.MarshalJSON()
-	if err != nil {
-		err = fmt.Errorf("failed to marshal transaction, %w", err)
-		return
-	}
-	if !signature.Verify(marshaledTransaction, publicKey, transaction.SenderAddress()) {
+func (service *Service) addTransaction(transaction *Transaction) (err error) {
+	if err = transaction.Verify(); err != nil {
 		err = errors.New("failed to verify transaction")
 		return
 	}
@@ -311,7 +290,7 @@ func (service *Service) mine() {
 	now := time.Now().Round(service.miningTimer).UnixNano()
 	reward := service.calculateTotalReward(now, service.address, service.blocks)
 	service.logger.Debug(fmt.Sprintf("reward: %d", reward))
-	rewardTransaction := NewTransaction(now, MiningRewardSenderAddress, service.address, reward)
+	rewardTransaction := NewTransaction(service.address, RewardSenderAddress, nil, now, reward)
 	service.addBlock(now, rewardTransaction)
 }
 
@@ -388,14 +367,14 @@ func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainA
 				}
 				totalAmount += value
 				lastTimestamp = transaction.Timestamp()
-				if transaction.SenderAddress() == MiningRewardSenderAddress {
+				if transaction.SenderAddress() == RewardSenderAddress {
 					totalReward = 0
 					rewardRecipientAddresses = nil
 					if !isValidatorKnown {
 						isValidatorKnown = true
 					}
 				}
-			} else if transaction.SenderAddress() == MiningRewardSenderAddress {
+			} else if transaction.SenderAddress() == RewardSenderAddress {
 				for _, rewardRecipientAddress := range rewardRecipientAddresses {
 					if transaction.RecipientAddress() == rewardRecipientAddress {
 						isValidatorKnown = false
@@ -449,16 +428,31 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 	if len(neighborBlocks) == 0 || len(neighborBlocks) < len(service.blocks) {
 		return
 	}
-	lastNeighborBlock := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
-	if err := lastNeighborBlock.IsProofOfHumanityValid(); err != nil {
+	lastNeighborBlock, err := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
+	if err != nil {
+		// TODO return error and log it at upper level precising the involved neighbor
+		service.logger.Error(fmt.Errorf("failed to instantiate last neighbor block: %w", err).Error())
+		return
+	}
+	if err = lastNeighborBlock.IsProofOfHumanityValid(); err != nil {
 		service.logger.Error(fmt.Errorf("failed to get valid proof of humanity: %w", err).Error())
 		return
 	}
-	previousBlock := NewBlockFromResponse(neighborBlocks[0])
+	previousBlock, err := NewBlockFromResponse(neighborBlocks[0])
+	if err != nil {
+		service.logger.Error(fmt.Errorf("failed to instantiate first neighbor block: %w", err).Error())
+		return
+	}
 	validBlocks = append(validBlocks, previousBlock)
 	for i := 1; i < len(neighborBlocks); i++ {
-		currentBlock := NewBlockFromResponse(neighborBlocks[i])
-		previousBlockHash, err := previousBlock.Hash()
+		var currentBlock *Block
+		currentBlock, err = NewBlockFromResponse(neighborBlocks[i])
+		if err != nil {
+			service.logger.Error(fmt.Errorf("failed to instantiate last neighbor block: %w", err).Error())
+			return
+		}
+		var previousBlockHash [32]byte
+		previousBlockHash, err = previousBlock.Hash()
 		if err != nil {
 			service.logger.Error(fmt.Errorf("failed to calculate previous block hash: %w", err).Error())
 			return
@@ -490,7 +484,7 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 		if isNewBlock {
 			var rewarded bool
 			for _, transaction := range currentBlock.Transactions() {
-				if transaction.SenderAddress() == MiningRewardSenderAddress {
+				if transaction.SenderAddress() == RewardSenderAddress {
 					// Check that there is only one reward by block
 					if rewarded {
 						service.logger.Error("multiple rewards attempt for the same block")
@@ -589,7 +583,7 @@ func (service *Service) resolveConflicts() {
 						var rewardRecipientAddressAge uint64
 						var neighborLastBlockRewardRecipientAddress string
 						for _, transaction := range blocks[len(blocks)-1].transactions {
-							if transaction.SenderAddress() == MiningRewardSenderAddress {
+							if transaction.SenderAddress() == RewardSenderAddress {
 								neighborLastBlockRewardRecipientAddress = transaction.RecipientAddress()
 							}
 						}
@@ -602,7 +596,7 @@ func (service *Service) resolveConflicts() {
 							var isAgeCalculated bool
 							for i := len(service.blocks) - 2; i > 0; i-- {
 								for _, transaction := range service.blocks[i].transactions {
-									if transaction.SenderAddress() == MiningRewardSenderAddress {
+									if transaction.SenderAddress() == RewardSenderAddress {
 										if transaction.RecipientAddress() == neighborLastBlockRewardRecipientAddress {
 											isAgeCalculated = true
 										}
@@ -674,39 +668,29 @@ func (service *Service) resolveConflicts() {
 				}
 				if blockchainReplaced {
 					if len(service.blocks) > 2 {
-						oldTransactions := service.transactions
-						// Add transactions which are not in the new blocks but the rewards
-						for i := len(service.blocks) - 2; i < len(service.blocks); i++ {
-							for _, invalidatedTransaction := range service.blocks[i].transactions {
-								if invalidatedTransaction.SenderAddress() != MiningRewardSenderAddress {
-									oldTransactions = append(oldTransactions, invalidatedTransaction)
-								}
-							}
-						}
+						transactions := service.transactions
 						// Remove transactions which are in the new blocks
-						newTransactions := oldTransactions
 						for i := len(service.blocks) - 2; i < len(selectedBlocks); i++ {
 							for _, validatedTransaction := range selectedBlocks[i].transactions {
-								for j := 0; j < len(newTransactions); j++ {
-									if validatedTransaction.Equals(newTransactions[j]) {
-										newTransactions[j] = newTransactions[len(newTransactions)-1]
-										newTransactions = newTransactions[:len(newTransactions)-1]
+								for j := 0; j < len(transactions); j++ {
+									// FIXME verify that len(transactions) don't change at each iteration
+									if validatedTransaction.Equals(transactions[j]) {
+										transactions[j] = transactions[len(transactions)-1]
+										transactions = transactions[:len(transactions)-1]
 										j--
 									}
 								}
 							}
 						}
-						service.transactions = newTransactions
+						service.transactions = transactions
 					}
 					service.blockResponses = selectedBlocksResponse
 					service.blocks = selectedBlocks
 					service.logger.Debug("conflicts resolved: blockchain replaced")
 				} else {
-					service.transactions = nil
 					service.logger.Debug("conflicts resolved: blockchain kept")
 				}
 			} else {
-				service.transactions = nil
 				service.logger.Debug("conflicts resolved: blockchain kept")
 			}
 		}

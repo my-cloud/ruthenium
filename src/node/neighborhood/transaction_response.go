@@ -1,8 +1,10 @@
 package neighborhood
 
 type TransactionResponse struct {
-	Timestamp        int64
-	SenderAddress    string
 	RecipientAddress string
+	SenderAddress    string
+	SenderPublicKey  string
+	Signature        string
+	Timestamp        int64
 	Value            uint64
 }

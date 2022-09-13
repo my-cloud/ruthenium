@@ -72,18 +72,12 @@ func (host *Host) PostTransactions(request *neighborhood.TransactionRequest) {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
 	}
-	publicKey, err := encryption.DecodePublicKey(*request.SenderPublicKey)
+	transaction, err := NewTransactionFromRequest(request)
 	if err != nil {
-		host.logger.Error(fmt.Errorf("failed to decode transaction public key: %w", err).Error())
+		host.logger.Error(fmt.Errorf("failed to instantiate transaction: %w", err).Error())
 		return
 	}
-	signature, err := encryption.DecodeSignature(*request.Signature)
-	if err != nil {
-		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
-		return
-	}
-	transaction := NewTransactionFromRequest(request)
-	host.blockchain.CreateTransaction(transaction, publicKey, signature)
+	host.blockchain.CreateTransaction(transaction)
 }
 
 func (host *Host) PutTransactions(request *neighborhood.TransactionRequest) {
@@ -91,18 +85,12 @@ func (host *Host) PutTransactions(request *neighborhood.TransactionRequest) {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
 	}
-	publicKey, err := encryption.DecodePublicKey(*request.SenderPublicKey)
+	transaction, err := NewTransactionFromRequest(request)
 	if err != nil {
-		host.logger.Error(fmt.Errorf("failed to decode transaction public key: %w", err).Error())
+		host.logger.Error(fmt.Errorf("failed to instantiate transaction: %w", err).Error())
 		return
 	}
-	signature, err := encryption.DecodeSignature(*request.Signature)
-	if err != nil {
-		host.logger.Error(fmt.Errorf("failed to decode transaction signature: %w", err).Error())
-		return
-	}
-	transaction := NewTransactionFromRequest(request)
-	host.blockchain.AddTransaction(transaction, publicKey, signature)
+	host.blockchain.AddTransaction(transaction)
 }
 
 func (host *Host) Mine() {

@@ -111,33 +111,16 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 			controller.write(writer, "invalid transaction value")
 			return
 		}
-		transaction := blockchain.NewTransaction(time.Now().UnixNano(), *transactionRequest.SenderAddress, *transactionRequest.RecipientAddress, value)
-		marshaledTransaction, err := json.Marshal(transaction)
-		if err != nil {
-			controller.logger.Error(fmt.Errorf("failed to marshal transaction: %w", err).Error())
-			writer.WriteHeader(http.StatusBadRequest)
-			controller.write(writer, "invalid transaction request")
-			return
-		}
-		signature, err := encryption.NewSignature(marshaledTransaction, privateKey)
+		senderPublicKey := encryption.NewPublicKey(privateKey)
+		transaction := blockchain.NewTransaction(*transactionRequest.RecipientAddress, *transactionRequest.SenderAddress, senderPublicKey, time.Now().UnixNano(), value)
+		err = transaction.Sign(privateKey)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to generate signature: %w", err).Error())
 			writer.WriteHeader(http.StatusBadRequest)
 			controller.write(writer, "invalid signature")
 			return
 		}
-		signatureString := signature.String()
-		var verb = neighborhood.POST
-		timestamp := transaction.Timestamp()
-		blockchainTransactionRequest := neighborhood.TransactionRequest{
-			Verb:             &verb,
-			Timestamp:        &timestamp,
-			SenderAddress:    transactionRequest.SenderAddress,
-			RecipientAddress: transactionRequest.RecipientAddress,
-			SenderPublicKey:  transactionRequest.SenderPublicKey,
-			Value:            &value,
-			Signature:        &signatureString,
-		}
+		blockchainTransactionRequest := transaction.GetRequest(neighborhood.POST)
 		err = controller.blockchainClient.AddTransaction(blockchainTransactionRequest)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to create transaction: %w", err).Error())

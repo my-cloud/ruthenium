@@ -2,55 +2,89 @@ package blockchain
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"gitlab.com/coinsmaster/ruthenium/src/node/encryption"
 	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 )
 
 type Transaction struct {
-	timestamp        int64
-	senderAddress    string
 	recipientAddress string
+	senderAddress    string
+	senderPublicKey  *encryption.PublicKey
+	signature        *encryption.Signature
+	timestamp        int64
 	value            uint64
 }
 
-func NewTransaction(timestamp int64, senderAddress string, recipientAddress string, value uint64) *Transaction {
+func NewTransaction(recipientAddress string, senderAddress string, senderPublicKey *encryption.PublicKey, timestamp int64, value uint64) *Transaction {
 	return &Transaction{
-		timestamp,
-		senderAddress,
-		recipientAddress,
-		value,
+		recipientAddress: recipientAddress,
+		senderAddress:    senderAddress,
+		senderPublicKey:  senderPublicKey,
+		timestamp:        timestamp,
+		value:            value,
 	}
 }
 
-func NewTransactionFromRequest(transaction *neighborhood.TransactionRequest) *Transaction {
-	return &Transaction{
-		*transaction.Timestamp,
-		*transaction.SenderAddress,
-		*transaction.RecipientAddress,
-		*transaction.Value,
+func NewTransactionFromRequest(transactionRequest *neighborhood.TransactionRequest) (*Transaction, error) {
+	senderPublicKey, err := encryption.DecodePublicKey(*transactionRequest.SenderPublicKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode transaction public key: %w", err)
 	}
+	signature, err := encryption.DecodeSignature(*transactionRequest.Signature)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode transaction signature: %w", err)
+	}
+	return &Transaction{
+		*transactionRequest.RecipientAddress,
+		*transactionRequest.SenderAddress,
+		senderPublicKey,
+		signature,
+		*transactionRequest.Timestamp,
+		*transactionRequest.Value,
+	}, nil
 }
 
-func NewTransactionFromResponse(transaction *neighborhood.TransactionResponse) *Transaction {
-	return &Transaction{
-		transaction.Timestamp,
-		transaction.SenderAddress,
-		transaction.RecipientAddress,
-		transaction.Value,
+func NewTransactionFromResponse(transactionResponse *neighborhood.TransactionResponse) (transaction *Transaction, err error) {
+	var senderPublicKey *encryption.PublicKey
+	if len(transactionResponse.SenderPublicKey) != 0 {
+		senderPublicKey, err = encryption.DecodePublicKey(transactionResponse.SenderPublicKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode transaction public key: %w", err)
+		}
 	}
+	var signature *encryption.Signature
+	if len(transactionResponse.SenderPublicKey) != 0 {
+		signature, err = encryption.DecodeSignature(transactionResponse.Signature)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode transaction signature: %w", err)
+		}
+	}
+	return &Transaction{
+		transactionResponse.RecipientAddress,
+		transactionResponse.SenderAddress,
+		senderPublicKey,
+		signature,
+		transactionResponse.Timestamp,
+		transactionResponse.Value,
+	}, nil
 }
 
 func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
+		RecipientAddress string `json:"recipient_address"`
+		SenderAddress    string `json:"sender_address"`
+		//SenderPublicKey  string `json:"sender_public_key"`
+		//Signature        string `json:"signature"`
 		Timestamp int64  `json:"timestamp"`
-		Sender    string `json:"sender_address"`
-		Recipient string `json:"recipient_address"`
 		Value     uint64 `json:"value"`
 	}{
+		RecipientAddress: transaction.recipientAddress,
+		SenderAddress:    transaction.senderAddress,
+		//SenderPublicKey:  transaction.senderPublicKey.String(),
+		//Signature:        transaction.signature.String(),
 		Timestamp: transaction.timestamp,
-		Sender:    transaction.senderAddress,
-		Recipient: transaction.recipientAddress,
 		Value:     transaction.value,
 	})
 }
@@ -71,26 +105,62 @@ func (transaction *Transaction) Value() uint64 {
 	return transaction.value
 }
 
-func (transaction *Transaction) Sign(privateKey *encryption.PrivateKey) (signature *encryption.Signature, err error) {
+func (transaction *Transaction) Sign(privateKey *encryption.PrivateKey) (err error) {
 	marshaledTransaction, err := json.Marshal(transaction)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal transaction: %w", err)
+		return fmt.Errorf("failed to marshal transaction: %w", err)
 	}
-	return encryption.NewSignature(marshaledTransaction, privateKey)
+	transaction.signature, err = encryption.NewSignature(marshaledTransaction, privateKey)
+	return
+}
+
+func (transaction *Transaction) GetRequest(verb string) neighborhood.TransactionRequest {
+	encodedPublicKey := transaction.senderPublicKey.String()
+	encodedSignature := transaction.signature.String()
+	return neighborhood.TransactionRequest{
+		RecipientAddress: &transaction.recipientAddress,
+		SenderAddress:    &transaction.senderAddress,
+		SenderPublicKey:  &encodedPublicKey,
+		Signature:        &encodedSignature,
+		Timestamp:        &transaction.timestamp,
+		Value:            &transaction.value,
+		Verb:             &verb,
+	}
 }
 
 func (transaction *Transaction) GetResponse() *neighborhood.TransactionResponse {
+	var encodedPublicKey string
+	if transaction.senderPublicKey != nil {
+		encodedPublicKey = transaction.senderPublicKey.String()
+	}
+	var encodedSignature string
+	if transaction.signature != nil {
+		encodedSignature = transaction.signature.String()
+	}
 	return &neighborhood.TransactionResponse{
-		Timestamp:        transaction.timestamp,
-		SenderAddress:    transaction.senderAddress,
 		RecipientAddress: transaction.recipientAddress,
+		SenderAddress:    transaction.senderAddress,
+		SenderPublicKey:  encodedPublicKey,
+		Signature:        encodedSignature,
+		Timestamp:        transaction.timestamp,
 		Value:            transaction.value,
 	}
 }
 
 func (transaction *Transaction) Equals(other *Transaction) bool {
-	return transaction.timestamp == other.timestamp &&
+	return transaction.recipientAddress == other.recipientAddress &&
 		transaction.senderAddress == other.senderAddress &&
-		transaction.recipientAddress == other.recipientAddress &&
+		transaction.timestamp == other.timestamp &&
 		transaction.value == other.value
+}
+
+func (transaction *Transaction) Verify() error {
+	marshaledTransaction, err := transaction.MarshalJSON()
+	if err != nil {
+		return fmt.Errorf("failed to marshal transaction, %w", err)
+	}
+	if !transaction.signature.Verify(marshaledTransaction, transaction.senderPublicKey, transaction.senderAddress) {
+		return errors.New("failed to verify signature")
+	}
+	return nil
 }

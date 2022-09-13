@@ -24,16 +24,20 @@ func NewBlock(timestamp int64, previousHash [32]byte, transactions []*Transactio
 	}
 }
 
-func NewBlockFromResponse(block *neighborhood.BlockResponse) *Block {
+func NewBlockFromResponse(block *neighborhood.BlockResponse) (*Block, error) {
 	var transactions []*Transaction
-	for _, transaction := range block.Transactions {
-		transactions = append(transactions, NewTransactionFromResponse(transaction))
+	for _, transactionResponse := range block.Transactions {
+		transaction, err := NewTransactionFromResponse(transactionResponse)
+		if err != nil {
+			return nil, fmt.Errorf("failed to instantiate transaction: %w", err)
+		}
+		transactions = append(transactions, transaction)
 	}
 	return &Block{
 		block.Timestamp,
 		block.PreviousHash,
 		transactions,
-	}
+	}, nil
 }
 
 func (block *Block) Hash() (hash [32]byte, err error) {
@@ -85,11 +89,14 @@ func (block *Block) Transactions() []*Transaction {
 }
 
 func (block *Block) minerAddress() string {
-	return block.lastTransaction().RecipientAddress()
-}
-
-func (block *Block) lastTransaction() *Transaction {
-	return block.transactions[len(block.transactions)-1]
+	var minerAddress string
+	for i := len(block.transactions) - 1; i >= 0; i-- {
+		if block.transactions[i].SenderAddress() == RewardSenderAddress {
+			minerAddress = block.transactions[i].RecipientAddress()
+			break
+		}
+	}
+	return minerAddress
 }
 
 func (block *Block) MarshalJSON() ([]byte, error) {

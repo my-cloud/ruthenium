@@ -25,14 +25,14 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 
 	// Act
 	var amount1 uint64 = 40 * blockchain.ParticlesCount
-	transaction1 := blockchain.NewTransaction(0, minerWalletAddress, walletAAddress, amount1)
-	signature1, _ := transaction1.Sign(minerWallet.PrivateKey())
-	addTransaction(service, minerWallet.PublicKey(), transaction1, signature1)
+	transaction1 := blockchain.NewTransaction(walletAAddress, minerWalletAddress, minerWallet.PublicKey(), 0, amount1)
+	_ = transaction1.Sign(minerWallet.PrivateKey())
+	addTransaction(service, transaction1)
 
 	var amount2 uint64 = 10 * blockchain.ParticlesCount
-	transaction2 := blockchain.NewTransaction(0, walletAAddress, walletBAddress, amount2)
-	signature2, _ := transaction2.Sign(walletA.PrivateKey())
-	addTransaction(service, walletA.PublicKey(), transaction2, signature2)
+	transaction2 := blockchain.NewTransaction(walletBAddress, walletAAddress, walletA.PublicKey(), 0, amount2)
+	_ = transaction2.Sign(walletA.PrivateKey())
+	addTransaction(service, transaction2)
 
 	// Assert
 	expectedWalletAAmount := amount1 - amount2
@@ -43,7 +43,7 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	test.Assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %d - Actual: %d", expectedWalletBAmount, actualWalletBAmount))
 }
 
-func Test_AddTransaction_Allowed_TransactionNotAdded(t *testing.T) {
+func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
 	// Arrange
 	minerWallet, _ := encryption.NewWallet()
 	minerWalletAddress := minerWallet.Address()
@@ -57,14 +57,14 @@ func Test_AddTransaction_Allowed_TransactionNotAdded(t *testing.T) {
 
 	// Act
 	var amount1 uint64 = 40 * blockchain.ParticlesCount
-	transaction1 := blockchain.NewTransaction(0, minerWalletAddress, walletAAddress, amount1)
-	signature1, _ := transaction1.Sign(minerWallet.PrivateKey())
-	addTransaction(service, minerWallet.PublicKey(), transaction1, signature1)
+	transaction1 := blockchain.NewTransaction(walletAAddress, minerWalletAddress, minerWallet.PublicKey(), 0, amount1)
+	_ = transaction1.Sign(minerWallet.PrivateKey())
+	addTransaction(service, transaction1)
 
 	var amount2 uint64 = 10 * blockchain.ParticlesCount
-	transaction2 := blockchain.NewTransaction(0, walletAAddress, walletBAddress, amount2)
-	signature2, _ := transaction2.Sign(walletB.PrivateKey())
-	addTransaction(service, walletA.PublicKey(), transaction2, signature2)
+	transaction2 := blockchain.NewTransaction(walletBAddress, walletAAddress, walletA.PublicKey(), 0, amount2)
+	_ = transaction2.Sign(walletB.PrivateKey())
+	addTransaction(service, transaction2)
 
 	// Assert
 	actualWalletAAmount := service.CalculateTotalAmount(0, walletAAddress)
@@ -74,8 +74,8 @@ func Test_AddTransaction_Allowed_TransactionNotAdded(t *testing.T) {
 	test.Assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %d - Actual: %d", expectedWalletBAmount, actualWalletBAmount))
 }
 
-func addTransaction(blockchain *blockchain.Service, senderWalletPublicKey *encryption.PublicKey, transaction *blockchain.Transaction, signature *encryption.Signature) *sync.WaitGroup {
-	blockchain.AddTransaction(transaction, senderWalletPublicKey, signature)
+func addTransaction(blockchain *blockchain.Service, transaction *blockchain.Transaction) *sync.WaitGroup {
+	blockchain.AddTransaction(transaction)
 	wg := blockchain.WaitGroup()
 	wg.Wait()
 	blockchain.Mine()
