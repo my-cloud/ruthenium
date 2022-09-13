@@ -3,6 +3,7 @@ package blockchain
 import (
 	"errors"
 	"fmt"
+	"gitlab.com/coinsmaster/ruthenium/src/clock"
 	"gitlab.com/coinsmaster/ruthenium/src/log"
 	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 	"math"
@@ -38,6 +39,7 @@ type Service struct {
 	mineRequested     bool
 	miningTicker      *time.Ticker
 	miningTimer       time.Duration
+	watch             clock.Time
 
 	ip        string
 	port      uint16
@@ -53,13 +55,14 @@ type Service struct {
 	lambda float64
 }
 
-func NewService(address string, ip string, port uint16, miningTimer time.Duration, logger *log.Logger) *Service {
+func NewService(address string, ip string, port uint16, miningTimer time.Duration, watch clock.Time, logger *log.Logger) *Service {
 	service := new(Service)
 	service.address = address
 	service.ip = ip
 	service.port = port
 	service.miningTimer = miningTimer
 	service.miningTicker = time.NewTicker(miningTimer)
+	service.watch = watch
 	service.logger = logger
 	var waitGroup sync.WaitGroup
 	service.waitGroup = &waitGroup
@@ -97,7 +100,7 @@ func (service *Service) Run() {
 }
 
 func (service *Service) AddGenesisBlock() {
-	now := time.Now()
+	now := service.watch.Now()
 	parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
 	deadline := parsedStartDate.Sub(now)
 	service.miningTicker.Reset(deadline)
@@ -161,7 +164,7 @@ func (service *Service) SynchronizeNeighbors() {
 			}
 		}
 		service.neighborsMutex.RUnlock()
-		rand.Seed(time.Now().UnixNano())
+		rand.Seed(service.watch.Now().UnixNano())
 		rand.Shuffle(len(neighbors), func(i, j int) { neighbors[i], neighbors[j] = neighbors[j], neighbors[i] })
 		outboundsCount := int(math.Min(float64(len(neighbors)), MaxOutboundsCount))
 		service.neighborsMutex.Lock()
@@ -264,9 +267,9 @@ func (service *Service) Mine() {
 	if service.miningStarted || service.mineRequested {
 		return
 	}
-	now := time.Now()
-	parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
-	deadline := parsedStartDate.Sub(now)
+	startTime := service.watch.Now()
+	parsedStartDate := startTime.Truncate(service.miningTimer).Add(service.miningTimer)
+	deadline := parsedStartDate.Sub(startTime)
 	service.miningTicker.Reset(deadline)
 	service.mineRequested = true
 	service.waitGroup.Add(1)
@@ -276,9 +279,9 @@ func (service *Service) Mine() {
 		service.mine()
 		service.mineRequested = false
 		if service.miningStarted {
-			newNow := time.Now()
-			newParsedStartDate := newNow.Truncate(service.miningTimer).Add(service.miningTimer)
-			newDeadline := newParsedStartDate.Sub(newNow)
+			now := service.watch.Now()
+			newParsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
+			newDeadline := newParsedStartDate.Sub(now)
 			service.miningTicker.Reset(newDeadline)
 		} else {
 			service.miningTicker.Stop()
@@ -289,7 +292,7 @@ func (service *Service) Mine() {
 func (service *Service) mine() {
 	service.blocksMutex.Lock()
 	defer service.blocksMutex.Unlock()
-	now := time.Now().Round(service.miningTimer).UnixNano()
+	now := service.watch.Now().Round(service.miningTimer).UnixNano()
 	reward := service.calculateTotalReward(now, service.address, service.blocks)
 	service.logger.Debug(fmt.Sprintf("reward: %d", reward))
 	rewardTransaction := NewTransaction(service.address, RewardSenderAddress, nil, now, reward)
@@ -304,7 +307,7 @@ func (service *Service) StartMining() {
 }
 
 func (service *Service) mining() {
-	now := time.Now()
+	now := service.watch.Now()
 	parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
 	deadline := parsedStartDate.Sub(now)
 	service.miningTicker.Reset(deadline)
@@ -445,7 +448,7 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 	}
 	var validBlocks []*Block
 	validBlocks = append(validBlocks, previousBlock)
-	now := time.Now().UnixNano()
+	now := service.watch.Now().UnixNano()
 	for i := 1; i < len(neighborBlocks); i++ {
 		var currentBlock *Block
 		currentBlock, err = NewBlockFromResponse(neighborBlocks[i])

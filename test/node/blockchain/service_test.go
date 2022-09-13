@@ -6,6 +6,7 @@ import (
 	"gitlab.com/coinsmaster/ruthenium/src/node/blockchain"
 	"gitlab.com/coinsmaster/ruthenium/src/node/encryption"
 	"gitlab.com/coinsmaster/ruthenium/test"
+	"gitlab.com/coinsmaster/ruthenium/test/clock"
 	"sync"
 	"testing"
 	"time"
@@ -20,7 +21,7 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
 	logger := log.NewLogger(log.Fatal)
-	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, logger)
+	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, clock.NewWatch(), logger)
 	service.AddGenesisBlock()
 
 	// Act
@@ -36,10 +37,10 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 
 	// Assert
 	expectedWalletAAmount := amount1 - amount2
-	actualWalletAAmount := service.CalculateTotalAmount(0, walletAAddress)
+	actualWalletAAmount := service.CalculateTotalAmount(4, walletAAddress)
 	test.Assert(t, expectedWalletAAmount == actualWalletAAmount, fmt.Sprintf("Wrong wallet A amount. Expected: %d - Actual: %d", expectedWalletAAmount, actualWalletAAmount))
 	expectedWalletBAmount := amount2
-	actualWalletBAmount := service.CalculateTotalAmount(0, walletBAddress)
+	actualWalletBAmount := service.CalculateTotalAmount(4, walletBAddress)
 	test.Assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %d - Actual: %d", expectedWalletBAmount, actualWalletBAmount))
 }
 
@@ -52,7 +53,7 @@ func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
 	logger := log.NewLogger(log.Fatal)
-	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, logger)
+	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, clock.NewWatch(), logger)
 	service.AddGenesisBlock()
 
 	// Act
@@ -67,10 +68,10 @@ func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
 	addTransaction(service, transaction2)
 
 	// Assert
-	actualWalletAAmount := service.CalculateTotalAmount(0, walletAAddress)
+	actualWalletAAmount := service.CalculateTotalAmount(4, walletAAddress)
 	test.Assert(t, amount1 == actualWalletAAmount, fmt.Sprintf("Wrong wallet A amount. Expected: %d - Actual: %d", amount1, actualWalletAAmount))
 	var expectedWalletBAmount uint64 = 0
-	actualWalletBAmount := service.CalculateTotalAmount(0, walletBAddress)
+	actualWalletBAmount := service.CalculateTotalAmount(4, walletBAddress)
 	test.Assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %d - Actual: %d", expectedWalletBAmount, actualWalletBAmount))
 }
 
