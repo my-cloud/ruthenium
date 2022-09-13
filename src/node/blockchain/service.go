@@ -509,7 +509,7 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 			}
 			for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
 				if totalTransactionsValue > service.calculateTotalAmount(currentBlockTimestamp, senderAddress, validBlocks[:len(validBlocks)-1]) {
-					return nil, errors.New("neighbor block transactions exceeds its sender wallet amount")
+					return nil, errors.New("neighbor block total transactions value exceeds its sender wallet amount")
 				}
 			}
 		}
@@ -651,7 +651,7 @@ func (service *Service) resolveConflicts() {
 					}
 				}
 				for _, rejectedNeighbor := range rejectedNeighbors {
-					remove(selectedNeighbors, rejectedNeighbor)
+					removeNeighbor(selectedNeighbors, rejectedNeighbor)
 				}
 			}
 			if selectedBlocks != nil {
@@ -722,7 +722,7 @@ func (service *Service) sortByBlockLength(selectedNeighbors []*neighborhood.Neig
 	})
 }
 
-func remove(neighbors []*neighborhood.Neighbor, removedNeighbor *neighborhood.Neighbor) []*neighborhood.Neighbor {
+func removeNeighbor(neighbors []*neighborhood.Neighbor, removedNeighbor *neighborhood.Neighbor) []*neighborhood.Neighbor {
 	for i := 0; i < len(neighbors); i++ {
 		if neighbors[i] == removedNeighbor {
 			neighbors = append(neighbors[:i], neighbors[i+1:]...)
@@ -731,6 +731,17 @@ func remove(neighbors []*neighborhood.Neighbor, removedNeighbor *neighborhood.Ne
 		}
 	}
 	return neighbors
+}
+
+func removeTransactions(transactions []*Transaction, removedTransaction *Transaction) []*Transaction {
+	for i := 0; i < len(transactions); i++ {
+		if transactions[i] == removedTransaction {
+			transactions = append(transactions[:i], transactions[i+1:]...)
+			i--
+			return transactions
+		}
+	}
+	return transactions
 }
 
 func (service *Service) addBlock(timestamp int64, rewardTransaction *Transaction) {
@@ -750,8 +761,25 @@ func (service *Service) addBlock(timestamp int64, rewardTransaction *Transaction
 	}
 	service.transactionsMutex.Lock()
 	defer service.transactionsMutex.Unlock()
-	service.transactions = append(service.transactions, rewardTransaction)
-	block := NewBlock(timestamp, lastBlockHash, service.transactions)
+	totalTransactionsValueBySenderAddress := make(map[string]uint64)
+	transactions := service.transactions
+	for _, transaction := range transactions {
+		if transaction.SenderAddress() != RewardSenderAddress {
+			totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value()
+		}
+	}
+	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
+		if totalTransactionsValue > service.calculateTotalAmount(timestamp, senderAddress, service.blocks) {
+			for _, transaction := range transactions {
+				if transaction.SenderAddress() == senderAddress {
+					transactions = removeTransactions(transactions, transaction)
+				}
+			}
+			service.logger.Warn("transactions removed from the transactions pool, total transactions value exceeds its sender wallet amount")
+		}
+	}
+	transactions = append(transactions, rewardTransaction)
+	block := NewBlock(timestamp, lastBlockHash, transactions)
 	service.transactions = nil
 	service.blocks = append(service.blocks, block)
 	blockResponse := block.GetResponse()
