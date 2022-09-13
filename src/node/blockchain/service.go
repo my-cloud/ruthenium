@@ -669,6 +669,14 @@ func (service *Service) resolveConflicts() {
 				if blockchainReplaced {
 					if len(service.blocks) > 2 {
 						transactions := service.transactions
+						// Add transactions which are not in the new blocks but the rewards
+						for i := len(service.blocks) - 2; i < len(service.blocks); i++ {
+							for _, invalidatedTransaction := range service.blocks[i].transactions {
+								if invalidatedTransaction.SenderAddress() != RewardSenderAddress {
+									transactions = append(transactions, invalidatedTransaction)
+								}
+							}
+						}
 						// Remove transactions which are in the new blocks
 						for i := len(service.blocks) - 2; i < len(selectedBlocks); i++ {
 							for _, validatedTransaction := range selectedBlocks[i].transactions {
