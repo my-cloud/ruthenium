@@ -24,6 +24,7 @@ const (
 
 	NeighborSynchronizationTimeInSeconds = 10
 	MaxOutboundsCount                    = 8
+	ConflictResolutionPerValidation      = 6
 )
 
 type Service struct {
@@ -197,16 +198,16 @@ func (service *Service) AddTargets(targetRequests []neighborhood.TargetRequest) 
 	}()
 }
 
-func (service *Service) CreateTransaction(transaction *Transaction) {
+func (service *Service) AddTransaction(transaction *Transaction) {
 	service.waitGroup.Add(1)
 	go func() {
 		defer service.waitGroup.Done()
 		err := service.addTransaction(transaction)
 		if err != nil {
-			service.logger.Error(fmt.Errorf("failed to create transaction: %w", err).Error())
+			service.logger.Debug(fmt.Errorf("failed to add transaction: %w", err).Error())
 			return
 		}
-		transactionRequest := transaction.GetRequest(neighborhood.PUT)
+		transactionRequest := transaction.GetRequest()
 		service.neighborsMutex.RLock()
 		defer service.neighborsMutex.RUnlock()
 		for _, neighbor := range service.neighbors {
@@ -217,36 +218,37 @@ func (service *Service) CreateTransaction(transaction *Transaction) {
 	}()
 }
 
-func (service *Service) AddTransaction(transaction *Transaction) {
-	service.waitGroup.Add(1)
-	go func() {
-		defer service.waitGroup.Done()
-		service.blocksMutex.RLock()
-		if len(service.blocks) > 2 {
-			for i := len(service.blocks) - 2; i < len(service.blocks); i++ {
-				for _, validatedTransaction := range service.blocks[i].transactions {
-					if validatedTransaction.Equals(transaction) {
-						service.logger.Error("failed to add transaction: the transaction already is in the blockchain")
-						return
-					}
+func (service *Service) addTransaction(transaction *Transaction) (err error) {
+	service.blocksMutex.RLock()
+	if len(service.blocks) > 2 {
+		if transaction.Timestamp() < service.blocks[len(service.blocks)-2].Timestamp() {
+			err = errors.New("the transaction timestamp is invalid")
+			return
+		}
+		for i := len(service.blocks) - 2; i < len(service.blocks); i++ {
+			for _, validatedTransaction := range service.blocks[i].transactions {
+				if validatedTransaction.Equals(transaction) {
+					err = errors.New("the transaction already is in the blockchain")
+					return
 				}
 			}
 		}
-		service.blocksMutex.RUnlock()
-
-		err := service.addTransaction(transaction)
-		if err != nil {
-			service.logger.Error(fmt.Errorf("failed to add transaction: %w", err).Error())
+	}
+	for _, pendingTransaction := range service.transactions {
+		if pendingTransaction.Equals(transaction) {
+			err = errors.New("the transaction already is in the transactions pool")
+			return
 		}
-	}()
-}
-
-func (service *Service) addTransaction(transaction *Transaction) (err error) {
+	}
+	service.blocksMutex.RUnlock()
 	if err = transaction.Verify(); err != nil {
 		err = errors.New("failed to verify transaction")
 		return
 	}
-	senderWalletAmount := service.CalculateTotalAmount(transaction.Timestamp(), transaction.SenderAddress())
+	var senderWalletAmount uint64
+	if len(service.blocks) > 0 {
+		senderWalletAmount = service.CalculateTotalAmount(service.blocks[len(service.blocks)-1].Timestamp(), transaction.SenderAddress())
+	}
 	insufficientBalance := senderWalletAmount < transaction.Value()
 	if insufficientBalance {
 		err = errors.New("not enough balance in the sender wallet")
@@ -333,20 +335,20 @@ func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainA
 			value := transaction.Value()
 			if blockchainAddress == transaction.RecipientAddress() {
 				if totalAmount > 0 {
-					totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
+					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
 				totalAmount += value
-				lastTimestamp = transaction.Timestamp()
+				lastTimestamp = block.Timestamp()
 			}
 			if blockchainAddress == transaction.SenderAddress() {
 				if totalAmount > 0 {
-					totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
+					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
 				if totalAmount < value {
 					service.logger.Error(fmt.Sprintf("historical transaction should not have been validated: wallet amount=%d, transaction value=%d", totalAmount, value))
 				}
 				totalAmount -= value
-				lastTimestamp = transaction.Timestamp()
+				lastTimestamp = block.Timestamp()
 			}
 		}
 	}
@@ -363,10 +365,10 @@ func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainA
 			value := transaction.Value()
 			if blockchainAddress == transaction.RecipientAddress() {
 				if totalAmount > 0 {
-					totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
+					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
 				totalAmount += value
-				lastTimestamp = transaction.Timestamp()
+				lastTimestamp = block.Timestamp()
 				if transaction.SenderAddress() == RewardSenderAddress {
 					totalReward = 0
 					rewardRecipientAddresses = nil
@@ -383,20 +385,20 @@ func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainA
 				rewardRecipientAddresses = append(rewardRecipientAddresses, transaction.RecipientAddress())
 				if isValidatorKnown {
 					reward := calculateReward(totalAmount)
-					totalReward = service.decay(lastTimestamp, transaction.Timestamp(), totalReward) + reward
+					totalReward = service.decay(lastTimestamp, block.Timestamp(), totalReward) + reward
 				} else {
 					totalReward = 0
 				}
 			}
 			if blockchainAddress == transaction.SenderAddress() {
 				if totalAmount > 0 {
-					totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
+					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
 				if totalAmount < value {
 					service.logger.Error(fmt.Sprintf("historical transaction should not have been validated: wallet amount=%d, transaction value=%d", totalAmount, value))
 				}
 				totalAmount -= value
-				lastTimestamp = transaction.Timestamp()
+				lastTimestamp = block.Timestamp()
 			}
 		}
 	}
@@ -512,11 +514,11 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 }
 
 func (service *Service) StartConflictsResolution() {
-	consensusTimer := service.miningTimer / 6
+	consensusTimer := service.miningTimer / ConflictResolutionPerValidation
 	consensusTicker := time.Tick(consensusTimer)
 	go func() {
 		for {
-			for i := 0; i < 6; i++ {
+			for i := 0; i < ConflictResolutionPerValidation; i++ {
 				if i > 0 || (!service.miningStarted && !service.mineRequested) {
 					service.resolveConflicts()
 				}

@@ -75,17 +75,13 @@ func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		RecipientAddress string `json:"recipient_address"`
 		SenderAddress    string `json:"sender_address"`
-		//SenderPublicKey  string `json:"sender_public_key"`
-		//Signature        string `json:"signature"`
-		Timestamp int64  `json:"timestamp"`
-		Value     uint64 `json:"value"`
+		Timestamp        int64  `json:"timestamp"`
+		Value            uint64 `json:"value"`
 	}{
 		RecipientAddress: transaction.recipientAddress,
 		SenderAddress:    transaction.senderAddress,
-		//SenderPublicKey:  transaction.senderPublicKey.String(),
-		//Signature:        transaction.signature.String(),
-		Timestamp: transaction.timestamp,
-		Value:     transaction.value,
+		Timestamp:        transaction.timestamp,
+		Value:            transaction.value,
 	})
 }
 
@@ -114,7 +110,7 @@ func (transaction *Transaction) Sign(privateKey *encryption.PrivateKey) (err err
 	return
 }
 
-func (transaction *Transaction) GetRequest(verb string) neighborhood.TransactionRequest {
+func (transaction *Transaction) GetRequest() neighborhood.TransactionRequest {
 	encodedPublicKey := transaction.senderPublicKey.String()
 	encodedSignature := transaction.signature.String()
 	return neighborhood.TransactionRequest{
@@ -124,7 +120,6 @@ func (transaction *Transaction) GetRequest(verb string) neighborhood.Transaction
 		Signature:        &encodedSignature,
 		Timestamp:        &transaction.timestamp,
 		Value:            &transaction.value,
-		Verb:             &verb,
 	}
 }
 

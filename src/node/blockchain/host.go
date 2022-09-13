@@ -67,20 +67,7 @@ func (host *Host) GetTransactions() (res p2p.Data) {
 	return
 }
 
-func (host *Host) PostTransactions(request *neighborhood.TransactionRequest) {
-	if request.IsInvalid() {
-		host.logger.Error("field(s) are missing in transaction request")
-		return
-	}
-	transaction, err := NewTransactionFromRequest(request)
-	if err != nil {
-		host.logger.Error(fmt.Errorf("failed to instantiate transaction: %w", err).Error())
-		return
-	}
-	host.blockchain.CreateTransaction(transaction)
-}
-
-func (host *Host) PutTransactions(request *neighborhood.TransactionRequest) {
+func (host *Host) AddTransactions(request *neighborhood.TransactionRequest) {
 	if request.IsInvalid() {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
@@ -177,11 +164,7 @@ func (host *Host) startServer() {
 				unknownRequest = true
 			}
 		} else if err = req.GetGob(&transactionRequest); err == nil {
-			if *transactionRequest.Verb == neighborhood.POST {
-				host.PostTransactions(&transactionRequest)
-			} else if *transactionRequest.Verb == neighborhood.PUT {
-				host.PutTransactions(&transactionRequest)
-			}
+			host.AddTransactions(&transactionRequest)
 		} else if err = req.GetGob(&amountRequest); err == nil {
 			res = host.Amount(&amountRequest)
 		} else if err = req.GetGob(&targetsRequest); err == nil {

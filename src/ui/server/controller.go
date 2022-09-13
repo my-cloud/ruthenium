@@ -120,7 +120,7 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 			controller.write(writer, "invalid signature")
 			return
 		}
-		blockchainTransactionRequest := transaction.GetRequest(neighborhood.POST)
+		blockchainTransactionRequest := transaction.GetRequest()
 		err = controller.blockchainClient.AddTransaction(blockchainTransactionRequest)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to create transaction: %w", err).Error())
