@@ -149,7 +149,7 @@ func (transaction *Transaction) Equals(other *Transaction) bool {
 		transaction.value == other.value
 }
 
-func (transaction *Transaction) Verify() error {
+func (transaction *Transaction) VerifySignature() error {
 	marshaledTransaction, err := transaction.MarshalJSON()
 	if err != nil {
 		return fmt.Errorf("failed to marshal transaction, %w", err)

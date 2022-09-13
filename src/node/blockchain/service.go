@@ -219,7 +219,8 @@ func (service *Service) AddTransaction(transaction *Transaction) {
 }
 
 func (service *Service) addTransaction(transaction *Transaction) (err error) {
-	service.blocksMutex.RLock()
+	service.blocksMutex.Lock()
+	defer service.blocksMutex.Unlock()
 	if len(service.blocks) > 2 {
 		if transaction.Timestamp() < service.blocks[len(service.blocks)-2].Timestamp() {
 			err = errors.New("the transaction timestamp is invalid")
@@ -240,14 +241,13 @@ func (service *Service) addTransaction(transaction *Transaction) (err error) {
 			return
 		}
 	}
-	service.blocksMutex.RUnlock()
-	if err = transaction.Verify(); err != nil {
+	if err = transaction.VerifySignature(); err != nil {
 		err = errors.New("failed to verify transaction")
 		return
 	}
 	var senderWalletAmount uint64
 	if len(service.blocks) > 0 {
-		senderWalletAmount = service.CalculateTotalAmount(service.blocks[len(service.blocks)-1].Timestamp(), transaction.SenderAddress())
+		senderWalletAmount = service.calculateTotalAmount(service.blocks[len(service.blocks)-1].Timestamp(), transaction.SenderAddress(), service.blocks)
 	}
 	insufficientBalance := senderWalletAmount < transaction.Value()
 	if insufficientBalance {
@@ -326,11 +326,15 @@ func (service *Service) StopMining() {
 }
 
 func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64 {
-	var totalAmount uint64
-	var lastTimestamp int64
 	service.blocksMutex.RLock()
 	defer service.blocksMutex.RUnlock()
-	for _, block := range service.blocks {
+	return service.calculateTotalAmount(currentTimestamp, blockchainAddress, service.blocks)
+}
+
+func (service *Service) calculateTotalAmount(currentTimestamp int64, blockchainAddress string, blocks []*Block) uint64 {
+	var totalAmount uint64
+	var lastTimestamp int64
+	for _, block := range blocks {
 		for _, transaction := range block.Transactions() {
 			value := transaction.Value()
 			if blockchainAddress == transaction.RecipientAddress() {
@@ -345,7 +349,7 @@ func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainA
 					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
 				if totalAmount < value {
-					service.logger.Error(fmt.Sprintf("historical transaction should not have been validated: wallet amount=%d, transaction value=%d", totalAmount, value))
+					service.logger.Error(fmt.Sprintf("historical transaction have not been properly validated: wallet amount=%d, transaction value=%d", totalAmount, value))
 				}
 				totalAmount -= value
 				lastTimestamp = block.Timestamp()
@@ -426,42 +430,38 @@ func (service *Service) Blocks() []*neighborhood.BlockResponse {
 	return service.blockResponses
 }
 
-func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block, err error) {
+func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockResponse) ([]*Block, error) {
 	if len(neighborBlocks) == 0 || len(neighborBlocks) < len(service.blocks) {
-		return
+		return nil, errors.New("neighbor's blockchain is too short")
 	}
 	lastNeighborBlock, err := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
 	if err != nil {
-		err = fmt.Errorf("failed to instantiate last neighbor block: %w", err)
-		return
+		return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 	}
 	if err = lastNeighborBlock.IsProofOfHumanityValid(); err != nil {
-		err = fmt.Errorf("failed to get valid neighbor proof of humanity: %w", err)
-		return
+		return nil, fmt.Errorf("failed to get valid neighbor proof of humanity: %w", err)
 	}
 	previousBlock, err := NewBlockFromResponse(neighborBlocks[0])
 	if err != nil {
-		err = fmt.Errorf("failed to instantiate first neighbor block: %w", err)
-		return
+		return nil, fmt.Errorf("failed to instantiate first neighbor block: %w", err)
 	}
+	var validBlocks []*Block
 	validBlocks = append(validBlocks, previousBlock)
+	now := time.Now().UnixNano()
 	for i := 1; i < len(neighborBlocks); i++ {
 		var currentBlock *Block
 		currentBlock, err = NewBlockFromResponse(neighborBlocks[i])
 		if err != nil {
-			err = fmt.Errorf("failed to instantiate last neighbor block: %w", err)
-			return
+			return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 		}
 		var previousBlockHash [32]byte
 		previousBlockHash, err = previousBlock.Hash()
 		if err != nil {
-			err = fmt.Errorf("failed to calculate previous neighbor block hash: %w", err)
-			return
+			return nil, fmt.Errorf("failed to calculate previous neighbor block hash: %w", err)
 		}
 		isPreviousHashValid := currentBlock.PreviousHash() == previousBlockHash
 		if !isPreviousHashValid {
-			err = errors.New("a previous neighbor block hash is invalid")
-			return
+			return nil, errors.New("a previous neighbor block hash is invalid")
 		}
 		var isNewBlock bool
 		if i >= len(service.blocks) {
@@ -471,45 +471,52 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 			var currentBlockHash [32]byte
 			currentBlockHash, err = currentBlock.Hash()
 			if err != nil {
-				err = fmt.Errorf("failed to calculate neighbor block hash: %w", err)
-				return
+				return nil, fmt.Errorf("failed to calculate neighbor block hash: %w", err)
 			}
 			hostBlockHash, err = service.blocks[i].Hash()
 			if err != nil {
-				err = fmt.Errorf("failed to calculate host block hash: %w", err)
-			} else if currentBlockHash != hostBlockHash {
+				service.logger.Error(fmt.Errorf("failed to calculate host block hash: %w", err).Error())
+			}
+			if currentBlockHash != hostBlockHash {
 				isNewBlock = true
 			}
 		}
 
 		if isNewBlock {
 			var rewarded bool
+			totalTransactionsValueBySenderAddress := make(map[string]uint64)
+			currentBlockTimestamp := currentBlock.Timestamp()
 			for _, transaction := range currentBlock.Transactions() {
 				if transaction.SenderAddress() == RewardSenderAddress {
 					// Check that there is only one reward by block
 					if rewarded {
-						err = errors.New("multiple rewards attempt for the same neighbor block")
-						return
+						return nil, errors.New("multiple rewards attempt for the same neighbor block")
 					}
 					rewarded = true
-					currentBlockTimestamp := currentBlock.Timestamp()
 					previousBlockTimestamp := previousBlock.Timestamp()
-					now := time.Now().UnixNano()
 					if currentBlockTimestamp != previousBlockTimestamp+int64(service.miningTimer) || currentBlockTimestamp > now {
-						err = errors.New("neighbor block reward timestamp is invalid")
-						return
+						return nil, errors.New("neighbor block reward timestamp is invalid")
 					}
 					if transaction.Value() > service.calculateTotalReward(currentBlockTimestamp, transaction.RecipientAddress(), validBlocks) {
-						err = errors.New("neighbor block reward exceeds the consented one")
-						return
+						return nil, errors.New("neighbor block reward exceeds the consented one")
 					}
+				} else {
+					if err = transaction.VerifySignature(); err != nil {
+						return nil, fmt.Errorf("neighbor transaction is invalid: %w", err)
+					}
+					totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value()
+				}
+			}
+			for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
+				if totalTransactionsValue > service.calculateTotalAmount(currentBlockTimestamp, senderAddress, validBlocks[:len(validBlocks)-1]) {
+					return nil, errors.New("neighbor block transactions exceeds its sender wallet amount")
 				}
 			}
 		}
 		validBlocks = append(validBlocks, currentBlock)
 		previousBlock = currentBlock
 	}
-	return
+	return validBlocks, nil
 }
 
 func (service *Service) StartConflictsResolution() {
@@ -544,8 +551,7 @@ func (service *Service) resolveConflicts() {
 				validBlocks, err = service.getValidBlocks(neighborBlocks)
 				if err != nil {
 					service.logger.Debug(fmt.Errorf("failed to validate blocks for neighbor %s: %w", neighbor.Target(), err).Error())
-				}
-				if validBlocks != nil {
+				} else if validBlocks != nil {
 					blocksByNeighbor[neighbor] = validBlocks
 					selectedNeighbors = append(selectedNeighbors, neighbor)
 				}
