@@ -343,8 +343,7 @@ func (service *Service) calculateTotalAmount(currentTimestamp int64, blockchainA
 				}
 				totalAmount += value
 				lastTimestamp = block.Timestamp()
-			}
-			if blockchainAddress == transaction.SenderAddress() {
+			} else if blockchainAddress == transaction.SenderAddress() {
 				if totalAmount > 0 {
 					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
@@ -393,8 +392,7 @@ func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainA
 				} else {
 					totalReward = 0
 				}
-			}
-			if blockchainAddress == transaction.SenderAddress() {
+			} else if blockchainAddress == transaction.SenderAddress() {
 				if totalAmount > 0 {
 					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
