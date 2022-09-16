@@ -509,7 +509,7 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 				}
 			}
 			for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
-				if totalTransactionsValue > service.calculateTotalAmount(currentBlockTimestamp, senderAddress, validBlocks[:len(validBlocks)-1]) {
+				if totalTransactionsValue > service.calculateTotalAmount(currentBlockTimestamp, senderAddress, validBlocks) {
 					return nil, errors.New("neighbor block total transactions value exceeds its sender wallet amount")
 				}
 			}
