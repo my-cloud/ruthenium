@@ -3,8 +3,8 @@ package blockchain
 import (
 	"errors"
 	"fmt"
+	"gitlab.com/coinsmaster/ruthenium/src/clock"
 	"gitlab.com/coinsmaster/ruthenium/src/log"
-	"gitlab.com/coinsmaster/ruthenium/src/node/encryption"
 	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
 	"math"
 	"math/rand"
@@ -17,14 +17,15 @@ import (
 const (
 	DefaultPort = 8106
 
-	MiningRewardSenderAddress        = "MINING REWARD SENDER ADDRESS"
-	ParticlesCount                   = 100000000
-	GenesisAmount             uint64 = 100000 * ParticlesCount
-	RewardExponent                   = 1 / 1.828393264
-	HalfLifeInDays                   = 373.59
+	RewardSenderAddress        = "REWARD SENDER ADDRESS"
+	ParticlesCount             = 100000000
+	GenesisAmount       uint64 = 100000 * ParticlesCount
+	RewardExponent             = 1 / 1.828393264
+	HalfLifeInDays             = 373.59
 
 	NeighborSynchronizationTimeInSeconds = 10
 	MaxOutboundsCount                    = 8
+	ConflictResolutionPerValidation      = 6
 )
 
 type Service struct {
@@ -38,6 +39,7 @@ type Service struct {
 	mineRequested     bool
 	miningTicker      *time.Ticker
 	miningTimer       time.Duration
+	watch             clock.Time
 
 	ip        string
 	port      uint16
@@ -53,13 +55,14 @@ type Service struct {
 	lambda float64
 }
 
-func NewService(address string, ip string, port uint16, miningTimer time.Duration, logger *log.Logger) *Service {
+func NewService(address string, ip string, port uint16, miningTimer time.Duration, watch clock.Time, logger *log.Logger) *Service {
 	service := new(Service)
 	service.address = address
 	service.ip = ip
 	service.port = port
 	service.miningTimer = miningTimer
 	service.miningTicker = time.NewTicker(miningTimer)
+	service.watch = watch
 	service.logger = logger
 	var waitGroup sync.WaitGroup
 	service.waitGroup = &waitGroup
@@ -97,13 +100,13 @@ func (service *Service) Run() {
 }
 
 func (service *Service) AddGenesisBlock() {
-	now := time.Now()
+	now := service.watch.Now()
 	parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
 	deadline := parsedStartDate.Sub(now)
 	service.miningTicker.Reset(deadline)
 	<-service.miningTicker.C
 	if service.blocks == nil {
-		genesisTransaction := NewTransaction(parsedStartDate.UnixNano(), MiningRewardSenderAddress, service.address, GenesisAmount)
+		genesisTransaction := NewTransaction(service.address, RewardSenderAddress, nil, parsedStartDate.UnixNano(), GenesisAmount)
 		service.addBlock(parsedStartDate.UnixNano(), genesisTransaction)
 		service.logger.Debug("genesis block added")
 	}
@@ -161,7 +164,7 @@ func (service *Service) SynchronizeNeighbors() {
 			}
 		}
 		service.neighborsMutex.RUnlock()
-		rand.Seed(time.Now().UnixNano())
+		rand.Seed(service.watch.Now().UnixNano())
 		rand.Shuffle(len(neighbors), func(i, j int) { neighbors[i], neighbors[j] = neighbors[j], neighbors[i] })
 		outboundsCount := int(math.Min(float64(len(neighbors)), MaxOutboundsCount))
 		service.neighborsMutex.Lock()
@@ -198,31 +201,16 @@ func (service *Service) AddTargets(targetRequests []neighborhood.TargetRequest) 
 	}()
 }
 
-func (service *Service) CreateTransaction(transaction *Transaction, publicKey *encryption.PublicKey, signature *encryption.Signature) {
+func (service *Service) AddTransaction(transaction *Transaction) {
 	service.waitGroup.Add(1)
 	go func() {
 		defer service.waitGroup.Done()
-		err := service.addTransaction(transaction, publicKey, signature)
+		err := service.addTransaction(transaction)
 		if err != nil {
-			service.logger.Error(fmt.Errorf("failed to create transaction: %w", err).Error())
+			service.logger.Debug(fmt.Errorf("failed to add transaction: %w", err).Error())
 			return
 		}
-		timestamp := transaction.Timestamp()
-		senderAddress := transaction.SenderAddress()
-		recipientAddress := transaction.RecipientAddress()
-		value := transaction.Value()
-		publicKeyStr := publicKey.String()
-		signatureStr := signature.String()
-		var verb = neighborhood.PUT
-		transactionRequest := neighborhood.TransactionRequest{
-			Verb:             &verb,
-			Timestamp:        &timestamp,
-			SenderAddress:    &senderAddress,
-			RecipientAddress: &recipientAddress,
-			SenderPublicKey:  &publicKeyStr,
-			Value:            &value,
-			Signature:        &signatureStr,
-		}
+		transactionRequest := transaction.GetRequest()
 		service.neighborsMutex.RLock()
 		defer service.neighborsMutex.RUnlock()
 		for _, neighbor := range service.neighbors {
@@ -233,41 +221,37 @@ func (service *Service) CreateTransaction(transaction *Transaction, publicKey *e
 	}()
 }
 
-func (service *Service) AddTransaction(transaction *Transaction, publicKey *encryption.PublicKey, signature *encryption.Signature) {
-	service.waitGroup.Add(1)
-	go func() {
-		defer service.waitGroup.Done()
-		service.blocksMutex.RLock()
-		if len(service.blocks) > 2 {
-			for i := len(service.blocks) - 2; i < len(service.blocks); i++ {
-				for _, validatedTransaction := range service.blocks[i].transactions {
-					if validatedTransaction.Equals(transaction) {
-						service.logger.Error("failed to add transaction: the transaction already is in the blockchain")
-						return
-					}
+func (service *Service) addTransaction(transaction *Transaction) (err error) {
+	service.blocksMutex.Lock()
+	defer service.blocksMutex.Unlock()
+	if len(service.blocks) > 2 {
+		if transaction.Timestamp() < service.blocks[len(service.blocks)-2].Timestamp() {
+			err = errors.New("the transaction timestamp is invalid")
+			return
+		}
+		for i := len(service.blocks) - 2; i < len(service.blocks); i++ {
+			for _, validatedTransaction := range service.blocks[i].transactions {
+				if validatedTransaction.Equals(transaction) {
+					err = errors.New("the transaction already is in the blockchain")
+					return
 				}
 			}
 		}
-		service.blocksMutex.RUnlock()
-
-		err := service.addTransaction(transaction, publicKey, signature)
-		if err != nil {
-			service.logger.Error(fmt.Errorf("failed to add transaction: %w", err).Error())
-		}
-	}()
-}
-
-func (service *Service) addTransaction(transaction *Transaction, publicKey *encryption.PublicKey, signature *encryption.Signature) (err error) {
-	marshaledTransaction, err := transaction.MarshalJSON()
-	if err != nil {
-		err = fmt.Errorf("failed to marshal transaction, %w", err)
-		return
 	}
-	if !signature.Verify(marshaledTransaction, publicKey, transaction.SenderAddress()) {
+	for _, pendingTransaction := range service.transactions {
+		if pendingTransaction.Equals(transaction) {
+			err = errors.New("the transaction already is in the transactions pool")
+			return
+		}
+	}
+	if err = transaction.VerifySignature(); err != nil {
 		err = errors.New("failed to verify transaction")
 		return
 	}
-	senderWalletAmount := service.CalculateTotalAmount(transaction.Timestamp(), transaction.SenderAddress())
+	var senderWalletAmount uint64
+	if len(service.blocks) > 0 {
+		senderWalletAmount = service.calculateTotalAmount(service.blocks[len(service.blocks)-1].Timestamp(), transaction.SenderAddress(), service.blocks)
+	}
 	insufficientBalance := senderWalletAmount < transaction.Value()
 	if insufficientBalance {
 		err = errors.New("not enough balance in the sender wallet")
@@ -283,9 +267,9 @@ func (service *Service) Mine() {
 	if service.miningStarted || service.mineRequested {
 		return
 	}
-	now := time.Now()
-	parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
-	deadline := parsedStartDate.Sub(now)
+	startTime := service.watch.Now()
+	parsedStartDate := startTime.Truncate(service.miningTimer).Add(service.miningTimer)
+	deadline := parsedStartDate.Sub(startTime)
 	service.miningTicker.Reset(deadline)
 	service.mineRequested = true
 	service.waitGroup.Add(1)
@@ -295,9 +279,9 @@ func (service *Service) Mine() {
 		service.mine()
 		service.mineRequested = false
 		if service.miningStarted {
-			newNow := time.Now()
-			newParsedStartDate := newNow.Truncate(service.miningTimer).Add(service.miningTimer)
-			newDeadline := newParsedStartDate.Sub(newNow)
+			now := service.watch.Now()
+			newParsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
+			newDeadline := newParsedStartDate.Sub(now)
 			service.miningTicker.Reset(newDeadline)
 		} else {
 			service.miningTicker.Stop()
@@ -308,10 +292,10 @@ func (service *Service) Mine() {
 func (service *Service) mine() {
 	service.blocksMutex.Lock()
 	defer service.blocksMutex.Unlock()
-	now := time.Now().Round(service.miningTimer).UnixNano()
+	now := service.watch.Now().Round(service.miningTimer).UnixNano()
 	reward := service.calculateTotalReward(now, service.address, service.blocks)
 	service.logger.Debug(fmt.Sprintf("reward: %d", reward))
-	rewardTransaction := NewTransaction(now, MiningRewardSenderAddress, service.address, reward)
+	rewardTransaction := NewTransaction(service.address, RewardSenderAddress, nil, now, reward)
 	service.addBlock(now, rewardTransaction)
 }
 
@@ -323,7 +307,7 @@ func (service *Service) StartMining() {
 }
 
 func (service *Service) mining() {
-	now := time.Now()
+	now := service.watch.Now()
 	parsedStartDate := now.Truncate(service.miningTimer).Add(service.miningTimer)
 	deadline := parsedStartDate.Sub(now)
 	service.miningTicker.Reset(deadline)
@@ -345,29 +329,32 @@ func (service *Service) StopMining() {
 }
 
 func (service *Service) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64 {
-	var totalAmount uint64
-	var lastTimestamp int64
 	service.blocksMutex.RLock()
 	defer service.blocksMutex.RUnlock()
-	for _, block := range service.blocks {
+	return service.calculateTotalAmount(currentTimestamp, blockchainAddress, service.blocks)
+}
+
+func (service *Service) calculateTotalAmount(currentTimestamp int64, blockchainAddress string, blocks []*Block) uint64 {
+	var totalAmount uint64
+	var lastTimestamp int64
+	for _, block := range blocks {
 		for _, transaction := range block.Transactions() {
 			value := transaction.Value()
 			if blockchainAddress == transaction.RecipientAddress() {
 				if totalAmount > 0 {
-					totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
+					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
 				totalAmount += value
-				lastTimestamp = transaction.Timestamp()
-			}
-			if blockchainAddress == transaction.SenderAddress() {
+				lastTimestamp = block.Timestamp()
+			} else if blockchainAddress == transaction.SenderAddress() {
 				if totalAmount > 0 {
-					totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
+					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
 				if totalAmount < value {
-					service.logger.Error(fmt.Sprintf("historical transaction should not have been validated: wallet amount=%d, transaction value=%d", totalAmount, value))
+					service.logger.Error(fmt.Sprintf("historical transaction have not been properly validated: wallet amount=%d, transaction value=%d", totalAmount, value))
 				}
 				totalAmount -= value
-				lastTimestamp = transaction.Timestamp()
+				lastTimestamp = block.Timestamp()
 			}
 		}
 	}
@@ -384,18 +371,18 @@ func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainA
 			value := transaction.Value()
 			if blockchainAddress == transaction.RecipientAddress() {
 				if totalAmount > 0 {
-					totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
+					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
 				totalAmount += value
-				lastTimestamp = transaction.Timestamp()
-				if transaction.SenderAddress() == MiningRewardSenderAddress {
+				lastTimestamp = block.Timestamp()
+				if transaction.SenderAddress() == RewardSenderAddress {
 					totalReward = 0
 					rewardRecipientAddresses = nil
 					if !isValidatorKnown {
 						isValidatorKnown = true
 					}
 				}
-			} else if transaction.SenderAddress() == MiningRewardSenderAddress {
+			} else if transaction.SenderAddress() == RewardSenderAddress {
 				for _, rewardRecipientAddress := range rewardRecipientAddresses {
 					if transaction.RecipientAddress() == rewardRecipientAddress {
 						isValidatorKnown = false
@@ -404,20 +391,19 @@ func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainA
 				rewardRecipientAddresses = append(rewardRecipientAddresses, transaction.RecipientAddress())
 				if isValidatorKnown {
 					reward := calculateReward(totalAmount)
-					totalReward = service.decay(lastTimestamp, transaction.Timestamp(), totalReward) + reward
+					totalReward = service.decay(lastTimestamp, block.Timestamp(), totalReward) + reward
 				} else {
 					totalReward = 0
 				}
-			}
-			if blockchainAddress == transaction.SenderAddress() {
+			} else if blockchainAddress == transaction.SenderAddress() {
 				if totalAmount > 0 {
-					totalAmount = service.decay(lastTimestamp, transaction.Timestamp(), totalAmount)
+					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
 				if totalAmount < value {
 					service.logger.Error(fmt.Sprintf("historical transaction should not have been validated: wallet amount=%d, transaction value=%d", totalAmount, value))
 				}
 				totalAmount -= value
-				lastTimestamp = transaction.Timestamp()
+				lastTimestamp = block.Timestamp()
 			}
 		}
 	}
@@ -445,28 +431,38 @@ func (service *Service) Blocks() []*neighborhood.BlockResponse {
 	return service.blockResponses
 }
 
-func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block) {
+func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockResponse) ([]*Block, error) {
 	if len(neighborBlocks) == 0 || len(neighborBlocks) < len(service.blocks) {
-		return
+		return nil, errors.New("neighbor's blockchain is too short")
 	}
-	lastNeighborBlock := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
-	if err := lastNeighborBlock.IsProofOfHumanityValid(); err != nil {
-		service.logger.Error(fmt.Errorf("failed to get valid proof of humanity: %w", err).Error())
-		return
+	lastNeighborBlock, err := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
+	if err != nil {
+		return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 	}
-	previousBlock := NewBlockFromResponse(neighborBlocks[0])
+	if err = lastNeighborBlock.IsProofOfHumanityValid(); err != nil {
+		return nil, fmt.Errorf("failed to get valid neighbor proof of humanity: %w", err)
+	}
+	previousBlock, err := NewBlockFromResponse(neighborBlocks[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed to instantiate first neighbor block: %w", err)
+	}
+	var validBlocks []*Block
 	validBlocks = append(validBlocks, previousBlock)
+	now := service.watch.Now().UnixNano()
 	for i := 1; i < len(neighborBlocks); i++ {
-		currentBlock := NewBlockFromResponse(neighborBlocks[i])
-		previousBlockHash, err := previousBlock.Hash()
+		var currentBlock *Block
+		currentBlock, err = NewBlockFromResponse(neighborBlocks[i])
 		if err != nil {
-			service.logger.Error(fmt.Errorf("failed to calculate previous block hash: %w", err).Error())
-			return
+			return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
+		}
+		var previousBlockHash [32]byte
+		previousBlockHash, err = previousBlock.Hash()
+		if err != nil {
+			return nil, fmt.Errorf("failed to calculate previous neighbor block hash: %w", err)
 		}
 		isPreviousHashValid := currentBlock.PreviousHash() == previousBlockHash
 		if !isPreviousHashValid {
-			service.logger.Debug("a hash is invalid for a neighbor")
-			return
+			return nil, errors.New("a previous neighbor block hash is invalid")
 		}
 		var isNewBlock bool
 		if i >= len(service.blocks) {
@@ -476,53 +472,60 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 			var currentBlockHash [32]byte
 			currentBlockHash, err = currentBlock.Hash()
 			if err != nil {
-				service.logger.Error(fmt.Errorf("failed to calculate neighbor block hash: %w", err).Error())
-				return
+				return nil, fmt.Errorf("failed to calculate neighbor block hash: %w", err)
 			}
 			hostBlockHash, err = service.blocks[i].Hash()
 			if err != nil {
 				service.logger.Error(fmt.Errorf("failed to calculate host block hash: %w", err).Error())
-			} else if currentBlockHash != hostBlockHash {
+			}
+			if currentBlockHash != hostBlockHash {
 				isNewBlock = true
 			}
 		}
 
 		if isNewBlock {
 			var rewarded bool
+			totalTransactionsValueBySenderAddress := make(map[string]uint64)
+			currentBlockTimestamp := currentBlock.Timestamp()
 			for _, transaction := range currentBlock.Transactions() {
-				if transaction.SenderAddress() == MiningRewardSenderAddress {
+				if transaction.SenderAddress() == RewardSenderAddress {
 					// Check that there is only one reward by block
 					if rewarded {
-						service.logger.Error("multiple rewards attempt for the same block")
-						return
+						return nil, errors.New("multiple rewards attempt for the same neighbor block")
 					}
 					rewarded = true
-					currentBlockTimestamp := currentBlock.Timestamp()
 					previousBlockTimestamp := previousBlock.Timestamp()
-					now := time.Now().UnixNano()
 					if currentBlockTimestamp != previousBlockTimestamp+int64(service.miningTimer) || currentBlockTimestamp > now {
-						service.logger.Error("reward timestamp is invalid")
-						return
+						return nil, errors.New("neighbor block reward timestamp is invalid")
 					}
 					if transaction.Value() > service.calculateTotalReward(currentBlockTimestamp, transaction.RecipientAddress(), validBlocks) {
-						service.logger.Error("reward exceeds the consented one")
-						return
+						return nil, errors.New("neighbor block reward exceeds the consented one")
 					}
+				} else {
+					if err = transaction.VerifySignature(); err != nil {
+						return nil, fmt.Errorf("neighbor transaction is invalid: %w", err)
+					}
+					totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value()
+				}
+			}
+			for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
+				if totalTransactionsValue > service.calculateTotalAmount(currentBlockTimestamp, senderAddress, validBlocks) {
+					return nil, errors.New("neighbor block total transactions value exceeds its sender wallet amount")
 				}
 			}
 		}
 		validBlocks = append(validBlocks, currentBlock)
 		previousBlock = currentBlock
 	}
-	return
+	return validBlocks, nil
 }
 
 func (service *Service) StartConflictsResolution() {
-	consensusTimer := service.miningTimer / 6
+	consensusTimer := service.miningTimer / ConflictResolutionPerValidation
 	consensusTicker := time.Tick(consensusTimer)
 	go func() {
 		for {
-			for i := 0; i < 6; i++ {
+			for i := 0; i < ConflictResolutionPerValidation; i++ {
 				if i > 0 || (!service.miningStarted && !service.mineRequested) {
 					service.resolveConflicts()
 				}
@@ -545,8 +548,11 @@ func (service *Service) resolveConflicts() {
 			neighborBlocks, err := neighbor.GetBlocks()
 			blockResponsesByNeighbor[neighbor] = neighborBlocks
 			if err == nil {
-				validBlocks := service.getValidBlocks(neighborBlocks)
-				if validBlocks != nil {
+				var validBlocks []*Block
+				validBlocks, err = service.getValidBlocks(neighborBlocks)
+				if err != nil {
+					service.logger.Debug(fmt.Errorf("failed to validate blocks for neighbor %s: %w", neighbor.Target(), err).Error())
+				} else if validBlocks != nil {
 					blocksByNeighbor[neighbor] = validBlocks
 					selectedNeighbors = append(selectedNeighbors, neighbor)
 				}
@@ -589,7 +595,7 @@ func (service *Service) resolveConflicts() {
 						var rewardRecipientAddressAge uint64
 						var neighborLastBlockRewardRecipientAddress string
 						for _, transaction := range blocks[len(blocks)-1].transactions {
-							if transaction.SenderAddress() == MiningRewardSenderAddress {
+							if transaction.SenderAddress() == RewardSenderAddress {
 								neighborLastBlockRewardRecipientAddress = transaction.RecipientAddress()
 							}
 						}
@@ -602,7 +608,7 @@ func (service *Service) resolveConflicts() {
 							var isAgeCalculated bool
 							for i := len(service.blocks) - 2; i > 0; i-- {
 								for _, transaction := range service.blocks[i].transactions {
-									if transaction.SenderAddress() == MiningRewardSenderAddress {
+									if transaction.SenderAddress() == RewardSenderAddress {
 										if transaction.RecipientAddress() == neighborLastBlockRewardRecipientAddress {
 											isAgeCalculated = true
 										}
@@ -646,7 +652,7 @@ func (service *Service) resolveConflicts() {
 					}
 				}
 				for _, rejectedNeighbor := range rejectedNeighbors {
-					remove(selectedNeighbors, rejectedNeighbor)
+					removeNeighbor(selectedNeighbors, rejectedNeighbor)
 				}
 			}
 			if selectedBlocks != nil {
@@ -674,39 +680,37 @@ func (service *Service) resolveConflicts() {
 				}
 				if blockchainReplaced {
 					if len(service.blocks) > 2 {
-						oldTransactions := service.transactions
+						transactions := service.transactions
 						// Add transactions which are not in the new blocks but the rewards
 						for i := len(service.blocks) - 2; i < len(service.blocks); i++ {
 							for _, invalidatedTransaction := range service.blocks[i].transactions {
-								if invalidatedTransaction.SenderAddress() != MiningRewardSenderAddress {
-									oldTransactions = append(oldTransactions, invalidatedTransaction)
+								if invalidatedTransaction.SenderAddress() != RewardSenderAddress {
+									transactions = append(transactions, invalidatedTransaction)
 								}
 							}
 						}
 						// Remove transactions which are in the new blocks
-						newTransactions := oldTransactions
 						for i := len(service.blocks) - 2; i < len(selectedBlocks); i++ {
 							for _, validatedTransaction := range selectedBlocks[i].transactions {
-								for j := 0; j < len(newTransactions); j++ {
-									if validatedTransaction.Equals(newTransactions[j]) {
-										newTransactions[j] = newTransactions[len(newTransactions)-1]
-										newTransactions = newTransactions[:len(newTransactions)-1]
+								for j := 0; j < len(transactions); j++ {
+									// FIXME verify that len(transactions) don't change at each iteration
+									if validatedTransaction.Equals(transactions[j]) {
+										transactions[j] = transactions[len(transactions)-1]
+										transactions = transactions[:len(transactions)-1]
 										j--
 									}
 								}
 							}
 						}
-						service.transactions = newTransactions
+						service.transactions = transactions
 					}
 					service.blockResponses = selectedBlocksResponse
 					service.blocks = selectedBlocks
 					service.logger.Debug("conflicts resolved: blockchain replaced")
 				} else {
-					service.transactions = nil
 					service.logger.Debug("conflicts resolved: blockchain kept")
 				}
 			} else {
-				service.transactions = nil
 				service.logger.Debug("conflicts resolved: blockchain kept")
 			}
 		}
@@ -719,7 +723,7 @@ func (service *Service) sortByBlockLength(selectedNeighbors []*neighborhood.Neig
 	})
 }
 
-func remove(neighbors []*neighborhood.Neighbor, removedNeighbor *neighborhood.Neighbor) []*neighborhood.Neighbor {
+func removeNeighbor(neighbors []*neighborhood.Neighbor, removedNeighbor *neighborhood.Neighbor) []*neighborhood.Neighbor {
 	for i := 0; i < len(neighbors); i++ {
 		if neighbors[i] == removedNeighbor {
 			neighbors = append(neighbors[:i], neighbors[i+1:]...)
@@ -728,6 +732,17 @@ func remove(neighbors []*neighborhood.Neighbor, removedNeighbor *neighborhood.Ne
 		}
 	}
 	return neighbors
+}
+
+func removeTransactions(transactions []*Transaction, removedTransaction *Transaction) []*Transaction {
+	for i := 0; i < len(transactions); i++ {
+		if transactions[i] == removedTransaction {
+			transactions = append(transactions[:i], transactions[i+1:]...)
+			i--
+			return transactions
+		}
+	}
+	return transactions
 }
 
 func (service *Service) addBlock(timestamp int64, rewardTransaction *Transaction) {
@@ -747,8 +762,25 @@ func (service *Service) addBlock(timestamp int64, rewardTransaction *Transaction
 	}
 	service.transactionsMutex.Lock()
 	defer service.transactionsMutex.Unlock()
-	service.transactions = append(service.transactions, rewardTransaction)
-	block := NewBlock(timestamp, lastBlockHash, service.transactions)
+	totalTransactionsValueBySenderAddress := make(map[string]uint64)
+	transactions := service.transactions
+	for _, transaction := range transactions {
+		if transaction.SenderAddress() != RewardSenderAddress {
+			totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value()
+		}
+	}
+	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
+		if totalTransactionsValue > service.calculateTotalAmount(timestamp, senderAddress, service.blocks) {
+			for _, transaction := range transactions {
+				if transaction.SenderAddress() == senderAddress {
+					transactions = removeTransactions(transactions, transaction)
+				}
+			}
+			service.logger.Warn("transactions removed from the transactions pool, total transactions value exceeds its sender wallet amount")
+		}
+	}
+	transactions = append(transactions, rewardTransaction)
+	block := NewBlock(timestamp, lastBlockHash, transactions)
 	service.transactions = nil
 	service.blocks = append(service.blocks, block)
 	blockResponse := block.GetResponse()
