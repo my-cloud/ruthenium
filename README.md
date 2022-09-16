@@ -12,13 +12,14 @@ The blockchain motivating to not capitalize tokens.
 ## Usage
 
 * Open your DNS port 8106
+* To be able to validate blocks, you need be registered in the [Proof of Humanity](https://app.proofofhumanity.id/) registry with an Ethereum wallet address for which you are the owner of the private key
 * At root level (ruthenium folder), run:
-    * go run src/ui/main.go -host-ip={your external IP address}
+    * go run src/ui/main.go -host-ip= `your external IP address` -private-key=`your private key`
 * Using a web browser, go to:
     * http://localhost:8080
-    * store your private key
+    * if not provided, the private key will be generated, then you need to securely store it.
 * In src/blockchain_server, run:
-    * go run src/node/main.go -private-key={your private key}
+    * go run src/node/main.go -private-key=`your private key`
 * Start sending money!
 
 ## Authors and acknowledgment
