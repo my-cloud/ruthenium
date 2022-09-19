@@ -25,7 +25,11 @@ func NewMnemonic(phrase string) *Mnemonic {
 }
 
 func (mnemonic *Mnemonic) PrivateKey(derivationPath string, password string) (*PrivateKey, error) {
-	indexes := parsePath(derivationPath)
+	indexes, err := parsePath(derivationPath)
+	if err != nil {
+		return nil, err
+	}
+
 	// Generate a new seed for the mnemonic and a user supplied password
 	seed := bip39.NewSeed(mnemonic.phrase, password)
 
@@ -75,28 +79,43 @@ func (mnemonic *Mnemonic) PrivateKey(derivationPath string, password string) (*P
 	return &PrivateKey{ecdsaPrivateKey}, nil
 }
 
-func parsePath(path string) map[string]uint32 {
+func parsePath(path string) (map[string]uint32, error) {
 	indexes := make(map[string]uint32)
 	const derivationStartString = "m/"
 	const derivationSeparator1 = "'/"
 	const derivationSeparator2 = "/"
 	purposeString := path[len(derivationStartString):strings.Index(path, derivationSeparator1)]
-	purpose, _ := strconv.Atoi(purposeString)
+	purpose, err := strconv.ParseUint(purposeString, 10, 32)
+	if err != nil {
+		return nil, err
+	}
 	indexes[purposeId] = uint32(purpose)
 	pathWithoutPurpose := path[strings.Index(path, purposeString)+len(purposeString)+len(derivationSeparator1):]
 	coinTypeString := pathWithoutPurpose[:strings.Index(pathWithoutPurpose, derivationSeparator1)]
-	coinType, _ := strconv.Atoi(coinTypeString)
+	coinType, err := strconv.ParseUint(coinTypeString, 10, 32)
+	if err != nil {
+		return nil, err
+	}
 	indexes[coinTypeId] = uint32(coinType)
 	pathWithoutCoinType := pathWithoutPurpose[strings.Index(pathWithoutPurpose, coinTypeString)+len(coinTypeString)+len(derivationSeparator1):]
 	accountString := pathWithoutCoinType[:strings.Index(pathWithoutCoinType, derivationSeparator1)]
-	account, _ := strconv.Atoi(accountString)
+	account, err := strconv.ParseUint(accountString, 10, 32)
+	if err != nil {
+		return nil, err
+	}
 	indexes[accountId] = uint32(account)
 	pathWithoutAccount := pathWithoutCoinType[strings.Index(pathWithoutCoinType, accountString)+len(accountString)+len(derivationSeparator1):]
 	changeString := pathWithoutAccount[:strings.Index(pathWithoutAccount, derivationSeparator2)]
-	change, _ := strconv.Atoi(changeString)
+	change, err := strconv.ParseUint(changeString, 10, 32)
+	if err != nil {
+		return nil, err
+	}
 	indexes[changeId] = uint32(change)
 	pathWithoutChange := pathWithoutAccount[strings.Index(pathWithoutAccount, changeString)+len(changeString)+len(derivationSeparator2):]
-	addressIndex, _ := strconv.Atoi(pathWithoutChange)
+	addressIndex, err := strconv.ParseUint(pathWithoutChange, 10, 32)
+	if err != nil {
+		return nil, err
+	}
 	indexes[addressIndexId] = uint32(addressIndex)
-	return indexes
+	return indexes, nil
 }
