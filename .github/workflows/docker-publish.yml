@@ -9,7 +9,7 @@ on:
   schedule:
     - cron: '43 13 * * *'
   push:
-    branches: [ "main", "dev", "41-automatically-deploy-a-docker-image" ]
+    branches: [ "main", "dev" ]
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
   pull_request:
