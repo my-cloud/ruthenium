@@ -6,40 +6,63 @@ on:
     branches: [ "main", "44-automatically-release" ]
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+      - uses: golangci/golangci-lint-action@v3
+
   build:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v2
-        - uses: actions/setup-node@v1
-          with:
-            node-version: 16
-        - run: npm ci
-        - run: npm test
-        - run: npm run build
-        - name: go-semantic-release
-          id: semrel
-          uses: ./
-          with:
-            github-token: ${{ secrets.GITHUB_TOKEN }}
-        - name: Set up Git
-          if: steps.semrel.outputs.version != ''
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          run: |
-            git config user.name "${{ github.actor }}"
-            git config user.email "${{ github.actor }}@users.noreply.github.com"
-            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-        - name: Update major tag
-          if: steps.semrel.outputs.version != ''
-          run: |
-            TAG=v${{ steps.semrel.outputs.version_major }}
-            git push origin :refs/tags/${TAG}
-            git tag -fa ${TAG} -m "Release v${{ steps.semrel.outputs.version }}"
-            git push origin ${TAG}
-        - name: Update minor tag
-          if: steps.semrel.outputs.version != ''
-          run: |
-            TAG=v${{ steps.semrel.outputs.version_major }}.${{ steps.semrel.outputs.version_minor }}
-            git push origin :refs/tags/${TAG}
-            git tag -fa ${TAG} -m "Release v${{ steps.semrel.outputs.version }}"
-            git push origin ${TAG}
+    name: Build and Run
+    runs-on: ${{ matrix.os }}
+    needs: lint
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+      - run: go build ./cmd/semantic-release/
+        env:
+          CGO_ENABLED: 0
+      - run: go test -v ./...
+      - run: ./semantic-release --dry --allow-no-changes --no-ci
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+      - run: go build ./cmd/semantic-release/
+      - uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/login-action@v1
+        with:
+          registry: registry.gitlab.com
+          username: ${{ secrets.GITLAB_USER }}
+          password: ${{ secrets.GITLAB_TOKEN }}
+      - uses: go-semantic-release/action@v1
+        with:
+          bin: ./semantic-release
+          hooks: goreleaser,npm-binary-releaser
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
