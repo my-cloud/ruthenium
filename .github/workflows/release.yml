@@ -6,52 +6,11 @@ on:
     branches: [ "main", "44-automatically-release" ]
 
 jobs:
-  build:
-    name: Build and Run
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
-      - run: go build -v ./...
-        env:
-          CGO_ENABLED: 0
-      - run: go test -v ./...
-      - run: ./semantic-release --dry --allow-no-changes --no-ci
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: build
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
-      - run: go build -v ./...
-      - uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/login-action@v1
-        with:
-          registry: registry.gitlab.com
-          username: ${{ secrets.GITLAB_USER }}
-          password: ${{ secrets.GITLAB_TOKEN }}
+      - uses: actions/checkout@master
       - uses: go-semantic-release/action@v1
         with:
-          bin: ./semantic-release
-          hooks: goreleaser,npm-binary-releaser
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
