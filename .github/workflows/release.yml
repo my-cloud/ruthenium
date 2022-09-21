@@ -6,20 +6,9 @@ on:
     branches: [ "main", "44-automatically-release" ]
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
-      - uses: golangci/golangci-lint-action@v3
-
   build:
     name: Build and Run
     runs-on: ${{ matrix.os }}
-    needs: lint
     strategy:
       fail-fast: true
       matrix:
