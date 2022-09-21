@@ -5,7 +5,7 @@ name: Release
 # Workflow will run when all workflows are successful on the release branch
 on:
   workflow_run:
-    workflows: ["Go", "Docker", "CodeQL"]
+    workflows: ["Go"]
     branches: [ "main", "44-automatically-release" ]
     types: 
       - requested
