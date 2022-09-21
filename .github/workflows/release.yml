@@ -4,8 +4,6 @@ name: Release
 on:
   workflow_run:
     workflows: [ Go ]
-  push:
-    branches: [ "main", "44-automatically-release" ]
     types: 
       - completed
 
