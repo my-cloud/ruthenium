@@ -8,7 +8,7 @@ on:
     workflows: ["Go"]
     branches: [ "main", "44-automatically-release" ]
     types: 
-      - requested
+      - completed
 
 jobs:
   on-success:
