@@ -1,11 +1,8 @@
 name: Release
 
-# Workflow will run when all workflows are successful on the release branch
 on:
-  workflow_run:
-    workflows: [ Go ]
-    types: 
-      - completed
+  push:
+    branches: [ "main" ]
 
 jobs:
   release:
