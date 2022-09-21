@@ -4,14 +4,11 @@ name: Release
 
 # Workflow will run when all workflows are successful on the release branch
 on:
-  workflow_run:
-    workflows: ["Go"]
+  push:
     branches: [ "main", "44-automatically-release" ]
-    types: 
-      - completed
 
 jobs:
-  build:
+  release:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
