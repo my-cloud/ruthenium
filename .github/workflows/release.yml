@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.18
-      - run: go build ./cmd/semantic-release/
+      - run: go build -v ./...
         env:
           CGO_ENABLED: 0
       - run: go test -v ./...
@@ -36,7 +36,7 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.18
-      - run: go build ./cmd/semantic-release/
+      - run: go build -v ./...
       - uses: docker/login-action@v1
         with:
           registry: ghcr.io
