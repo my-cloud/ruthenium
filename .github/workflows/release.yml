@@ -8,7 +8,7 @@ on:
     workflows: ["Go", "Docker", "CodeQL"]
     branches: [ "main", "44-automatically-release" ]
     types: 
-      - completed
+      - requested
 
 jobs:
   on-success:
