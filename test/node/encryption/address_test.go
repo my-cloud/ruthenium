@@ -2,8 +2,8 @@ package encryption
 
 import (
 	"fmt"
-	"gitlab.com/coinsmaster/ruthenium/src/node/encryption"
-	"gitlab.com/coinsmaster/ruthenium/test"
+	"github.com/my-cloud/ruthenium/src/node/encryption"
+	"github.com/my-cloud/ruthenium/test"
 	"testing"
 )
 

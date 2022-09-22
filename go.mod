@@ -1,4 +1,4 @@
-module gitlab.com/coinsmaster/ruthenium
+module github.com/my-cloud/ruthenium
 
 go 1.17
 

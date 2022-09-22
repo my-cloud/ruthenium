@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
+	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -70,7 +70,7 @@ func (block *Block) IsProofOfHumanityValid() (err error) {
 		return
 	}
 	if !strings.Contains(string(body), "\"registered\":true") {
-		err = fmt.Errorf("the miner is currently not registered as a real human: %w", err)
+		err = fmt.Errorf("the miner is currently not registered as a real human")
 		return
 	}
 	return
