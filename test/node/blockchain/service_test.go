@@ -2,11 +2,11 @@ package blockchain
 
 import (
 	"fmt"
-	"gitlab.com/coinsmaster/ruthenium/src/log"
-	"gitlab.com/coinsmaster/ruthenium/src/node/blockchain"
-	"gitlab.com/coinsmaster/ruthenium/src/node/encryption"
-	"gitlab.com/coinsmaster/ruthenium/test"
-	"gitlab.com/coinsmaster/ruthenium/test/clock"
+	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/blockchain"
+	"github.com/my-cloud/ruthenium/src/node/encryption"
+	"github.com/my-cloud/ruthenium/test"
+	"github.com/my-cloud/ruthenium/test/clock"
 	"sync"
 	"testing"
 	"time"

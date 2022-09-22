@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
+	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 	"io/ioutil"
 	"net/http"
 	"strings"

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.com/coinsmaster/ruthenium/src/node/encryption"
-	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
+	"github.com/my-cloud/ruthenium/src/node/encryption"
+	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 )
 
 type Transaction struct {

@@ -3,9 +3,9 @@ package blockchain
 import (
 	"errors"
 	"fmt"
-	"gitlab.com/coinsmaster/ruthenium/src/clock"
-	"gitlab.com/coinsmaster/ruthenium/src/log"
-	"gitlab.com/coinsmaster/ruthenium/src/node/neighborhood"
+	"github.com/my-cloud/ruthenium/src/clock"
+	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 	"math"
 	"math/rand"
 	"net"

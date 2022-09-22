@@ -36,11 +36,11 @@ For further information, see [the dedicated wiki page](https://github.com/my-clo
 * Using docker image (option B)
   * Run the node:
     ```
-    sudo docker run -ti ghcr.io/my-cloud/ruthenium:main \app\node -host-ip=<your external IP address> -private-key=<your private key>
+    sudo docker run -p 8106:8106 -ti ghcr.io/my-cloud/ruthenium:main \app\node -host-ip=<your external IP address> -private-key=<your private key>
     ```
   * Run the ui:
     ```
-    sudo docker run -ti ghcr.io/my-cloud/ruthenium:main \app\ui -private-key=<your private key>
+    sudo docker run -p 8080:8080 -ti ghcr.io/my-cloud/ruthenium:main \app\ui -private-key=<your private key>
     ```
 * Using a web browser, go to:
   * http://localhost:8080

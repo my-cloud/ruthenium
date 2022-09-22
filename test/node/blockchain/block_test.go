@@ -1,8 +1,8 @@
 package blockchain
 
 import (
-	"gitlab.com/coinsmaster/ruthenium/src/node/blockchain"
-	"gitlab.com/coinsmaster/ruthenium/test"
+	"github.com/my-cloud/ruthenium/src/node/blockchain"
+	"github.com/my-cloud/ruthenium/test"
 	"testing"
 )
 
