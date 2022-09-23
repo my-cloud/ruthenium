@@ -20,7 +20,7 @@ const (
 	RewardSenderAddress        = "REWARD SENDER ADDRESS"
 	ParticlesCount             = 100000000
 	GenesisAmount       uint64 = 100000 * ParticlesCount
-	RewardExponent             = 1 / 1.828393264
+	RewardExponent             = 0.54692829
 	HalfLifeInDays             = 373.59
 
 	NeighborSynchronizationTimeInSeconds = 10
