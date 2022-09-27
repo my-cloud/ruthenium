@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	DefaultPort = 8106
+	DefaultPort = 8080
 
 	RewardSenderAddress        = "REWARD SENDER ADDRESS"
 	ParticlesCount             = 100000000
