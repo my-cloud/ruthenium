@@ -106,8 +106,7 @@ func (service *Service) AddGenesisBlock() {
 	service.miningTicker.Reset(deadline)
 	<-service.miningTicker.C
 	if service.blocks == nil {
-		genesisTransaction := NewTransaction(service.address, RewardSenderAddress, nil, parsedStartDate.UnixNano(), GenesisAmount)
-		service.addBlock(parsedStartDate.UnixNano(), genesisTransaction)
+		service.addBlock(parsedStartDate.UnixNano(), GenesisAmount)
 		service.logger.Debug("genesis block added")
 	}
 }
@@ -252,7 +251,7 @@ func (service *Service) addTransaction(transaction *Transaction) (err error) {
 	if len(service.blocks) > 0 {
 		senderWalletAmount = service.calculateTotalAmount(service.blocks[len(service.blocks)-1].Timestamp(), transaction.SenderAddress(), service.blocks)
 	}
-	insufficientBalance := senderWalletAmount < transaction.Value()
+	insufficientBalance := senderWalletAmount < transaction.Value()+transaction.TransactionFee()
 	if insufficientBalance {
 		err = errors.New("not enough balance in the sender wallet")
 		return
@@ -295,8 +294,7 @@ func (service *Service) mine() {
 	now := service.watch.Now().Round(service.miningTimer).UnixNano()
 	reward := service.calculateTotalReward(now, service.address, service.blocks)
 	service.logger.Debug(fmt.Sprintf("reward: %d", reward))
-	rewardTransaction := NewTransaction(service.address, RewardSenderAddress, nil, now, reward)
-	service.addBlock(now, rewardTransaction)
+	service.addBlock(now, reward)
 }
 
 func (service *Service) StartMining() {
@@ -350,10 +348,12 @@ func (service *Service) calculateTotalAmount(currentTimestamp int64, blockchainA
 				if totalAmount > 0 {
 					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
-				if totalAmount < value {
+				if totalAmount < value+transaction.TransactionFee() {
 					service.logger.Error(fmt.Sprintf("historical transaction have not been properly validated: wallet amount=%d, transaction value=%d", totalAmount, value))
+					totalAmount = 0
+				} else {
+					totalAmount -= value + transaction.TransactionFee()
 				}
-				totalAmount -= value
 				lastTimestamp = block.Timestamp()
 			}
 		}
@@ -399,10 +399,12 @@ func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainA
 				if totalAmount > 0 {
 					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
-				if totalAmount < value {
+				if totalAmount < value+transaction.TransactionFee() {
 					service.logger.Error(fmt.Sprintf("historical transaction should not have been validated: wallet amount=%d, transaction value=%d", totalAmount, value))
+					totalAmount = 0
+				} else {
+					totalAmount -= value + transaction.TransactionFee()
 				}
-				totalAmount -= value
 				lastTimestamp = block.Timestamp()
 			}
 		}
@@ -745,7 +747,7 @@ func removeTransactions(transactions []*Transaction, removedTransaction *Transac
 	return transactions
 }
 
-func (service *Service) addBlock(timestamp int64, rewardTransaction *Transaction) {
+func (service *Service) addBlock(timestamp int64, reward uint64) {
 	var lastBlockHash [32]byte
 	if service.blocks != nil {
 		lastBlock := service.blocks[len(service.blocks)-1]
@@ -766,7 +768,7 @@ func (service *Service) addBlock(timestamp int64, rewardTransaction *Transaction
 	transactions := service.transactions
 	for _, transaction := range transactions {
 		if transaction.SenderAddress() != RewardSenderAddress {
-			totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value()
+			totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + transaction.TransactionFee()
 		}
 	}
 	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
@@ -779,11 +781,11 @@ func (service *Service) addBlock(timestamp int64, rewardTransaction *Transaction
 			service.logger.Warn("transactions removed from the transactions pool, total transactions value exceeds its sender wallet amount")
 		}
 	}
+	rewardTransaction := NewTransaction(service.address, RewardSenderAddress, nil, timestamp, reward)
 	transactions = append(transactions, rewardTransaction)
 	block := NewBlock(timestamp, lastBlockHash, transactions)
 	service.transactions = nil
 	service.blocks = append(service.blocks, block)
 	blockResponse := block.GetResponse()
 	service.blockResponses = append(service.blockResponses, blockResponse)
-	return
 }
