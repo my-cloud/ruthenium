@@ -576,90 +576,73 @@ func (service *Service) resolveConflicts() {
 		// Select blockchain with consensus for the previous hash
 		var selectedBlocksResponse []*neighborhood.BlockResponse
 		var selectedBlocks []*Block
-		if selectedNeighbors != nil && service.neighbors != nil {
-			service.sortByBlockLength(selectedNeighbors, blocksByNeighbor)
-			for len(blocksByNeighbor) > 0 {
-				fiftyOnePercent := len(blocksByNeighbor)/2 + 1
-				shortestBlocks := blocksByNeighbor[selectedNeighbors[fiftyOnePercent-1]]
-				shortestBlocksLength := len(shortestBlocks)
-				shortestBlocksSlicePreviousHash := shortestBlocks[len(shortestBlocks)-1].PreviousHash()
-				var samePreviousHashesCount int
-				for i := 0; i < fiftyOnePercent; i++ {
-					if blocksByNeighbor[selectedNeighbors[i]][shortestBlocksLength-1].PreviousHash() == shortestBlocksSlicePreviousHash {
-						samePreviousHashesCount++
+		if selectedNeighbors != nil {
+			// Prevent forks
+			service.sortByBlocksLength(selectedNeighbors, blocksByNeighbor)
+			halfNeighborsCount := len(blocksByNeighbor) / 2
+			shortestBlocks := blocksByNeighbor[selectedNeighbors[len(selectedNeighbors)-1]]
+			var rejectedNeighbors []*neighborhood.Neighbor
+			for neighbor, blocks := range blocksByNeighbor {
+				var samePreviousHashCount int
+				for _, otherBlocks := range blocksByNeighbor {
+					if blocks[len(shortestBlocks)-1].PreviousHash() == otherBlocks[len(shortestBlocks)-1].PreviousHash() {
+						samePreviousHashCount++
 					}
 				}
-				if samePreviousHashesCount == fiftyOnePercent {
-					// Keep the longest chain with the oldest reward recipient address
-					maxLength := len(service.blocks)
-					var maxRewardRecipientAddressAge uint64
-					for neighbor, blocks := range blocksByNeighbor {
-						var rewardRecipientAddressAge uint64
-						var neighborLastBlockRewardRecipientAddress string
-						for _, transaction := range blocks[len(blocks)-1].transactions {
-							if transaction.SenderAddress() == RewardSenderAddress {
-								neighborLastBlockRewardRecipientAddress = transaction.RecipientAddress()
-							}
+				if samePreviousHashCount <= halfNeighborsCount {
+					// The previous hash of the blockchain used to compare is shared by at least 51% neighbors, reject other neighbors
+					rejectedNeighbors = append(rejectedNeighbors, neighbor)
+				}
+			}
+			for _, rejectedNeighbor := range rejectedNeighbors {
+				delete(blocksByNeighbor, rejectedNeighbor)
+				delete(blockResponsesByNeighbor, rejectedNeighbor)
+				removeNeighbor(selectedNeighbors, rejectedNeighbor)
+			}
+			// Keep the longest chain with the oldest reward recipient address
+			if len(blocksByNeighbor) > 0 {
+				maxLength := len(service.blocks)
+				var maxRewardRecipientAddressAge uint64
+				for neighbor, blocks := range blocksByNeighbor {
+					var rewardRecipientAddressAge uint64
+					var neighborLastBlockRewardRecipientAddress string
+					for _, transaction := range blocks[len(blocks)-1].transactions {
+						if transaction.SenderAddress() == RewardSenderAddress {
+							neighborLastBlockRewardRecipientAddress = transaction.RecipientAddress()
 						}
-						if len(blocks) > maxLength {
-							maxLength = len(blocks)
-							selectedBlocksResponse = blockResponsesByNeighbor[neighbor]
-							selectedBlocks = blocks
-							maxRewardRecipientAddressAge = 0
-						} else if len(blocks) == maxLength {
-							var isAgeCalculated bool
-							for i := len(service.blocks) - 2; i > 0; i-- {
-								for _, transaction := range service.blocks[i].transactions {
-									if transaction.SenderAddress() == RewardSenderAddress {
-										if transaction.RecipientAddress() == neighborLastBlockRewardRecipientAddress {
-											isAgeCalculated = true
-										}
-										rewardRecipientAddressAge++
-										break
+					}
+					if len(blocks) > maxLength {
+						maxLength = len(blocks)
+						selectedBlocksResponse = blockResponsesByNeighbor[neighbor]
+						selectedBlocks = blocks
+						maxRewardRecipientAddressAge = 0
+					} else if len(blocks) == maxLength {
+						var isAgeCalculated bool
+						for i := len(service.blocks) - 2; i > 0; i-- {
+							for _, transaction := range service.blocks[i].transactions {
+								if transaction.SenderAddress() == RewardSenderAddress {
+									if transaction.RecipientAddress() == neighborLastBlockRewardRecipientAddress {
+										isAgeCalculated = true
 									}
-								}
-								if isAgeCalculated {
+									rewardRecipientAddressAge++
 									break
 								}
 							}
-							if rewardRecipientAddressAge > maxRewardRecipientAddressAge {
-								maxRewardRecipientAddressAge = rewardRecipientAddressAge
-								selectedBlocksResponse = blockResponsesByNeighbor[neighbor]
-								selectedBlocks = blocks
+							if isAgeCalculated {
+								break
 							}
 						}
-					}
-					break
-				}
-				var rejectedNeighbors []*neighborhood.Neighbor
-				if samePreviousHashesCount < fiftyOnePercent/2+1 {
-					// The previous hash of the blockchain used to compare is not shared by less than 51% neighbors, reject it and all neighbors with the same previous hash
-					for i := 0; i < fiftyOnePercent; i++ {
-						selectedNeighbor := selectedNeighbors[i]
-						if blocksByNeighbor[selectedNeighbor][shortestBlocksLength-1].PreviousHash() == shortestBlocksSlicePreviousHash {
-							delete(blocksByNeighbor, selectedNeighbor)
-							delete(blockResponsesByNeighbor, selectedNeighbor)
-							rejectedNeighbors = append(rejectedNeighbors, selectedNeighbor)
+						if rewardRecipientAddressAge > maxRewardRecipientAddressAge {
+							maxRewardRecipientAddressAge = rewardRecipientAddressAge
+							selectedBlocksResponse = blockResponsesByNeighbor[neighbor]
+							selectedBlocks = blocks
 						}
 					}
-				} else {
-					// The previous hash of the blockchain used to compare is shared by at least 51% neighbors, reject other neighbors
-					for i := 0; i < fiftyOnePercent; i++ {
-						selectedNeighbor := selectedNeighbors[i]
-						if blocksByNeighbor[selectedNeighbor][shortestBlocksLength-1].PreviousHash() != shortestBlocksSlicePreviousHash {
-							delete(blocksByNeighbor, selectedNeighbor)
-							delete(blockResponsesByNeighbor, selectedNeighbor)
-							rejectedNeighbors = append(rejectedNeighbors, selectedNeighbor)
-						}
-					}
-				}
-				for _, rejectedNeighbor := range rejectedNeighbors {
-					removeNeighbor(selectedNeighbors, rejectedNeighbor)
 				}
 			}
+			var blockchainReplaced bool
 			if selectedBlocks != nil {
 				// Check if blockchain is replaced
-				var blockchainReplaced bool
 				if len(selectedBlocks) >= 2 {
 					if len(service.blocks) < 2 {
 						blockchainReplaced = true
@@ -708,10 +691,10 @@ func (service *Service) resolveConflicts() {
 					}
 					service.blockResponses = selectedBlocksResponse
 					service.blocks = selectedBlocks
-					service.logger.Debug("conflicts resolved: blockchain replaced")
-				} else {
-					service.logger.Debug("conflicts resolved: blockchain kept")
 				}
+			}
+			if blockchainReplaced {
+				service.logger.Debug("conflicts resolved: blockchain replaced")
 			} else {
 				service.logger.Debug("conflicts resolved: blockchain kept")
 			}
@@ -719,7 +702,7 @@ func (service *Service) resolveConflicts() {
 	}()
 }
 
-func (service *Service) sortByBlockLength(selectedNeighbors []*neighborhood.Neighbor, blocksByNeighbor map[*neighborhood.Neighbor][]*Block) {
+func (service *Service) sortByBlocksLength(selectedNeighbors []*neighborhood.Neighbor, blocksByNeighbor map[*neighborhood.Neighbor][]*Block) {
 	sort.Slice(selectedNeighbors, func(i, j int) bool {
 		return len(blocksByNeighbor[selectedNeighbors[i]]) > len(blocksByNeighbor[selectedNeighbors[j]])
 	})
