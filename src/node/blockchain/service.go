@@ -510,6 +510,9 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 					totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value()
 				}
 			}
+			if !rewarded {
+				return nil, errors.New("neighbor block has not been rewarded")
+			}
 			for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
 				if totalTransactionsValue > service.calculateTotalAmount(currentBlockTimestamp, senderAddress, validBlocks) {
 					return nil, errors.New("neighbor block total transactions value exceeds its sender wallet amount")
@@ -552,9 +555,9 @@ func (service *Service) resolveConflicts() {
 			if err == nil {
 				var validBlocks []*Block
 				validBlocks, err = service.getValidBlocks(neighborBlocks)
-				if err != nil {
+				if err != nil || validBlocks == nil {
 					service.logger.Debug(fmt.Errorf("failed to validate blocks for neighbor %s: %w", neighbor.Target(), err).Error())
-				} else if validBlocks != nil {
+				} else {
 					blocksByNeighbor[neighbor] = validBlocks
 					selectedNeighbors = append(selectedNeighbors, neighbor)
 				}
@@ -573,19 +576,18 @@ func (service *Service) resolveConflicts() {
 			selectedNeighbors = append(selectedNeighbors, host)
 		}
 
-		// Select blockchain with consensus for the previous hash
 		var selectedBlocksResponse []*neighborhood.BlockResponse
 		var selectedBlocks []*Block
 		if selectedNeighbors != nil {
-			// Prevent forks
+			// Keep blockchains with consensus for the previous hash (prevent forks)
 			service.sortByBlocksLength(selectedNeighbors, blocksByNeighbor)
 			halfNeighborsCount := len(blocksByNeighbor) / 2
-			shortestBlocks := blocksByNeighbor[selectedNeighbors[len(selectedNeighbors)-1]]
+			minLength := len(blocksByNeighbor[selectedNeighbors[len(selectedNeighbors)-1]])
 			var rejectedNeighbors []*neighborhood.Neighbor
 			for neighbor, blocks := range blocksByNeighbor {
 				var samePreviousHashCount int
 				for _, otherBlocks := range blocksByNeighbor {
-					if blocks[len(shortestBlocks)-1].PreviousHash() == otherBlocks[len(shortestBlocks)-1].PreviousHash() {
+					if blocks[minLength-1].PreviousHash() == otherBlocks[minLength-1].PreviousHash() {
 						samePreviousHashCount++
 					}
 				}
@@ -599,101 +601,72 @@ func (service *Service) resolveConflicts() {
 				delete(blockResponsesByNeighbor, rejectedNeighbor)
 				removeNeighbor(selectedNeighbors, rejectedNeighbor)
 			}
-			// Keep the longest chain with the oldest reward recipient address
-			if len(blocksByNeighbor) > 0 {
-				maxLength := len(service.blocks)
-				var maxRewardRecipientAddressAge uint64
-				for neighbor, blocks := range blocksByNeighbor {
-					var rewardRecipientAddressAge uint64
-					var neighborLastBlockRewardRecipientAddress string
-					for _, transaction := range blocks[len(blocks)-1].transactions {
+			// Keep the longest blockchains
+			maxLength := len(blocksByNeighbor[selectedNeighbors[0]])
+			rejectedNeighbors = nil
+			for neighbor, blocks := range blocksByNeighbor {
+				if len(blocks) < maxLength {
+					rejectedNeighbors = append(rejectedNeighbors, neighbor)
+				}
+			}
+			for _, rejectedNeighbor := range rejectedNeighbors {
+				delete(blocksByNeighbor, rejectedNeighbor)
+				delete(blockResponsesByNeighbor, rejectedNeighbor)
+				removeNeighbor(selectedNeighbors, rejectedNeighbor)
+			}
+			// Select the oldest reward recipient's blockchain
+			var maxRewardRecipientAddressAge uint64
+			for neighbor, blocks := range blocksByNeighbor {
+				var rewardRecipientAddressAge uint64
+				var neighborLastBlockRewardRecipientAddress string
+				for _, transaction := range blocks[len(blocks)-1].transactions {
+					if transaction.SenderAddress() == RewardSenderAddress {
+						neighborLastBlockRewardRecipientAddress = transaction.RecipientAddress()
+					}
+				}
+				var isAgeCalculated bool
+				for i := len(blocks) - 2; i > 0; i-- {
+					for _, transaction := range blocks[i].transactions {
 						if transaction.SenderAddress() == RewardSenderAddress {
-							neighborLastBlockRewardRecipientAddress = transaction.RecipientAddress()
+							if transaction.RecipientAddress() == neighborLastBlockRewardRecipientAddress {
+								isAgeCalculated = true
+							}
+							rewardRecipientAddressAge++
+							break
 						}
 					}
-					if len(blocks) > maxLength {
-						maxLength = len(blocks)
-						selectedBlocksResponse = blockResponsesByNeighbor[neighbor]
-						selectedBlocks = blocks
-						maxRewardRecipientAddressAge = 0
-					} else if len(blocks) == maxLength {
-						var isAgeCalculated bool
-						for i := len(service.blocks) - 2; i > 0; i-- {
-							for _, transaction := range service.blocks[i].transactions {
-								if transaction.SenderAddress() == RewardSenderAddress {
-									if transaction.RecipientAddress() == neighborLastBlockRewardRecipientAddress {
-										isAgeCalculated = true
-									}
-									rewardRecipientAddressAge++
-									break
-								}
-							}
-							if isAgeCalculated {
-								break
-							}
-						}
-						if rewardRecipientAddressAge > maxRewardRecipientAddressAge {
-							maxRewardRecipientAddressAge = rewardRecipientAddressAge
-							selectedBlocksResponse = blockResponsesByNeighbor[neighbor]
-							selectedBlocks = blocks
-						}
+					if isAgeCalculated {
+						break
 					}
+				}
+				if rewardRecipientAddressAge > maxRewardRecipientAddressAge {
+					maxRewardRecipientAddressAge = rewardRecipientAddressAge
+					selectedBlocksResponse = blockResponsesByNeighbor[neighbor]
+					selectedBlocks = blocks
 				}
 			}
 			var blockchainReplaced bool
-			if selectedBlocks != nil {
-				// Check if blockchain is replaced
-				if len(selectedBlocks) >= 2 {
-					if len(service.blocks) < 2 {
+			// Check if blockchain is replaced
+			if len(service.blocks) < 2 {
+				blockchainReplaced = true
+			} else if len(selectedBlocks) >= 2 {
+				lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()
+				if newBlockHashError != nil {
+					service.logger.Error("failed to calculate new block hash")
+				} else {
+					lastOldBlockHash, oldBlockHashError := service.blocks[len(service.blocks)-1].Hash()
+					if oldBlockHashError != nil {
+						service.logger.Error("failed to calculate old block hash")
 						blockchainReplaced = true
 					} else {
-						lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()
-						penultimateNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-2].Hash()
-						if newBlockHashError != nil {
-							service.logger.Error("failed to calculate new block hash")
-						} else {
-							lastOldBlockHash, oldBlockHashError := service.blocks[len(service.blocks)-1].Hash()
-							penultimateOldBlockHash, oldBlockHashError := service.blocks[len(service.blocks)-2].Hash()
-							if oldBlockHashError != nil {
-								service.logger.Error("failed to calculate old block hash")
-								blockchainReplaced = true
-							} else {
-								blockchainReplaced = penultimateOldBlockHash != penultimateNewBlockHash || lastOldBlockHash != lastNewBlockHash
-							}
-						}
+						blockchainReplaced = lastOldBlockHash != lastNewBlockHash
 					}
-				}
-				if blockchainReplaced {
-					if len(service.blocks) > 2 {
-						transactions := service.transactions
-						// Add transactions which are not in the new blocks but the rewards
-						for i := len(service.blocks) - 2; i < len(service.blocks); i++ {
-							for _, invalidatedTransaction := range service.blocks[i].transactions {
-								if invalidatedTransaction.SenderAddress() != RewardSenderAddress {
-									transactions = append(transactions, invalidatedTransaction)
-								}
-							}
-						}
-						// Remove transactions which are in the new blocks
-						for i := len(service.blocks) - 2; i < len(selectedBlocks); i++ {
-							for _, validatedTransaction := range selectedBlocks[i].transactions {
-								for j := 0; j < len(transactions); j++ {
-									// FIXME verify that len(transactions) don't change at each iteration
-									if validatedTransaction.Equals(transactions[j]) {
-										transactions[j] = transactions[len(transactions)-1]
-										transactions = transactions[:len(transactions)-1]
-										j--
-									}
-								}
-							}
-						}
-						service.transactions = transactions
-					}
-					service.blockResponses = selectedBlocksResponse
-					service.blocks = selectedBlocks
 				}
 			}
-			if blockchainReplaced {
+			if blockchainReplaced && selectedBlocks != nil {
+				service.transactions = nil
+				service.blockResponses = selectedBlocksResponse
+				service.blocks = selectedBlocks
 				service.logger.Debug("conflicts resolved: blockchain replaced")
 			} else {
 				service.logger.Debug("conflicts resolved: blockchain kept")
