@@ -36,7 +36,7 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	addTransaction(service, transaction2)
 
 	// Assert
-	expectedWalletAAmount := amount1 - amount2
+	expectedWalletAAmount := amount1 - amount2 - transaction2.TransactionFee()
 	actualWalletAAmount := service.CalculateTotalAmount(4, walletAAddress)
 	test.Assert(t, expectedWalletAAmount == actualWalletAAmount, fmt.Sprintf("Wrong wallet A amount. Expected: %d - Actual: %d", expectedWalletAAmount, actualWalletAAmount))
 	expectedWalletBAmount := amount2
