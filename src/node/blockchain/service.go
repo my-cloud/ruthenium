@@ -728,11 +728,22 @@ func (service *Service) addBlock(timestamp int64, reward uint64) {
 		}
 	}
 	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
-		if totalTransactionsValue > service.calculateTotalAmount(timestamp, senderAddress, service.blocks) {
+		senderTotalAmount := service.calculateTotalAmount(timestamp, senderAddress, service.blocks)
+		if totalTransactionsValue > senderTotalAmount {
+			var rejectedTransactions []*Transaction
+			rand.Seed(service.watch.Now().UnixNano())
+			rand.Shuffle(len(transactions), func(i, j int) { transactions[i], transactions[j] = transactions[j], transactions[i] })
 			for _, transaction := range transactions {
 				if transaction.SenderAddress() == senderAddress {
-					transactions = removeTransactions(transactions, transaction)
+					rejectedTransactions = append(rejectedTransactions, transaction)
+					totalTransactionsValue -= transaction.Value()
+					if totalTransactionsValue <= senderTotalAmount {
+						break
+					}
 				}
+			}
+			for _, transaction := range rejectedTransactions {
+				transactions = removeTransactions(transactions, transaction)
 			}
 			service.logger.Warn("transactions removed from the transactions pool, total transactions value exceeds its sender wallet amount")
 		}
