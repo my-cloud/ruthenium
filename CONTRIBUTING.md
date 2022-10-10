@@ -1,4 +1,4 @@
-# Welcome to GitHub docs contributing guide
+# Welcome to Ruthenium contributing guide
 Thank you for investing your time in contributing to our project!
 
 Please read our [Code of Conduct](https://github.com/my-cloud/ruthenium/blob/dev/CODE_OF_CONDUCT.md) to keep our community approachable and respectable.
@@ -22,8 +22,8 @@ As a general rule, we don’t assign issues to anyone. If you find an issue to w
 
 ### Make changes
 1. [Fork the project](https://github.com/my-cloud/ruthenium/fork).
-1. Checkout a new branch (git checkout -b feature/amazing-feature).
-1. Commit and push your changes (git add .; commit -m 'feat(blockchain): add some amazing feature'; git push origin feature/amazing-feature).
+1. Checkout a new branch (`git checkout -b feature/amazing-feature`).
+1. Commit and push your changes (`git add .; commit -m 'feat(blockchain): add some amazing feature'; git push origin feature/amazing-feature`).
 1. [Open a pull request](https://github.com/my-cloud/ruthenium/compare) targeting the `dev` branch.
 
 ## Review
