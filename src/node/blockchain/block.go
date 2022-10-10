@@ -3,11 +3,18 @@ package blockchain
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/my-cloud/ruthenium/src/node/neighborhood"
-	"io/ioutil"
-	"net/http"
-	"strings"
+	"github.com/my-cloud/ruthenium/src/poh"
+)
+
+const (
+	networkId               = "mainnet"
+	infuraKey               = "ac46e51cf15e45e0a4c00c35fa780f1b"
+	pohSmartContractAddress = "0xC5E9dDebb09Cd64DfaCab4011A0D5cEDaf7c9BDb"
 )
 
 type Block struct {
@@ -51,27 +58,22 @@ func (block *Block) Hash() (hash [32]byte, err error) {
 }
 
 func (block *Block) IsProofOfHumanityValid() (err error) {
-	proofOfHumanity := block.minerAddress()
-	resp, err := http.Get("https://api.poh.dev/profiles/" + proofOfHumanity)
+	minerAddress := block.minerAddress()
+	clientUrl := fmt.Sprintf("https://%s.infura.io/v3/%s", networkId, infuraKey)
+	client, err := ethclient.Dial(clientUrl)
 	if err != nil {
-		err = fmt.Errorf("failed to get proof of humanity: %w", err)
-		return
+		return err
 	}
-	defer func() {
-		if bodyCloseError := resp.Body.Close(); bodyCloseError != nil {
-			// TODO extract this code or log it properly
-			fmt.Println(fmt.Errorf("failed to close proof of humanity request body: %w", bodyCloseError).Error())
-		}
-	}()
-	var body []byte
-	body, err = ioutil.ReadAll(resp.Body)
+	proofOfHumanity, err := poh.NewPoh(common.HexToAddress(pohSmartContractAddress), client)
 	if err != nil {
-		err = fmt.Errorf("failed to read proof of humanity response: %w", err)
-		return
+		return err
 	}
-	if !strings.Contains(string(body), "\"registered\":true") {
-		err = fmt.Errorf("the miner is currently not registered as a real human")
-		return
+	isRegistered, err := proofOfHumanity.PohCaller.IsRegistered(nil, common.HexToAddress(minerAddress))
+	if err != nil {
+		return err
+	}
+	if !isRegistered {
+		return errors.New("not registered")
 	}
 	return
 }
