@@ -13,14 +13,20 @@ There are two ways to easily use the blockchain. You can either use your own bui
   * [Go](https://go.dev/dl/) >= 1.17
 * Option B: using docker image
   * [Docker](https://www.docker.com/)
-* Your DNS port 8106 must be open
-* You must be registered in the [Proof of Humanity](https://app.proofofhumanity.id/) registry with an Ethereum wallet address for which you are the owner of the `<private key>`
+* Your DNS port 8106 must be open.
+* You must be registered in the [Proof of Humanity](https://app.proofofhumanity.id/) registry with an Ethereum wallet address for which you are the owner of the `<private key>`.
 
 ### Installation
 * Option A: using sources
-  * Download the sources archive: `https://github.com/my-cloud/ruthenium/releases/latest`
+  * Download the sources archive:
+    ```
+    https://github.com/my-cloud/ruthenium/releases/latest
+    ```
 * Option B: using docker image
-  * Pull the image: `sudo docker pull ghcr.io/my-cloud/ruthenium:main`
+  * Pull the image:
+    ```
+    sudo docker pull ghcr.io/my-cloud/ruthenium:main
+    ```
 
 ### Launch
 * Option A: using sources
