@@ -3,7 +3,6 @@ package blockchain
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -73,7 +72,7 @@ func (block *Block) IsProofOfHumanityValid() (err error) {
 		return err
 	}
 	if !isRegistered {
-		return errors.New(fmt.Sprintf("address is not registered in Proof of Humanity registry: %s", minerAddress))
+		return fmt.Errorf("address is not registered in Proof of Humanity registry: %s", minerAddress)
 	}
 	return
 }
