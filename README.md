@@ -3,10 +3,10 @@
 ## Description
 The Ruthenium blockchain.
 
-This README contains essential information for a quick start. For further information, see [the dedicated wiki page](https://github.com/my-cloud/ruthenium/wiki/Home), where the project is described more in details. If you want to know what reasons led to create this blockchain, you can directly dive into the [Ruthenium whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
+This README contains essential information for a quick start. You will find a detailed description of the project in [the dedicated wiki page](https://github.com/my-cloud/ruthenium/wiki/Home). If you want to know what reasons led to create this blockchain, you can directly dive into the [Ruthenium whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
 
 ## Usage
-There are two ways to easily use the blockchain. You can either use your own build from [sources](https://github.com/my-cloud/ruthenium/releases) (Option A) or directly use a docker image provided in the [repository packages](https://github.com/my-cloud/ruthenium/pkgs/container/ruthenium) (Option B).
+There are two ways to easily use the blockchain. You can either use your own build from [sources](https://github.com/my-cloud/ruthenium/releases) (Option A) or use a docker image provided in the [repository packages](https://github.com/my-cloud/ruthenium/pkgs/container/ruthenium) (Option B).
 
 ### Prerequisites
 * Option A: using sources
@@ -53,7 +53,7 @@ Contributions are what make the open source community such an amazing place to l
 
 If you have a suggestion that would make this better, please do not hesitate to [report a new bug](https://github.com/my-cloud/ruthenium/issues/new?assignees=&labels=bug&template=bug_report.md&title=) or [request a new feature](https://github.com/my-cloud/ruthenium/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=). Of course, you are welcome to fork the repository and create a pull request. In any case, please let's take a look at the [contributing](https://github.com/my-cloud/ruthenium/blob/dev/CONTRIBUTING.md) file.
 
-Don't forget to give the project a star! Thanks again!
+[⭐](https://github.com/login?return_to=%2Fmy-cloud%2Fruthenium) Don't forget to give the project a [star](https://github.com/login?return_to=%2Fmy-cloud%2Fruthenium)! Thanks again!
 
 ## Contact
 [Jérémy Pansier](https://github.com/JeremyPansier) - jpansier@my-cloud.me
