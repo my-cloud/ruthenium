@@ -66,7 +66,7 @@ If you have a suggestion that would make this better, please do not hesitate to 
 
 Project Link: https://github.com/my-cloud/ruthenium
 
-## Authors and acknowledgment
+## Acknowledgment
 For a tutorial to create a first blockchain in go, thanks to:
 * [Yuko Sakai](https://www.udemy.com/user/myeigoworld/)
 * [Jun Sakai](https://udemy.com/user/jun-sakai/)
