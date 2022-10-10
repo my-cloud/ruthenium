@@ -1,3 +1,11 @@
+---
+name: Standard pull request checklist
+about: Open a pull request to the `dev` branch
+title: ''
+labels: ''
+assignees: ''
+---
+
 # Checklist:
 - [ ] The code follows the [our conventions](https://github.com/my-cloud/ruthenium/blob/83-improve-contributing-documentation/CONTRIBUTING.md#go).
 - [ ] Important principle changes have been documented.
