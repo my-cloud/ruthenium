@@ -73,7 +73,7 @@ func (block *Block) IsProofOfHumanityValid() (err error) {
 		return err
 	}
 	if !isRegistered {
-		return errors.New("not registered")
+		return errors.New(fmt.Sprintf("address is not registered in Proof of Humanity registry: %s", minerAddress))
 	}
 	return
 }
