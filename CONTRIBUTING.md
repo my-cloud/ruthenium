@@ -42,10 +42,8 @@ As a general rule, we don’t assign issues to anyone. If you find an issue to w
 
 ## Release
 🛡 Restricted to code owners.
-* Create a branch from `dev` named with the next version number (check [how the release number will be generated](https://github.com/semantic-release/semantic-release/blob/master/docs/recipes/release-workflow/maintenance-releases.md#publishing-maintenance-releases)).
-* [Create a pull request](https://github.com/my-cloud/ruthenium/compare) ([PR](https://docs.github.com/en/pull-requests)) from this newly created branch to `main` (append `?template=release.md` to the URL to have the release PR template).
 * Set the `main` branch as the default branch.
-* Merge this branch **LOCALLY** using fast-forward merge into `main`, the [PR will automatically be merged](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#indirect-merges) then.
+* Merge the `dev` branch **LOCALLY** using fast-forward merge into `main`.
 * Set the `dev` branch as the default branch.
 
 The tag and release are automatically created using [semantic-release](https://github.com/go-semantic-release/action).  
