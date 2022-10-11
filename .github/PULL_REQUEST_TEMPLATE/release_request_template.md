@@ -6,6 +6,8 @@ labels: ''
 assignees: ''
 ---
 
+any change
+
 # [Release](https://github.com/my-cloud/ruthenium/blob/83-improve-contributing-documentation/CONTRIBUTING.md#release) checklist:
 - [ ] The code follows the [our conventions](https://github.com/my-cloud/ruthenium/blob/83-improve-contributing-documentation/CONTRIBUTING.md#go).
 - [ ] Important principle changes have been documented in the [wiki](https://github.com/my-cloud/ruthenium/wiki).
