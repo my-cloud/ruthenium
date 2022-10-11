@@ -28,21 +28,22 @@ As a general rule, we don’t assign issues to anyone. If you find an issue to w
 1. [Open a pull request](https://github.com/my-cloud/ruthenium/compare) targeting the `dev` branch.
 
 ## Review
-🛡 Reserved to write access members.
+🛡 Restricted to write access members.
 1. Check if the changes follows [our conventions](#Go).
 1. Manually [test](https://github.com/my-cloud/ruthenium/wiki/Usage) the changes. 
 1. Submit your [review](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/reviewing-proposed-changes-in-a-pull-request).
 
 ## Merge
-🛡 Reserved to write access members.
+🛡 Restricted to write access members.
 1. Check if the [targeted branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/changing-the-base-branch-of-a-pull-request) is the good one (most of the time, it should be `dev`).
 1. Check if the squash commit message respects [our conventions](#Git) and finishes with the PR number (*ie* `fix(ui): message (#1)`).
 
 ## Release
-🛡 Reserved to write access members.
+🛡 Restricted to write access members.
 * Create a branch from `dev` named with the next version number check [how the release number will be generated](https://github.com/semantic-release/semantic-release/blob/master/docs/recipes/release-workflow/maintenance-releases.md#publishing-maintenance-releases).
-* Open a pull request in the [ruthenium Github repository](https://github.com/my-cloud/ruthenium) from this branch to `main`.
-* Merge this branch **without** squashing commits into `main`.
+* [Open a pull request](https://github.com/my-cloud/ruthenium/compare) from this newly created branch to `main` (append `?template=release.md` to the URL to have the release pull request template).
+* Merge this branch **WITHOUT** squashing commits into `main`.
+
 The tag and release are automatically created using [semantic-release](https://github.com/go-semantic-release/action).  
 The package is automatically pushed.  
 The versioning follows the [semantic versioning convention](https://semver.org/).
