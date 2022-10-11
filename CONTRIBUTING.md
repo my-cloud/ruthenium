@@ -8,6 +8,8 @@ In this guide you will get an overview of the contribution workflow from opening
 ## New contributor guide
 To get an overview of the project, read the [README](https://github.com/my-cloud/ruthenium#readme).
 
+
+
 ## Create a new issue
 If you spot a problem with the docs, [search if an issue already exists](https://docs.github.com/en/github/searching-for-information-on-github/searching-on-github/searching-issues-and-pull-requests#search-by-the-title-body-or-comments). If a related issue doesn't exist, you can open a new issue using a relevant [issue form](https://github.com/my-cloud/ruthenium/issues/new/choose).
 
@@ -25,7 +27,7 @@ As a general rule, we don’t assign issues to anyone. If you find an issue to w
 1. Checkout a new branch (`git checkout -b feature/amazing-feature`).
 1. Implement your solution following [our code conventions](#Go)
 1. Commit and push your changes (`git add .; commit -m 'feat(blockchain): add some amazing feature'; git push origin feature/amazing-feature`).
-1. [Open a pull request](https://github.com/my-cloud/ruthenium/compare) targeting the `dev` branch.
+1. [Create a pull request](https://github.com/my-cloud/ruthenium/compare) ([PR](https://docs.github.com/en/pull-requests)) targeting the `dev` branch.
 
 ## Review
 🛡 Restricted to write access members.
@@ -39,10 +41,12 @@ As a general rule, we don’t assign issues to anyone. If you find an issue to w
 1. Check if the squash commit message respects [our conventions](#Git) and finishes with the PR number (*ie* `fix(ui): message (#1)`).
 
 ## Release
-🛡 Restricted to write access members.
-* Create a branch from `dev` named with the next version number check [how the release number will be generated](https://github.com/semantic-release/semantic-release/blob/master/docs/recipes/release-workflow/maintenance-releases.md#publishing-maintenance-releases).
-* [Open a pull request](https://github.com/my-cloud/ruthenium/compare) from this newly created branch to `main` (append `?template=release.md` to the URL to have the release pull request template).
-* Merge this branch **WITHOUT** squashing commits into `main`.
+🛡 Restricted to code owners.
+* Create a branch from `dev` named with the next version number (check [how the release number will be generated](https://github.com/semantic-release/semantic-release/blob/master/docs/recipes/release-workflow/maintenance-releases.md#publishing-maintenance-releases)).
+* [Create a pull request](https://github.com/my-cloud/ruthenium/compare) ([PR](https://docs.github.com/en/pull-requests)) from this newly created branch to `main` (append `?template=release.md` to the URL to have the release PR template).
+* Set the `main` branch as the default branch.
+* Merge this branch **LOCALLY** using fast-forward merge into `main`, the [PR will automatically be merged](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#indirect-merges) then.
+* Set the `dev` branch as the default branch.
 
 The tag and release are automatically created using [semantic-release](https://github.com/go-semantic-release/action).  
 The package is automatically pushed.  
