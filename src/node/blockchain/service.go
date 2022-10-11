@@ -106,8 +106,7 @@ func (service *Service) AddGenesisBlock() {
 	service.miningTicker.Reset(deadline)
 	<-service.miningTicker.C
 	if service.blocks == nil {
-		genesisTransaction := NewTransaction(service.address, RewardSenderAddress, nil, parsedStartDate.UnixNano(), GenesisAmount)
-		service.addBlock(parsedStartDate.UnixNano(), genesisTransaction)
+		service.addBlock(parsedStartDate.UnixNano(), GenesisAmount)
 		service.logger.Debug("genesis block added")
 	}
 }
@@ -252,7 +251,7 @@ func (service *Service) addTransaction(transaction *Transaction) (err error) {
 	if len(service.blocks) > 0 {
 		senderWalletAmount = service.calculateTotalAmount(service.blocks[len(service.blocks)-1].Timestamp(), transaction.SenderAddress(), service.blocks)
 	}
-	insufficientBalance := senderWalletAmount < transaction.Value()
+	insufficientBalance := senderWalletAmount < transaction.Value()+transaction.TransactionFee()
 	if insufficientBalance {
 		err = errors.New("not enough balance in the sender wallet")
 		return
@@ -295,8 +294,7 @@ func (service *Service) mine() {
 	now := service.watch.Now().Round(service.miningTimer).UnixNano()
 	reward := service.calculateTotalReward(now, service.address, service.blocks)
 	service.logger.Debug(fmt.Sprintf("reward: %d", reward))
-	rewardTransaction := NewTransaction(service.address, RewardSenderAddress, nil, now, reward)
-	service.addBlock(now, rewardTransaction)
+	service.addBlock(now, reward)
 }
 
 func (service *Service) StartMining() {
@@ -350,10 +348,12 @@ func (service *Service) calculateTotalAmount(currentTimestamp int64, blockchainA
 				if totalAmount > 0 {
 					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
-				if totalAmount < value {
+				if totalAmount < value+transaction.TransactionFee() {
 					service.logger.Error(fmt.Sprintf("historical transaction have not been properly validated: wallet amount=%d, transaction value=%d", totalAmount, value))
+					totalAmount = 0
+				} else {
+					totalAmount -= value + transaction.TransactionFee()
 				}
-				totalAmount -= value
 				lastTimestamp = block.Timestamp()
 			}
 		}
@@ -399,10 +399,12 @@ func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainA
 				if totalAmount > 0 {
 					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
-				if totalAmount < value {
+				if totalAmount < value+transaction.TransactionFee() {
 					service.logger.Error(fmt.Sprintf("historical transaction should not have been validated: wallet amount=%d, transaction value=%d", totalAmount, value))
+					totalAmount = 0
+				} else {
+					totalAmount -= value + transaction.TransactionFee()
 				}
-				totalAmount -= value
 				lastTimestamp = block.Timestamp()
 			}
 		}
@@ -508,6 +510,9 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 					totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value()
 				}
 			}
+			if !rewarded {
+				return nil, errors.New("neighbor block has not been rewarded")
+			}
 			for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
 				if totalTransactionsValue > service.calculateTotalAmount(currentBlockTimestamp, senderAddress, validBlocks) {
 					return nil, errors.New("neighbor block total transactions value exceeds its sender wallet amount")
@@ -550,9 +555,9 @@ func (service *Service) resolveConflicts() {
 			if err == nil {
 				var validBlocks []*Block
 				validBlocks, err = service.getValidBlocks(neighborBlocks)
-				if err != nil {
+				if err != nil || validBlocks == nil {
 					service.logger.Debug(fmt.Errorf("failed to validate blocks for neighbor %s: %w", neighbor.Target(), err).Error())
-				} else if validBlocks != nil {
+				} else {
 					blocksByNeighbor[neighbor] = validBlocks
 					selectedNeighbors = append(selectedNeighbors, neighbor)
 				}
@@ -571,145 +576,98 @@ func (service *Service) resolveConflicts() {
 			selectedNeighbors = append(selectedNeighbors, host)
 		}
 
-		// Select blockchain with consensus for the previous hash
 		var selectedBlocksResponse []*neighborhood.BlockResponse
 		var selectedBlocks []*Block
-		if selectedNeighbors != nil && service.neighbors != nil {
-			service.sortByBlockLength(selectedNeighbors, blocksByNeighbor)
-			for len(blocksByNeighbor) > 0 {
-				fiftyOnePercent := len(blocksByNeighbor)/2 + 1
-				shortestBlocks := blocksByNeighbor[selectedNeighbors[fiftyOnePercent-1]]
-				shortestBlocksLength := len(shortestBlocks)
-				shortestBlocksSlicePreviousHash := shortestBlocks[len(shortestBlocks)-1].PreviousHash()
-				var samePreviousHashesCount int
-				for i := 0; i < fiftyOnePercent; i++ {
-					if blocksByNeighbor[selectedNeighbors[i]][shortestBlocksLength-1].PreviousHash() == shortestBlocksSlicePreviousHash {
-						samePreviousHashesCount++
+		if selectedNeighbors != nil {
+			// Keep blockchains with consensus for the previous hash (prevent forks)
+			service.sortByBlocksLength(selectedNeighbors, blocksByNeighbor)
+			halfNeighborsCount := len(blocksByNeighbor) / 2
+			minLength := len(blocksByNeighbor[selectedNeighbors[len(selectedNeighbors)-1]])
+			var rejectedNeighbors []*neighborhood.Neighbor
+			for neighbor, blocks := range blocksByNeighbor {
+				var samePreviousHashCount int
+				for _, otherBlocks := range blocksByNeighbor {
+					if blocks[minLength-1].PreviousHash() == otherBlocks[minLength-1].PreviousHash() {
+						samePreviousHashCount++
 					}
 				}
-				if samePreviousHashesCount == fiftyOnePercent {
-					// Keep the longest chain with the oldest reward recipient address
-					maxLength := len(service.blocks)
-					var maxRewardRecipientAddressAge uint64
-					for neighbor, blocks := range blocksByNeighbor {
-						var rewardRecipientAddressAge uint64
-						var neighborLastBlockRewardRecipientAddress string
-						for _, transaction := range blocks[len(blocks)-1].transactions {
-							if transaction.SenderAddress() == RewardSenderAddress {
-								neighborLastBlockRewardRecipientAddress = transaction.RecipientAddress()
-							}
-						}
-						if len(blocks) > maxLength {
-							maxLength = len(blocks)
-							selectedBlocksResponse = blockResponsesByNeighbor[neighbor]
-							selectedBlocks = blocks
-							maxRewardRecipientAddressAge = 0
-						} else if len(blocks) == maxLength {
-							var isAgeCalculated bool
-							for i := len(service.blocks) - 2; i > 0; i-- {
-								for _, transaction := range service.blocks[i].transactions {
-									if transaction.SenderAddress() == RewardSenderAddress {
-										if transaction.RecipientAddress() == neighborLastBlockRewardRecipientAddress {
-											isAgeCalculated = true
-										}
-										rewardRecipientAddressAge++
-										break
-									}
-								}
-								if isAgeCalculated {
-									break
-								}
-							}
-							if rewardRecipientAddressAge > maxRewardRecipientAddressAge {
-								maxRewardRecipientAddressAge = rewardRecipientAddressAge
-								selectedBlocksResponse = blockResponsesByNeighbor[neighbor]
-								selectedBlocks = blocks
-							}
-						}
-					}
-					break
-				}
-				var rejectedNeighbors []*neighborhood.Neighbor
-				if samePreviousHashesCount < fiftyOnePercent/2+1 {
-					// The previous hash of the blockchain used to compare is not shared by less than 51% neighbors, reject it and all neighbors with the same previous hash
-					for i := 0; i < fiftyOnePercent; i++ {
-						selectedNeighbor := selectedNeighbors[i]
-						if blocksByNeighbor[selectedNeighbor][shortestBlocksLength-1].PreviousHash() == shortestBlocksSlicePreviousHash {
-							delete(blocksByNeighbor, selectedNeighbor)
-							delete(blockResponsesByNeighbor, selectedNeighbor)
-							rejectedNeighbors = append(rejectedNeighbors, selectedNeighbor)
-						}
-					}
-				} else {
+				if samePreviousHashCount <= halfNeighborsCount {
 					// The previous hash of the blockchain used to compare is shared by at least 51% neighbors, reject other neighbors
-					for i := 0; i < fiftyOnePercent; i++ {
-						selectedNeighbor := selectedNeighbors[i]
-						if blocksByNeighbor[selectedNeighbor][shortestBlocksLength-1].PreviousHash() != shortestBlocksSlicePreviousHash {
-							delete(blocksByNeighbor, selectedNeighbor)
-							delete(blockResponsesByNeighbor, selectedNeighbor)
-							rejectedNeighbors = append(rejectedNeighbors, selectedNeighbor)
-						}
-					}
-				}
-				for _, rejectedNeighbor := range rejectedNeighbors {
-					removeNeighbor(selectedNeighbors, rejectedNeighbor)
+					rejectedNeighbors = append(rejectedNeighbors, neighbor)
 				}
 			}
-			if selectedBlocks != nil {
-				// Check if blockchain is replaced
-				var blockchainReplaced bool
-				if len(selectedBlocks) >= 2 {
-					if len(service.blocks) < 2 {
+			for _, rejectedNeighbor := range rejectedNeighbors {
+				delete(blocksByNeighbor, rejectedNeighbor)
+				delete(blockResponsesByNeighbor, rejectedNeighbor)
+				removeNeighbor(selectedNeighbors, rejectedNeighbor)
+			}
+			// Keep the longest blockchains
+			maxLength := len(blocksByNeighbor[selectedNeighbors[0]])
+			rejectedNeighbors = nil
+			for neighbor, blocks := range blocksByNeighbor {
+				if len(blocks) < maxLength {
+					rejectedNeighbors = append(rejectedNeighbors, neighbor)
+				}
+			}
+			for _, rejectedNeighbor := range rejectedNeighbors {
+				delete(blocksByNeighbor, rejectedNeighbor)
+				delete(blockResponsesByNeighbor, rejectedNeighbor)
+				removeNeighbor(selectedNeighbors, rejectedNeighbor)
+			}
+			// Select the oldest reward recipient's blockchain
+			var maxRewardRecipientAddressAge uint64
+			for neighbor, blocks := range blocksByNeighbor {
+				var rewardRecipientAddressAge uint64
+				var neighborLastBlockRewardRecipientAddress string
+				for _, transaction := range blocks[len(blocks)-1].transactions {
+					if transaction.SenderAddress() == RewardSenderAddress {
+						neighborLastBlockRewardRecipientAddress = transaction.RecipientAddress()
+					}
+				}
+				var isAgeCalculated bool
+				for i := len(blocks) - 2; i > 0; i-- {
+					for _, transaction := range blocks[i].transactions {
+						if transaction.SenderAddress() == RewardSenderAddress {
+							if transaction.RecipientAddress() == neighborLastBlockRewardRecipientAddress {
+								isAgeCalculated = true
+							}
+							rewardRecipientAddressAge++
+							break
+						}
+					}
+					if isAgeCalculated {
+						break
+					}
+				}
+				if rewardRecipientAddressAge > maxRewardRecipientAddressAge {
+					maxRewardRecipientAddressAge = rewardRecipientAddressAge
+					selectedBlocksResponse = blockResponsesByNeighbor[neighbor]
+					selectedBlocks = blocks
+				}
+			}
+			var blockchainReplaced bool
+			// Check if blockchain is replaced
+			if len(service.blocks) < 2 {
+				blockchainReplaced = true
+			} else if len(selectedBlocks) >= 2 {
+				lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()
+				if newBlockHashError != nil {
+					service.logger.Error("failed to calculate new block hash")
+				} else {
+					lastOldBlockHash, oldBlockHashError := service.blocks[len(service.blocks)-1].Hash()
+					if oldBlockHashError != nil {
+						service.logger.Error("failed to calculate old block hash")
 						blockchainReplaced = true
 					} else {
-						lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()
-						penultimateNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-2].Hash()
-						if newBlockHashError != nil {
-							service.logger.Error("failed to calculate new block hash")
-						} else {
-							lastOldBlockHash, oldBlockHashError := service.blocks[len(service.blocks)-1].Hash()
-							penultimateOldBlockHash, oldBlockHashError := service.blocks[len(service.blocks)-2].Hash()
-							if oldBlockHashError != nil {
-								service.logger.Error("failed to calculate old block hash")
-								blockchainReplaced = true
-							} else {
-								blockchainReplaced = penultimateOldBlockHash != penultimateNewBlockHash || lastOldBlockHash != lastNewBlockHash
-							}
-						}
+						blockchainReplaced = lastOldBlockHash != lastNewBlockHash
 					}
 				}
-				if blockchainReplaced {
-					if len(service.blocks) > 2 {
-						transactions := service.transactions
-						// Add transactions which are not in the new blocks but the rewards
-						for i := len(service.blocks) - 2; i < len(service.blocks); i++ {
-							for _, invalidatedTransaction := range service.blocks[i].transactions {
-								if invalidatedTransaction.SenderAddress() != RewardSenderAddress {
-									transactions = append(transactions, invalidatedTransaction)
-								}
-							}
-						}
-						// Remove transactions which are in the new blocks
-						for i := len(service.blocks) - 2; i < len(selectedBlocks); i++ {
-							for _, validatedTransaction := range selectedBlocks[i].transactions {
-								for j := 0; j < len(transactions); j++ {
-									// FIXME verify that len(transactions) don't change at each iteration
-									if validatedTransaction.Equals(transactions[j]) {
-										transactions[j] = transactions[len(transactions)-1]
-										transactions = transactions[:len(transactions)-1]
-										j--
-									}
-								}
-							}
-						}
-						service.transactions = transactions
-					}
-					service.blockResponses = selectedBlocksResponse
-					service.blocks = selectedBlocks
-					service.logger.Debug("conflicts resolved: blockchain replaced")
-				} else {
-					service.logger.Debug("conflicts resolved: blockchain kept")
-				}
+			}
+			if blockchainReplaced && selectedBlocks != nil {
+				service.transactions = nil
+				service.blockResponses = selectedBlocksResponse
+				service.blocks = selectedBlocks
+				service.logger.Debug("conflicts resolved: blockchain replaced")
 			} else {
 				service.logger.Debug("conflicts resolved: blockchain kept")
 			}
@@ -717,7 +675,7 @@ func (service *Service) resolveConflicts() {
 	}()
 }
 
-func (service *Service) sortByBlockLength(selectedNeighbors []*neighborhood.Neighbor, blocksByNeighbor map[*neighborhood.Neighbor][]*Block) {
+func (service *Service) sortByBlocksLength(selectedNeighbors []*neighborhood.Neighbor, blocksByNeighbor map[*neighborhood.Neighbor][]*Block) {
 	sort.Slice(selectedNeighbors, func(i, j int) bool {
 		return len(blocksByNeighbor[selectedNeighbors[i]]) > len(blocksByNeighbor[selectedNeighbors[j]])
 	})
@@ -745,7 +703,7 @@ func removeTransactions(transactions []*Transaction, removedTransaction *Transac
 	return transactions
 }
 
-func (service *Service) addBlock(timestamp int64, rewardTransaction *Transaction) {
+func (service *Service) addBlock(timestamp int64, reward uint64) {
 	var lastBlockHash [32]byte
 	if service.blocks != nil {
 		lastBlock := service.blocks[len(service.blocks)-1]
@@ -766,24 +724,35 @@ func (service *Service) addBlock(timestamp int64, rewardTransaction *Transaction
 	transactions := service.transactions
 	for _, transaction := range transactions {
 		if transaction.SenderAddress() != RewardSenderAddress {
-			totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value()
+			totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + transaction.TransactionFee()
 		}
 	}
 	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
-		if totalTransactionsValue > service.calculateTotalAmount(timestamp, senderAddress, service.blocks) {
+		senderTotalAmount := service.calculateTotalAmount(timestamp, senderAddress, service.blocks)
+		if totalTransactionsValue > senderTotalAmount {
+			var rejectedTransactions []*Transaction
+			rand.Seed(service.watch.Now().UnixNano())
+			rand.Shuffle(len(transactions), func(i, j int) { transactions[i], transactions[j] = transactions[j], transactions[i] })
 			for _, transaction := range transactions {
 				if transaction.SenderAddress() == senderAddress {
-					transactions = removeTransactions(transactions, transaction)
+					rejectedTransactions = append(rejectedTransactions, transaction)
+					totalTransactionsValue -= transaction.Value()
+					if totalTransactionsValue <= senderTotalAmount {
+						break
+					}
 				}
+			}
+			for _, transaction := range rejectedTransactions {
+				transactions = removeTransactions(transactions, transaction)
 			}
 			service.logger.Warn("transactions removed from the transactions pool, total transactions value exceeds its sender wallet amount")
 		}
 	}
+	rewardTransaction := NewTransaction(service.address, RewardSenderAddress, nil, timestamp, reward)
 	transactions = append(transactions, rewardTransaction)
 	block := NewBlock(timestamp, lastBlockHash, transactions)
 	service.transactions = nil
 	service.blocks = append(service.blocks, block)
 	blockResponse := block.GetResponse()
 	service.blockResponses = append(service.blockResponses, blockResponse)
-	return
 }

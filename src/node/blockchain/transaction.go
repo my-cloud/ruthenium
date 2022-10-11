@@ -8,6 +8,8 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 )
 
+const transactionFee = 1000
+
 type Transaction struct {
 	recipientAddress string
 	senderAddress    string
@@ -99,6 +101,10 @@ func (transaction *Transaction) RecipientAddress() string {
 
 func (transaction *Transaction) Value() uint64 {
 	return transaction.value
+}
+
+func (transaction *Transaction) TransactionFee() uint64 {
+	return transactionFee
 }
 
 func (transaction *Transaction) Sign(privateKey *encryption.PrivateKey) (err error) {

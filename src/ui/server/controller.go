@@ -16,6 +16,8 @@ import (
 	"time"
 )
 
+const DefaultPort = 8080
+
 type Controller struct {
 	mnemonic         string
 	derivationPath   string
