@@ -17,10 +17,11 @@ import (
 const (
 	DefaultPort = 8106
 
+	IncomeSenderAddress        = "INCOME SENDER ADDRESS"
 	RewardSenderAddress        = "REWARD SENDER ADDRESS"
 	ParticlesCount             = 100000000
 	GenesisAmount       uint64 = 100000 * ParticlesCount
-	RewardExponent             = 0.54692829
+	IncomeExponent             = 0.54692829
 	HalfLifeInDays             = 373.59
 
 	NeighborSynchronizationTimeInSeconds = 10
@@ -106,7 +107,13 @@ func (service *Service) AddGenesisBlock() {
 	service.miningTicker.Reset(deadline)
 	<-service.miningTicker.C
 	if service.blocks == nil {
-		service.addBlock(parsedStartDate.UnixNano(), GenesisAmount)
+		timestamp := parsedStartDate.UnixNano()
+		rewardTransaction := NewTransaction(service.address, RewardSenderAddress, nil, timestamp, GenesisAmount)
+		transactions := []*Transaction{rewardTransaction}
+		block := NewBlock(timestamp, [32]byte{}, transactions)
+		service.blocks = append(service.blocks, block)
+		blockResponse := block.GetResponse()
+		service.blockResponses = append(service.blockResponses, blockResponse)
 		service.logger.Debug("genesis block added")
 	}
 }
@@ -251,7 +258,7 @@ func (service *Service) addTransaction(transaction *Transaction) (err error) {
 	if len(service.blocks) > 0 {
 		senderWalletAmount = service.calculateTotalAmount(service.blocks[len(service.blocks)-1].Timestamp(), transaction.SenderAddress(), service.blocks)
 	}
-	insufficientBalance := senderWalletAmount < transaction.Value()+transaction.TransactionFee()
+	insufficientBalance := senderWalletAmount < transaction.Value()+transaction.Fee()
 	if insufficientBalance {
 		err = errors.New("not enough balance in the sender wallet")
 		return
@@ -292,9 +299,7 @@ func (service *Service) mine() {
 	service.blocksMutex.Lock()
 	defer service.blocksMutex.Unlock()
 	now := service.watch.Now().Round(service.miningTimer).UnixNano()
-	reward := service.calculateTotalReward(now, service.address, service.blocks)
-	service.logger.Debug(fmt.Sprintf("reward: %d", reward))
-	service.addBlock(now, reward)
+	service.addBlock(now)
 }
 
 func (service *Service) StartMining() {
@@ -348,11 +353,11 @@ func (service *Service) calculateTotalAmount(currentTimestamp int64, blockchainA
 				if totalAmount > 0 {
 					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
-				if totalAmount < value+transaction.TransactionFee() {
+				if totalAmount < value+transaction.Fee() {
 					service.logger.Error(fmt.Sprintf("historical transaction have not been properly validated: wallet amount=%d, transaction value=%d", totalAmount, value))
 					totalAmount = 0
 				} else {
-					totalAmount -= value + transaction.TransactionFee()
+					totalAmount -= value + transaction.Fee()
 				}
 				lastTimestamp = block.Timestamp()
 			}
@@ -360,12 +365,14 @@ func (service *Service) calculateTotalAmount(currentTimestamp int64, blockchainA
 	}
 	return service.decay(lastTimestamp, currentTimestamp, totalAmount)
 }
-func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainAddress string, blocks []*Block) uint64 {
+
+// TODO use this method
+func (service *Service) calculateTotalIncome(currentTimestamp int64, blockchainAddress string, blocks []*Block) uint64 {
 	var totalAmount uint64
 	var lastTimestamp int64
 	var isValidatorKnown bool
-	var totalReward uint64
-	var rewardRecipientAddresses []string
+	var totalIncome uint64
+	var incomeRecipientAddresses []string
 	for _, block := range blocks {
 		for _, transaction := range block.Transactions() {
 			value := transaction.Value()
@@ -375,47 +382,47 @@ func (service *Service) calculateTotalReward(currentTimestamp int64, blockchainA
 				}
 				totalAmount += value
 				lastTimestamp = block.Timestamp()
-				if transaction.SenderAddress() == RewardSenderAddress {
-					totalReward = 0
-					rewardRecipientAddresses = nil
+				if transaction.SenderAddress() == IncomeSenderAddress {
+					totalIncome = 0
+					incomeRecipientAddresses = nil
 					if !isValidatorKnown {
 						isValidatorKnown = true
 					}
 				}
-			} else if transaction.SenderAddress() == RewardSenderAddress {
-				for _, rewardRecipientAddress := range rewardRecipientAddresses {
-					if transaction.RecipientAddress() == rewardRecipientAddress {
+			} else if transaction.SenderAddress() == IncomeSenderAddress {
+				for _, incomeRecipientAddress := range incomeRecipientAddresses {
+					if transaction.RecipientAddress() == incomeRecipientAddress {
 						isValidatorKnown = false
 					}
 				}
-				rewardRecipientAddresses = append(rewardRecipientAddresses, transaction.RecipientAddress())
+				incomeRecipientAddresses = append(incomeRecipientAddresses, transaction.RecipientAddress())
 				if isValidatorKnown {
-					reward := calculateReward(totalAmount)
-					totalReward = service.decay(lastTimestamp, block.Timestamp(), totalReward) + reward
+					income := calculateIncome(totalAmount)
+					totalIncome = service.decay(lastTimestamp, block.Timestamp(), totalIncome) + income
 				} else {
-					totalReward = 0
+					totalIncome = 0
 				}
 			} else if blockchainAddress == transaction.SenderAddress() {
 				if totalAmount > 0 {
 					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
 				}
-				if totalAmount < value+transaction.TransactionFee() {
+				if totalAmount < value+transaction.Fee() {
 					service.logger.Error(fmt.Sprintf("historical transaction should not have been validated: wallet amount=%d, transaction value=%d", totalAmount, value))
 					totalAmount = 0
 				} else {
-					totalAmount -= value + transaction.TransactionFee()
+					totalAmount -= value + transaction.Fee()
 				}
 				lastTimestamp = block.Timestamp()
 			}
 		}
 	}
 	totalAmount = service.decay(lastTimestamp, currentTimestamp, totalAmount)
-	totalReward = service.decay(lastTimestamp, currentTimestamp, totalReward)
-	return totalReward + calculateReward(totalAmount)
+	totalIncome = service.decay(lastTimestamp, currentTimestamp, totalIncome)
+	return totalIncome + calculateIncome(totalAmount)
 }
 
-func calculateReward(amount uint64) uint64 {
-	return uint64(math.Round(math.Pow(float64(amount), RewardExponent)))
+func calculateIncome(amount uint64) uint64 {
+	return uint64(math.Round(math.Pow(float64(amount), IncomeExponent)))
 }
 
 func (service *Service) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
@@ -489,6 +496,8 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 			var rewarded bool
 			totalTransactionsValueBySenderAddress := make(map[string]uint64)
 			currentBlockTimestamp := currentBlock.Timestamp()
+			var reward uint64
+			var totalTransactionsFees uint64
 			for _, transaction := range currentBlock.Transactions() {
 				if transaction.SenderAddress() == RewardSenderAddress {
 					// Check that there is only one reward by block
@@ -500,18 +509,20 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 					if currentBlockTimestamp != previousBlockTimestamp+int64(service.miningTimer) || currentBlockTimestamp > now {
 						return nil, errors.New("neighbor block reward timestamp is invalid")
 					}
-					if transaction.Value() > service.calculateTotalReward(currentBlockTimestamp, transaction.RecipientAddress(), validBlocks) {
-						return nil, errors.New("neighbor block reward exceeds the consented one")
-					}
+					reward = transaction.Value()
 				} else {
 					if err = transaction.VerifySignature(); err != nil {
 						return nil, fmt.Errorf("neighbor transaction is invalid: %w", err)
 					}
 					totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value()
+					totalTransactionsFees += transaction.Fee()
 				}
 			}
 			if !rewarded {
 				return nil, errors.New("neighbor block has not been rewarded")
+			}
+			if reward > totalTransactionsFees {
+				return nil, errors.New("neighbor block reward exceeds the consented one")
 			}
 			for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
 				if totalTransactionsValue > service.calculateTotalAmount(currentBlockTimestamp, senderAddress, validBlocks) {
@@ -703,29 +714,26 @@ func removeTransactions(transactions []*Transaction, removedTransaction *Transac
 	return transactions
 }
 
-func (service *Service) addBlock(timestamp int64, reward uint64) {
-	var lastBlockHash [32]byte
-	if service.blocks != nil {
-		lastBlock := service.blocks[len(service.blocks)-1]
-		if lastBlock.Timestamp() == timestamp {
-			service.logger.Error("unable to add block, a block with the same timestamp already is in the blockchain")
-			return
-		}
-		var err error
-		lastBlockHash, err = lastBlock.Hash()
-		if err != nil {
-			service.logger.Error(fmt.Errorf("failed calculate last block hash: %w", err).Error())
-			return
-		}
+func (service *Service) addBlock(timestamp int64) {
+	lastBlock := service.blocks[len(service.blocks)-1]
+	if lastBlock.Timestamp() == timestamp {
+		service.logger.Error("unable to add block, a block with the same timestamp already is in the blockchain")
+		return
+	}
+	lastBlockHash, err := lastBlock.Hash()
+	if err != nil {
+		service.logger.Error(fmt.Errorf("failed calculate last block hash: %w", err).Error())
+		return
 	}
 	service.transactionsMutex.Lock()
 	defer service.transactionsMutex.Unlock()
 	totalTransactionsValueBySenderAddress := make(map[string]uint64)
 	transactions := service.transactions
+	var reward uint64
 	for _, transaction := range transactions {
-		if transaction.SenderAddress() != RewardSenderAddress {
-			totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + transaction.TransactionFee()
-		}
+		fee := transaction.Fee()
+		totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + fee
+		reward += fee
 	}
 	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
 		senderTotalAmount := service.calculateTotalAmount(timestamp, senderAddress, service.blocks)
@@ -736,7 +744,9 @@ func (service *Service) addBlock(timestamp int64, reward uint64) {
 			for _, transaction := range transactions {
 				if transaction.SenderAddress() == senderAddress {
 					rejectedTransactions = append(rejectedTransactions, transaction)
-					totalTransactionsValue -= transaction.Value()
+					fee := transaction.Fee()
+					totalTransactionsValue -= transaction.Value() + fee
+					reward -= fee
 					if totalTransactionsValue <= senderTotalAmount {
 						break
 					}
@@ -755,4 +765,13 @@ func (service *Service) addBlock(timestamp int64, reward uint64) {
 	service.blocks = append(service.blocks, block)
 	blockResponse := block.GetResponse()
 	service.blockResponses = append(service.blockResponses, blockResponse)
+	service.logger.Debug(fmt.Sprintf("reward: %d", reward))
+}
+
+func (service *Service) calculateTotalReward(transactions []*Transaction) uint64 {
+	var totalReward uint64
+	for _, transaction := range transactions {
+		totalReward += transaction.Fee()
+	}
+	return totalReward
 }

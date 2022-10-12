@@ -103,7 +103,7 @@ func (transaction *Transaction) Value() uint64 {
 	return transaction.value
 }
 
-func (transaction *Transaction) TransactionFee() uint64 {
+func (transaction *Transaction) Fee() uint64 {
 	return transactionFee
 }
 
