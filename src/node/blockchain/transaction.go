@@ -17,6 +17,7 @@ type Transaction struct {
 	signature        *encryption.Signature
 	timestamp        int64
 	value            uint64
+	fee              uint64
 }
 
 func NewTransaction(recipientAddress string, senderAddress string, senderPublicKey *encryption.PublicKey, timestamp int64, value uint64) *Transaction {
@@ -26,6 +27,7 @@ func NewTransaction(recipientAddress string, senderAddress string, senderPublicK
 		senderPublicKey:  senderPublicKey,
 		timestamp:        timestamp,
 		value:            value,
+		fee:              transactionFee,
 	}
 }
 
@@ -45,6 +47,7 @@ func NewTransactionFromRequest(transactionRequest *neighborhood.TransactionReque
 		signature,
 		*transactionRequest.Timestamp,
 		*transactionRequest.Value,
+		*transactionRequest.Fee,
 	}, nil
 }
 
@@ -70,6 +73,7 @@ func NewTransactionFromResponse(transactionResponse *neighborhood.TransactionRes
 		signature,
 		transactionResponse.Timestamp,
 		transactionResponse.Value,
+		transactionResponse.Fee,
 	}, nil
 }
 
@@ -79,11 +83,13 @@ func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 		SenderAddress    string `json:"sender_address"`
 		Timestamp        int64  `json:"timestamp"`
 		Value            uint64 `json:"value"`
+		Fee              uint64 `json:"fee"`
 	}{
 		RecipientAddress: transaction.recipientAddress,
 		SenderAddress:    transaction.senderAddress,
 		Timestamp:        transaction.timestamp,
 		Value:            transaction.value,
+		Fee:              transaction.fee,
 	})
 }
 
@@ -104,7 +110,7 @@ func (transaction *Transaction) Value() uint64 {
 }
 
 func (transaction *Transaction) Fee() uint64 {
-	return transactionFee
+	return transaction.fee
 }
 
 func (transaction *Transaction) Sign(privateKey *encryption.PrivateKey) (err error) {
@@ -126,6 +132,7 @@ func (transaction *Transaction) GetRequest() neighborhood.TransactionRequest {
 		Signature:        &encodedSignature,
 		Timestamp:        &transaction.timestamp,
 		Value:            &transaction.value,
+		Fee:              &transaction.fee,
 	}
 }
 
@@ -145,6 +152,7 @@ func (transaction *Transaction) GetResponse() *neighborhood.TransactionResponse 
 		Signature:        encodedSignature,
 		Timestamp:        transaction.timestamp,
 		Value:            transaction.value,
+		Fee:              transaction.fee,
 	}
 }
 
@@ -152,7 +160,8 @@ func (transaction *Transaction) Equals(other *Transaction) bool {
 	return transaction.recipientAddress == other.recipientAddress &&
 		transaction.senderAddress == other.senderAddress &&
 		transaction.timestamp == other.timestamp &&
-		transaction.value == other.value
+		transaction.value == other.value &&
+		transaction.fee == other.fee
 }
 
 func (transaction *Transaction) VerifySignature() error {

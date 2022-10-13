@@ -7,4 +7,5 @@ type TransactionResponse struct {
 	Signature        string
 	Timestamp        int64
 	Value            uint64
+	Fee              uint64
 }

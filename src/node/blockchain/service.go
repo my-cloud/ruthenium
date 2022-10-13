@@ -17,7 +17,6 @@ import (
 const (
 	DefaultPort = 8106
 
-	IncomeSenderAddress        = "INCOME SENDER ADDRESS"
 	RewardSenderAddress        = "REWARD SENDER ADDRESS"
 	ParticlesCount             = 100000000
 	GenesisAmount       uint64 = 100000 * ParticlesCount
@@ -110,7 +109,7 @@ func (service *Service) AddGenesisBlock() {
 		timestamp := parsedStartDate.UnixNano()
 		rewardTransaction := NewTransaction(service.address, RewardSenderAddress, nil, timestamp, GenesisAmount)
 		transactions := []*Transaction{rewardTransaction}
-		block := NewBlock(timestamp, [32]byte{}, transactions)
+		block := NewBlock(timestamp, [32]byte{}, transactions, nil)
 		service.blocks = append(service.blocks, block)
 		blockResponse := block.GetResponse()
 		service.blockResponses = append(service.blockResponses, blockResponse)
@@ -341,6 +340,16 @@ func (service *Service) calculateTotalAmount(currentTimestamp int64, blockchainA
 	var totalAmount uint64
 	var lastTimestamp int64
 	for _, block := range blocks {
+		for _, registeredAddress := range block.RegisteredAddresses() {
+			if blockchainAddress == registeredAddress {
+				if totalAmount > 0 {
+					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
+					totalAmount += calculateIncome(totalAmount)
+					lastTimestamp = block.Timestamp()
+				}
+				break
+			}
+		}
 		for _, transaction := range block.Transactions() {
 			value := transaction.Value()
 			if blockchainAddress == transaction.RecipientAddress() {
@@ -366,61 +375,6 @@ func (service *Service) calculateTotalAmount(currentTimestamp int64, blockchainA
 	return service.decay(lastTimestamp, currentTimestamp, totalAmount)
 }
 
-// TODO use this method
-func (service *Service) calculateTotalIncome(currentTimestamp int64, blockchainAddress string, blocks []*Block) uint64 {
-	var totalAmount uint64
-	var lastTimestamp int64
-	var isValidatorKnown bool
-	var totalIncome uint64
-	var incomeRecipientAddresses []string
-	for _, block := range blocks {
-		for _, transaction := range block.Transactions() {
-			value := transaction.Value()
-			if blockchainAddress == transaction.RecipientAddress() {
-				if totalAmount > 0 {
-					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
-				}
-				totalAmount += value
-				lastTimestamp = block.Timestamp()
-				if transaction.SenderAddress() == IncomeSenderAddress {
-					totalIncome = 0
-					incomeRecipientAddresses = nil
-					if !isValidatorKnown {
-						isValidatorKnown = true
-					}
-				}
-			} else if transaction.SenderAddress() == IncomeSenderAddress {
-				for _, incomeRecipientAddress := range incomeRecipientAddresses {
-					if transaction.RecipientAddress() == incomeRecipientAddress {
-						isValidatorKnown = false
-					}
-				}
-				incomeRecipientAddresses = append(incomeRecipientAddresses, transaction.RecipientAddress())
-				if isValidatorKnown {
-					income := calculateIncome(totalAmount)
-					totalIncome = service.decay(lastTimestamp, block.Timestamp(), totalIncome) + income
-				} else {
-					totalIncome = 0
-				}
-			} else if blockchainAddress == transaction.SenderAddress() {
-				if totalAmount > 0 {
-					totalAmount = service.decay(lastTimestamp, block.Timestamp(), totalAmount)
-				}
-				if totalAmount < value+transaction.Fee() {
-					service.logger.Error(fmt.Sprintf("historical transaction should not have been validated: wallet amount=%d, transaction value=%d", totalAmount, value))
-					totalAmount = 0
-				} else {
-					totalAmount -= value + transaction.Fee()
-				}
-				lastTimestamp = block.Timestamp()
-			}
-		}
-	}
-	totalAmount = service.decay(lastTimestamp, currentTimestamp, totalAmount)
-	totalIncome = service.decay(lastTimestamp, currentTimestamp, totalIncome)
-	return totalIncome + calculateIncome(totalAmount)
-}
-
 func calculateIncome(amount uint64) uint64 {
 	return uint64(math.Round(math.Pow(float64(amount), IncomeExponent)))
 }
@@ -440,22 +394,64 @@ func (service *Service) Blocks() []*neighborhood.BlockResponse {
 	return service.blockResponses
 }
 
-func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockResponse) ([]*Block, error) {
-	if len(neighborBlocks) == 0 || len(neighborBlocks) < len(service.blocks) {
+func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block, err error) {
+	if len(neighborBlocks) < 2 || len(neighborBlocks) < len(service.blocks) {
 		return nil, errors.New("neighbor's blockchain is too short")
 	}
 	lastNeighborBlock, err := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 	}
-	if err = lastNeighborBlock.IsProofOfHumanityValid(); err != nil {
-		return nil, fmt.Errorf("failed to get valid neighbor proof of humanity: %w", err)
+	isValidatorPohValid, err := lastNeighborBlock.IsProofOfHumanityValid()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get validator proof of humanity: %w", err)
+	}
+	if !isValidatorPohValid {
+		return nil, fmt.Errorf("validator address is not registered in Proof of Humanity registry")
+	}
+
+	penultimateBlock := neighborBlocks[len(neighborBlocks)-2]
+	registeredAddresses := penultimateBlock.RegisteredAddresses
+	registeredAddressesMap := make(map[string]bool)
+	for _, address := range registeredAddresses {
+		registeredAddressesMap[address] = true
+	}
+	for _, transaction := range lastNeighborBlock.Transactions() {
+		if transaction.SenderAddress() != RewardSenderAddress && transaction.Value() > 0 {
+			if _, isRegistered := registeredAddressesMap[transaction.SenderAddress()]; !isRegistered {
+				var isPohValid bool
+				isPohValid, err = NewHuman(transaction.SenderAddress()).IsRegistered()
+				if err != nil {
+					return nil, fmt.Errorf("failed to get proof of humanity: %w", err)
+				} else if isPohValid {
+					registeredAddressesMap[transaction.SenderAddress()] = true
+				}
+			}
+		}
+	}
+	if len(registeredAddressesMap) != len(lastNeighborBlock.RegisteredAddresses()) {
+		if len(registeredAddressesMap) > len(lastNeighborBlock.RegisteredAddresses()) {
+			return nil, fmt.Errorf("a registered address is missing in the neighbor block")
+		} else if len(registeredAddressesMap) < len(lastNeighborBlock.RegisteredAddresses()) {
+			return nil, fmt.Errorf("a registered address is one too many in the neighbor block")
+		}
+	}
+	for _, address := range lastNeighborBlock.RegisteredAddresses() {
+		var isPohValid bool
+		isPohValid, err = NewHuman(address).IsRegistered()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get proof of humanity: %w", err)
+		} else if !isPohValid {
+			return nil, fmt.Errorf("an address is not registered in Proof of Humanity registry")
+		}
+		if _, isRegistered := registeredAddressesMap[address]; !isRegistered {
+			return nil, fmt.Errorf("a registered address is is wrong in the neighbor block")
+		}
 	}
 	previousBlock, err := NewBlockFromResponse(neighborBlocks[0])
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate first neighbor block: %w", err)
 	}
-	var validBlocks []*Block
 	validBlocks = append(validBlocks, previousBlock)
 	now := service.watch.Now().UnixNano()
 	for i := 1; i < len(neighborBlocks); i++ {
@@ -514,8 +510,9 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 					if err = transaction.VerifySignature(); err != nil {
 						return nil, fmt.Errorf("neighbor transaction is invalid: %w", err)
 					}
-					totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value()
-					totalTransactionsFees += transaction.Fee()
+					fee := transaction.Fee()
+					totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + fee
+					totalTransactionsFees += fee
 				}
 			}
 			if !rewarded {
@@ -696,7 +693,6 @@ func removeNeighbor(neighbors []*neighborhood.Neighbor, removedNeighbor *neighbo
 	for i := 0; i < len(neighbors); i++ {
 		if neighbors[i] == removedNeighbor {
 			neighbors = append(neighbors[:i], neighbors[i+1:]...)
-			i--
 			return neighbors
 		}
 	}
@@ -707,7 +703,6 @@ func removeTransactions(transactions []*Transaction, removedTransaction *Transac
 	for i := 0; i < len(transactions); i++ {
 		if transactions[i] == removedTransaction {
 			transactions = append(transactions[:i], transactions[i+1:]...)
-			i--
 			return transactions
 		}
 	}
@@ -735,6 +730,11 @@ func (service *Service) addBlock(timestamp int64) {
 		totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + fee
 		reward += fee
 	}
+	registeredAddresses := lastBlock.registeredAddresses
+	registeredAddressesMap := make(map[string]bool)
+	for _, address := range registeredAddresses {
+		registeredAddressesMap[address] = true
+	}
 	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
 		senderTotalAmount := service.calculateTotalAmount(timestamp, senderAddress, service.blocks)
 		if totalTransactionsValue > senderTotalAmount {
@@ -757,21 +757,28 @@ func (service *Service) addBlock(timestamp int64) {
 			}
 			service.logger.Warn("transactions removed from the transactions pool, total transactions value exceeds its sender wallet amount")
 		}
+		if totalTransactionsValue > 0 {
+			if _, isRegistered := registeredAddressesMap[senderAddress]; !isRegistered {
+				registeredAddressesMap[senderAddress] = true
+			}
+		}
+	}
+	var newRegisteredAddresses []string
+	for registeredAddress := range registeredAddressesMap {
+		var isPohValid bool
+		isPohValid, err = NewHuman(registeredAddress).IsRegistered()
+		if err != nil {
+			service.logger.Error(fmt.Errorf("failed to get proof of humanity: %w", err).Error())
+		} else if isPohValid {
+			newRegisteredAddresses = append(newRegisteredAddresses, registeredAddress)
+		}
 	}
 	rewardTransaction := NewTransaction(service.address, RewardSenderAddress, nil, timestamp, reward)
 	transactions = append(transactions, rewardTransaction)
-	block := NewBlock(timestamp, lastBlockHash, transactions)
+	block := NewBlock(timestamp, lastBlockHash, transactions, newRegisteredAddresses)
 	service.transactions = nil
 	service.blocks = append(service.blocks, block)
 	blockResponse := block.GetResponse()
 	service.blockResponses = append(service.blockResponses, blockResponse)
 	service.logger.Debug(fmt.Sprintf("reward: %d", reward))
-}
-
-func (service *Service) calculateTotalReward(transactions []*Transaction) uint64 {
-	var totalReward uint64
-	for _, transaction := range transactions {
-		totalReward += transaction.Fee()
-	}
-	return totalReward
 }
