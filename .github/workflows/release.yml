@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "101-automatically-deploy-a-package-on-release" ]
 
 jobs:
   release:
@@ -12,4 +12,4 @@ jobs:
       - uses: actions/checkout@master
       - uses: go-semantic-release/action@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.RELEASE_BOT }}
