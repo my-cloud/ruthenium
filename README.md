@@ -6,7 +6,7 @@ The Ruthenium blockchain protocol.
 This README contains essential information for a quick start. You will find a detailed description of the project in [the dedicated wiki page](https://github.com/my-cloud/ruthenium/wiki/Home). If you want to know what reasons led to create this blockchain, you can directly dive into the [Ruthenium whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
 
 ## Usage
-There are two ways to easily connect to the Ruthenium blockchain network. You can either use your own build from [sources](https://github.com/my-cloud/ruthenium/releases) (Option A) or use a docker image provided in the [repository packages](https://github.com/my-cloud/ruthenium/pkgs/container/ruthenium) (Option B).
+There are two ways connect to the Ruthenium blockchain network. You can either use your own build from [sources](https://github.com/my-cloud/ruthenium/releases) (Option A) or use a docker image provided in the [repository packages](https://github.com/my-cloud/ruthenium/pkgs/container/ruthenium) (Option B).
 
 ### Prerequisites
 * Option A: using sources
