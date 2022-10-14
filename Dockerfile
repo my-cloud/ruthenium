@@ -10,9 +10,9 @@ RUN CGO_ENABLED=0 go build -o ui src/ui/main.go
 
 
 FROM gcr.io/distroless/static-debian11
+LABEL org.opencontainers.image.description="https://github.com/<user>/<repo>/blob/$commit/README.md"
 WORKDIR /app/templates
 COPY --from=builder /app/src/ui/templates .
 WORKDIR /app
 COPY --from=builder /app/node /app
 COPY --from=builder /app/ui /app
-LABEL org.opencontainers.image.description="https://github.com/my-cloud/ruthenium/blob/v1.0.16/README.md"
