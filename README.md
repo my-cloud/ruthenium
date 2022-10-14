@@ -1,12 +1,12 @@
 # Ruthenium
 
 ## Description
-The Ruthenium blockchain.
+The Ruthenium blockchain protocol.
 
 This README contains essential information for a quick start. You will find a detailed description of the project in [the dedicated wiki page](https://github.com/my-cloud/ruthenium/wiki/Home). If you want to know what reasons led to create this blockchain, you can directly dive into the [Ruthenium whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
 
 ## Usage
-There are two ways to easily use the blockchain. You can either use your own build from [sources](https://github.com/my-cloud/ruthenium/releases) (Option A) or use a docker image provided in the [repository packages](https://github.com/my-cloud/ruthenium/pkgs/container/ruthenium) (Option B).
+There are two ways to easily connect to the Ruthenium blockchain network. You can either use your own build from [sources](https://github.com/my-cloud/ruthenium/releases) (Option A) or use a docker image provided in the [repository packages](https://github.com/my-cloud/ruthenium/pkgs/container/ruthenium) (Option B).
 
 ### Prerequisites
 * Option A: using sources
@@ -25,7 +25,7 @@ There are two ways to easily use the blockchain. You can either use your own bui
 * Option B: using docker image
   * Pull the image:
     ```
-    sudo docker pull ghcr.io/my-cloud/ruthenium:main
+    sudo docker pull ghcr.io/my-cloud/ruthenium:latest
     ```
 
 ### Launch
@@ -42,11 +42,11 @@ There are two ways to easily use the blockchain. You can either use your own bui
 * Option B: using docker image
   * Run the node:
     ```
-    sudo docker run -p 8106:8106 -ti ghcr.io/my-cloud/ruthenium:main \app\node -host-ip=<your external IP address> -private-key=<private key>
+    sudo docker run -p 8106:8106 -ti ghcr.io/my-cloud/ruthenium:latest \app\node -host-ip=<your external IP address> -private-key=<private key>
     ```
   * Run the ui:
     ```
-    sudo docker run -p 8080:8080 -ti ghcr.io/my-cloud/ruthenium:main \app\ui -private-key=<private key>
+    sudo docker run -p 8080:8080 -ti ghcr.io/my-cloud/ruthenium:latest \app\ui -private-key=<private key>
     ```
 * Using a web browser, go to:
   * http://localhost:8080
