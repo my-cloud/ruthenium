@@ -1,4 +1,5 @@
 FROM golang:1.19 as builder
+LABEL org.opencontainers.image.description="label"
 WORKDIR /app
 COPY ./src ./src
 ADD go.mod .
@@ -10,7 +11,6 @@ RUN CGO_ENABLED=0 go build -o ui src/ui/main.go
 
 
 FROM gcr.io/distroless/static-debian11
-LABEL org.opencontainers.image.description="https://github.com/<user>/<repo>/blob/$commit/README.md"
 WORKDIR /app/templates
 COPY --from=builder /app/src/ui/templates .
 WORKDIR /app
