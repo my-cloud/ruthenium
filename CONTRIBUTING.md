@@ -41,13 +41,8 @@ As a general rule, we don’t assign issues to anyone. If you find an issue to w
 1. Check if the squash commit message respects [our conventions](#Git) and finishes with the PR number (*ie* `fix(ui): message (#1)`).
 
 ## Release
-🛡 Restricted to code owners.
-* Set the `main` branch as the default branch.
-* Merge the `dev` branch **LOCALLY** using fast-forward merge into `main`.
-* Set the `dev` branch as the default branch.
-
-The tag and release are automatically created using [semantic-release](https://github.com/go-semantic-release/action).  
-The package is automatically pushed.  
+The [tags](https://github.com/my-cloud/ruthenium/tags) and [releases](https://github.com/my-cloud/ruthenium/releases) are automatically created using [semantic-release](https://github.com/go-semantic-release/action) each time a commit is pushed on the `main` branch.  
+The [packages](https://github.com/my-cloud/ruthenium/pkgs/container/ruthenium) are automatically pushed.  
 The versioning follows the [semantic versioning convention](https://semver.org/).
 
 ## Conventions
