@@ -4,29 +4,22 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/my-cloud/ruthenium/src/node/neighborhood"
-	"github.com/my-cloud/ruthenium/src/poh"
-)
-
-const (
-	networkId               = "mainnet"
-	infuraKey               = "ac46e51cf15e45e0a4c00c35fa780f1b"
-	pohSmartContractAddress = "0xC5E9dDebb09Cd64DfaCab4011A0D5cEDaf7c9BDb"
 )
 
 type Block struct {
-	timestamp    int64
-	previousHash [32]byte
-	transactions []*Transaction
+	timestamp           int64
+	previousHash        [32]byte
+	transactions        []*Transaction
+	registeredAddresses []string
 }
 
-func NewBlock(timestamp int64, previousHash [32]byte, transactions []*Transaction) *Block {
+func NewBlock(timestamp int64, previousHash [32]byte, transactions []*Transaction, registeredAddresses []string) *Block {
 	return &Block{
 		timestamp,
 		previousHash,
 		transactions,
+		registeredAddresses,
 	}
 }
 
@@ -43,6 +36,7 @@ func NewBlockFromResponse(block *neighborhood.BlockResponse) (*Block, error) {
 		block.Timestamp,
 		block.PreviousHash,
 		transactions,
+		block.RegisteredAddresses,
 	}, nil
 }
 
@@ -56,25 +50,9 @@ func (block *Block) Hash() (hash [32]byte, err error) {
 	return
 }
 
-func (block *Block) IsProofOfHumanityValid() (err error) {
+func (block *Block) IsProofOfHumanityValid() (isRegistered bool, err error) {
 	minerAddress := block.minerAddress()
-	clientUrl := fmt.Sprintf("https://%s.infura.io/v3/%s", networkId, infuraKey)
-	client, err := ethclient.Dial(clientUrl)
-	if err != nil {
-		return err
-	}
-	proofOfHumanity, err := poh.NewPoh(common.HexToAddress(pohSmartContractAddress), client)
-	if err != nil {
-		return err
-	}
-	isRegistered, err := proofOfHumanity.PohCaller.IsRegistered(nil, common.HexToAddress(minerAddress))
-	if err != nil {
-		return err
-	}
-	if !isRegistered {
-		return fmt.Errorf("address is not registered in Proof of Humanity registry: %s", minerAddress)
-	}
-	return
+	return NewHuman(minerAddress).IsRegistered()
 }
 
 func (block *Block) Timestamp() int64 {
@@ -102,13 +80,15 @@ func (block *Block) minerAddress() string {
 
 func (block *Block) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Timestamp    int64          `json:"timestamp"`
-		PreviousHash string         `json:"previous_hash"`
-		Transactions []*Transaction `json:"transactions"`
+		Timestamp           int64          `json:"timestamp"`
+		PreviousHash        string         `json:"previous_hash"`
+		Transactions        []*Transaction `json:"transactions"`
+		RegisteredAddresses []string       `json:"registered_addresses"`
 	}{
-		Timestamp:    block.timestamp,
-		PreviousHash: fmt.Sprintf("%x", block.previousHash),
-		Transactions: block.transactions,
+		Timestamp:           block.timestamp,
+		PreviousHash:        fmt.Sprintf("%x", block.previousHash),
+		Transactions:        block.transactions,
+		RegisteredAddresses: block.registeredAddresses,
 	})
 }
 
@@ -118,8 +98,13 @@ func (block *Block) GetResponse() *neighborhood.BlockResponse {
 		transactions = append(transactions, transaction.GetResponse())
 	}
 	return &neighborhood.BlockResponse{
-		Timestamp:    block.timestamp,
-		PreviousHash: block.previousHash,
-		Transactions: transactions,
+		Timestamp:           block.timestamp,
+		PreviousHash:        block.previousHash,
+		Transactions:        transactions,
+		RegisteredAddresses: block.registeredAddresses,
 	}
+}
+
+func (block *Block) RegisteredAddresses() []string {
+	return block.registeredAddresses
 }
