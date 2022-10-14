@@ -15,5 +15,4 @@ COPY --from=builder /app/src/ui/templates .
 WORKDIR /app
 COPY --from=builder /app/node /app
 COPY --from=builder /app/ui /app
-
-
+LABEL org.opencontainers.image.description="https://github.com/my-cloud/ruthenium/blob/v1.0.16/README.md"
