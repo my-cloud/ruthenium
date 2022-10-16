@@ -19,8 +19,8 @@ Scan through our [existing issues](https://github.com/my-cloud/ruthenium/issues)
 As a general rule, we don’t assign issues to anyone. If you find an issue to work on, you are welcome to open a PR with changes to solve it.
 
 ### Prerequisites
-* [Go](https://go.dev/dl/) >= 1.17
-* [Git](https://git-scm.com/)
+* [Go][1] >= 1.17
+* [Git][2]
 
 ### Make changes
 1. [Fork the project](https://github.com/my-cloud/ruthenium/fork).
@@ -38,7 +38,7 @@ As a general rule, we don’t assign issues to anyone. If you find an issue to w
 ## Release
 The [tags](https://github.com/my-cloud/ruthenium/tags) and [releases](https://github.com/my-cloud/ruthenium/releases) are automatically created using [semantic-release](https://github.com/go-semantic-release/action) each time a commit is pushed on the `main` branch.  
 The [packages](https://github.com/my-cloud/ruthenium/pkgs/container/ruthenium) are automatically pushed.  
-The versioning follows the [semantic versioning convention](https://semver.org/).
+The versioning follows the [semantic versioning convention][3].
 
 ## Conventions
 ### Git
@@ -46,3 +46,7 @@ The commit messages on the `main` branch must follow the [Angular commit message
 
 ### Go
 We try follow the [Golang clean code conventions](https://github.com/Pungyeon/clean-go-article).
+
+[1]: https://go.dev/dl/ "Go website"
+[2]: https://git-scm.com/ "Git website"
+[3]: https://semver.org/ "Semantic versioning website"

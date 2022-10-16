@@ -10,11 +10,11 @@ There are two ways to use the Ruthenium blockchain. You can either use your own 
 
 ### Prerequisites
 * Option A: using sources
-  * [Go](https://go.dev/dl/) >= 1.17
+  * [Go][1] >= 1.17
 * Option B: using docker image
-  * [Docker](https://www.docker.com/)
+  * [Docker][2]
 * Your DNS port 8106 must be open.
-* You must be registered in the [Proof of Humanity](https://app.proofofhumanity.id/) registry with an Ethereum wallet address for which you are the owner of the `<private key>`.
+* You must be registered in the [Proof of Humanity](https://github.com/my-cloud/ruthenium/Whitepaper#proof-of-humanity) registry with an Ethereum wallet address for which you are the owner of the `<private key>`.
 
 ### Installation
 * Option A: using sources
@@ -62,14 +62,16 @@ If you have a suggestion that would make this better, please do not hesitate to 
 [⭐](https://github.com/login?return_to=%2Fmy-cloud%2Fruthenium) Don't forget to give the project a [star](https://github.com/login?return_to=%2Fmy-cloud%2Fruthenium)! Thanks again!
 
 ## Contact
-[Jérémy Pansier](https://github.com/JeremyPansier) - jpansier@my-cloud.me
+Founder: [Jérémy Pansier](https://github.com/JeremyPansier) - jpansier@my-cloud.me
 
 Project Link: https://github.com/my-cloud/ruthenium
 
-## Acknowledgments
-For a tutorial to create a first blockchain in go, thanks to:
-* [Yuko Sakai](https://www.udemy.com/user/myeigoworld/)
-* [Jun Sakai](https://udemy.com/user/jun-sakai/)
+## Authors and Acknowledgments
+Special thanks to [Gwenall Pansier](https://github.com/Gwenall) who contributed since the early developments.
+
+For a tutorial to create a first blockchain in go, thanks to [Yuko Sakai][3] & [Jun Sakai][4].
+
+See also the list of [contributors](https://github.com/my-cloud/ruthenium/graphs/contributors) who participated in this project.
 
 ## License
 ![img.png](doc/img.png)
@@ -80,3 +82,8 @@ http://unlicense.org/
 The main principles have been implemented.  
 Now it needs a lot of refactoring and tests to improve maintainability and
 reliability.
+
+[1]: https://go.dev/dl/ "Go website"
+[2]: https://www.docker.com/ "Docker website"
+[3]: https://www.udemy.com/user/myeigoworld/ "Yuko Sakai LinkedIn profile"
+[4]: https://udemy.com/user/jun-sakai/ "Jun Sakai LinkedIn profile"
