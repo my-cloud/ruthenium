@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [ "main", "101-automatically-deploy-a-package-on-release" ]
+    branches: [ "main" ]
 
 jobs:
   release:
