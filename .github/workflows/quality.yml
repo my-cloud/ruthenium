@@ -1,13 +1,10 @@
-name: CodeQL
+name: Quality
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main" ]
   pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ "main", "dev" ]
-  schedule:
-    - cron: '28 20 * * 3'
+    branches: [ "main" ]
 
 jobs:
   analyze:
