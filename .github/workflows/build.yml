@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  go:
+  run:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
