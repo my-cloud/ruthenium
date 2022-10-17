@@ -1,4 +1,4 @@
-name: Docker
+name: Package
 
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
@@ -19,7 +19,8 @@ env:
 
 
 jobs:
-  build:
+  build-and-push:
+    name: build and push
     runs-on: ubuntu-latest
     permissions:
       contents: read
