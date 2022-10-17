@@ -1,5 +1,12 @@
 # Ruthenium
 
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=alert_status)](https://sonarcloud.io/project/overview?id=my-cloud_ruthenium)
+[![Lines of code](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=ncloc)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=ncloc)
+[![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=sqale_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=sqale_rating)
+[![Security](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=security_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=security_rating)
+[![Reliability](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=reliability_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=reliability_rating)
+[![Duplicated Lines](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=duplicated_lines_density)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=duplicated_lines_density)
+
 ## Description
 The Ruthenium blockchain protocol.
 
