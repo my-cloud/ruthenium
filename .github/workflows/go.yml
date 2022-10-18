@@ -30,7 +30,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Test
-      run: go test -v ./... -coverprofile=coverage.out
+      run: go test -v -coverpkg=./... ./... -coverprofile=coverage.out
     - name: SonarCloud Scan
       uses: SonarSource/sonarcloud-github-action@master
       env:
