@@ -402,11 +402,11 @@ func (service *Service) getValidBlocks(neighborBlocks []*neighborhood.BlockRespo
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 	}
-	isValidatorPohValid, err := lastNeighborBlock.IsProofOfHumanityValid()
+	isValidatorRegistered, err := lastNeighborBlock.IsValidatorRegistered()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get validator proof of humanity: %w", err)
 	}
-	if !isValidatorPohValid {
+	if !isValidatorRegistered {
 		return nil, fmt.Errorf("validator address is not registered in Proof of Humanity registry")
 	}
 
