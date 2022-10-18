@@ -1,5 +1,12 @@
 # Ruthenium
 
+[![Build](https://github.com/my-cloud/ruthenium/workflows/Build/badge.svg?branch=main)](https://github.com/my-cloud/ruthenium/actions?query=workflow%3ABuild+event%3Apush+branch%3Amain)
+[![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=sqale_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=sqale_rating)
+[![Security](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=security_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=security_rating)
+[![Reliability](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=reliability_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=reliability_rating)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=coverage)](https://sonarcloud.io/summary/new_code?id=my-cloud_ruthenium)
+[![Generic badge](https://img.shields.io/badge/✨_docs-whitepaper-0DA60D.svg)](https://github.com/my-cloud/ruthenium/wiki/Whitepaper)
+
 ## Description
 The Ruthenium blockchain protocol.
 
@@ -57,7 +64,7 @@ For further details concerning the usage, see [the dedicated wiki page](https://
 ## Contributing
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
 
-If you have a suggestion that would make this better, please do not hesitate to [report a new bug](https://github.com/my-cloud/ruthenium/issues/new?assignees=&labels=bug&template=bug_report.md&title=) or [request a new feature](https://github.com/my-cloud/ruthenium/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=). Of course, you are welcome to fork the repository and create a pull request. In any case, please let's take a look at the [contributing](https://github.com/my-cloud/ruthenium/blob/dev/CONTRIBUTING.md) file.
+If you have a suggestion that would make this better, please do not hesitate to [report a new bug](https://github.com/my-cloud/ruthenium/issues/new?assignees=&labels=bug&template=bug_report.md&title=) or [request a new feature](https://github.com/my-cloud/ruthenium/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=). Of course, you are welcome to fork the repository and create a pull request. In any case, please let's take a look at the [contributing](https://github.com/my-cloud/ruthenium/blob/main/CONTRIBUTING.md) file.
 
 [⭐](https://github.com/login?return_to=%2Fmy-cloud%2Fruthenium) Don't forget to give the project a [star](https://github.com/login?return_to=%2Fmy-cloud%2Fruthenium)! Thanks again!
 
