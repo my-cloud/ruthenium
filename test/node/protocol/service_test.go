@@ -1,10 +1,10 @@
-package blockchain
+package protocol
 
 import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/blockchain"
 	"github.com/my-cloud/ruthenium/src/node/encryption"
+	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/clock"
 	"sync"
@@ -21,17 +21,17 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
 	logger := log.NewLogger(log.Fatal)
-	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, clock.NewWatch(), logger)
+	service := protocol.NewService(minerWalletAddress, "", 0, time.Nanosecond, clock.NewWatch(), logger)
 	service.AddGenesisBlock()
 
 	// Act
-	var amount1 uint64 = 40 * blockchain.ParticlesCount
-	transaction1 := blockchain.NewTransaction(walletAAddress, minerWalletAddress, minerWallet.PublicKey(), 0, amount1)
+	var amount1 uint64 = 40 * protocol.ParticlesCount
+	transaction1 := protocol.NewTransaction(walletAAddress, minerWalletAddress, minerWallet.PublicKey(), 0, amount1)
 	_ = transaction1.Sign(minerWallet.PrivateKey())
 	addTransaction(service, transaction1)
 
-	var amount2 uint64 = 10 * blockchain.ParticlesCount
-	transaction2 := blockchain.NewTransaction(walletBAddress, walletAAddress, walletA.PublicKey(), 0, amount2)
+	var amount2 uint64 = 10 * protocol.ParticlesCount
+	transaction2 := protocol.NewTransaction(walletBAddress, walletAAddress, walletA.PublicKey(), 0, amount2)
 	_ = transaction2.Sign(walletA.PrivateKey())
 	addTransaction(service, transaction2)
 
@@ -53,17 +53,17 @@ func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
 	logger := log.NewLogger(log.Fatal)
-	service := blockchain.NewService(minerWalletAddress, "", 0, time.Nanosecond, clock.NewWatch(), logger)
+	service := protocol.NewService(minerWalletAddress, "", 0, time.Nanosecond, clock.NewWatch(), logger)
 	service.AddGenesisBlock()
 
 	// Act
-	var amount1 uint64 = 40 * blockchain.ParticlesCount
-	transaction1 := blockchain.NewTransaction(walletAAddress, minerWalletAddress, minerWallet.PublicKey(), 0, amount1)
+	var amount1 uint64 = 40 * protocol.ParticlesCount
+	transaction1 := protocol.NewTransaction(walletAAddress, minerWalletAddress, minerWallet.PublicKey(), 0, amount1)
 	_ = transaction1.Sign(minerWallet.PrivateKey())
 	addTransaction(service, transaction1)
 
-	var amount2 uint64 = 10 * blockchain.ParticlesCount
-	transaction2 := blockchain.NewTransaction(walletBAddress, walletAAddress, walletA.PublicKey(), 0, amount2)
+	var amount2 uint64 = 10 * protocol.ParticlesCount
+	transaction2 := protocol.NewTransaction(walletBAddress, walletAAddress, walletA.PublicKey(), 0, amount2)
 	_ = transaction2.Sign(walletB.PrivateKey())
 	addTransaction(service, transaction2)
 
@@ -75,7 +75,7 @@ func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
 	test.Assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %d - Actual: %d", expectedWalletBAmount, actualWalletBAmount))
 }
 
-func addTransaction(blockchain *blockchain.Service, transaction *blockchain.Transaction) *sync.WaitGroup {
+func addTransaction(blockchain *protocol.Service, transaction *protocol.Transaction) *sync.WaitGroup {
 	blockchain.AddTransaction(transaction)
 	wg := blockchain.WaitGroup()
 	wg.Wait()

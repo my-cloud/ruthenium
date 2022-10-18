@@ -4,7 +4,7 @@ import (
 	"flag"
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/blockchain"
+	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 )
 
@@ -15,7 +15,7 @@ func main() {
 	privateKey := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (will be generated if not provided)")
 	port := flag.Uint64("port", environment.NewVariable("PORT").GetUint64Value(server.DefaultPort), "TCP port number for ui server")
 	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue(""), "The blockchain host IP address")
-	hostPort := flag.Uint64("host-port", environment.NewVariable("HOST_PORT").GetUint64Value(blockchain.DefaultPort), "The blockchain host port")
+	hostPort := flag.Uint64("host-port", environment.NewVariable("HOST_PORT").GetUint64Value(protocol.DefaultPort), "The blockchain host port")
 	templatesPath := flag.String("templates-path", environment.NewVariable("TEMPLATES_PATH").GetStringValue("src/ui/templates"), "The UI templates path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level")
 

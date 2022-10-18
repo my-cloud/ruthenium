@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/blockchain"
 	"github.com/my-cloud/ruthenium/src/node/encryption"
 	"github.com/my-cloud/ruthenium/src/node/neighborhood"
+	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"html/template"
 	"io"
 	"net/http"
@@ -114,7 +114,7 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 			return
 		}
 		senderPublicKey := encryption.NewPublicKey(privateKey)
-		transaction := blockchain.NewTransaction(*transactionRequest.RecipientAddress, *transactionRequest.SenderAddress, senderPublicKey, time.Now().UnixNano(), value)
+		transaction := protocol.NewTransaction(*transactionRequest.RecipientAddress, *transactionRequest.SenderAddress, senderPublicKey, time.Now().UnixNano(), value)
 		err = transaction.Sign(privateKey)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to generate signature: %w", err).Error())
@@ -221,7 +221,7 @@ func (controller *Controller) WalletAmount(writer http.ResponseWriter, req *http
 		}
 		var marshaledAmount []byte
 		marshaledAmount, err = json.Marshal(&AmountResponse{
-			Amount: float64(amountResponse.Amount) / blockchain.ParticlesCount,
+			Amount: float64(amountResponse.Amount) / protocol.ParticlesCount,
 		})
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to marshal amountResponse: %w", err).Error())
@@ -271,21 +271,21 @@ func (controller *Controller) atomsToParticles(atoms string) (particles uint64, 
 			return
 		}
 		decimalsString := atoms[i+1:]
-		trailingZerosCount := len(strconv.Itoa(blockchain.ParticlesCount)) - 1 - len(decimalsString)
+		trailingZerosCount := len(strconv.Itoa(protocol.ParticlesCount)) - 1 - len(decimalsString)
 		trailedDecimalsString := fmt.Sprintf("%s%s", decimalsString, strings.Repeat("0", trailingZerosCount))
 		var decimals uint64
 		decimals, err = parseUint64(trailedDecimalsString)
 		if err != nil {
 			return
 		}
-		particles = units*blockchain.ParticlesCount + decimals
+		particles = units*protocol.ParticlesCount + decimals
 	} else {
 		var units uint64
 		units, err = parseUint64(atoms)
 		if err != nil {
 			return
 		}
-		particles = units * blockchain.ParticlesCount
+		particles = units * protocol.ParticlesCount
 	}
 	return
 }

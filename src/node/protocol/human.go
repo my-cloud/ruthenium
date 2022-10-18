@@ -1,4 +1,4 @@
-package blockchain
+package protocol
 
 import (
 	"fmt"

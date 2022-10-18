@@ -1,4 +1,4 @@
-package blockchain
+package protocol
 
 import (
 	"errors"
@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -553,21 +554,22 @@ func (service *Service) resolveConflicts() {
 	go func() {
 		defer service.WaitGroup().Done()
 		// Select valid blocks
-		blockResponsesByNeighbor := make(map[*neighborhood.Neighbor][]*neighborhood.BlockResponse)
-		blocksByNeighbor := make(map[*neighborhood.Neighbor][]*Block)
-		var selectedNeighbors []*neighborhood.Neighbor
+		blockResponsesByTarget := make(map[string][]*neighborhood.BlockResponse)
+		blocksByTarget := make(map[string][]*Block)
+		var selectedTargets []string
 		service.neighborsMutex.RLock()
 		for _, neighbor := range service.neighbors {
 			neighborBlocks, err := neighbor.GetBlocks()
-			blockResponsesByNeighbor[neighbor] = neighborBlocks
+			target := neighbor.Target()
+			blockResponsesByTarget[target] = neighborBlocks
 			if err == nil {
 				var validBlocks []*Block
 				validBlocks, err = service.getValidBlocks(neighborBlocks)
 				if err != nil || validBlocks == nil {
-					service.logger.Debug(fmt.Errorf("failed to validate blocks for neighbor %s: %w", neighbor.Target(), err).Error())
+					service.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 				} else {
-					blocksByNeighbor[neighbor] = validBlocks
-					selectedNeighbors = append(selectedNeighbors, neighbor)
+					blocksByTarget[target] = validBlocks
+					selectedTargets = append(selectedTargets, target)
 				}
 			}
 		}
@@ -578,65 +580,65 @@ func (service *Service) resolveConflicts() {
 		service.transactionsMutex.Lock()
 		defer service.transactionsMutex.Unlock()
 		if len(service.blocks) > 2 {
-			host := neighborhood.NewNeighbor(service.ip, service.port, service.logger)
-			blockResponsesByNeighbor[host] = service.blockResponses
-			blocksByNeighbor[host] = service.blocks
-			selectedNeighbors = append(selectedNeighbors, host)
+			hostTarget := net.JoinHostPort(service.ip, strconv.Itoa(int(service.port)))
+			blockResponsesByTarget[hostTarget] = service.blockResponses
+			blocksByTarget[hostTarget] = service.blocks
+			selectedTargets = append(selectedTargets, hostTarget)
 		}
 
 		var selectedBlocksResponse []*neighborhood.BlockResponse
 		var selectedBlocks []*Block
-		if selectedNeighbors != nil {
+		if selectedTargets != nil {
 			// Keep blockchains with consensus for the previous hash (prevent forks)
-			service.sortByBlocksLength(selectedNeighbors, blocksByNeighbor)
-			halfNeighborsCount := len(blocksByNeighbor) / 2
-			minLength := len(blocksByNeighbor[selectedNeighbors[len(selectedNeighbors)-1]])
-			var rejectedNeighbors []*neighborhood.Neighbor
-			for neighbor, blocks := range blocksByNeighbor {
+			service.sortByBlocksLength(selectedTargets, blocksByTarget)
+			halfNeighborsCount := len(blocksByTarget) / 2
+			minLength := len(blocksByTarget[selectedTargets[len(selectedTargets)-1]])
+			var rejectedTargets []string
+			for target, blocks := range blocksByTarget {
 				var samePreviousHashCount int
-				for _, otherBlocks := range blocksByNeighbor {
+				for _, otherBlocks := range blocksByTarget {
 					if blocks[minLength-1].PreviousHash() == otherBlocks[minLength-1].PreviousHash() {
 						samePreviousHashCount++
 					}
 				}
 				if samePreviousHashCount <= halfNeighborsCount {
 					// The previous hash of the blockchain used to compare is shared by at least 51% neighbors, reject other neighbors
-					rejectedNeighbors = append(rejectedNeighbors, neighbor)
+					rejectedTargets = append(rejectedTargets, target)
 				}
 			}
-			for _, rejectedNeighbor := range rejectedNeighbors {
-				delete(blocksByNeighbor, rejectedNeighbor)
-				delete(blockResponsesByNeighbor, rejectedNeighbor)
-				removeNeighbor(selectedNeighbors, rejectedNeighbor)
+			for _, rejectedTarget := range rejectedTargets {
+				delete(blocksByTarget, rejectedTarget)
+				delete(blockResponsesByTarget, rejectedTarget)
+				removeTarget(selectedTargets, rejectedTarget)
 			}
 			// Keep the longest blockchains
-			maxLength := len(blocksByNeighbor[selectedNeighbors[0]])
-			rejectedNeighbors = nil
-			for neighbor, blocks := range blocksByNeighbor {
+			maxLength := len(blocksByTarget[selectedTargets[0]])
+			rejectedTargets = nil
+			for target, blocks := range blocksByTarget {
 				if len(blocks) < maxLength {
-					rejectedNeighbors = append(rejectedNeighbors, neighbor)
+					rejectedTargets = append(rejectedTargets, target)
 				}
 			}
-			for _, rejectedNeighbor := range rejectedNeighbors {
-				delete(blocksByNeighbor, rejectedNeighbor)
-				delete(blockResponsesByNeighbor, rejectedNeighbor)
-				removeNeighbor(selectedNeighbors, rejectedNeighbor)
+			for _, rejectedTarget := range rejectedTargets {
+				delete(blocksByTarget, rejectedTarget)
+				delete(blockResponsesByTarget, rejectedTarget)
+				removeTarget(selectedTargets, rejectedTarget)
 			}
 			// Select the oldest reward recipient's blockchain
 			var maxRewardRecipientAddressAge uint64
-			for neighbor, blocks := range blocksByNeighbor {
+			for target, blocks := range blocksByTarget {
 				var rewardRecipientAddressAge uint64
-				var neighborLastBlockRewardRecipientAddress string
+				var lastBlockRewardRecipientAddress string
 				for _, transaction := range blocks[len(blocks)-1].transactions {
 					if transaction.SenderAddress() == RewardSenderAddress {
-						neighborLastBlockRewardRecipientAddress = transaction.RecipientAddress()
+						lastBlockRewardRecipientAddress = transaction.RecipientAddress()
 					}
 				}
 				var isAgeCalculated bool
 				for i := len(blocks) - 2; i > 0; i-- {
 					for _, transaction := range blocks[i].transactions {
 						if transaction.SenderAddress() == RewardSenderAddress {
-							if transaction.RecipientAddress() == neighborLastBlockRewardRecipientAddress {
+							if transaction.RecipientAddress() == lastBlockRewardRecipientAddress {
 								isAgeCalculated = true
 							}
 							rewardRecipientAddressAge++
@@ -649,7 +651,7 @@ func (service *Service) resolveConflicts() {
 				}
 				if rewardRecipientAddressAge > maxRewardRecipientAddressAge {
 					maxRewardRecipientAddressAge = rewardRecipientAddressAge
-					selectedBlocksResponse = blockResponsesByNeighbor[neighbor]
+					selectedBlocksResponse = blockResponsesByTarget[target]
 					selectedBlocks = blocks
 				}
 			}
@@ -683,20 +685,20 @@ func (service *Service) resolveConflicts() {
 	}()
 }
 
-func (service *Service) sortByBlocksLength(selectedNeighbors []*neighborhood.Neighbor, blocksByNeighbor map[*neighborhood.Neighbor][]*Block) {
-	sort.Slice(selectedNeighbors, func(i, j int) bool {
-		return len(blocksByNeighbor[selectedNeighbors[i]]) > len(blocksByNeighbor[selectedNeighbors[j]])
+func (service *Service) sortByBlocksLength(selectedTargets []string, blocksByTarget map[string][]*Block) {
+	sort.Slice(selectedTargets, func(i, j int) bool {
+		return len(blocksByTarget[selectedTargets[i]]) > len(blocksByTarget[selectedTargets[j]])
 	})
 }
 
-func removeNeighbor(neighbors []*neighborhood.Neighbor, removedNeighbor *neighborhood.Neighbor) []*neighborhood.Neighbor {
-	for i := 0; i < len(neighbors); i++ {
-		if neighbors[i] == removedNeighbor {
-			neighbors = append(neighbors[:i], neighbors[i+1:]...)
-			return neighbors
+func removeTarget(targets []string, removedTarget string) []string {
+	for i := 0; i < len(targets); i++ {
+		if targets[i] == removedTarget {
+			targets = append(targets[:i], targets[i+1:]...)
+			return targets
 		}
 	}
-	return neighbors
+	return targets
 }
 
 func removeTransactions(transactions []*Transaction, removedTransaction *Transaction) []*Transaction {
