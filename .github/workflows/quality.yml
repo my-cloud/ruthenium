@@ -12,9 +12,25 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-    - name: Setup go
+    - name: Setup
       uses: actions/setup-go@v3
       with:
         go-version: 1.17
-    - name: Go test
+    - name: Test
       run: go test -v ./...
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Setup
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.17
+    - name: Test
+      run: go test -coverpkg=./... ./... -coverprofile=coverage.out -json > report.json
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

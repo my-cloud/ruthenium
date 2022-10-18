@@ -27,7 +27,8 @@ func (human *Human) IsRegistered() (isRegistered bool, err error) {
 	if err != nil {
 		return
 	}
-	proofOfHumanity, err := poh.NewPoh(common.HexToAddress(pohSmartContractAddressHex), client)
+	pohSmartContractAddress := common.HexToAddress(pohSmartContractAddressHex)
+	proofOfHumanity, err := poh.NewPoh(pohSmartContractAddress, client)
 	if err != nil {
 		return
 	}
