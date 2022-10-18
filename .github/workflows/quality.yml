@@ -18,10 +18,6 @@ jobs:
         go-version: 1.17
     - name: Test
       run: go test -v -coverpkg=./... ./... -coverprofile=coverage.out
-  scan:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
     - name: SonarCloud Scan
       uses: SonarSource/sonarcloud-github-action@master
       env:
