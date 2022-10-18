@@ -17,7 +17,12 @@ jobs:
       with:
         go-version: 1.17
     - name: Test
-      run: go test -v -coverpkg=./... ./...
+      run: go test -v -coverpkg=./... ./... -coverprofile=coverage.out
+    - name: Upload coverage
+      uses: actions/upload-artifact@v2
+      with:
+        name: coverage
+        path: /github/workspace/bin/coverage.out
   scan:
     needs: test
     runs-on: ubuntu-latest
