@@ -77,7 +77,7 @@ Project Link: https://github.com/my-cloud/ruthenium
 ## Authors and Acknowledgments
 Special thanks to [Gwenall Pansier](https://github.com/Gwenall) who contributed since the early developments.
 
-For a tutorial to create a first blockchain in go, thanks to [Yuko Sakai][2] & [Jun Sakai][3].
+For a tutorial to create a first blockchain in go, thanks to [Yuko Sakai][1] & [Jun Sakai][2].
 
 ## License
 [![License](https://img.shields.io/github/license/my-cloud/ruthenium?label=⚖&nbsp;license)](http://unlicense.org/)
@@ -97,5 +97,5 @@ The main principles have been implemented.
 Now it needs a lot of refactoring and tests to improve maintainability and
 reliability.
 
-[2]: https://www.udemy.com/user/myeigoworld/ "Yuko Sakai LinkedIn profile"
-[3]: https://udemy.com/user/jun-sakai/ "Jun Sakai LinkedIn profile"
+[1]: https://www.udemy.com/user/myeigoworld/ "Yuko Sakai LinkedIn profile"
+[2]: https://udemy.com/user/jun-sakai/ "Jun Sakai LinkedIn profile"
