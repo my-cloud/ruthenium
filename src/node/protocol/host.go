@@ -32,7 +32,7 @@ type Host struct {
 	logger       *log.Logger
 }
 
-func NewHost(mnemonic string, derivationPath string, password string, privateKey string, port uint16, logLevel log.Level) *Host {
+func NewHost(mnemonic string, derivationPath string, password string, privateKey string, port uint16, configurationPath string, logLevel log.Level) *Host {
 	host := new(Host)
 	host.logger = log.NewLogger(logLevel)
 	host.port = port
@@ -46,7 +46,7 @@ func NewHost(mnemonic string, derivationPath string, password string, privateKey
 		host.logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
 	} else {
 		watch := clock.NewWatch()
-		host.network = NewNetwork(host.ip, host.port, watch, host.logger)
+		host.network = NewNetwork(host.ip, host.port, watch, configurationPath, host.logger)
 		validationTimer := validationIntervalInSeconds * time.Second
 		host.blockchain = NewBlockchain(validationTimer.Nanoseconds(), watch, host.logger)
 		host.pool = NewPool(watch, host.logger)

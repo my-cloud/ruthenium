@@ -34,7 +34,7 @@ type Network struct {
 	seedsByTarget          map[string]*neighborhood.Neighbor
 }
 
-func NewNetwork(ip string, port uint16, timing clock.Timing, logger *log.Logger) *Network {
+func NewNetwork(ip string, port uint16, timing clock.Timing, configurationPath string, logger *log.Logger) *Network {
 	network := new(Network)
 	network.ip = ip
 	network.port = port
@@ -42,7 +42,7 @@ func NewNetwork(ip string, port uint16, timing clock.Timing, logger *log.Logger)
 	network.logger = logger
 	var waitGroup sync.WaitGroup
 	network.waitGroup = &waitGroup
-	seedsIps := readSeedsIps(logger)
+	seedsIps := readSeedsIps(configurationPath, logger)
 	network.seedsByTarget = map[string]*neighborhood.Neighbor{}
 	for _, seedIp := range seedsIps {
 		seed := neighborhood.NewNeighbor(seedIp, DefaultPort, logger)
@@ -52,8 +52,8 @@ func NewNetwork(ip string, port uint16, timing clock.Timing, logger *log.Logger)
 	return network
 }
 
-func readSeedsIps(logger *log.Logger) []string {
-	jsonFile, err := os.Open("config/seeds.json")
+func readSeedsIps(configurationPath string, logger *log.Logger) []string {
+	jsonFile, err := os.Open(configurationPath + "/seeds.json")
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to open seeds IPs configuration file: %w", err).Error())
 	}
