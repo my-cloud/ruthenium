@@ -26,6 +26,7 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	pool := protocol.NewPool(watch, logger)
 	validation := protocol.NewValidation(minerWalletAddress, blockchain, pool, watch, validationTimer, logger)
 	validation.Do()
+	validation.Wait()
 
 	// Act
 	var amount1 uint64 = 40 * protocol.ParticlesCount
@@ -62,6 +63,7 @@ func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
 	pool := protocol.NewPool(watch, logger)
 	validation := protocol.NewValidation(minerWalletAddress, blockchain, pool, watch, validationTimer, logger)
 	validation.Do()
+	validation.Wait()
 
 	// Act
 	var amount1 uint64 = 40 * protocol.ParticlesCount
