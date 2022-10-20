@@ -62,12 +62,14 @@ For further details concerning the usage, see [the dedicated wiki page](https://
 
 ## Contributing
 [![Contributors](https://img.shields.io/github/contributors/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/graphs/contributors)
+[![GitHub forks](https://img.shields.io/github/forks/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/fork)
+[![GitHub Repo stars](https://img.shields.io/github/stars/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium)
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
 
 If you have a suggestion that would make this better, please do not hesitate to [report a new bug](https://github.com/my-cloud/ruthenium/issues/new?assignees=&labels=bug&template=bug_report.md&title=) or [request a new feature](https://github.com/my-cloud/ruthenium/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=). Of course, you are welcome to fork the repository and create a pull request. In any case, please let's take a look at the [contributing](https://github.com/my-cloud/ruthenium/blob/main/CONTRIBUTING.md) file.
 
-[⭐](https://github.com/login?return_to=%2Fmy-cloud%2Fruthenium) Don't forget to give the project a [star](https://github.com/login?return_to=%2Fmy-cloud%2Fruthenium)! Thanks again!
+⭐ Don't forget to give the project a [star](https://docs.github.com/en/get-started/exploring-projects-on-github/saving-repositories-with-stars)! Thanks again!
 
 ## Contact
 Founder: [Jérémy Pansier](https://github.com/JeremyPansier) - jpansier@my-cloud.me
