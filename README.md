@@ -67,7 +67,7 @@ For further details concerning the usage, see [the dedicated wiki page](https://
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
 
-If you have a suggestion that would make this better, please do not hesitate to [report a new bug](https://github.com/my-cloud/ruthenium/issues/new?assignees=&labels=bug&template=bug_report.md&title=) or [request a new feature](https://github.com/my-cloud/ruthenium/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=). Of course, you are welcome to fork the repository and create a pull request. In any case, please let's take a look at the [contributing](https://github.com/my-cloud/ruthenium/blob/main/CONTRIBUTING.md) file.
+If you have a suggestion that would make this better, please do not hesitate to [report a new bug](https://github.com/my-cloud/ruthenium/issues/new?assignees=&labels=bug&template=bug_report.md&title=) or [request a new feature](https://github.com/my-cloud/ruthenium/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=). Of course, you are welcome to fork the repository and create a pull request. In any case, please let's take a look at the [contributing](CONTRIBUTING.md) file.
 
 ⭐ Don't forget to give the project a [star](https://docs.github.com/en/get-started/exploring-projects-on-github/saving-repositories-with-stars)! Thanks again!
 
@@ -82,7 +82,9 @@ Special thanks to [Gwenall Pansier](https://github.com/Gwenall) who contributed 
 For a tutorial to create a first blockchain in go, thanks to [Yuko Sakai][1] & [Jun Sakai][2].
 
 ## License
-[![License](https://img.shields.io/github/license/my-cloud/ruthenium?label=⚖&nbsp;license)](http://unlicense.org/)
+[![License](https://img.shields.io/github/license/my-cloud/ruthenium?label=⚖&nbsp;license)](LICENSE)
+
+![license.png](doc/license.png)
 
 ## Project status
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/commits/main)
