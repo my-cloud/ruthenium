@@ -1,13 +1,16 @@
 package protocol
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/neighborhood"
+	"io/ioutil"
 	"math"
 	"math/rand"
 	"net"
+	"os"
 	"sync"
 	"time"
 )
@@ -39,9 +42,7 @@ func NewNetwork(ip string, port uint16, timing clock.Timing, logger *log.Logger)
 	network.logger = logger
 	var waitGroup sync.WaitGroup
 	network.waitGroup = &waitGroup
-	seedsIps := []string{
-		"89.82.76.241",
-	}
+	seedsIps := readSeedsIps(logger)
 	network.seedsByTarget = map[string]*neighborhood.Neighbor{}
 	for _, seedIp := range seedsIps {
 		seed := neighborhood.NewNeighbor(seedIp, DefaultPort, logger)
@@ -49,6 +50,22 @@ func NewNetwork(ip string, port uint16, timing clock.Timing, logger *log.Logger)
 	}
 	network.neighborsByTarget = map[string]*neighborhood.Neighbor{}
 	return network
+}
+
+func readSeedsIps(logger *log.Logger) []string {
+	jsonFile, err := os.Open("config/seeds.json")
+	if err != nil {
+		logger.Fatal(fmt.Errorf("unable to open seeds IPs configuration file: %w", err).Error())
+	}
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	if err = jsonFile.Close(); err != nil {
+		logger.Error(fmt.Errorf("unable to close seeds IPs configuration file: %w", err).Error())
+	}
+	var seedsIps []string
+	if err = json.Unmarshal(byteValue, &seedsIps); err != nil {
+		logger.Fatal(fmt.Errorf("unable to unmarshal seeds IPs: %w", err).Error())
+	}
+	return seedsIps
 }
 
 func (network *Network) Wait() {
