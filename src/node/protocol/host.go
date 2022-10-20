@@ -15,15 +15,21 @@ import (
 )
 
 const (
-	HostConnectionTimeoutInSeconds = 10
-	MiningTimerInSeconds           = 60
+	DefaultPort                 = 8106
+	ParticlesCount              = 100000000
+	connectionTimeoutInSeconds  = 10
+	validationIntervalInSeconds = 60
 )
 
 type Host struct {
-	ip         string
-	port       uint16
-	blockchain *Service
-	logger     *log.Logger
+	ip           string
+	port         uint16
+	network      *Network
+	blockchain   *Blockchain
+	pool         *Pool
+	validation   *Validation
+	verification *Verification
+	logger       *log.Logger
 }
 
 func NewHost(mnemonic string, derivationPath string, password string, privateKey string, port uint16, logLevel log.Level) *Host {
@@ -39,13 +45,19 @@ func NewHost(mnemonic string, derivationPath string, password string, privateKey
 	if err != nil {
 		host.logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
 	} else {
-		host.blockchain = NewService(wallet.Address(), host.ip, host.port, MiningTimerInSeconds*time.Second, clock.NewWatch(), host.logger)
+		watch := clock.NewWatch()
+		host.network = NewNetwork(host.ip, host.port, watch, host.logger)
+		validationTimer := validationIntervalInSeconds * time.Second
+		host.blockchain = NewBlockchain(validationTimer.Nanoseconds(), watch, host.logger)
+		host.pool = NewPool(watch, host.logger)
+		host.validation = NewValidation(wallet.Address(), host.blockchain, host.pool, watch, validationTimer, host.logger)
+		host.verification = NewVerification(host.blockchain, host.pool, host.network)
 	}
 	return host
 }
 
 func (host *Host) GetBlocks() (res p2p.Data) {
-	blockResponses := host.blockchain.Blocks()
+	blockResponses := host.blockchain.BlockResponses()
 	err := res.SetGob(blockResponses)
 	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to get blocks: %w", err).Error())
@@ -54,12 +66,12 @@ func (host *Host) GetBlocks() (res p2p.Data) {
 }
 
 func (host *Host) PostTargets(request []neighborhood.TargetRequest) {
-	host.blockchain.AddTargets(request)
+	host.network.AddTargets(request)
 }
 
 func (host *Host) GetTransactions() (res p2p.Data) {
 	var transactionResponses []*neighborhood.TransactionResponse
-	for _, transaction := range host.blockchain.Transactions() {
+	for _, transaction := range host.pool.Transactions() {
 		transactionResponses = append(transactionResponses, transaction.GetResponse())
 	}
 	if err := res.SetGob(transactionResponses); err != nil {
@@ -78,19 +90,8 @@ func (host *Host) AddTransactions(request *neighborhood.TransactionRequest) {
 		host.logger.Error(fmt.Errorf("failed to instantiate transaction: %w", err).Error())
 		return
 	}
-	host.blockchain.AddTransaction(transaction)
-}
-
-func (host *Host) Mine() {
-	host.blockchain.Mine()
-}
-
-func (host *Host) StartMining() {
-	host.blockchain.StartMining()
-}
-
-func (host *Host) StopMining() {
-	host.blockchain.StopMining()
+	neighbors := host.network.Neighbors()
+	host.pool.AddTransaction(transaction, host.blockchain, neighbors)
 }
 
 func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
@@ -108,7 +109,16 @@ func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
 }
 
 func (host *Host) Run() {
-	host.blockchain.Run()
+	go func() {
+		host.logger.Info("updating the blockchain...")
+		host.network.StartNeighborsSynchronization()
+		host.network.Wait()
+		neighbors := host.network.Neighbors()
+		host.blockchain.Verify(neighbors)
+		host.network.logger.Info("the blockchain is now up to date")
+		host.validation.Start()
+		host.verification.Start()
+	}()
 	host.startServer()
 }
 
@@ -140,7 +150,7 @@ func (host *Host) startServer() {
 	}
 	server.SetLogger(log.NewLogger(log.Fatal))
 	settings := p2p.NewServerSettings()
-	settings.SetConnTimeout(HostConnectionTimeoutInSeconds * time.Second)
+	settings.SetConnTimeout(connectionTimeoutInSeconds * time.Second)
 	server.SetSettings(settings)
 	server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
 		var unknownRequest bool
@@ -156,11 +166,11 @@ func (host *Host) startServer() {
 			case neighborhood.GetTransactionsRequest:
 				res = host.GetTransactions()
 			case neighborhood.MineRequest:
-				host.Mine()
+				host.validation.Do()
 			case neighborhood.StartMiningRequest:
-				host.StartMining()
+				host.validation.Start()
 			case neighborhood.StopMiningRequest:
-				host.StopMining()
+				host.validation.Stop()
 			default:
 				unknownRequest = true
 			}

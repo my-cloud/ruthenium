@@ -2,6 +2,6 @@ package clock
 
 import "time"
 
-type Time interface {
+type Timing interface {
 	Now() time.Time
 }

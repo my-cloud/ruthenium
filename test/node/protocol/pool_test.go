@@ -7,7 +7,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/clock"
-	"sync"
 	"testing"
 	"time"
 )
@@ -21,26 +20,30 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
 	logger := log.NewLogger(log.Fatal)
-	service := protocol.NewService(minerWalletAddress, "", 0, time.Nanosecond, clock.NewWatch(), logger)
-	service.AddGenesisBlock()
+	watch := clock.NewWatch()
+	validationTimer := time.Nanosecond
+	blockchain := protocol.NewBlockchain(validationTimer.Nanoseconds(), watch, logger)
+	pool := protocol.NewPool(watch, logger)
+	validation := protocol.NewValidation(minerWalletAddress, blockchain, pool, watch, validationTimer, logger)
+	validation.Do()
 
 	// Act
 	var amount1 uint64 = 40 * protocol.ParticlesCount
 	transaction1 := protocol.NewTransaction(walletAAddress, minerWalletAddress, minerWallet.PublicKey(), 0, amount1)
 	_ = transaction1.Sign(minerWallet.PrivateKey())
-	addTransaction(service, transaction1)
+	addTransaction(pool, blockchain, validation, transaction1)
 
 	var amount2 uint64 = 10 * protocol.ParticlesCount
 	transaction2 := protocol.NewTransaction(walletBAddress, walletAAddress, walletA.PublicKey(), 0, amount2)
 	_ = transaction2.Sign(walletA.PrivateKey())
-	addTransaction(service, transaction2)
+	addTransaction(pool, blockchain, validation, transaction2)
 
 	// Assert
 	expectedWalletAAmount := amount1 - amount2 - transaction2.Fee()
-	actualWalletAAmount := service.CalculateTotalAmount(4, walletAAddress)
+	actualWalletAAmount := blockchain.CalculateTotalAmount(4, walletAAddress)
 	test.Assert(t, expectedWalletAAmount == actualWalletAAmount, fmt.Sprintf("Wrong wallet A amount. Expected: %d - Actual: %d", expectedWalletAAmount, actualWalletAAmount))
 	expectedWalletBAmount := amount2
-	actualWalletBAmount := service.CalculateTotalAmount(4, walletBAddress)
+	actualWalletBAmount := blockchain.CalculateTotalAmount(4, walletBAddress)
 	test.Assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %d - Actual: %d", expectedWalletBAmount, actualWalletBAmount))
 }
 
@@ -53,33 +56,35 @@ func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
 	logger := log.NewLogger(log.Fatal)
-	service := protocol.NewService(minerWalletAddress, "", 0, time.Nanosecond, clock.NewWatch(), logger)
-	service.AddGenesisBlock()
+	watch := clock.NewWatch()
+	validationTimer := time.Nanosecond
+	blockchain := protocol.NewBlockchain(validationTimer.Nanoseconds(), watch, logger)
+	pool := protocol.NewPool(watch, logger)
+	validation := protocol.NewValidation(minerWalletAddress, blockchain, pool, watch, validationTimer, logger)
+	validation.Do()
 
 	// Act
 	var amount1 uint64 = 40 * protocol.ParticlesCount
 	transaction1 := protocol.NewTransaction(walletAAddress, minerWalletAddress, minerWallet.PublicKey(), 0, amount1)
 	_ = transaction1.Sign(minerWallet.PrivateKey())
-	addTransaction(service, transaction1)
+	addTransaction(pool, blockchain, validation, transaction1)
 
 	var amount2 uint64 = 10 * protocol.ParticlesCount
 	transaction2 := protocol.NewTransaction(walletBAddress, walletAAddress, walletA.PublicKey(), 0, amount2)
 	_ = transaction2.Sign(walletB.PrivateKey())
-	addTransaction(service, transaction2)
+	addTransaction(pool, blockchain, validation, transaction2)
 
 	// Assert
-	actualWalletAAmount := service.CalculateTotalAmount(4, walletAAddress)
+	actualWalletAAmount := blockchain.CalculateTotalAmount(4, walletAAddress)
 	test.Assert(t, amount1 == actualWalletAAmount, fmt.Sprintf("Wrong wallet A amount. Expected: %d - Actual: %d", amount1, actualWalletAAmount))
 	var expectedWalletBAmount uint64 = 0
-	actualWalletBAmount := service.CalculateTotalAmount(4, walletBAddress)
+	actualWalletBAmount := blockchain.CalculateTotalAmount(4, walletBAddress)
 	test.Assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %d - Actual: %d", expectedWalletBAmount, actualWalletBAmount))
 }
 
-func addTransaction(blockchain *protocol.Service, transaction *protocol.Transaction) *sync.WaitGroup {
-	blockchain.AddTransaction(transaction)
-	wg := blockchain.WaitGroup()
-	wg.Wait()
-	blockchain.Mine()
-	wg.Wait()
-	return wg
+func addTransaction(pool *protocol.Pool, blockchain *protocol.Blockchain, validation *protocol.Validation, transaction *protocol.Transaction) {
+	pool.AddTransaction(transaction, blockchain, nil)
+	pool.Wait()
+	validation.Do()
+	validation.Wait()
 }

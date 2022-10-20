@@ -8,7 +8,10 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 )
 
-const transactionFee = 1000
+const (
+	transactionFee      = 1000
+	rewardSenderAddress = "REWARD SENDER ADDRESS"
+)
 
 type Transaction struct {
 	recipientAddress string
@@ -18,6 +21,17 @@ type Transaction struct {
 	timestamp        int64
 	value            uint64
 	fee              uint64
+}
+
+func NewRewardTransaction(recipientAddress string, timestamp int64, value uint64) *Transaction {
+	return &Transaction{
+		recipientAddress: recipientAddress,
+		senderAddress:    rewardSenderAddress,
+		senderPublicKey:  nil,
+		timestamp:        timestamp,
+		value:            value,
+		fee:              transactionFee,
+	}
 }
 
 func NewTransaction(recipientAddress string, senderAddress string, senderPublicKey *encryption.PublicKey, timestamp int64, value uint64) *Transaction {
@@ -173,4 +187,8 @@ func (transaction *Transaction) VerifySignature() error {
 		return errors.New("failed to verify signature")
 	}
 	return nil
+}
+
+func (transaction *Transaction) IsReward() bool {
+	return transaction.SenderAddress() == rewardSenderAddress
 }

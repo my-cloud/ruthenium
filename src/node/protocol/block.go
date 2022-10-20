@@ -67,10 +67,14 @@ func (block *Block) Transactions() []*Transaction {
 	return block.transactions
 }
 
+func (block *Block) RegisteredAddresses() []string {
+	return block.registeredAddresses
+}
+
 func (block *Block) validatorAddress() string {
 	var validatorAddress string
 	for i := len(block.transactions) - 1; i >= 0; i-- {
-		if block.transactions[i].SenderAddress() == RewardSenderAddress {
+		if block.transactions[i].IsReward() {
 			validatorAddress = block.transactions[i].RecipientAddress()
 			break
 		}
@@ -103,8 +107,4 @@ func (block *Block) GetResponse() *neighborhood.BlockResponse {
 		Transactions:        transactions,
 		RegisteredAddresses: block.registeredAddresses,
 	}
-}
-
-func (block *Block) RegisteredAddresses() []string {
-	return block.registeredAddresses
 }
