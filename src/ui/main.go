@@ -13,9 +13,9 @@ func main() {
 	derivationPath := flag.String("derivation-path", environment.NewVariable("DERIVATION_PATH").GetStringValue("m/44'/60'/0'/0/0"), "The derivation path (unused if the mnemonic is omitted)")
 	password := flag.String("password", environment.NewVariable("PASSWORD").GetStringValue(""), "The mnemonic password (unused if the mnemonic is omitted)")
 	privateKey := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (will be generated if not provided)")
-	port := flag.Uint64("port", environment.NewVariable("PORT").GetUint64Value(server.DefaultPort), "TCP port number for the UI server")
+	port := flag.Uint64("port", environment.NewVariable("PORT").GetUint64Value(server.DefaultPort), "The TCP port number for the UI server")
 	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue(""), "The blockchain host IP address")
-	hostPort := flag.Uint64("host-port", environment.NewVariable("HOST_PORT").GetUint64Value(protocol.DefaultPort), "TCP port number for the protocol host node")
+	hostPort := flag.Uint64("host-port", environment.NewVariable("HOST_PORT").GetUint64Value(protocol.DefaultPort), "The TCP port number for the protocol host node")
 	templatesPath := flag.String("templates-path", environment.NewVariable("TEMPLATES_PATH").GetStringValue("src/ui/templates"), "The UI templates path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level")
 
