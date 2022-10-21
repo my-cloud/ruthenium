@@ -14,7 +14,7 @@ type Validation struct {
 	blockchain *Blockchain
 	pool       *Pool
 
-	timing    clock.Timing
+	timeable  clock.Timeable
 	timer     time.Duration
 	ticker    *time.Ticker
 	started   bool
@@ -24,7 +24,7 @@ type Validation struct {
 	logger    *log.Logger
 }
 
-func NewValidation(address string, blockchain *Blockchain, pool *Pool, timing clock.Timing, timer time.Duration, logger *log.Logger) *Validation {
+func NewValidation(address string, blockchain *Blockchain, pool *Pool, timing clock.Timeable, timer time.Duration, logger *log.Logger) *Validation {
 	ticker := time.NewTicker(timer)
 	var waitGroup sync.WaitGroup
 	return &Validation{address, blockchain, pool, timing, timer, ticker, false, false, &waitGroup, logger}
@@ -34,7 +34,7 @@ func (validation *Validation) Do() {
 	if validation.started || validation.requested {
 		return
 	}
-	startTime := validation.timing.Now()
+	startTime := validation.timeable.Now()
 	parsedStartDate := startTime.Truncate(validation.timer).Add(validation.timer)
 	deadline := parsedStartDate.Sub(startTime)
 	validation.ticker.Reset(deadline)
@@ -43,7 +43,7 @@ func (validation *Validation) Do() {
 	go func() {
 		defer validation.waitGroup.Done()
 		<-validation.ticker.C
-		now := validation.timing.Now().Round(validation.timer)
+		now := validation.timeable.Now().Round(validation.timer)
 		validation.do(now.UnixNano())
 		validation.requested = false
 		if validation.started {
@@ -61,7 +61,7 @@ func (validation *Validation) Start() {
 		return
 	}
 	validation.started = true
-	startTime := validation.timing.Now()
+	startTime := validation.timeable.Now()
 	parsedStartDate := startTime.Truncate(validation.timer).Add(validation.timer)
 	deadline := parsedStartDate.Sub(startTime)
 	validation.ticker.Reset(deadline)
@@ -73,7 +73,7 @@ func (validation *Validation) Start() {
 				validation.ticker.Stop()
 				return
 			}
-			now := validation.timing.Now().Round(validation.timer)
+			now := validation.timeable.Now().Round(validation.timer)
 			validation.do(now.UnixNano())
 			<-validation.ticker.C
 		}

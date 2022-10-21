@@ -23,7 +23,7 @@ type Blockchain struct {
 	mutex          sync.RWMutex
 
 	intervalInNanoseconds int64
-	timing                clock.Timing
+	timeable              clock.Timeable
 
 	lambda float64
 
@@ -31,10 +31,10 @@ type Blockchain struct {
 	isReplaced bool
 }
 
-func NewBlockchain(intervalInNanoseconds int64, timing clock.Timing, logger *log.Logger) *Blockchain {
+func NewBlockchain(intervalInNanoseconds int64, timeable clock.Timeable, logger *log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.intervalInNanoseconds = intervalInNanoseconds
-	blockchain.timing = timing
+	blockchain.timeable = timeable
 	blockchain.logger = logger
 	const hoursADay = 24
 	halfLife := halfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
@@ -123,7 +123,7 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 		return nil, fmt.Errorf("failed to instantiate first neighbor block: %w", err)
 	}
 	validBlocks = append(validBlocks, previousBlock)
-	now := blockchain.timing.Now().UnixNano()
+	now := blockchain.timeable.Now().UnixNano()
 	for i := 1; i < len(neighborBlocks); i++ {
 		var currentBlock *Block
 		currentBlock, err = NewBlockFromResponse(neighborBlocks[i])

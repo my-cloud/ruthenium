@@ -14,15 +14,15 @@ type Pool struct {
 	transactions []*Transaction
 	mutex        sync.RWMutex
 
-	timing clock.Timing
+	timeable clock.Timeable
 
 	waitGroup *sync.WaitGroup
 	logger    *log.Logger
 }
 
-func NewPool(timing clock.Timing, logger *log.Logger) *Pool {
+func NewPool(timeable clock.Timeable, logger *log.Logger) *Pool {
 	pool := new(Pool)
-	pool.timing = timing
+	pool.timeable = timeable
 	var waitGroup sync.WaitGroup
 	pool.waitGroup = &waitGroup
 	pool.logger = logger
@@ -125,7 +125,7 @@ func (pool *Pool) Validate(timestamp int64, blockchain *Blockchain, address stri
 		senderTotalAmount := blockchain.calculateTotalAmount(timestamp, senderAddress, blocks)
 		if totalTransactionsValue > senderTotalAmount {
 			var rejectedTransactions []*Transaction
-			rand.Seed(pool.timing.Now().UnixNano())
+			rand.Seed(pool.timeable.Now().UnixNano())
 			rand.Shuffle(len(transactions), func(i, j int) { transactions[i], transactions[j] = transactions[j], transactions[i] })
 			for _, transaction := range transactions {
 				if transaction.SenderAddress() == senderAddress {

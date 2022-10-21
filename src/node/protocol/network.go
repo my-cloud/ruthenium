@@ -26,7 +26,7 @@ type Network struct {
 	logger    *log.Logger
 	waitGroup *sync.WaitGroup
 
-	timing                 clock.Timing
+	timeable               clock.Timeable
 	neighbors              []*neighborhood.Neighbor
 	neighborsMutex         sync.RWMutex
 	neighborsByTarget      map[string]*neighborhood.Neighbor
@@ -34,11 +34,11 @@ type Network struct {
 	seedsByTarget          map[string]*neighborhood.Neighbor
 }
 
-func NewNetwork(ip string, port uint16, timing clock.Timing, configurationPath string, logger *log.Logger) *Network {
+func NewNetwork(ip string, port uint16, timeable clock.Timeable, configurationPath string, logger *log.Logger) *Network {
 	network := new(Network)
 	network.ip = ip
 	network.port = port
-	network.timing = timing
+	network.timeable = timeable
 	network.logger = logger
 	var waitGroup sync.WaitGroup
 	network.waitGroup = &waitGroup
@@ -124,7 +124,7 @@ func (network *Network) SynchronizeNeighbors() {
 			}
 		}
 		network.neighborsMutex.RUnlock()
-		rand.Seed(network.timing.Now().UnixNano())
+		rand.Seed(network.timeable.Now().UnixNano())
 		rand.Shuffle(len(neighbors), func(i, j int) { neighbors[i], neighbors[j] = neighbors[j], neighbors[i] })
 		outboundsCount := int(math.Min(float64(len(neighbors)), maxOutboundsCount))
 		network.neighborsMutex.Lock()
