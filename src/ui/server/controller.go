@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/encryption"
 	"github.com/my-cloud/ruthenium/src/node/neighborhood"
@@ -205,7 +206,7 @@ func (controller *Controller) WalletAmount(writer http.ResponseWriter, req *http
 	switch req.Method {
 	case http.MethodGet:
 		address := req.URL.Query().Get("address")
-		amountRequest := neighborhood.AmountRequest{
+		amountRequest := node.AmountRequest{
 			Address: &address,
 		}
 		if amountRequest.IsInvalid() {

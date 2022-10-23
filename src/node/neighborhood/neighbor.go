@@ -3,6 +3,7 @@ package neighborhood
 import (
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/log"
 	"net"
 	"strconv"
@@ -51,7 +52,7 @@ func (neighbor *Neighbor) IsFound() bool {
 	return err == nil
 }
 
-func (neighbor *Neighbor) GetBlocks() (blockResponses []*BlockResponse, err error) {
+func (neighbor *Neighbor) GetBlocks() (blockResponses []*node.BlockResponse, err error) {
 	res, err := neighbor.sendRequest(GetBlocksRequest)
 	if err == nil {
 		err = res.GetGob(&blockResponses)
@@ -59,29 +60,29 @@ func (neighbor *Neighbor) GetBlocks() (blockResponses []*BlockResponse, err erro
 	return
 }
 
-func (neighbor *Neighbor) SendTargets(request []TargetRequest) (err error) {
+func (neighbor *Neighbor) SendTargets(request []node.TargetRequest) (err error) {
 	_, err = neighbor.sendRequest(request)
 	return
 }
 
-func (neighbor *Neighbor) AddTransaction(request TransactionRequest) (err error) {
+func (neighbor *Neighbor) AddTransaction(request node.TransactionRequest) (err error) {
 	_, err = neighbor.sendRequest(request)
 	return
 }
 
-func (neighbor *Neighbor) GetTransactions() (transactionResponses []TransactionResponse, err error) {
+func (neighbor *Neighbor) GetTransactions() (transactionResponses []node.TransactionResponse, err error) {
 	res, err := neighbor.sendRequest(GetTransactionsRequest)
 	if err != nil {
 		return
 	}
 	err = res.GetGob(&transactionResponses)
 	if transactionResponses == nil {
-		return []TransactionResponse{}, err
+		return []node.TransactionResponse{}, err
 	}
 	return
 }
 
-func (neighbor *Neighbor) GetAmount(request AmountRequest) (amountResponse *AmountResponse, err error) {
+func (neighbor *Neighbor) GetAmount(request node.AmountRequest) (amountResponse *node.AmountResponse, err error) {
 	res, err := neighbor.sendRequest(request)
 	if err == nil {
 		err = res.GetGob(&amountResponse)

@@ -3,9 +3,10 @@ package protocol
 import (
 	"errors"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/api"
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 	"math"
 	"sort"
 	"sync"
@@ -19,8 +20,10 @@ const (
 
 type Blockchain struct {
 	blocks         []*Block
-	blockResponses []*neighborhood.BlockResponse
+	blockResponses []*node.BlockResponse
 	mutex          sync.RWMutex
+
+	registrable api.Registrable
 
 	intervalInNanoseconds int64
 	timeable              clock.Timeable
@@ -31,8 +34,9 @@ type Blockchain struct {
 	isReplaced bool
 }
 
-func NewBlockchain(intervalInNanoseconds int64, timeable clock.Timeable, logger *log.Logger) *Blockchain {
+func NewBlockchain(registrable api.Registrable, intervalInNanoseconds int64, timeable clock.Timeable, logger *log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
+	blockchain.registrable = registrable
 	blockchain.intervalInNanoseconds = intervalInNanoseconds
 	blockchain.timeable = timeable
 	blockchain.logger = logger
@@ -52,7 +56,7 @@ func (blockchain *Blockchain) IsEmpty() bool {
 	return blockchain.blocks == nil
 }
 
-func (blockchain *Blockchain) BlockResponses() []*neighborhood.BlockResponse {
+func (blockchain *Blockchain) BlockResponses() []*node.BlockResponse {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
 	return blockchain.blockResponses
@@ -64,7 +68,7 @@ func (blockchain *Blockchain) Blocks() []*Block {
 	return blockchain.blocks
 }
 
-func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block, err error) {
+func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*node.BlockResponse) (validBlocks []*Block, err error) {
 	if len(neighborBlocks) < 2 || len(neighborBlocks) < len(blockchain.blocks) {
 		return nil, errors.New("neighbor's blockchain is too short")
 	}
@@ -72,7 +76,8 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 	}
-	isValidatorRegistered, err := lastNeighborBlock.IsValidatorRegistered()
+	validatorAddress := lastNeighborBlock.ValidatorAddress()
+	isValidatorRegistered, err := blockchain.registrable.IsRegistered(validatorAddress)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get validator proof of humanity: %w", err)
 	}
@@ -90,7 +95,7 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 		if !transaction.IsReward() && transaction.Value() > 0 {
 			if _, isRegistered := registeredAddressesMap[transaction.SenderAddress()]; !isRegistered {
 				var isPohValid bool
-				isPohValid, err = NewHuman(transaction.SenderAddress()).IsRegistered()
+				isPohValid, err = blockchain.registrable.IsRegistered(transaction.SenderAddress())
 				if err != nil {
 					return nil, fmt.Errorf("failed to get proof of humanity: %w", err)
 				} else if isPohValid {
@@ -108,7 +113,7 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 	}
 	for _, address := range lastNeighborBlock.RegisteredAddresses() {
 		var isPohValid bool
-		isPohValid, err = NewHuman(address).IsRegistered()
+		isPohValid, err = blockchain.registrable.IsRegistered(address)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get proof of humanity: %w", err)
 		} else if !isPohValid {
@@ -203,10 +208,10 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 	return validBlocks, nil
 }
 
-func (blockchain *Blockchain) Verify(neighbors []*neighborhood.Neighbor) {
+func (blockchain *Blockchain) Verify(neighbors []node.Requestable) {
 	// Select valid blocks
 	blockchain.mutex.RLock()
-	blockResponsesByTarget := make(map[string][]*neighborhood.BlockResponse)
+	blockResponsesByTarget := make(map[string][]*node.BlockResponse)
 	blocksByTarget := make(map[string][]*Block)
 	var selectedTargets []string
 	for _, neighbor := range neighbors {
@@ -232,7 +237,7 @@ func (blockchain *Blockchain) Verify(neighbors []*neighborhood.Neighbor) {
 		selectedTargets = append(selectedTargets, hostTarget)
 	}
 
-	var selectedBlocksResponse []*neighborhood.BlockResponse
+	var selectedBlocksResponse []*node.BlockResponse
 	var selectedBlocks []*Block
 	var isReplaced bool
 	if selectedTargets != nil {
@@ -282,7 +287,7 @@ func (blockchain *Blockchain) Verify(neighbors []*neighborhood.Neighbor) {
 				}
 			}
 			var isAgeCalculated bool
-			for i := len(blocks) - 2; i > 0; i-- {
+			for i := len(blocks) - 2; i >= 0; i-- {
 				for _, transaction := range blocks[i].transactions {
 					if transaction.IsReward() {
 						if transaction.RecipientAddress() == lastBlockRewardRecipientAddress {

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/node/encryption"
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 )
 
 const (
@@ -45,7 +45,7 @@ func NewTransaction(recipientAddress string, senderAddress string, senderPublicK
 	}
 }
 
-func NewTransactionFromRequest(transactionRequest *neighborhood.TransactionRequest) (*Transaction, error) {
+func NewTransactionFromRequest(transactionRequest *node.TransactionRequest) (*Transaction, error) {
 	senderPublicKey, err := encryption.DecodePublicKey(*transactionRequest.SenderPublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode transaction public key: %w", err)
@@ -65,7 +65,7 @@ func NewTransactionFromRequest(transactionRequest *neighborhood.TransactionReque
 	}, nil
 }
 
-func NewTransactionFromResponse(transactionResponse *neighborhood.TransactionResponse) (transaction *Transaction, err error) {
+func NewTransactionFromResponse(transactionResponse *node.TransactionResponse) (transaction *Transaction, err error) {
 	var senderPublicKey *encryption.PublicKey
 	if len(transactionResponse.SenderPublicKey) != 0 {
 		senderPublicKey, err = encryption.DecodePublicKey(transactionResponse.SenderPublicKey)
@@ -136,10 +136,10 @@ func (transaction *Transaction) Sign(privateKey *encryption.PrivateKey) (err err
 	return
 }
 
-func (transaction *Transaction) GetRequest() neighborhood.TransactionRequest {
+func (transaction *Transaction) GetRequest() node.TransactionRequest {
 	encodedPublicKey := transaction.senderPublicKey.String()
 	encodedSignature := transaction.signature.String()
-	return neighborhood.TransactionRequest{
+	return node.TransactionRequest{
 		RecipientAddress: &transaction.recipientAddress,
 		SenderAddress:    &transaction.senderAddress,
 		SenderPublicKey:  &encodedPublicKey,
@@ -150,7 +150,7 @@ func (transaction *Transaction) GetRequest() neighborhood.TransactionRequest {
 	}
 }
 
-func (transaction *Transaction) GetResponse() *neighborhood.TransactionResponse {
+func (transaction *Transaction) GetResponse() *node.TransactionResponse {
 	var encodedPublicKey string
 	if transaction.senderPublicKey != nil {
 		encodedPublicKey = transaction.senderPublicKey.String()
@@ -159,7 +159,7 @@ func (transaction *Transaction) GetResponse() *neighborhood.TransactionResponse 
 	if transaction.signature != nil {
 		encodedSignature = transaction.signature.String()
 	}
-	return &neighborhood.TransactionResponse{
+	return &node.TransactionResponse{
 		RecipientAddress: transaction.recipientAddress,
 		SenderAddress:    transaction.senderAddress,
 		SenderPublicKey:  encodedPublicKey,

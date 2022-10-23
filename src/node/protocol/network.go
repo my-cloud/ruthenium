@@ -3,6 +3,7 @@ package protocol
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/neighborhood"
@@ -27,11 +28,11 @@ type Network struct {
 	waitGroup *sync.WaitGroup
 
 	timeable               clock.Timeable
-	neighbors              []*neighborhood.Neighbor
+	neighbors              []node.Requestable
 	neighborsMutex         sync.RWMutex
-	neighborsByTarget      map[string]*neighborhood.Neighbor
+	neighborsByTarget      map[string]node.Requestable
 	neighborsByTargetMutex sync.RWMutex
-	seedsByTarget          map[string]*neighborhood.Neighbor
+	seedsByTarget          map[string]node.Requestable
 }
 
 func NewNetwork(ip string, port uint16, timeable clock.Timeable, configurationPath string, logger *log.Logger) *Network {
@@ -43,12 +44,12 @@ func NewNetwork(ip string, port uint16, timeable clock.Timeable, configurationPa
 	var waitGroup sync.WaitGroup
 	network.waitGroup = &waitGroup
 	seedsIps := readSeedsIps(configurationPath, logger)
-	network.seedsByTarget = map[string]*neighborhood.Neighbor{}
+	network.seedsByTarget = map[string]node.Requestable{}
 	for _, seedIp := range seedsIps {
 		seed := neighborhood.NewNeighbor(seedIp, DefaultPort, logger)
 		network.seedsByTarget[seed.Target()] = seed
 	}
-	network.neighborsByTarget = map[string]*neighborhood.Neighbor{}
+	network.neighborsByTarget = map[string]node.Requestable{}
 	return network
 }
 
@@ -79,20 +80,20 @@ func (network *Network) StartNeighborsSynchronization() {
 
 func (network *Network) SynchronizeNeighbors() {
 	network.neighborsByTargetMutex.Lock()
-	var neighborsByTarget map[string]*neighborhood.Neighbor
+	var neighborsByTarget map[string]node.Requestable
 	if len(network.neighborsByTarget) == 0 {
 		neighborsByTarget = network.seedsByTarget
 	} else {
 		neighborsByTarget = network.neighborsByTarget
 	}
-	network.neighborsByTarget = map[string]*neighborhood.Neighbor{}
+	network.neighborsByTarget = map[string]node.Requestable{}
 	network.neighborsByTargetMutex.Unlock()
 	network.waitGroup.Add(1)
-	go func(neighborsByTarget map[string]*neighborhood.Neighbor) {
+	go func(neighborsByTarget map[string]node.Requestable) {
 		defer network.waitGroup.Done()
-		var neighbors []*neighborhood.Neighbor
-		var targetRequests []neighborhood.TargetRequest
-		hostTargetRequest := neighborhood.TargetRequest{
+		var neighbors []node.Requestable
+		var targetRequests []node.TargetRequest
+		hostTargetRequest := node.TargetRequest{
 			Ip:   &network.ip,
 			Port: &network.port,
 		}
@@ -116,7 +117,7 @@ func (network *Network) SynchronizeNeighbors() {
 			lookedUpNeighborIpString := lookedUpNeighborIp.String()
 			if (lookedUpNeighborIpString != network.ip || neighborPort != network.port) && lookedUpNeighborIpString == neighborIp && neighbor.IsFound() {
 				neighbors = append(neighbors, neighbor)
-				targetRequest := neighborhood.TargetRequest{
+				targetRequest := node.TargetRequest{
 					Ip:   &neighborIp,
 					Port: &neighborPort,
 				}
@@ -131,7 +132,7 @@ func (network *Network) SynchronizeNeighbors() {
 		network.neighbors = neighbors[:outboundsCount]
 		network.neighborsMutex.Unlock()
 		for _, neighbor := range neighbors[:outboundsCount] {
-			var neighborTargetRequests []neighborhood.TargetRequest
+			var neighborTargetRequests []node.TargetRequest
 			for _, targetRequest := range targetRequests {
 				neighborIp := neighbor.Ip()
 				neighborPort := neighbor.Port()
@@ -139,14 +140,14 @@ func (network *Network) SynchronizeNeighbors() {
 					neighborTargetRequests = append(neighborTargetRequests, targetRequest)
 				}
 			}
-			go func(neighbor *neighborhood.Neighbor) {
+			go func(neighbor node.Requestable) {
 				_ = neighbor.SendTargets(neighborTargetRequests)
 			}(neighbor)
 		}
 	}(neighborsByTarget)
 }
 
-func (network *Network) AddTargets(targetRequests []neighborhood.TargetRequest) {
+func (network *Network) AddTargets(targetRequests []node.TargetRequest) {
 	network.waitGroup.Add(1)
 	go func() {
 		defer network.waitGroup.Done()
@@ -161,6 +162,6 @@ func (network *Network) AddTargets(targetRequests []neighborhood.TargetRequest) 
 	}()
 }
 
-func (network *Network) Neighbors() []*neighborhood.Neighbor {
+func (network *Network) Neighbors() []node.Requestable {
 	return network.neighbors
 }

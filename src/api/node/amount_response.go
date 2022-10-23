@@ -1,4 +1,4 @@
-package neighborhood
+package node
 
 type AmountResponse struct {
 	Amount uint64

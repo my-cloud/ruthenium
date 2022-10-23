@@ -3,9 +3,10 @@ package protocol
 import (
 	"errors"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/api"
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 	"math/rand"
 	"sync"
 )
@@ -14,14 +15,17 @@ type Pool struct {
 	transactions []*Transaction
 	mutex        sync.RWMutex
 
+	registrable api.Registrable
+
 	timeable clock.Timeable
 
 	waitGroup *sync.WaitGroup
 	logger    *log.Logger
 }
 
-func NewPool(timeable clock.Timeable, logger *log.Logger) *Pool {
+func NewPool(registrable api.Registrable, timeable clock.Timeable, logger *log.Logger) *Pool {
 	pool := new(Pool)
+	pool.registrable = registrable
 	pool.timeable = timeable
 	var waitGroup sync.WaitGroup
 	pool.waitGroup = &waitGroup
@@ -29,7 +33,7 @@ func NewPool(timeable clock.Timeable, logger *log.Logger) *Pool {
 	return pool
 }
 
-func (pool *Pool) AddTransaction(transaction *Transaction, blockchain *Blockchain, neighbors []*neighborhood.Neighbor) {
+func (pool *Pool) AddTransaction(transaction *Transaction, blockchain *Blockchain, neighbors []node.Requestable) {
 	pool.waitGroup.Add(1)
 	go func() {
 		defer pool.waitGroup.Done()
@@ -40,7 +44,7 @@ func (pool *Pool) AddTransaction(transaction *Transaction, blockchain *Blockchai
 		}
 		transactionRequest := transaction.GetRequest()
 		for _, neighbor := range neighbors {
-			go func(neighbor *neighborhood.Neighbor) {
+			go func(neighbor node.Requestable) {
 				_ = neighbor.AddTransaction(transactionRequest)
 			}(neighbor)
 		}
@@ -152,7 +156,7 @@ func (pool *Pool) Validate(timestamp int64, blockchain *Blockchain, address stri
 	var newRegisteredAddresses []string
 	for registeredAddress := range registeredAddressesMap {
 		var isPohValid bool
-		isPohValid, err = NewHuman(registeredAddress).IsRegistered()
+		isPohValid, err = pool.registrable.IsRegistered(registeredAddress)
 		if err != nil {
 			pool.logger.Error(fmt.Errorf("failed to get proof of humanity: %w", err).Error())
 		} else if isPohValid {

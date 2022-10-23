@@ -1,4 +1,4 @@
-package neighborhood
+package node
 
 type AmountRequest struct {
 	Address *string

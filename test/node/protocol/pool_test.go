@@ -7,6 +7,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/clock"
+	"github.com/my-cloud/ruthenium/test/humanity"
 	"testing"
 	"time"
 )
@@ -19,33 +20,35 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	walletAAddress := walletA.Address()
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
-	logger := log.NewLogger(log.Fatal)
+	registrable := humanity.NewRegistrableMock()
+	humanity.IsRegisteredMock = func(address string) (bool, error) { return true, nil }
 	watch := clock.NewWatch()
 	validationTimer := time.Nanosecond
-	blockchain := protocol.NewBlockchain(validationTimer.Nanoseconds(), watch, logger)
-	pool := protocol.NewPool(watch, logger)
+	logger := log.NewLogger(log.Fatal)
+	blockchain := protocol.NewBlockchain(registrable, validationTimer.Nanoseconds(), watch, logger)
+	pool := protocol.NewPool(registrable, watch, logger)
 	validation := protocol.NewValidation(minerWalletAddress, blockchain, pool, watch, validationTimer, logger)
 	validation.Do()
 	validation.Wait()
 
-	// Act
 	var amount1 uint64 = 40 * protocol.ParticlesCount
 	transaction1 := protocol.NewTransaction(walletAAddress, minerWalletAddress, minerWallet.PublicKey(), 0, amount1)
 	_ = transaction1.Sign(minerWallet.PrivateKey())
-	addTransaction(pool, blockchain, validation, transaction1)
 
 	var amount2 uint64 = 10 * protocol.ParticlesCount
 	transaction2 := protocol.NewTransaction(walletBAddress, walletAAddress, walletA.PublicKey(), 0, amount2)
 	_ = transaction2.Sign(walletA.PrivateKey())
+
+	// Act
+	addTransaction(pool, blockchain, validation, transaction1)
+	actualWalletAAmount := blockchain.CalculateTotalAmount(0, walletAAddress)
+
 	addTransaction(pool, blockchain, validation, transaction2)
+	actualWalletBAmount := blockchain.CalculateTotalAmount(0, walletBAddress)
 
 	// Assert
-	expectedWalletAAmount := amount1 - amount2 - transaction2.Fee()
-	actualWalletAAmount := blockchain.CalculateTotalAmount(4, walletAAddress)
-	test.Assert(t, expectedWalletAAmount == actualWalletAAmount, fmt.Sprintf("Wrong wallet A amount. Expected: %d - Actual: %d", expectedWalletAAmount, actualWalletAAmount))
-	expectedWalletBAmount := amount2
-	actualWalletBAmount := blockchain.CalculateTotalAmount(4, walletBAddress)
-	test.Assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %d - Actual: %d", expectedWalletBAmount, actualWalletBAmount))
+	test.Assert(t, amount1 == actualWalletAAmount, fmt.Sprintf("Wrong wallet A amount. Expected: %d - Actual: %d", amount1, actualWalletAAmount))
+	test.Assert(t, amount2 == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %d - Actual: %d", amount2, actualWalletBAmount))
 }
 
 func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
@@ -56,31 +59,35 @@ func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
 	walletAAddress := walletA.Address()
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
-	logger := log.NewLogger(log.Fatal)
+	registrable := humanity.NewRegistrableMock()
+	humanity.IsRegisteredMock = func(address string) (bool, error) { return true, nil }
 	watch := clock.NewWatch()
 	validationTimer := time.Nanosecond
-	blockchain := protocol.NewBlockchain(validationTimer.Nanoseconds(), watch, logger)
-	pool := protocol.NewPool(watch, logger)
+	logger := log.NewLogger(log.Fatal)
+	blockchain := protocol.NewBlockchain(registrable, validationTimer.Nanoseconds(), watch, logger)
+	pool := protocol.NewPool(registrable, watch, logger)
 	validation := protocol.NewValidation(minerWalletAddress, blockchain, pool, watch, validationTimer, logger)
 	validation.Do()
 	validation.Wait()
 
-	// Act
 	var amount1 uint64 = 40 * protocol.ParticlesCount
 	transaction1 := protocol.NewTransaction(walletAAddress, minerWalletAddress, minerWallet.PublicKey(), 0, amount1)
 	_ = transaction1.Sign(minerWallet.PrivateKey())
-	addTransaction(pool, blockchain, validation, transaction1)
 
 	var amount2 uint64 = 10 * protocol.ParticlesCount
 	transaction2 := protocol.NewTransaction(walletBAddress, walletAAddress, walletA.PublicKey(), 0, amount2)
 	_ = transaction2.Sign(walletB.PrivateKey())
+
+	// Act
+	addTransaction(pool, blockchain, validation, transaction1)
+	actualWalletAAmount := blockchain.CalculateTotalAmount(0, walletAAddress)
+
 	addTransaction(pool, blockchain, validation, transaction2)
+	actualWalletBAmount := blockchain.CalculateTotalAmount(0, walletBAddress)
 
 	// Assert
-	actualWalletAAmount := blockchain.CalculateTotalAmount(4, walletAAddress)
 	test.Assert(t, amount1 == actualWalletAAmount, fmt.Sprintf("Wrong wallet A amount. Expected: %d - Actual: %d", amount1, actualWalletAAmount))
 	var expectedWalletBAmount uint64 = 0
-	actualWalletBAmount := blockchain.CalculateTotalAmount(4, walletBAddress)
 	test.Assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %d - Actual: %d", expectedWalletBAmount, actualWalletBAmount))
 }
 

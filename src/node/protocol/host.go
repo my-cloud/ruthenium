@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/clock"
+	"github.com/my-cloud/ruthenium/src/humanity"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/encryption"
 	"github.com/my-cloud/ruthenium/src/node/neighborhood"
@@ -47,9 +49,10 @@ func NewHost(mnemonic string, derivationPath string, password string, privateKey
 	} else {
 		watch := clock.NewWatch()
 		host.network = NewNetwork(host.ip, host.port, watch, configurationPath, host.logger)
+		registry := humanity.NewRegistry()
 		validationTimer := validationIntervalInSeconds * time.Second
-		host.blockchain = NewBlockchain(validationTimer.Nanoseconds(), watch, host.logger)
-		host.pool = NewPool(watch, host.logger)
+		host.blockchain = NewBlockchain(registry, validationTimer.Nanoseconds(), watch, host.logger)
+		host.pool = NewPool(registry, watch, host.logger)
 		host.validation = NewValidation(wallet.Address(), host.blockchain, host.pool, watch, validationTimer, host.logger)
 		host.verification = NewVerification(host.blockchain, host.pool, host.network)
 	}
@@ -65,12 +68,12 @@ func (host *Host) GetBlocks() (res p2p.Data) {
 	return
 }
 
-func (host *Host) PostTargets(request []neighborhood.TargetRequest) {
+func (host *Host) PostTargets(request []node.TargetRequest) {
 	host.network.AddTargets(request)
 }
 
 func (host *Host) GetTransactions() (res p2p.Data) {
-	var transactionResponses []*neighborhood.TransactionResponse
+	var transactionResponses []*node.TransactionResponse
 	for _, transaction := range host.pool.Transactions() {
 		transactionResponses = append(transactionResponses, transaction.GetResponse())
 	}
@@ -80,7 +83,7 @@ func (host *Host) GetTransactions() (res p2p.Data) {
 	return
 }
 
-func (host *Host) AddTransactions(request *neighborhood.TransactionRequest) {
+func (host *Host) AddTransactions(request *node.TransactionRequest) {
 	if request.IsInvalid() {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
@@ -94,14 +97,14 @@ func (host *Host) AddTransactions(request *neighborhood.TransactionRequest) {
 	host.pool.AddTransaction(transaction, host.blockchain, neighbors)
 }
 
-func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
+func (host *Host) Amount(request *node.AmountRequest) (res p2p.Data) {
 	if request.IsInvalid() {
 		host.logger.Error("field(s) are missing in amount request")
 		return
 	}
 	blockchainAddress := *request.Address
 	amount := host.blockchain.CalculateTotalAmount(time.Now().UnixNano(), blockchainAddress)
-	amountResponse := &neighborhood.AmountResponse{amount}
+	amountResponse := &node.AmountResponse{amount}
 	if err := res.SetGob(amountResponse); err != nil {
 		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
 	}
@@ -155,9 +158,9 @@ func (host *Host) startServer() {
 	server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
 		var unknownRequest bool
 		var requestString string
-		var transactionRequest neighborhood.TransactionRequest
-		var amountRequest neighborhood.AmountRequest
-		var targetsRequest []neighborhood.TargetRequest
+		var transactionRequest node.TransactionRequest
+		var amountRequest node.AmountRequest
+		var targetsRequest []node.TargetRequest
 		res = p2p.Data{}
 		if err = req.GetGob(&requestString); err == nil {
 			switch requestString {

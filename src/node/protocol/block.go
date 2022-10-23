@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
+	"github.com/my-cloud/ruthenium/src/api/node"
 )
 
 type Block struct {
@@ -23,7 +23,7 @@ func NewBlock(timestamp int64, previousHash [32]byte, transactions []*Transactio
 	}
 }
 
-func NewBlockFromResponse(block *neighborhood.BlockResponse) (*Block, error) {
+func NewBlockFromResponse(block *node.BlockResponse) (*Block, error) {
 	var transactions []*Transaction
 	for _, transactionResponse := range block.Transactions {
 		transaction, err := NewTransactionFromResponse(transactionResponse)
@@ -50,11 +50,6 @@ func (block *Block) Hash() (hash [32]byte, err error) {
 	return
 }
 
-func (block *Block) IsValidatorRegistered() (isRegistered bool, err error) {
-	validatorAddress := block.validatorAddress()
-	return NewHuman(validatorAddress).IsRegistered()
-}
-
 func (block *Block) Timestamp() int64 {
 	return block.timestamp
 }
@@ -71,7 +66,7 @@ func (block *Block) RegisteredAddresses() []string {
 	return block.registeredAddresses
 }
 
-func (block *Block) validatorAddress() string {
+func (block *Block) ValidatorAddress() string {
 	var validatorAddress string
 	for i := len(block.transactions) - 1; i >= 0; i-- {
 		if block.transactions[i].IsReward() {
@@ -96,12 +91,12 @@ func (block *Block) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (block *Block) GetResponse() *neighborhood.BlockResponse {
-	var transactions []*neighborhood.TransactionResponse
+func (block *Block) GetResponse() *node.BlockResponse {
+	var transactions []*node.TransactionResponse
 	for _, transaction := range block.transactions {
 		transactions = append(transactions, transaction.GetResponse())
 	}
-	return &neighborhood.BlockResponse{
+	return &node.BlockResponse{
 		Timestamp:           block.timestamp,
 		PreviousHash:        block.previousHash,
 		Transactions:        transactions,
