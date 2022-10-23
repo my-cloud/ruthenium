@@ -1,4 +1,4 @@
-package node
+package network
 
 type BlockResponse struct {
 	Timestamp           int64

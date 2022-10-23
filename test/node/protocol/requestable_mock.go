@@ -1,7 +1,7 @@
-package neighborhood
+package protocol
 
 import (
-	"github.com/my-cloud/ruthenium/src/api/node"
+	"github.com/my-cloud/ruthenium/src/api/node/network"
 )
 
 type RequestableMock struct {
@@ -15,11 +15,11 @@ var IpMock func() string
 var PortMock func() uint16
 var TargetMock func() string
 var IsFoundMock func() bool
-var GetBlocksMock func() ([]*node.BlockResponse, error)
-var SendTargetsMock func([]node.TargetRequest) error
-var AddTransactionMock func(node.TransactionRequest) error
-var GetTransactionsMock func() ([]node.TransactionResponse, error)
-var GetAmountMock func(node.AmountRequest) (*node.AmountResponse, error)
+var GetBlocksMock func() ([]*network.BlockResponse, error)
+var SendTargetsMock func([]network.TargetRequest) error
+var AddTransactionMock func(network.TransactionRequest) error
+var GetTransactionsMock func() ([]network.TransactionResponse, error)
+var GetAmountMock func(network.AmountRequest) (*network.AmountResponse, error)
 var MineMock func() error
 var StartMiningMock func() error
 var StopMiningMock func() error
@@ -40,23 +40,23 @@ func (mock *RequestableMock) IsFound() bool {
 	return IsFoundMock()
 }
 
-func (mock *RequestableMock) GetBlocks() ([]*node.BlockResponse, error) {
+func (mock *RequestableMock) GetBlocks() ([]*network.BlockResponse, error) {
 	return GetBlocksMock()
 }
 
-func (mock *RequestableMock) SendTargets(request []node.TargetRequest) error {
+func (mock *RequestableMock) SendTargets(request []network.TargetRequest) error {
 	return SendTargetsMock(request)
 }
 
-func (mock *RequestableMock) AddTransaction(request node.TransactionRequest) error {
+func (mock *RequestableMock) AddTransaction(request network.TransactionRequest) error {
 	return AddTransactionMock(request)
 }
 
-func (mock *RequestableMock) GetTransactions() ([]node.TransactionResponse, error) {
+func (mock *RequestableMock) GetTransactions() ([]network.TransactionResponse, error) {
 	return GetTransactionsMock()
 }
 
-func (mock *RequestableMock) GetAmount(request node.AmountRequest) (*node.AmountResponse, error) {
+func (mock *RequestableMock) GetAmount(request network.AmountRequest) (*network.AmountResponse, error) {
 	return GetAmountMock(request)
 }
 

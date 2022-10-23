@@ -1,4 +1,4 @@
-package node
+package network
 
 type AmountResponse struct {
 	Amount uint64

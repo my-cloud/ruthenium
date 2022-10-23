@@ -1,4 +1,4 @@
-package humanity
+package protocol
 
 type RegistrableMock struct {
 }

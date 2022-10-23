@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/api/node"
+	"github.com/my-cloud/ruthenium/src/api/node/network"
 	"github.com/my-cloud/ruthenium/src/node/encryption"
 )
 
@@ -34,18 +34,7 @@ func NewRewardTransaction(recipientAddress string, timestamp int64, value uint64
 	}
 }
 
-func NewTransaction(recipientAddress string, senderAddress string, senderPublicKey *encryption.PublicKey, timestamp int64, value uint64) *Transaction {
-	return &Transaction{
-		recipientAddress: recipientAddress,
-		senderAddress:    senderAddress,
-		senderPublicKey:  senderPublicKey,
-		timestamp:        timestamp,
-		value:            value,
-		fee:              transactionFee,
-	}
-}
-
-func NewTransactionFromRequest(transactionRequest *node.TransactionRequest) (*Transaction, error) {
+func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (*Transaction, error) {
 	senderPublicKey, err := encryption.DecodePublicKey(*transactionRequest.SenderPublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode transaction public key: %w", err)
@@ -65,7 +54,7 @@ func NewTransactionFromRequest(transactionRequest *node.TransactionRequest) (*Tr
 	}, nil
 }
 
-func NewTransactionFromResponse(transactionResponse *node.TransactionResponse) (transaction *Transaction, err error) {
+func NewTransactionFromResponse(transactionResponse *network.TransactionResponse) (transaction *Transaction, err error) {
 	var senderPublicKey *encryption.PublicKey
 	if len(transactionResponse.SenderPublicKey) != 0 {
 		senderPublicKey, err = encryption.DecodePublicKey(transactionResponse.SenderPublicKey)
@@ -127,30 +116,7 @@ func (transaction *Transaction) Fee() uint64 {
 	return transaction.fee
 }
 
-func (transaction *Transaction) Sign(privateKey *encryption.PrivateKey) (err error) {
-	marshaledTransaction, err := json.Marshal(transaction)
-	if err != nil {
-		return fmt.Errorf("failed to marshal transaction: %w", err)
-	}
-	transaction.signature, err = encryption.NewSignature(marshaledTransaction, privateKey)
-	return
-}
-
-func (transaction *Transaction) GetRequest() node.TransactionRequest {
-	encodedPublicKey := transaction.senderPublicKey.String()
-	encodedSignature := transaction.signature.String()
-	return node.TransactionRequest{
-		RecipientAddress: &transaction.recipientAddress,
-		SenderAddress:    &transaction.senderAddress,
-		SenderPublicKey:  &encodedPublicKey,
-		Signature:        &encodedSignature,
-		Timestamp:        &transaction.timestamp,
-		Value:            &transaction.value,
-		Fee:              &transaction.fee,
-	}
-}
-
-func (transaction *Transaction) GetResponse() *node.TransactionResponse {
+func (transaction *Transaction) GetResponse() *network.TransactionResponse {
 	var encodedPublicKey string
 	if transaction.senderPublicKey != nil {
 		encodedPublicKey = transaction.senderPublicKey.String()
@@ -159,7 +125,7 @@ func (transaction *Transaction) GetResponse() *node.TransactionResponse {
 	if transaction.signature != nil {
 		encodedSignature = transaction.signature.String()
 	}
-	return &node.TransactionResponse{
+	return &network.TransactionResponse{
 		RecipientAddress: transaction.recipientAddress,
 		SenderAddress:    transaction.senderAddress,
 		SenderPublicKey:  encodedPublicKey,
@@ -170,12 +136,12 @@ func (transaction *Transaction) GetResponse() *node.TransactionResponse {
 	}
 }
 
-func (transaction *Transaction) Equals(other *Transaction) bool {
-	return transaction.recipientAddress == other.recipientAddress &&
-		transaction.senderAddress == other.senderAddress &&
-		transaction.timestamp == other.timestamp &&
-		transaction.value == other.value &&
-		transaction.fee == other.fee
+func (transaction *Transaction) Equals(other *network.TransactionResponse) bool {
+	return transaction.recipientAddress == other.RecipientAddress &&
+		transaction.senderAddress == other.SenderAddress &&
+		transaction.timestamp == other.Timestamp &&
+		transaction.value == other.Value &&
+		transaction.fee == other.Fee
 }
 
 func (transaction *Transaction) VerifySignature() error {
