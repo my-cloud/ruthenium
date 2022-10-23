@@ -61,7 +61,6 @@ There are two ways to use the Ruthenium blockchain. You can either use your own 
 For further details concerning the usage, see [the dedicated wiki page](https://github.com/my-cloud/ruthenium/wiki/Usage)
 
 ## Contributing
-[![Contributors](https://img.shields.io/github/contributors/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/graphs/contributors)
 [![GitHub forks](https://img.shields.io/github/forks/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/fork)
 [![GitHub Repo stars](https://img.shields.io/github/stars/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium)
 
@@ -72,11 +71,13 @@ If you have a suggestion that would make this better, please do not hesitate to 
 ⭐ Don't forget to give the project a [star](https://docs.github.com/en/get-started/exploring-projects-on-github/saving-repositories-with-stars)! Thanks again!
 
 ## Contact
+[![Project](https://img.shields.io/badge/project-repository-blue.svg?logo=github)](https://github.com/my-cloud/ruthenium)
+
 Founder: [Jérémy Pansier](https://github.com/JeremyPansier) - jpansier@my-cloud.me
 
-Project Link: https://github.com/my-cloud/ruthenium
-
 ## Authors and Acknowledgments
+[![Contributors](https://img.shields.io/github/contributors/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/graphs/contributors)
+
 Special thanks to [Gwenall Pansier](https://github.com/Gwenall) who contributed since the early developments.
 
 For a [tutorial to create a first blockchain in Go][1], thanks to [Yuko Sakai][2] & [Jun Sakai][3].
