@@ -1,5 +1,5 @@
 # Ruthenium
-[![Release](https://img.shields.io/github/release/my-cloud/ruthenium.svg?logo=github)](https://GitHub.com/Naereen/StrapDown.js/releases/)
+[![Release](https://img.shields.io/github/release/my-cloud/ruthenium.svg?logo=github)](https://github.com/my-cloud/ruthenium/releases)
 
 ## Description
 [![Wiki](https://img.shields.io/badge/wiki-home-blue.svg?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
@@ -7,7 +7,7 @@
 
 The Ruthenium blockchain protocol.
 
-This README contains essential information for a quick start. You will find a detailed description of the project in [the dedicated wiki page](https://github.com/my-cloud/ruthenium/wiki/Home). If you want to know what reasons led to create this blockchain, you can directly dive into the [Ruthenium whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
+This README contains essential information for a quick start. You will find a detailed description of the project in the [wiki](https://github.com/my-cloud/ruthenium/wiki/Home). If you want to know what reasons led to create this blockchain, you can directly dive into the Ruthenium [whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
 
 ## Usage
 [![Build](https://img.shields.io/github/workflow/status/my-cloud/ruthenium/Build?logo=github)](https://github.com/my-cloud/ruthenium/actions?query=workflow%3ABuild+event%3Apush+branch%3Amain)
@@ -61,7 +61,6 @@ There are two ways to use the Ruthenium blockchain. You can either use your own 
 For further details concerning the usage, see [the dedicated wiki page](https://github.com/my-cloud/ruthenium/wiki/Usage)
 
 ## Contributing
-[![Contributors](https://img.shields.io/github/contributors/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/graphs/contributors)
 [![GitHub forks](https://img.shields.io/github/forks/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/fork)
 [![GitHub Repo stars](https://img.shields.io/github/stars/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium)
 
@@ -72,14 +71,16 @@ If you have a suggestion that would make this better, please do not hesitate to 
 ⭐ Don't forget to give the project a [star](https://docs.github.com/en/get-started/exploring-projects-on-github/saving-repositories-with-stars)! Thanks again!
 
 ## Contact
+[![Project](https://img.shields.io/badge/project-repository-blue.svg?logo=github)](https://github.com/my-cloud/ruthenium)
+
 Founder: [Jérémy Pansier](https://github.com/JeremyPansier) - jpansier@my-cloud.me
 
-Project Link: https://github.com/my-cloud/ruthenium
-
 ## Authors and Acknowledgments
+[![Contributors](https://img.shields.io/github/contributors/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/graphs/contributors)
+
 Special thanks to [Gwenall Pansier](https://github.com/Gwenall) who contributed since the early developments.
 
-For a tutorial to create a first blockchain in go, thanks to [Yuko Sakai][1] & [Jun Sakai][2].
+For a [tutorial to create a first blockchain in Go][1], thanks to [Yuko Sakai][2] & [Jun Sakai][3].
 
 ## License
 [![License](https://img.shields.io/github/license/my-cloud/ruthenium?label=⚖&nbsp;license)](LICENSE)
@@ -101,5 +102,6 @@ The main principles have been implemented.
 Now it needs a lot of refactoring and tests to improve maintainability and
 reliability.
 
-[1]: https://www.udemy.com/user/myeigoworld/ "Yuko Sakai LinkedIn profile"
-[2]: https://udemy.com/user/jun-sakai/ "Jun Sakai LinkedIn profile"
+[1]: https://www.udemy.com/course/golang-how-to-build-a-blockchain-in-go/ "Udemy tutorial to build a blockchain in Go"
+[2]: https://www.udemy.com/user/myeigoworld/ "Yuko Sakai LinkedIn profile"
+[3]: https://udemy.com/user/jun-sakai/ "Jun Sakai LinkedIn profile"
