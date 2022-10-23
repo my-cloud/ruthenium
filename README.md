@@ -7,7 +7,7 @@
 
 The Ruthenium blockchain protocol.
 
-This README contains essential information for a quick start. You will find a detailed description of the project in [the dedicated wiki page](https://github.com/my-cloud/ruthenium/wiki/Home). If you want to know what reasons led to create this blockchain, you can directly dive into the [Ruthenium whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
+This README contains essential information for a quick start. You will find a detailed description of the project in the [wiki](https://github.com/my-cloud/ruthenium/wiki/Home). If you want to know what reasons led to create this blockchain, you can directly dive into the Ruthenium [whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
 
 ## Usage
 [![Build](https://img.shields.io/github/workflow/status/my-cloud/ruthenium/Build?logo=github)](https://github.com/my-cloud/ruthenium/actions?query=workflow%3ABuild+event%3Apush+branch%3Amain)
