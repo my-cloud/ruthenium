@@ -19,8 +19,6 @@ const (
 )
 
 type Neighbor struct {
-	ip     string
-	port   uint16
 	target *Target
 	client *p2p.Client
 	logger *log.Logger
@@ -38,15 +36,15 @@ func NewNeighbor(ip string, port uint16, logger *log.Logger) (*Neighbor, error) 
 		return nil, fmt.Errorf("failed to start client for target %s: %w", target.Value(), err)
 	}
 	client.SetLogger(log.NewLogger(log.Fatal))
-	return &Neighbor{ip, port, target, client, logger}, nil
+	return &Neighbor{target, client, logger}, nil
 }
 
 func (neighbor *Neighbor) Ip() string {
-	return neighbor.ip
+	return neighbor.target.ip
 }
 
 func (neighbor *Neighbor) Port() uint16 {
-	return neighbor.port
+	return neighbor.target.port
 }
 
 func (neighbor *Neighbor) Target() string {
@@ -107,10 +105,6 @@ func (neighbor *Neighbor) StopMining() (err error) {
 }
 
 func (neighbor *Neighbor) sendRequest(request interface{}) (res p2p.Data, err error) {
-	if err = neighbor.target.Reach(); err != nil {
-		err = fmt.Errorf("unable to find node for target %s", neighbor.Target())
-		return
-	}
 	req := p2p.Data{}
 	err = req.SetGob(request)
 	if err != nil {
