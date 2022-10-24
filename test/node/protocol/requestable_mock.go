@@ -4,8 +4,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/api/node/network"
 )
 
-type RequestableMock struct {
-}
+type RequestableMock struct{}
 
 func NewRequestableMock() *RequestableMock {
 	return &RequestableMock{}

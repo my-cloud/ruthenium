@@ -1,4 +1,4 @@
-package protocol
+package humanity
 
 import (
 	"github.com/my-cloud/ruthenium/src/humanity"

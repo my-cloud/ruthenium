@@ -6,7 +6,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/test"
-	"github.com/my-cloud/ruthenium/test/clock"
+	"github.com/my-cloud/ruthenium/test/node"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -20,7 +20,7 @@ func Test_SynchronizeNeighbors_OneNeighbor_NeighborAdded(t *testing.T) {
 	_ = jsonFile.Close()
 	var seedsIps []string
 	_ = json.Unmarshal(byteValue, &seedsIps)
-	watch := clock.NewWatch()
+	watch := node.NewWatch()
 	logger := log.NewLogger(log.Fatal)
 	neighborhood := network.NewNeighborhood("", 0, watch, configurationPath, logger)
 
