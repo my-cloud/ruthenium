@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	p2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/humanity"
@@ -12,6 +13,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -35,17 +37,21 @@ func main() {
 	wallet, err := encryption.DecodeWallet(*mnemonic, *derivationPath, *password, *privateKey)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
-	} else {
-		registry := humanity.NewRegistry()
-		validationTimer := validationIntervalInSeconds * time.Second
-		watch := clock.NewWatch()
-		blockchain := protocol.NewBlockchain(registry, validationTimer, watch, logger)
-		pool := protocol.NewPool(registry, watch, logger)
-		validation := protocol.NewValidation(wallet.Address(), blockchain, pool, watch, validationTimer, logger)
-		neighborhood := network.NewNeighborhood(ip, uint16(*port), watch, *configurationPath, logger)
-		app := network.NewHost(ip, uint16(*port), blockchain, pool, validation, neighborhood, logger)
-		app.Run()
 	}
+	registry := humanity.NewRegistry()
+	validationTimer := validationIntervalInSeconds * time.Second
+	watch := clock.NewWatch()
+	blockchain := protocol.NewBlockchain(registry, validationTimer, watch, logger)
+	pool := protocol.NewPool(registry, watch, logger)
+	validation := protocol.NewValidation(wallet.Address(), blockchain, pool, watch, validationTimer, logger)
+	neighborhood := network.NewNeighborhood(ip, uint16(*port), watch, *configurationPath, logger)
+	tcp := p2p.NewTCP("0.0.0.0", strconv.Itoa(int(*port)))
+	server, err := p2p.NewServer(tcp)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
+	}
+	host := network.NewHost(server, blockchain, pool, validation, neighborhood, watch, logger)
+	host.Run()
 }
 
 func findPublicIp(logger *log.Logger) (ip string, err error) {

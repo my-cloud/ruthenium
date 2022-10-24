@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func Test_SynchronizeNeighbors_OneNeighbor_NeighborAdded(t *testing.T) {
+func Test_Synchronize_OneNeighbor_NeighborAdded(t *testing.T) {
 	// Arrange
 	configurationPath := "../../../config"
 	jsonFile, _ := os.Open(configurationPath + "/seeds.json")
@@ -20,7 +20,7 @@ func Test_SynchronizeNeighbors_OneNeighbor_NeighborAdded(t *testing.T) {
 	_ = jsonFile.Close()
 	var seedsIps []string
 	_ = json.Unmarshal(byteValue, &seedsIps)
-	watch := node.NewWatch()
+	watch := node.NewWatchMock()
 	logger := log.NewLogger(log.Fatal)
 	neighborhood := network.NewNeighborhood("", 0, watch, configurationPath, logger)
 

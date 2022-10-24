@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"math"
 	"math/rand"
-	"net"
 	"os"
 	"sync"
 	"time"
@@ -27,12 +26,12 @@ type Neighborhood struct {
 	logger    *log.Logger
 	waitGroup *sync.WaitGroup
 
-	timeable               clock.Timeable
-	neighbors              []network.Requestable
-	neighborsMutex         sync.RWMutex
-	neighborsByTarget      map[string]network.Requestable
-	neighborsByTargetMutex sync.RWMutex
-	seedsByTarget          map[string]network.Requestable
+	timeable              clock.Timeable
+	neighbors             []network.Requestable
+	neighborsMutex        sync.RWMutex
+	neighborsTargets      map[string]*Target
+	neighborsTargetsMutex sync.RWMutex
+	seedsTargets          map[string]*Target
 }
 
 func NewNeighborhood(hostIp string, hostPort uint16, timeable clock.Timeable, configurationPath string, logger *log.Logger) *Neighborhood {
@@ -44,12 +43,12 @@ func NewNeighborhood(hostIp string, hostPort uint16, timeable clock.Timeable, co
 	var waitGroup sync.WaitGroup
 	neighborhood.waitGroup = &waitGroup
 	seedsIps := readSeedsIps(configurationPath, logger)
-	neighborhood.seedsByTarget = map[string]network.Requestable{}
+	neighborhood.seedsTargets = map[string]*Target{}
 	for _, seedIp := range seedsIps {
-		seed := NewNeighbor(seedIp, DefaultPort, logger)
-		neighborhood.seedsByTarget[seed.Target()] = seed
+		seedTarget := NewTarget(seedIp, DefaultPort)
+		neighborhood.seedsTargets[seedTarget.Value()] = seedTarget
 	}
-	neighborhood.neighborsByTarget = map[string]network.Requestable{}
+	neighborhood.neighborsTargets = map[string]*Target{}
 	return neighborhood
 }
 
@@ -79,17 +78,17 @@ func (neighborhood *Neighborhood) StartSynchronization() {
 }
 
 func (neighborhood *Neighborhood) Synchronize() {
-	neighborhood.neighborsByTargetMutex.Lock()
-	var neighborsByTarget map[string]network.Requestable
-	if len(neighborhood.neighborsByTarget) == 0 {
-		neighborsByTarget = neighborhood.seedsByTarget
+	neighborhood.neighborsTargetsMutex.Lock()
+	var neighborsTargets map[string]*Target
+	if len(neighborhood.neighborsTargets) == 0 {
+		neighborsTargets = neighborhood.seedsTargets
 	} else {
-		neighborsByTarget = neighborhood.neighborsByTarget
+		neighborsTargets = neighborhood.neighborsTargets
 	}
-	neighborhood.neighborsByTarget = map[string]network.Requestable{}
-	neighborhood.neighborsByTargetMutex.Unlock()
+	neighborhood.neighborsTargets = map[string]*Target{}
+	neighborhood.neighborsTargetsMutex.Unlock()
 	neighborhood.waitGroup.Add(1)
-	go func(neighborsByTarget map[string]network.Requestable) {
+	go func(neighborsTargets map[string]*Target) {
 		defer neighborhood.waitGroup.Done()
 		var neighbors []network.Requestable
 		var targetRequests []network.TargetRequest
@@ -99,27 +98,15 @@ func (neighborhood *Neighborhood) Synchronize() {
 		}
 		targetRequests = append(targetRequests, hostTargetRequest)
 		neighborhood.neighborsMutex.RLock()
-		for _, neighbor := range neighborsByTarget {
-			neighborIp := neighbor.Ip()
-			neighborPort := neighbor.Port()
-			lookedUpNeighborsIps, err := net.LookupIP(neighborIp)
-			if err != nil {
-				neighborhood.logger.Error(fmt.Errorf("DNS discovery failed on addresse %s: %w", neighborIp, err).Error())
-				return
-			}
-
-			neighborsCount := len(lookedUpNeighborsIps)
-			if neighborsCount != 1 {
-				neighborhood.logger.Error(fmt.Sprintf("DNS discovery did not find a single address (%d addresses found) for the given IP %s", neighborsCount, neighborIp))
-				return
-			}
-			lookedUpNeighborIp := lookedUpNeighborsIps[0]
-			lookedUpNeighborIpString := lookedUpNeighborIp.String()
-			if (lookedUpNeighborIpString != neighborhood.hostIp || neighborPort != neighborhood.hostPort) && lookedUpNeighborIpString == neighborIp && neighbor.IsFound() {
+		for _, target := range neighborsTargets {
+			targetIp := target.Ip()
+			targetPort := target.Port()
+			if err := target.Reach(); err == nil && targetIp != neighborhood.hostIp || targetPort != neighborhood.hostPort {
+				neighbor := NewNeighbor(targetIp, targetPort, neighborhood.logger)
 				neighbors = append(neighbors, neighbor)
 				targetRequest := network.TargetRequest{
-					Ip:   &neighborIp,
-					Port: &neighborPort,
+					Ip:   &targetIp,
+					Port: &targetPort,
 				}
 				targetRequests = append(targetRequests, targetRequest)
 			}
@@ -144,19 +131,21 @@ func (neighborhood *Neighborhood) Synchronize() {
 				_ = neighbor.SendTargets(neighborTargetRequests)
 			}(neighbor)
 		}
-	}(neighborsByTarget)
+	}(neighborsTargets)
 }
 
 func (neighborhood *Neighborhood) AddTargets(targetRequests []network.TargetRequest) {
 	neighborhood.waitGroup.Add(1)
 	go func() {
 		defer neighborhood.waitGroup.Done()
-		neighborhood.neighborsByTargetMutex.Lock()
-		defer neighborhood.neighborsByTargetMutex.Unlock()
+		neighborhood.neighborsTargetsMutex.Lock()
+		defer neighborhood.neighborsTargetsMutex.Unlock()
 		for _, targetRequest := range targetRequests {
-			neighbor := NewNeighbor(*targetRequest.Ip, *targetRequest.Port, neighborhood.logger)
-			if _, ok := neighborhood.neighborsByTarget[neighbor.Target()]; !ok {
-				neighborhood.neighborsByTarget[neighbor.Target()] = neighbor
+			target := NewTarget(*targetRequest.Ip, *targetRequest.Port)
+			if err := target.Reach(); err == nil {
+				if _, ok := neighborhood.neighborsTargets[target.Value()]; !ok {
+					neighborhood.neighborsTargets[target.Value()] = target
+				}
 			}
 		}
 	}()

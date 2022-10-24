@@ -5,9 +5,7 @@ import (
 	p2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/api/node/network"
 	"github.com/my-cloud/ruthenium/src/log"
-	"net"
 	"strconv"
-	"time"
 )
 
 const (
@@ -23,15 +21,13 @@ const (
 type Neighbor struct {
 	ip     string
 	port   uint16
+	target *Target
 	logger *log.Logger
 }
 
 func NewNeighbor(ip string, port uint16, logger *log.Logger) *Neighbor {
-	neighbor := new(Neighbor)
-	neighbor.ip = ip
-	neighbor.port = port
-	neighbor.logger = logger
-	return neighbor
+	target := NewTarget(ip, port)
+	return &Neighbor{ip, port, target, logger}
 }
 
 func (neighbor *Neighbor) Ip() string {
@@ -43,13 +39,7 @@ func (neighbor *Neighbor) Port() uint16 {
 }
 
 func (neighbor *Neighbor) Target() string {
-	return net.JoinHostPort(neighbor.ip, strconv.Itoa(int(neighbor.port)))
-}
-
-func (neighbor *Neighbor) IsFound() bool {
-	target := fmt.Sprintf("%s:%d", neighbor.ip, neighbor.port)
-	_, err := net.DialTimeout("tcp", target, NeighborFindingTimeoutSecond*time.Second)
-	return err == nil
+	return neighbor.target.Value()
 }
 
 func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, err error) {
@@ -108,20 +98,21 @@ func (neighbor *Neighbor) StopMining() (err error) {
 func (neighbor *Neighbor) sendRequest(request interface{}) (res p2p.Data, err error) {
 	req := p2p.Data{}
 	err = req.SetGob(request)
-	if err == nil {
-		if neighbor.IsFound() {
-			tcp := p2p.NewTCP(neighbor.ip, strconv.Itoa(int(neighbor.port)))
-			var c *p2p.Client
-			c, err = p2p.NewClient(tcp)
-			if err == nil {
-				c.SetLogger(log.NewLogger(log.Fatal))
-				res, err = c.Send("dialog", req)
-			} else {
-				err = fmt.Errorf("failed to start client for target %s: %w", neighbor.Target(), err)
-			}
-		} else {
-			err = fmt.Errorf("unable to find node for target %s", neighbor.Target())
-		}
+	if err != nil {
+		return
+	}
+	if err = neighbor.target.Reach(); err != nil {
+		err = fmt.Errorf("unable to find node for target %s", neighbor.Target())
+		return
+	}
+	tcp := p2p.NewTCP(neighbor.ip, strconv.Itoa(int(neighbor.port)))
+	var c *p2p.Client
+	c, err = p2p.NewClient(tcp)
+	if err != nil {
+		err = fmt.Errorf("failed to start client for target %s: %w", neighbor.Target(), err)
+	} else {
+		c.SetLogger(log.NewLogger(log.Fatal))
+		res, err = c.Send("dialog", req)
 	}
 	return
 }

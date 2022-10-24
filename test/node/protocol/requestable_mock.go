@@ -13,7 +13,6 @@ func NewRequestableMock() *RequestableMock {
 var IpMock func() string
 var PortMock func() uint16
 var TargetMock func() string
-var IsFoundMock func() bool
 var GetBlocksMock func() ([]*network.BlockResponse, error)
 var SendTargetsMock func([]network.TargetRequest) error
 var AddTransactionMock func(network.TransactionRequest) error
@@ -33,10 +32,6 @@ func (mock *RequestableMock) Port() uint16 {
 
 func (mock *RequestableMock) Target() string {
 	return TargetMock()
-}
-
-func (mock *RequestableMock) IsFound() bool {
-	return IsFoundMock()
 }
 
 func (mock *RequestableMock) GetBlocks() ([]*network.BlockResponse, error) {

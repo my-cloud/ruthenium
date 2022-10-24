@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/api/node/network"
 	"github.com/my-cloud/ruthenium/src/api/node/protocol"
+	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
-	"strconv"
 	"time"
 )
 
@@ -18,25 +19,25 @@ const (
 )
 
 type Host struct {
-	ip           string
-	port         uint16
+	servable     node.Servable
 	blockchain   protocol.Verifiable
 	pool         protocol.Validatable
 	validation   protocol.Controllable
 	neighborhood *Neighborhood
+	timeable     clock.Timeable
 	logger       *log.Logger
 }
 
 func NewHost(
-	ip string,
-	port uint16,
+	servable node.Servable,
 	blockchain protocol.Verifiable,
 	pool protocol.Validatable,
 	validation protocol.Controllable,
 	neighborhood *Neighborhood,
+	timeable clock.Timeable,
 	logger *log.Logger,
 ) *Host {
-	return &Host{ip, port, blockchain, pool, validation, neighborhood, logger}
+	return &Host{servable, blockchain, pool, validation, neighborhood, timeable, logger}
 }
 
 func (host *Host) GetBlocks() (res p2p.Data) {
@@ -75,7 +76,7 @@ func (host *Host) Amount(request *network.AmountRequest) (res p2p.Data) {
 		return
 	}
 	blockchainAddress := *request.Address
-	amount := host.blockchain.CalculateTotalAmount(time.Now().UnixNano(), blockchainAddress)
+	amount := host.blockchain.CalculateTotalAmount(host.timeable.Now().UnixNano(), blockchainAddress)
 	amountResponse := &network.AmountResponse{Amount: amount}
 	if err := res.SetGob(amountResponse); err != nil {
 		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
@@ -98,17 +99,11 @@ func (host *Host) Run() {
 }
 
 func (host *Host) startServer() {
-	tcp := p2p.NewTCP("0.0.0.0", strconv.Itoa(int(host.port)))
-	server, err := p2p.NewServer(tcp)
-	if err != nil {
-		host.logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
-		return
-	}
-	server.SetLogger(log.NewLogger(log.Fatal))
+	host.servable.SetLogger(log.NewLogger(log.Fatal))
 	settings := p2p.NewServerSettings()
 	settings.SetConnTimeout(connectionTimeoutInSeconds * time.Second)
-	server.SetSettings(settings)
-	server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
+	host.servable.SetSettings(settings)
+	host.servable.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
 		var unknownRequest bool
 		var requestString string
 		var transactionRequest network.TransactionRequest
@@ -146,7 +141,7 @@ func (host *Host) startServer() {
 		return
 	})
 	host.logger.Info("host server is running...")
-	err = server.Serve()
+	err := host.servable.Serve()
 	if err != nil {
 		host.logger.Fatal(fmt.Errorf("failed to start server: %w", err).Error())
 	}

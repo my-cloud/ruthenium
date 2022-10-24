@@ -6,12 +6,12 @@ type WatchMock struct {
 	counter int64
 }
 
-func NewWatch() *WatchMock {
+func NewWatchMock() *WatchMock {
 	return &WatchMock{}
 }
 
-func (watch *WatchMock) Now() time.Time {
-	counter := watch.counter
-	watch.counter++
+func (mock *WatchMock) Now() time.Time {
+	counter := mock.counter
+	mock.counter++
 	return time.Unix(0, counter)
 }
