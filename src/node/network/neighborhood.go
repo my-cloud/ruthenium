@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	DefaultPort                  = 8106
+	DefaultPort                  = 8105
 	synchronizationTimeInSeconds = 10
 	maxOutboundsCount            = 8
 )
@@ -102,13 +102,16 @@ func (neighborhood *Neighborhood) Synchronize() {
 			targetIp := target.Ip()
 			targetPort := target.Port()
 			if err := target.Reach(); err == nil && targetIp != neighborhood.hostIp || targetPort != neighborhood.hostPort {
-				neighbor := NewNeighbor(targetIp, targetPort, neighborhood.logger)
-				neighbors = append(neighbors, neighbor)
-				targetRequest := network.TargetRequest{
-					Ip:   &targetIp,
-					Port: &targetPort,
+				var neighbor network.Requestable
+				neighbor, err = NewNeighbor(targetIp, targetPort, neighborhood.logger)
+				if err == nil {
+					neighbors = append(neighbors, neighbor)
+					targetRequest := network.TargetRequest{
+						Ip:   &targetIp,
+						Port: &targetPort,
+					}
+					targetRequests = append(targetRequests, targetRequest)
 				}
-				targetRequests = append(targetRequests, targetRequest)
 			}
 		}
 		neighborhood.neighborsMutex.RUnlock()

@@ -122,6 +122,15 @@ func (pool *Pool) Validate(timestamp int64, blockchain protocol.Verifiable, addr
 		pool.logger.Error(fmt.Errorf("failed calculate last block hash: %w", err).Error())
 		return
 	}
+	isValidatorPohValid, err := pool.registrable.IsRegistered(address)
+	if err != nil {
+		pool.logger.Error(fmt.Errorf("failed to get proof of humanity: %w", err).Error())
+		return
+	} else if !isValidatorPohValid {
+		pool.logger.Error("validator proof of humanity is invalid")
+		return
+	}
+
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 	totalTransactionsValueBySenderAddress := make(map[string]uint64)

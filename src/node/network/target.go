@@ -1,7 +1,6 @@
 package network
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -37,7 +36,7 @@ func (target *Target) Reach() error {
 
 	ipsCount := len(lookedUpIps)
 	if ipsCount != 1 {
-		return errors.New(fmt.Sprintf("DNS discovery did not find a single address (%d addresses found) for the given IP %s", ipsCount, target.ip))
+		return fmt.Errorf("DNS discovery did not find a single address (%d addresses found) for the given IP %s", ipsCount, target.ip)
 	}
 	_, err = net.DialTimeout("tcp", target.Value(), NeighborFindingTimeoutSecond*time.Second)
 	return err

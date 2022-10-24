@@ -308,7 +308,7 @@ func (blockchain *Blockchain) Verify(neighbors []network.Requestable) {
 			}
 		}
 		// Check if blockchain is replaced
-		if len(blockchain.blocks) < 2 && selectedBlocks != nil {
+		if len(blockchain.blocks) < 2 && selectedBlocks != nil || len(blockchain.blocks) < len(selectedBlocks) {
 			isReplaced = true
 		} else if len(selectedBlocks) >= 2 {
 			lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()

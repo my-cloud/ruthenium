@@ -22,12 +22,23 @@ type Neighbor struct {
 	ip     string
 	port   uint16
 	target *Target
+	client *p2p.Client
 	logger *log.Logger
 }
 
-func NewNeighbor(ip string, port uint16, logger *log.Logger) *Neighbor {
+func NewNeighbor(ip string, port uint16, logger *log.Logger) (*Neighbor, error) {
 	target := NewTarget(ip, port)
-	return &Neighbor{ip, port, target, logger}
+	if err := target.Reach(); err != nil {
+		return nil, fmt.Errorf("unable to find node for target %s", target.Value())
+	}
+	tcp := p2p.NewTCP(ip, strconv.Itoa(int(port)))
+	var client *p2p.Client
+	client, err := p2p.NewClient(tcp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start client for target %s: %w", target.Value(), err)
+	}
+	client.SetLogger(log.NewLogger(log.Fatal))
+	return &Neighbor{ip, port, target, client, logger}, nil
 }
 
 func (neighbor *Neighbor) Ip() string {
@@ -96,23 +107,15 @@ func (neighbor *Neighbor) StopMining() (err error) {
 }
 
 func (neighbor *Neighbor) sendRequest(request interface{}) (res p2p.Data, err error) {
+	if err = neighbor.target.Reach(); err != nil {
+		err = fmt.Errorf("unable to find node for target %s", neighbor.Target())
+		return
+	}
 	req := p2p.Data{}
 	err = req.SetGob(request)
 	if err != nil {
 		return
 	}
-	if err = neighbor.target.Reach(); err != nil {
-		err = fmt.Errorf("unable to find node for target %s", neighbor.Target())
-		return
-	}
-	tcp := p2p.NewTCP(neighbor.ip, strconv.Itoa(int(neighbor.port)))
-	var c *p2p.Client
-	c, err = p2p.NewClient(tcp)
-	if err != nil {
-		err = fmt.Errorf("failed to start client for target %s: %w", neighbor.Target(), err)
-	} else {
-		c.SetLogger(log.NewLogger(log.Fatal))
-		res, err = c.Send("dialog", req)
-	}
+	res, err = neighbor.client.Send("dialog", req)
 	return
 }

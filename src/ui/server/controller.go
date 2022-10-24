@@ -30,7 +30,10 @@ type Controller struct {
 
 func NewController(mnemonic string, derivationPath string, password string, privateKey string, port uint16, hostIp string, hostPort uint16, templatesPath string, level log.Level) *Controller {
 	logger := log.NewLogger(level)
-	blockchainClient := network.NewNeighbor(hostIp, hostPort, logger)
+	blockchainClient, err := network.NewNeighbor(hostIp, hostPort, logger)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
+	}
 	return &Controller{mnemonic, derivationPath, password, privateKey, port, blockchainClient, templatesPath, logger}
 }
 
