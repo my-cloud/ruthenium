@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	DefaultPort                  = 8105
+	DefaultPort                  = 8106
 	synchronizationTimeInSeconds = 10
 	maxOutboundsCount            = 8
 )
