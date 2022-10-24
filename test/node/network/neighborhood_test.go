@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	p2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/api/connection"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
@@ -15,7 +16,9 @@ func Test_Synchronize_OneNeighbor_NeighborAdded(t *testing.T) {
 	configurationPath := "../../"
 	watch := node.NewWatchMock()
 	senderProviderMock := new(SenderProviderMock)
-	senderProviderMock.CreateSenderFunc = func(string, uint16, string) (connection.Sender, error) { return new(SenderMock), nil }
+	sender := new(SenderMock)
+	sender.SendFunc = func(string, p2p.Data) (p2p.Data, error) { return p2p.Data{}, nil }
+	senderProviderMock.CreateSenderFunc = func(string, uint16, string) (connection.Sender, error) { return sender, nil }
 	logger := log.NewLogger(log.Fatal)
 	neighborhood := network.NewNeighborhood("", 0, watch, senderProviderMock, configurationPath, logger)
 
