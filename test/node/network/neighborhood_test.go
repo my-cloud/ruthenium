@@ -4,17 +4,17 @@ import (
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/api/connection"
+	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/test"
-	"github.com/my-cloud/ruthenium/test/node"
 	"testing"
 )
 
 func Test_Synchronize_OneNeighbor_NeighborAdded(t *testing.T) {
 	// Arrange
 	configurationPath := "../../"
-	watch := node.NewWatchMock()
+	watch := clock.NewWatch()
 	senderProviderMock := new(SenderProviderMock)
 	sender := new(SenderMock)
 	sender.SendFunc = func(string, p2p.Data) (p2p.Data, error) { return p2p.Data{}, nil }

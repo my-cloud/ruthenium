@@ -8,7 +8,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/test"
-	"github.com/my-cloud/ruthenium/test/node"
 	"testing"
 	"time"
 )
@@ -21,9 +20,9 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	walletAAddress := walletA.Address()
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
-	registrable := NewRegistrableMock()
-	IsRegisteredMock = func(string) (bool, error) { return true, nil }
-	watch := node.NewWatchMock()
+	registrable := new(RegistrableMock)
+	registrable.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	watch := NewWatchMock()
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
 	blockchain := protocol.NewBlockchain(registrable, validationTimer, watch, logger)
@@ -60,9 +59,9 @@ func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
 	walletAAddress := walletA.Address()
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
-	registrable := NewRegistrableMock()
-	IsRegisteredMock = func(string) (bool, error) { return true, nil }
-	watch := node.NewWatchMock()
+	registrable := new(RegistrableMock)
+	registrable.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	watch := NewWatchMock()
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
 	blockchain := protocol.NewBlockchain(registrable, validationTimer, watch, logger)
