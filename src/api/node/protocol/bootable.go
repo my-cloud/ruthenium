@@ -1,6 +1,6 @@
 package protocol
 
-type Controllable interface {
+type Bootable interface {
 	Start()
 	Stop()
 	Do()

@@ -22,7 +22,7 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
 	registrable := NewRegistrableMock()
-	IsRegisteredMock = func(address string) (bool, error) { return true, nil }
+	IsRegisteredMock = func(string) (bool, error) { return true, nil }
 	watch := node.NewWatchMock()
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
@@ -61,7 +61,7 @@ func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
 	registrable := NewRegistrableMock()
-	IsRegisteredMock = func(address string) (bool, error) { return true, nil }
+	IsRegisteredMock = func(string) (bool, error) { return true, nil }
 	watch := node.NewWatchMock()
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)

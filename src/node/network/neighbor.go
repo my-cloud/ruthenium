@@ -3,9 +3,9 @@ package network
 import (
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
+	"github.com/my-cloud/ruthenium/src/api/connection"
 	"github.com/my-cloud/ruthenium/src/api/node/network"
 	"github.com/my-cloud/ruthenium/src/log"
-	"strconv"
 )
 
 const (
@@ -14,28 +14,19 @@ const (
 	MineRequest            = "MINE REQUEST"
 	StartMiningRequest     = "START MINING REQUEST"
 	StopMiningRequest      = "STOP MINING REQUEST"
-
-	NeighborFindingTimeoutSecond = 5
 )
 
 type Neighbor struct {
 	target *Target
-	client *p2p.Client
+	sender connection.Sender
 	logger *log.Logger
 }
 
-func NewNeighbor(ip string, port uint16, logger *log.Logger) (*Neighbor, error) {
-	target := NewTarget(ip, port)
-	if err := target.Reach(); err != nil {
-		return nil, fmt.Errorf("unable to find node for target %s", target.Value())
-	}
-	tcp := p2p.NewTCP(ip, strconv.Itoa(int(port)))
-	var client *p2p.Client
-	client, err := p2p.NewClient(tcp)
+func NewNeighbor(target *Target, senderProvider connection.SenderProvider, logger *log.Logger) (*Neighbor, error) {
+	client, err := senderProvider.CreateSender(target.Ip(), target.Port(), target.Value())
 	if err != nil {
-		return nil, fmt.Errorf("failed to start client for target %s: %w", target.Value(), err)
+		return nil, fmt.Errorf("failed to start client reaching %s: %w", target.Value(), err)
 	}
-	client.SetLogger(log.NewLogger(log.Fatal))
 	return &Neighbor{target, client, logger}, nil
 }
 
@@ -110,6 +101,6 @@ func (neighbor *Neighbor) sendRequest(request interface{}) (res p2p.Data, err er
 	if err != nil {
 		return
 	}
-	res, err = neighbor.client.Send("dialog", req)
+	res, err = neighbor.sender.Send("dialog", req)
 	return
 }

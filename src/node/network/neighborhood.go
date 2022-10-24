@@ -3,6 +3,7 @@ package network
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/api/connection"
 	"github.com/my-cloud/ruthenium/src/api/node/network"
 	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
@@ -21,24 +22,28 @@ const (
 )
 
 type Neighborhood struct {
-	hostIp    string
-	hostPort  uint16
-	logger    *log.Logger
-	waitGroup *sync.WaitGroup
+	hostIp   string
+	hostPort uint16
 
-	timeable              clock.Timeable
+	timeable       clock.Timeable
+	senderProvider connection.SenderProvider
+
 	neighbors             []network.Requestable
 	neighborsMutex        sync.RWMutex
 	neighborsTargets      map[string]*Target
 	neighborsTargetsMutex sync.RWMutex
 	seedsTargets          map[string]*Target
+
+	waitGroup *sync.WaitGroup
+	logger    *log.Logger
 }
 
-func NewNeighborhood(hostIp string, hostPort uint16, timeable clock.Timeable, configurationPath string, logger *log.Logger) *Neighborhood {
+func NewNeighborhood(hostIp string, hostPort uint16, timeable clock.Timeable, senderProvider connection.SenderProvider, configurationPath string, logger *log.Logger) *Neighborhood {
 	neighborhood := new(Neighborhood)
 	neighborhood.hostIp = hostIp
 	neighborhood.hostPort = hostPort
 	neighborhood.timeable = timeable
+	neighborhood.senderProvider = senderProvider
 	neighborhood.logger = logger
 	var waitGroup sync.WaitGroup
 	neighborhood.waitGroup = &waitGroup
@@ -101,9 +106,9 @@ func (neighborhood *Neighborhood) Synchronize() {
 		for _, target := range neighborsTargets {
 			targetIp := target.Ip()
 			targetPort := target.Port()
-			if err := target.Reach(); err == nil && targetIp != neighborhood.hostIp || targetPort != neighborhood.hostPort {
+			if targetIp != neighborhood.hostIp || targetPort != neighborhood.hostPort {
 				var neighbor network.Requestable
-				neighbor, err = NewNeighbor(targetIp, targetPort, neighborhood.logger)
+				neighbor, err := NewNeighbor(target, neighborhood.senderProvider, neighborhood.logger)
 				if err == nil {
 					neighbors = append(neighbors, neighbor)
 					targetRequest := network.TargetRequest{
@@ -145,10 +150,8 @@ func (neighborhood *Neighborhood) AddTargets(targetRequests []network.TargetRequ
 		defer neighborhood.neighborsTargetsMutex.Unlock()
 		for _, targetRequest := range targetRequests {
 			target := NewTarget(*targetRequest.Ip, *targetRequest.Port)
-			if err := target.Reach(); err == nil {
-				if _, ok := neighborhood.neighborsTargets[target.Value()]; !ok {
-					neighborhood.neighborsTargets[target.Value()] = target
-				}
+			if _, ok := neighborhood.neighborsTargets[target.Value()]; !ok {
+				neighborhood.neighborsTargets[target.Value()] = target
 			}
 		}
 	}()

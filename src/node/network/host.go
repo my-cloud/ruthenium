@@ -4,35 +4,33 @@ import (
 	"context"
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/api/node"
+	"github.com/my-cloud/ruthenium/src/api/connection"
 	"github.com/my-cloud/ruthenium/src/api/node/network"
 	"github.com/my-cloud/ruthenium/src/api/node/protocol"
 	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
-	"time"
 )
 
 const (
 	// TODO rename and extract ParticlesCount to a config file
-	ParticlesCount             = 100000000
-	connectionTimeoutInSeconds = 10
+	ParticlesCount = 100000000
 )
 
 type Host struct {
-	servable     node.Servable
+	servable     connection.Servable
 	blockchain   protocol.Verifiable
 	pool         protocol.Validatable
-	validation   protocol.Controllable
+	validation   protocol.Bootable
 	neighborhood *Neighborhood
 	timeable     clock.Timeable
 	logger       *log.Logger
 }
 
 func NewHost(
-	servable node.Servable,
+	servable connection.Servable,
 	blockchain protocol.Verifiable,
 	pool protocol.Validatable,
-	validation protocol.Controllable,
+	validation protocol.Bootable,
 	neighborhood *Neighborhood,
 	timeable clock.Timeable,
 	logger *log.Logger,
@@ -99,10 +97,6 @@ func (host *Host) Run() {
 }
 
 func (host *Host) startServer() {
-	host.servable.SetLogger(log.NewLogger(log.Fatal))
-	settings := p2p.NewServerSettings()
-	settings.SetConnTimeout(connectionTimeoutInSeconds * time.Second)
-	host.servable.SetSettings(settings)
 	host.servable.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
 		var unknownRequest bool
 		var requestString string

@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/connection"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/encryption"
 	"github.com/my-cloud/ruthenium/src/node/network"
@@ -30,7 +31,9 @@ type Controller struct {
 
 func NewController(mnemonic string, derivationPath string, password string, privateKey string, port uint16, hostIp string, hostPort uint16, templatesPath string, level log.Level) *Controller {
 	logger := log.NewLogger(level)
-	blockchainClient, err := network.NewNeighbor(hostIp, hostPort, logger)
+	target := network.NewTarget(hostIp, hostPort)
+	peering := connection.NewPeering()
+	blockchainClient, err := network.NewNeighbor(target, peering, logger)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
 	}
