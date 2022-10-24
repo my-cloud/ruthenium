@@ -83,57 +83,61 @@ func (host *Host) Amount(request *network.AmountRequest) (res p2p.Data) {
 }
 
 func (host *Host) Run() {
-	go func() {
-		host.logger.Info("updating the blockchain...")
-		host.neighborhood.StartSynchronization()
-		host.neighborhood.Wait()
-		neighbors := host.neighborhood.Neighbors()
-		host.blockchain.Verify(neighbors)
-		host.logger.Info("the blockchain is now up to date")
-		host.validation.Start()
-		host.blockchain.StartVerification(host.pool, host.neighborhood)
-	}()
+	go host.startBlockchain()
+	host.servable.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) { return host.handle(req) })
 	host.startServer()
 }
 
-func (host *Host) startServer() {
-	host.servable.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) {
-		var unknownRequest bool
-		var requestString string
-		var transactionRequest network.TransactionRequest
-		var amountRequest network.AmountRequest
-		var targetsRequest []network.TargetRequest
-		res = p2p.Data{}
-		if err = req.GetGob(&requestString); err == nil {
-			switch requestString {
-			case GetBlocksRequest:
-				res = host.GetBlocks()
-			case GetTransactionsRequest:
-				res = host.GetTransactions()
-			case MineRequest:
-				host.validation.Do()
-			case StartMiningRequest:
-				host.validation.Start()
-			case StopMiningRequest:
-				host.validation.Stop()
-			default:
-				unknownRequest = true
-			}
-		} else if err = req.GetGob(&transactionRequest); err == nil {
-			host.AddTransactions(&transactionRequest)
-		} else if err = req.GetGob(&amountRequest); err == nil {
-			res = host.Amount(&amountRequest)
-		} else if err = req.GetGob(&targetsRequest); err == nil {
-			host.PostTargets(targetsRequest)
-		} else {
+func (host *Host) startBlockchain() {
+	host.logger.Info("updating the blockchain...")
+	host.neighborhood.StartSynchronization()
+	host.neighborhood.Wait()
+	neighbors := host.neighborhood.Neighbors()
+	host.blockchain.Verify(neighbors)
+	host.logger.Info("the blockchain is now up to date")
+	host.validation.Start()
+	host.blockchain.StartVerification(host.pool, host.neighborhood)
+}
+
+func (host *Host) handle(req p2p.Data) (res p2p.Data, err error) {
+	var unknownRequest bool
+	var requestString string
+	var transactionRequest network.TransactionRequest
+	var amountRequest network.AmountRequest
+	var targetsRequest []network.TargetRequest
+	res = p2p.Data{}
+	if err = req.GetGob(&requestString); err == nil {
+		switch requestString {
+		case GetBlocksRequest:
+			res = host.GetBlocks()
+		case GetTransactionsRequest:
+			res = host.GetTransactions()
+		case MineRequest:
+			host.validation.Do()
+		case StartMiningRequest:
+			host.validation.Start()
+		case StopMiningRequest:
+			host.validation.Stop()
+		default:
 			unknownRequest = true
 		}
+	} else if err = req.GetGob(&transactionRequest); err == nil {
+		host.AddTransactions(&transactionRequest)
+	} else if err = req.GetGob(&amountRequest); err == nil {
+		res = host.Amount(&amountRequest)
+	} else if err = req.GetGob(&targetsRequest); err == nil {
+		host.PostTargets(targetsRequest)
+	} else {
+		unknownRequest = true
+	}
 
-		if unknownRequest {
-			host.logger.Error("unknown request")
-		}
-		return
-	})
+	if unknownRequest {
+		host.logger.Error("unknown request")
+	}
+	return
+}
+
+func (host *Host) startServer() {
 	host.logger.Info("host server is running...")
 	err := host.servable.Serve()
 	if err != nil {
