@@ -3,7 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/api/node/network"
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/node/encryption"
 )
 
@@ -39,10 +39,10 @@ func (transaction *Transaction) Sign(privateKey *encryption.PrivateKey) (err err
 	return
 }
 
-func (transaction *Transaction) GetRequest() network.TransactionRequest {
+func (transaction *Transaction) GetRequest() node.TransactionRequest {
 	encodedPublicKey := transaction.senderPublicKey.String()
 	encodedSignature := transaction.signature.String()
-	return network.TransactionRequest{
+	return node.TransactionRequest{
 		RecipientAddress: &transaction.recipientAddress,
 		SenderAddress:    &transaction.senderAddress,
 		SenderPublicKey:  &encodedPublicKey,

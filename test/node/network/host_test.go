@@ -3,7 +3,6 @@ package network
 import (
 	p2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/api/connection"
-	network_interface "github.com/my-cloud/ruthenium/src/api/node/network"
 	"github.com/my-cloud/ruthenium/src/api/node/protocol"
 	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
@@ -16,8 +15,8 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	logger := log.NewLogger(log.Fatal)
 	watchMock := clock.NewWatch()
 	verifiableMock := new(VerifiableMock)
-	verifiableMock.VerifyFunc = func(neighbors []network_interface.Requestable) {}
-	verifiableMock.StartVerificationFunc = func(protocol.Validatable, network_interface.Synchronizable) {}
+	verifiableMock.VerifyFunc = func() {}
+	verifiableMock.StartVerificationFunc = func(protocol.Validatable) {}
 	validatableMock := new(ValidatableMock)
 	bootableMock := new(BootableMock)
 	bootableMock.StartFunc = func() {}

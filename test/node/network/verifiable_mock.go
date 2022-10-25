@@ -4,7 +4,7 @@
 package network
 
 import (
-	"github.com/my-cloud/ruthenium/src/api/node/network"
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/api/node/protocol"
 	"sync"
 )
@@ -19,19 +19,19 @@ var _ protocol.Verifiable = &VerifiableMock{}
 //
 // 		// make and configure a mocked Verifiable
 // 		mockedVerifiable := &VerifiableMock{
-// 			AddBlockFunc: func(blockResponse *network.BlockResponse)  {
+// 			AddBlockFunc: func(blockResponse *node.BlockResponse)  {
 // 				panic("mock out the AddBlock method")
 // 			},
-// 			BlocksFunc: func() []*network.BlockResponse {
+// 			BlocksFunc: func() []*node.BlockResponse {
 // 				panic("mock out the Blocks method")
 // 			},
 // 			CalculateTotalAmountFunc: func(currentTimestamp int64, blockchainAddress string) uint64 {
 // 				panic("mock out the CalculateTotalAmount method")
 // 			},
-// 			StartVerificationFunc: func(validatable Validatable, synchronizable network.Synchronizable)  {
+// 			StartVerificationFunc: func(validatable Validatable)  {
 // 				panic("mock out the StartVerification method")
 // 			},
-// 			VerifyFunc: func(neighbors []network.Requestable)  {
+// 			VerifyFunc: func()  {
 // 				panic("mock out the Verify method")
 // 			},
 // 		}
@@ -42,26 +42,26 @@ var _ protocol.Verifiable = &VerifiableMock{}
 // 	}
 type VerifiableMock struct {
 	// AddBlockFunc mocks the AddBlock method.
-	AddBlockFunc func(blockResponse *network.BlockResponse)
+	AddBlockFunc func(blockResponse *node.BlockResponse)
 
 	// BlocksFunc mocks the Blocks method.
-	BlocksFunc func() []*network.BlockResponse
+	BlocksFunc func() []*node.BlockResponse
 
 	// CalculateTotalAmountFunc mocks the CalculateTotalAmount method.
 	CalculateTotalAmountFunc func(currentTimestamp int64, blockchainAddress string) uint64
 
 	// StartVerificationFunc mocks the StartVerification method.
-	StartVerificationFunc func(validatable protocol.Validatable, synchronizable network.Synchronizable)
+	StartVerificationFunc func(validatable protocol.Validatable)
 
 	// VerifyFunc mocks the Verify method.
-	VerifyFunc func(neighbors []network.Requestable)
+	VerifyFunc func()
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// AddBlock holds details about calls to the AddBlock method.
 		AddBlock []struct {
 			// BlockResponse is the blockResponse argument value.
-			BlockResponse *network.BlockResponse
+			BlockResponse *node.BlockResponse
 		}
 		// Blocks holds details about calls to the Blocks method.
 		Blocks []struct {
@@ -77,13 +77,9 @@ type VerifiableMock struct {
 		StartVerification []struct {
 			// Validatable is the validatable argument value.
 			Validatable protocol.Validatable
-			// Synchronizable is the synchronizable argument value.
-			Synchronizable network.Synchronizable
 		}
 		// Verify holds details about calls to the Verify method.
 		Verify []struct {
-			// Neighbors is the neighbors argument value.
-			Neighbors []network.Requestable
 		}
 	}
 	lockAddBlock             sync.RWMutex
@@ -94,12 +90,12 @@ type VerifiableMock struct {
 }
 
 // AddBlock calls AddBlockFunc.
-func (mock *VerifiableMock) AddBlock(blockResponse *network.BlockResponse) {
+func (mock *VerifiableMock) AddBlock(blockResponse *node.BlockResponse) {
 	if mock.AddBlockFunc == nil {
 		panic("VerifiableMock.AddBlockFunc: method is nil but Verifiable.AddBlock was just called")
 	}
 	callInfo := struct {
-		BlockResponse *network.BlockResponse
+		BlockResponse *node.BlockResponse
 	}{
 		BlockResponse: blockResponse,
 	}
@@ -113,10 +109,10 @@ func (mock *VerifiableMock) AddBlock(blockResponse *network.BlockResponse) {
 // Check the length with:
 //     len(mockedVerifiable.AddBlockCalls())
 func (mock *VerifiableMock) AddBlockCalls() []struct {
-	BlockResponse *network.BlockResponse
+	BlockResponse *node.BlockResponse
 } {
 	var calls []struct {
-		BlockResponse *network.BlockResponse
+		BlockResponse *node.BlockResponse
 	}
 	mock.lockAddBlock.RLock()
 	calls = mock.calls.AddBlock
@@ -125,7 +121,7 @@ func (mock *VerifiableMock) AddBlockCalls() []struct {
 }
 
 // Blocks calls BlocksFunc.
-func (mock *VerifiableMock) Blocks() []*network.BlockResponse {
+func (mock *VerifiableMock) Blocks() []*node.BlockResponse {
 	if mock.BlocksFunc == nil {
 		panic("VerifiableMock.BlocksFunc: method is nil but Verifiable.Blocks was just called")
 	}
@@ -186,33 +182,29 @@ func (mock *VerifiableMock) CalculateTotalAmountCalls() []struct {
 }
 
 // StartVerification calls StartVerificationFunc.
-func (mock *VerifiableMock) StartVerification(validatable protocol.Validatable, synchronizable network.Synchronizable) {
+func (mock *VerifiableMock) StartVerification(validatable protocol.Validatable) {
 	if mock.StartVerificationFunc == nil {
 		panic("VerifiableMock.StartVerificationFunc: method is nil but Verifiable.StartVerification was just called")
 	}
 	callInfo := struct {
-		Validatable    protocol.Validatable
-		Synchronizable network.Synchronizable
+		Validatable protocol.Validatable
 	}{
-		Validatable:    validatable,
-		Synchronizable: synchronizable,
+		Validatable: validatable,
 	}
 	mock.lockStartVerification.Lock()
 	mock.calls.StartVerification = append(mock.calls.StartVerification, callInfo)
 	mock.lockStartVerification.Unlock()
-	mock.StartVerificationFunc(validatable, synchronizable)
+	mock.StartVerificationFunc(validatable)
 }
 
 // StartVerificationCalls gets all the calls that were made to StartVerification.
 // Check the length with:
 //     len(mockedVerifiable.StartVerificationCalls())
 func (mock *VerifiableMock) StartVerificationCalls() []struct {
-	Validatable    protocol.Validatable
-	Synchronizable network.Synchronizable
+	Validatable protocol.Validatable
 } {
 	var calls []struct {
-		Validatable    protocol.Validatable
-		Synchronizable network.Synchronizable
+		Validatable protocol.Validatable
 	}
 	mock.lockStartVerification.RLock()
 	calls = mock.calls.StartVerification
@@ -221,29 +213,24 @@ func (mock *VerifiableMock) StartVerificationCalls() []struct {
 }
 
 // Verify calls VerifyFunc.
-func (mock *VerifiableMock) Verify(neighbors []network.Requestable) {
+func (mock *VerifiableMock) Verify() {
 	if mock.VerifyFunc == nil {
 		panic("VerifiableMock.VerifyFunc: method is nil but Verifiable.Verify was just called")
 	}
 	callInfo := struct {
-		Neighbors []network.Requestable
-	}{
-		Neighbors: neighbors,
-	}
+	}{}
 	mock.lockVerify.Lock()
 	mock.calls.Verify = append(mock.calls.Verify, callInfo)
 	mock.lockVerify.Unlock()
-	mock.VerifyFunc(neighbors)
+	mock.VerifyFunc()
 }
 
 // VerifyCalls gets all the calls that were made to Verify.
 // Check the length with:
 //     len(mockedVerifiable.VerifyCalls())
 func (mock *VerifiableMock) VerifyCalls() []struct {
-	Neighbors []network.Requestable
 } {
 	var calls []struct {
-		Neighbors []network.Requestable
 	}
 	mock.lockVerify.RLock()
 	calls = mock.calls.Verify

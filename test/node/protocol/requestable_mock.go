@@ -4,6 +4,7 @@
 package protocol
 
 import (
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/api/node/network"
 	"sync"
 )
@@ -59,16 +60,16 @@ var _ network.Requestable = &RequestableMock{}
 // 	}
 type RequestableMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
-	AddTransactionFunc func(request network.TransactionRequest) error
+	AddTransactionFunc func(request node.TransactionRequest) error
 
 	// GetAmountFunc mocks the GetAmount method.
-	GetAmountFunc func(request network.AmountRequest) (*network.AmountResponse, error)
+	GetAmountFunc func(request node.AmountRequest) (*node.AmountResponse, error)
 
 	// GetBlocksFunc mocks the GetBlocks method.
-	GetBlocksFunc func() ([]*network.BlockResponse, error)
+	GetBlocksFunc func() ([]*node.BlockResponse, error)
 
 	// GetTransactionsFunc mocks the GetTransactions method.
-	GetTransactionsFunc func() ([]network.TransactionResponse, error)
+	GetTransactionsFunc func() ([]node.TransactionResponse, error)
 
 	// IpFunc mocks the Ip method.
 	IpFunc func() string
@@ -80,7 +81,7 @@ type RequestableMock struct {
 	PortFunc func() uint16
 
 	// SendTargetsFunc mocks the SendTargets method.
-	SendTargetsFunc func(request []network.TargetRequest) error
+	SendTargetsFunc func(request []node.TargetRequest) error
 
 	// StartMiningFunc mocks the StartMining method.
 	StartMiningFunc func() error
@@ -96,12 +97,12 @@ type RequestableMock struct {
 		// AddTransaction holds details about calls to the AddTransaction method.
 		AddTransaction []struct {
 			// Request is the request argument value.
-			Request network.TransactionRequest
+			Request node.TransactionRequest
 		}
 		// GetAmount holds details about calls to the GetAmount method.
 		GetAmount []struct {
 			// Request is the request argument value.
-			Request network.AmountRequest
+			Request node.AmountRequest
 		}
 		// GetBlocks holds details about calls to the GetBlocks method.
 		GetBlocks []struct {
@@ -121,7 +122,7 @@ type RequestableMock struct {
 		// SendTargets holds details about calls to the SendTargets method.
 		SendTargets []struct {
 			// Request is the request argument value.
-			Request []network.TargetRequest
+			Request []node.TargetRequest
 		}
 		// StartMining holds details about calls to the StartMining method.
 		StartMining []struct {
@@ -147,12 +148,12 @@ type RequestableMock struct {
 }
 
 // AddTransaction calls AddTransactionFunc.
-func (mock *RequestableMock) AddTransaction(request network.TransactionRequest) error {
+func (mock *RequestableMock) AddTransaction(request node.TransactionRequest) error {
 	if mock.AddTransactionFunc == nil {
 		panic("RequestableMock.AddTransactionFunc: method is nil but Requestable.AddTransaction was just called")
 	}
 	callInfo := struct {
-		Request network.TransactionRequest
+		Request node.TransactionRequest
 	}{
 		Request: request,
 	}
@@ -166,10 +167,10 @@ func (mock *RequestableMock) AddTransaction(request network.TransactionRequest) 
 // Check the length with:
 //     len(mockedRequestable.AddTransactionCalls())
 func (mock *RequestableMock) AddTransactionCalls() []struct {
-	Request network.TransactionRequest
+	Request node.TransactionRequest
 } {
 	var calls []struct {
-		Request network.TransactionRequest
+		Request node.TransactionRequest
 	}
 	mock.lockAddTransaction.RLock()
 	calls = mock.calls.AddTransaction
@@ -178,12 +179,12 @@ func (mock *RequestableMock) AddTransactionCalls() []struct {
 }
 
 // GetAmount calls GetAmountFunc.
-func (mock *RequestableMock) GetAmount(request network.AmountRequest) (*network.AmountResponse, error) {
+func (mock *RequestableMock) GetAmount(request node.AmountRequest) (*node.AmountResponse, error) {
 	if mock.GetAmountFunc == nil {
 		panic("RequestableMock.GetAmountFunc: method is nil but Requestable.GetAmount was just called")
 	}
 	callInfo := struct {
-		Request network.AmountRequest
+		Request node.AmountRequest
 	}{
 		Request: request,
 	}
@@ -197,10 +198,10 @@ func (mock *RequestableMock) GetAmount(request network.AmountRequest) (*network.
 // Check the length with:
 //     len(mockedRequestable.GetAmountCalls())
 func (mock *RequestableMock) GetAmountCalls() []struct {
-	Request network.AmountRequest
+	Request node.AmountRequest
 } {
 	var calls []struct {
-		Request network.AmountRequest
+		Request node.AmountRequest
 	}
 	mock.lockGetAmount.RLock()
 	calls = mock.calls.GetAmount
@@ -209,7 +210,7 @@ func (mock *RequestableMock) GetAmountCalls() []struct {
 }
 
 // GetBlocks calls GetBlocksFunc.
-func (mock *RequestableMock) GetBlocks() ([]*network.BlockResponse, error) {
+func (mock *RequestableMock) GetBlocks() ([]*node.BlockResponse, error) {
 	if mock.GetBlocksFunc == nil {
 		panic("RequestableMock.GetBlocksFunc: method is nil but Requestable.GetBlocks was just called")
 	}
@@ -235,7 +236,7 @@ func (mock *RequestableMock) GetBlocksCalls() []struct {
 }
 
 // GetTransactions calls GetTransactionsFunc.
-func (mock *RequestableMock) GetTransactions() ([]network.TransactionResponse, error) {
+func (mock *RequestableMock) GetTransactions() ([]node.TransactionResponse, error) {
 	if mock.GetTransactionsFunc == nil {
 		panic("RequestableMock.GetTransactionsFunc: method is nil but Requestable.GetTransactions was just called")
 	}
@@ -339,12 +340,12 @@ func (mock *RequestableMock) PortCalls() []struct {
 }
 
 // SendTargets calls SendTargetsFunc.
-func (mock *RequestableMock) SendTargets(request []network.TargetRequest) error {
+func (mock *RequestableMock) SendTargets(request []node.TargetRequest) error {
 	if mock.SendTargetsFunc == nil {
 		panic("RequestableMock.SendTargetsFunc: method is nil but Requestable.SendTargets was just called")
 	}
 	callInfo := struct {
-		Request []network.TargetRequest
+		Request []node.TargetRequest
 	}{
 		Request: request,
 	}
@@ -358,10 +359,10 @@ func (mock *RequestableMock) SendTargets(request []network.TargetRequest) error 
 // Check the length with:
 //     len(mockedRequestable.SendTargetsCalls())
 func (mock *RequestableMock) SendTargetsCalls() []struct {
-	Request []network.TargetRequest
+	Request []node.TargetRequest
 } {
 	var calls []struct {
-		Request []network.TargetRequest
+		Request []node.TargetRequest
 	}
 	mock.lockSendTargets.RLock()
 	calls = mock.calls.SendTargets

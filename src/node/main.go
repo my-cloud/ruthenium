@@ -45,11 +45,11 @@ func main() {
 	registry := humanity.NewRegistry()
 	validationTimer := validationIntervalInSeconds * time.Second
 	watch := clock.NewWatch()
-	blockchain := protocol.NewBlockchain(registry, validationTimer, watch, logger)
-	pool := protocol.NewPool(registry, watch, logger)
-	validation := protocol.NewValidation(wallet.Address(), blockchain, pool, watch, validationTimer, logger)
 	peering := connection.NewPeering()
 	neighborhood := network.NewNeighborhood(ip, uint16(*port), watch, peering, *configurationPath, logger)
+	blockchain := protocol.NewBlockchain(registry, validationTimer, watch, neighborhood, logger)
+	pool := protocol.NewPool(registry, watch, logger)
+	validation := protocol.NewValidation(wallet.Address(), blockchain, pool, watch, validationTimer, logger)
 	tcp := p2p.NewTCP("0.0.0.0", strconv.Itoa(int(*port)))
 	server, err := p2p.NewServer(tcp)
 	if err != nil {

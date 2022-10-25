@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/api/node/network"
+	"github.com/my-cloud/ruthenium/src/api/node"
 )
 
 type Block struct {
@@ -23,7 +23,7 @@ func NewBlock(timestamp int64, previousHash [32]byte, transactions []*Transactio
 	}
 }
 
-func NewBlockFromResponse(block *network.BlockResponse) (*Block, error) {
+func NewBlockFromResponse(block *node.BlockResponse) (*Block, error) {
 	var transactions []*Transaction
 	for _, transactionResponse := range block.Transactions {
 		transaction, err := NewTransactionFromResponse(transactionResponse)
@@ -91,12 +91,12 @@ func (block *Block) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (block *Block) GetResponse() *network.BlockResponse {
-	var transactions []*network.TransactionResponse
+func (block *Block) GetResponse() *node.BlockResponse {
+	var transactions []*node.TransactionResponse
 	for _, transaction := range block.transactions {
 		transactions = append(transactions, transaction.GetResponse())
 	}
-	return &network.BlockResponse{
+	return &node.BlockResponse{
 		Timestamp:           block.timestamp,
 		PreviousHash:        block.previousHash,
 		Transactions:        transactions,

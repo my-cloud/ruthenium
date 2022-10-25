@@ -4,7 +4,7 @@ import (
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/api/connection"
-	"github.com/my-cloud/ruthenium/src/api/node/network"
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/log"
 )
 
@@ -42,7 +42,7 @@ func (neighbor *Neighbor) Target() string {
 	return neighbor.target.Value()
 }
 
-func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, err error) {
+func (neighbor *Neighbor) GetBlocks() (blockResponses []*node.BlockResponse, err error) {
 	res, err := neighbor.sendRequest(GetBlocksRequest)
 	if err == nil {
 		err = res.GetGob(&blockResponses)
@@ -50,29 +50,29 @@ func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, 
 	return
 }
 
-func (neighbor *Neighbor) SendTargets(request []network.TargetRequest) (err error) {
+func (neighbor *Neighbor) SendTargets(request []node.TargetRequest) (err error) {
 	_, err = neighbor.sendRequest(request)
 	return
 }
 
-func (neighbor *Neighbor) AddTransaction(request network.TransactionRequest) (err error) {
+func (neighbor *Neighbor) AddTransaction(request node.TransactionRequest) (err error) {
 	_, err = neighbor.sendRequest(request)
 	return
 }
 
-func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.TransactionResponse, err error) {
+func (neighbor *Neighbor) GetTransactions() (transactionResponses []node.TransactionResponse, err error) {
 	res, err := neighbor.sendRequest(GetTransactionsRequest)
 	if err != nil {
 		return
 	}
 	err = res.GetGob(&transactionResponses)
 	if transactionResponses == nil {
-		return []network.TransactionResponse{}, err
+		return []node.TransactionResponse{}, err
 	}
 	return
 }
 
-func (neighbor *Neighbor) GetAmount(request network.AmountRequest) (amountResponse *network.AmountResponse, err error) {
+func (neighbor *Neighbor) GetAmount(request node.AmountRequest) (amountResponse *node.AmountResponse, err error) {
 	res, err := neighbor.sendRequest(request)
 	if err == nil {
 		err = res.GetGob(&amountResponse)

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/api/humanity"
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/api/node/network"
 	"github.com/my-cloud/ruthenium/src/api/node/protocol"
 	"github.com/my-cloud/ruthenium/src/clock"
@@ -14,7 +15,7 @@ import (
 
 type Pool struct {
 	transactions         []*Transaction
-	transactionResponses []*network.TransactionResponse
+	transactionResponses []*node.TransactionResponse
 	mutex                sync.RWMutex
 
 	registrable humanity.Registrable
@@ -35,7 +36,7 @@ func NewPool(registrable humanity.Registrable, timeable clock.Timeable, logger *
 	return pool
 }
 
-func (pool *Pool) AddTransaction(transactionRequest *network.TransactionRequest, blockchain protocol.Verifiable, neighbors []network.Requestable) {
+func (pool *Pool) AddTransaction(transactionRequest *node.TransactionRequest, blockchain protocol.Verifiable, neighbors []network.Requestable) {
 	pool.waitGroup.Add(1)
 	go func() {
 		defer pool.waitGroup.Done()
@@ -52,7 +53,7 @@ func (pool *Pool) AddTransaction(transactionRequest *network.TransactionRequest,
 	}()
 }
 
-func (pool *Pool) addTransaction(transactionRequest *network.TransactionRequest, blockchain protocol.Verifiable) (err error) {
+func (pool *Pool) addTransaction(transactionRequest *node.TransactionRequest, blockchain protocol.Verifiable) (err error) {
 	transaction, err := NewTransactionFromRequest(transactionRequest)
 	if err != nil {
 		err = fmt.Errorf("failed to instantiate transaction: %w", err)
@@ -99,7 +100,7 @@ func (pool *Pool) addTransaction(transactionRequest *network.TransactionRequest,
 	return
 }
 
-func (pool *Pool) Transactions() []*network.TransactionResponse {
+func (pool *Pool) Transactions() []*node.TransactionResponse {
 	pool.mutex.RLock()
 	defer pool.mutex.RUnlock()
 	return pool.transactionResponses

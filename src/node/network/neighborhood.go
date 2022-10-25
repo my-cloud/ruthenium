@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/api/connection"
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/api/node/network"
 	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
@@ -96,8 +97,8 @@ func (neighborhood *Neighborhood) Synchronize() {
 	go func(neighborsTargets map[string]*Target) {
 		defer neighborhood.waitGroup.Done()
 		var neighbors []network.Requestable
-		var targetRequests []network.TargetRequest
-		hostTargetRequest := network.TargetRequest{
+		var targetRequests []node.TargetRequest
+		hostTargetRequest := node.TargetRequest{
 			Ip:   &neighborhood.hostIp,
 			Port: &neighborhood.hostPort,
 		}
@@ -111,7 +112,7 @@ func (neighborhood *Neighborhood) Synchronize() {
 				neighbor, err := NewNeighbor(target, neighborhood.senderProvider, neighborhood.logger)
 				if err == nil {
 					neighbors = append(neighbors, neighbor)
-					targetRequest := network.TargetRequest{
+					targetRequest := node.TargetRequest{
 						Ip:   &targetIp,
 						Port: &targetPort,
 					}
@@ -127,7 +128,7 @@ func (neighborhood *Neighborhood) Synchronize() {
 		neighborhood.neighbors = neighbors[:outboundsCount]
 		neighborhood.neighborsMutex.Unlock()
 		for _, neighbor := range neighbors[:outboundsCount] {
-			var neighborTargetRequests []network.TargetRequest
+			var neighborTargetRequests []node.TargetRequest
 			for _, targetRequest := range targetRequests {
 				neighborIp := neighbor.Ip()
 				neighborPort := neighbor.Port()
@@ -142,7 +143,7 @@ func (neighborhood *Neighborhood) Synchronize() {
 	}(neighborsTargets)
 }
 
-func (neighborhood *Neighborhood) AddTargets(targetRequests []network.TargetRequest) {
+func (neighborhood *Neighborhood) AddTargets(targetRequests []node.TargetRequest) {
 	neighborhood.waitGroup.Add(1)
 	go func() {
 		defer neighborhood.waitGroup.Done()

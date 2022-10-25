@@ -25,7 +25,8 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	watch := NewWatchMock()
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
-	blockchain := protocol.NewBlockchain(registrable, validationTimer, watch, logger)
+	synchronizable := new(SynchronizableMock)
+	blockchain := protocol.NewBlockchain(registrable, validationTimer, watch, synchronizable, logger)
 	pool := protocol.NewPool(registrable, watch, logger)
 	validation := protocol.NewValidation(minerWalletAddress, blockchain, pool, watch, validationTimer, logger)
 	validation.Do()
@@ -64,7 +65,8 @@ func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
 	watch := NewWatchMock()
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
-	blockchain := protocol.NewBlockchain(registrable, validationTimer, watch, logger)
+	synchronizable := new(SynchronizableMock)
+	blockchain := protocol.NewBlockchain(registrable, validationTimer, watch, synchronizable, logger)
 	pool := protocol.NewPool(registrable, watch, logger)
 	validation := protocol.NewValidation(minerWalletAddress, blockchain, pool, watch, validationTimer, logger)
 	validation.Do()

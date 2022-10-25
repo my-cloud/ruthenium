@@ -1,4 +1,4 @@
-package network
+package node
 
 type TransactionResponse struct {
 	RecipientAddress string

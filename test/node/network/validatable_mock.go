@@ -4,6 +4,7 @@
 package network
 
 import (
+	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/api/node/network"
 	"github.com/my-cloud/ruthenium/src/api/node/protocol"
 	"sync"
@@ -39,13 +40,13 @@ var _ protocol.Validatable = &ValidatableMock{}
 // 	}
 type ValidatableMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
-	AddTransactionFunc func(transactionRequest *network.TransactionRequest, blockchain protocol.Verifiable, neighbors []network.Requestable)
+	AddTransactionFunc func(transactionRequest *node.TransactionRequest, blockchain protocol.Verifiable, neighbors []network.Requestable)
 
 	// ClearFunc mocks the Clear method.
 	ClearFunc func()
 
 	// TransactionsFunc mocks the Transactions method.
-	TransactionsFunc func() []*network.TransactionResponse
+	TransactionsFunc func() []*node.TransactionResponse
 
 	// ValidateFunc mocks the Validate method.
 	ValidateFunc func(timestamp int64, verifiable protocol.Verifiable, address string)
@@ -55,7 +56,7 @@ type ValidatableMock struct {
 		// AddTransaction holds details about calls to the AddTransaction method.
 		AddTransaction []struct {
 			// TransactionRequest is the transactionRequest argument value.
-			TransactionRequest *network.TransactionRequest
+			TransactionRequest *node.TransactionRequest
 			// Blockchain is the blockchain argument value.
 			Blockchain protocol.Verifiable
 			// Neighbors is the neighbors argument value.
@@ -84,12 +85,12 @@ type ValidatableMock struct {
 }
 
 // AddTransaction calls AddTransactionFunc.
-func (mock *ValidatableMock) AddTransaction(transactionRequest *network.TransactionRequest, blockchain protocol.Verifiable, neighbors []network.Requestable) {
+func (mock *ValidatableMock) AddTransaction(transactionRequest *node.TransactionRequest, blockchain protocol.Verifiable, neighbors []network.Requestable) {
 	if mock.AddTransactionFunc == nil {
 		panic("ValidatableMock.AddTransactionFunc: method is nil but Validatable.AddTransaction was just called")
 	}
 	callInfo := struct {
-		TransactionRequest *network.TransactionRequest
+		TransactionRequest *node.TransactionRequest
 		Blockchain         protocol.Verifiable
 		Neighbors          []network.Requestable
 	}{
@@ -107,12 +108,12 @@ func (mock *ValidatableMock) AddTransaction(transactionRequest *network.Transact
 // Check the length with:
 //     len(mockedValidatable.AddTransactionCalls())
 func (mock *ValidatableMock) AddTransactionCalls() []struct {
-	TransactionRequest *network.TransactionRequest
+	TransactionRequest *node.TransactionRequest
 	Blockchain         protocol.Verifiable
 	Neighbors          []network.Requestable
 } {
 	var calls []struct {
-		TransactionRequest *network.TransactionRequest
+		TransactionRequest *node.TransactionRequest
 		Blockchain         protocol.Verifiable
 		Neighbors          []network.Requestable
 	}
@@ -149,7 +150,7 @@ func (mock *ValidatableMock) ClearCalls() []struct {
 }
 
 // Transactions calls TransactionsFunc.
-func (mock *ValidatableMock) Transactions() []*network.TransactionResponse {
+func (mock *ValidatableMock) Transactions() []*node.TransactionResponse {
 	if mock.TransactionsFunc == nil {
 		panic("ValidatableMock.TransactionsFunc: method is nil but Validatable.Transactions was just called")
 	}
