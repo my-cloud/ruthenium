@@ -19,7 +19,7 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	verifiableMock.VerifyFunc = func() {}
 	verifiableMock.StartVerificationFunc = func() {}
 	validatableMock := new(ValidatableMock)
-	bootableMock := new(BootableMock)
+	bootableMock := new(ValidatorMock)
 	bootableMock.StartFunc = func() {}
 	watchMock := clock.NewWatch()
 	sender := new(SenderMock)

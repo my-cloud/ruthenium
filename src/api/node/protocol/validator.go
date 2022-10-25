@@ -1,6 +1,6 @@
 package protocol
 
-type Bootable interface {
+type Validator interface {
 	Start()
 	Stop()
 	Do()

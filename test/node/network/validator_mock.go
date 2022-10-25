@@ -8,16 +8,16 @@ import (
 	"sync"
 )
 
-// Ensure, that BootableMock does implement Bootable.
+// Ensure, that ValidatorMock does implement Validator.
 // If this is not the case, regenerate this file with moq.
-var _ protocol.Bootable = &BootableMock{}
+var _ protocol.Validator = &ValidatorMock{}
 
-// BootableMock is a mock implementation of Bootable.
+// ValidatorMock is a mock implementation of Validator.
 //
-// 	func TestSomethingThatUsesBootable(t *testing.T) {
+// 	func TestSomethingThatUsesValidator(t *testing.T) {
 //
-// 		// make and configure a mocked Bootable
-// 		mockedBootable := &BootableMock{
+// 		// make and configure a mocked Validator
+// 		mockedValidator := &ValidatorMock{
 // 			DoFunc: func()  {
 // 				panic("mock out the Do method")
 // 			},
@@ -29,11 +29,11 @@ var _ protocol.Bootable = &BootableMock{}
 // 			},
 // 		}
 //
-// 		// use mockedBootable in code that requires Bootable
+// 		// use mockedValidator in code that requires Validator
 // 		// and then make assertions.
 //
 // 	}
-type BootableMock struct {
+type ValidatorMock struct {
 	// DoFunc mocks the Do method.
 	DoFunc func()
 
@@ -61,9 +61,9 @@ type BootableMock struct {
 }
 
 // Do calls DoFunc.
-func (mock *BootableMock) Do() {
+func (mock *ValidatorMock) Do() {
 	if mock.DoFunc == nil {
-		panic("BootableMock.DoFunc: method is nil but Bootable.Do was just called")
+		panic("ValidatorMock.DoFunc: method is nil but Validator.Do was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -75,8 +75,8 @@ func (mock *BootableMock) Do() {
 
 // DoCalls gets all the calls that were made to Do.
 // Check the length with:
-//     len(mockedBootable.DoCalls())
-func (mock *BootableMock) DoCalls() []struct {
+//     len(mockedValidator.DoCalls())
+func (mock *ValidatorMock) DoCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -87,9 +87,9 @@ func (mock *BootableMock) DoCalls() []struct {
 }
 
 // Start calls StartFunc.
-func (mock *BootableMock) Start() {
+func (mock *ValidatorMock) Start() {
 	if mock.StartFunc == nil {
-		panic("BootableMock.StartFunc: method is nil but Bootable.Start was just called")
+		panic("ValidatorMock.StartFunc: method is nil but Validator.Start was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -101,8 +101,8 @@ func (mock *BootableMock) Start() {
 
 // StartCalls gets all the calls that were made to Start.
 // Check the length with:
-//     len(mockedBootable.StartCalls())
-func (mock *BootableMock) StartCalls() []struct {
+//     len(mockedValidator.StartCalls())
+func (mock *ValidatorMock) StartCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -113,9 +113,9 @@ func (mock *BootableMock) StartCalls() []struct {
 }
 
 // Stop calls StopFunc.
-func (mock *BootableMock) Stop() {
+func (mock *ValidatorMock) Stop() {
 	if mock.StopFunc == nil {
-		panic("BootableMock.StopFunc: method is nil but Bootable.Stop was just called")
+		panic("ValidatorMock.StopFunc: method is nil but Validator.Stop was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -127,8 +127,8 @@ func (mock *BootableMock) Stop() {
 
 // StopCalls gets all the calls that were made to Stop.
 // Check the length with:
-//     len(mockedBootable.StopCalls())
-func (mock *BootableMock) StopCalls() []struct {
+//     len(mockedValidator.StopCalls())
+func (mock *ValidatorMock) StopCalls() []struct {
 } {
 	var calls []struct {
 	}

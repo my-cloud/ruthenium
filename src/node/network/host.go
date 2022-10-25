@@ -20,7 +20,7 @@ type Host struct {
 	servable     connection.Servable
 	blockchain   protocol.Verifiable
 	pool         protocol.Validatable
-	validation   protocol.Bootable
+	validation   protocol.Validator
 	neighborhood *Neighborhood
 	timeable     clock.Timeable
 	logger       *log.Logger
@@ -30,7 +30,7 @@ func NewHost(
 	servable connection.Servable,
 	blockchain protocol.Verifiable,
 	pool protocol.Validatable,
-	validation protocol.Bootable,
+	validation protocol.Validator,
 	neighborhood *Neighborhood,
 	timeable clock.Timeable,
 	logger *log.Logger,
