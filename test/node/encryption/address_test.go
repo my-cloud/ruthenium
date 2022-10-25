@@ -21,6 +21,7 @@ func Test_PrivateKeyFromMnemonic(t *testing.T) {
 }
 
 func Test_PublicKeyFromPrivateKey(t *testing.T) {
+	// Arrange
 	privateKey, _ := encryption.DecodePrivateKey("0x48913790c2bebc48417491f96a7e07ec94c76ccd0fe1562dc1749479d9715afd")
 
 	// Act

@@ -13,12 +13,12 @@ import (
 
 func Test_Synchronize_OneNeighbor_NeighborAdded(t *testing.T) {
 	// Arrange
-	configurationPath := "../../"
 	watch := clock.NewWatch()
 	senderProviderMock := new(SenderProviderMock)
 	sender := new(SenderMock)
 	sender.SendFunc = func(string, p2p.Data) (p2p.Data, error) { return p2p.Data{}, nil }
 	senderProviderMock.CreateSenderFunc = func(string, uint16, string) (connection.Sender, error) { return sender, nil }
+	configurationPath := "../../"
 	logger := log.NewLogger(log.Fatal)
 	neighborhood := network.NewNeighborhood("", 0, watch, senderProviderMock, configurationPath, logger)
 

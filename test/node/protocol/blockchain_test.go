@@ -11,6 +11,7 @@ import (
 )
 
 func Test_Verify_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
+	// Arrange
 	registrable := new(RegistrableMock)
 	registrable.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
 	watch := clock.NewWatch()
@@ -41,7 +42,11 @@ func Test_Verify_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 		return []network.Requestable{requestable}
 	}
 	blockchain := protocol.NewBlockchain(registrable, 0, watch, synchronizable, logger)
+
+	// Act
 	blockchain.Verify()
+
+	// Assert
 	isReplaced := blockchain.IsReplaced()
 	test.Assert(t, isReplaced, "blockchain is not replaced whereas it should be")
 }
