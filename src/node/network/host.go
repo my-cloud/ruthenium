@@ -95,7 +95,7 @@ func (host *Host) startBlockchain() {
 	host.blockchain.Verify()
 	host.logger.Info("the blockchain is now up to date")
 	host.validation.Start()
-	host.blockchain.StartVerification(host.pool)
+	host.blockchain.StartVerification()
 }
 
 func (host *Host) handle(req p2p.Data) (res p2p.Data, err error) {

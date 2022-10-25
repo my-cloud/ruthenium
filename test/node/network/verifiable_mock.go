@@ -28,7 +28,7 @@ var _ protocol.Verifiable = &VerifiableMock{}
 // 			CalculateTotalAmountFunc: func(currentTimestamp int64, blockchainAddress string) uint64 {
 // 				panic("mock out the CalculateTotalAmount method")
 // 			},
-// 			StartVerificationFunc: func(validatable Validatable)  {
+// 			StartVerificationFunc: func()  {
 // 				panic("mock out the StartVerification method")
 // 			},
 // 			VerifyFunc: func()  {
@@ -51,7 +51,7 @@ type VerifiableMock struct {
 	CalculateTotalAmountFunc func(currentTimestamp int64, blockchainAddress string) uint64
 
 	// StartVerificationFunc mocks the StartVerification method.
-	StartVerificationFunc func(validatable protocol.Validatable)
+	StartVerificationFunc func()
 
 	// VerifyFunc mocks the Verify method.
 	VerifyFunc func()
@@ -75,8 +75,6 @@ type VerifiableMock struct {
 		}
 		// StartVerification holds details about calls to the StartVerification method.
 		StartVerification []struct {
-			// Validatable is the validatable argument value.
-			Validatable protocol.Validatable
 		}
 		// Verify holds details about calls to the Verify method.
 		Verify []struct {
@@ -182,29 +180,24 @@ func (mock *VerifiableMock) CalculateTotalAmountCalls() []struct {
 }
 
 // StartVerification calls StartVerificationFunc.
-func (mock *VerifiableMock) StartVerification(validatable protocol.Validatable) {
+func (mock *VerifiableMock) StartVerification() {
 	if mock.StartVerificationFunc == nil {
 		panic("VerifiableMock.StartVerificationFunc: method is nil but Verifiable.StartVerification was just called")
 	}
 	callInfo := struct {
-		Validatable protocol.Validatable
-	}{
-		Validatable: validatable,
-	}
+	}{}
 	mock.lockStartVerification.Lock()
 	mock.calls.StartVerification = append(mock.calls.StartVerification, callInfo)
 	mock.lockStartVerification.Unlock()
-	mock.StartVerificationFunc(validatable)
+	mock.StartVerificationFunc()
 }
 
 // StartVerificationCalls gets all the calls that were made to StartVerification.
 // Check the length with:
 //     len(mockedVerifiable.StartVerificationCalls())
 func (mock *VerifiableMock) StartVerificationCalls() []struct {
-	Validatable protocol.Validatable
 } {
 	var calls []struct {
-		Validatable protocol.Validatable
 	}
 	mock.lockStartVerification.RLock()
 	calls = mock.calls.StartVerification

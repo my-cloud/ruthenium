@@ -6,7 +6,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/api/humanity"
 	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/api/node/network"
-	"github.com/my-cloud/ruthenium/src/api/node/protocol"
 	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
 	"math"
@@ -427,19 +426,13 @@ func (blockchain *Blockchain) decay(lastTimestamp int64, newTimestamp int64, amo
 	return uint64(math.Floor(float64(amount) * math.Exp(-blockchain.lambda*float64(elapsedTimestamp))))
 }
 
-func (blockchain *Blockchain) StartVerification(validatable protocol.Validatable) {
+func (blockchain *Blockchain) StartVerification() {
 	ticker := time.NewTicker(blockchain.validationTimer / verificationsCountPerValidation)
 	go func() {
 		for {
 			for i := 0; i < verificationsCountPerValidation; i++ {
 				if i > 0 {
-					go func() {
-						// FIXME lock the transactions pool
-						blockchain.Verify()
-						if blockchain.isReplaced {
-							validatable.Clear()
-						}
-					}()
+					go blockchain.Verify()
 				}
 				<-ticker.C
 			}

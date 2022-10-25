@@ -68,7 +68,7 @@ func (pool *Pool) addTransaction(transactionRequest *node.TransactionRequest, bl
 		for i := len(blocks) - 2; i < len(blocks); i++ {
 			for _, validatedTransaction := range blocks[i].Transactions {
 				if transaction.Equals(validatedTransaction) {
-					err = errors.New("the transaction already is in the blockchain")
+					err = errors.New("the transaction is already in the blockchain")
 					return
 				}
 			}
@@ -76,7 +76,7 @@ func (pool *Pool) addTransaction(transactionRequest *node.TransactionRequest, bl
 	}
 	for _, pendingTransaction := range pool.transactionResponses {
 		if transaction.Equals(pendingTransaction) {
-			err = errors.New("the transaction already is in the transactions pool")
+			err = errors.New("the transaction is already in the transactions pool")
 			return
 		}
 	}
@@ -115,7 +115,7 @@ func (pool *Pool) Validate(timestamp int64, blockchain protocol.Verifiable, addr
 		return
 	}
 	if lastBlock.Timestamp() == timestamp {
-		pool.logger.Error("unable to create block, a block with the same timestamp already is in the blockchain")
+		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
 		return
 	}
 	lastBlockHash, err := lastBlock.Hash()
@@ -189,14 +189,11 @@ func (pool *Pool) Validate(timestamp int64, blockchain protocol.Verifiable, addr
 	transactions = append(transactions, rewardTransaction)
 	block := NewBlock(timestamp, lastBlockHash, transactions, newRegisteredAddresses)
 	blockchain.AddBlock(block.GetResponse())
-	pool.transactions = nil
-	pool.transactionResponses = nil
+	pool.clear()
 	pool.logger.Debug(fmt.Sprintf("reward: %d", reward))
 }
 
-func (pool *Pool) Clear() {
-	pool.mutex.Lock()
-	defer pool.mutex.Unlock()
+func (pool *Pool) clear() {
 	pool.transactions = nil
 	pool.transactionResponses = nil
 }

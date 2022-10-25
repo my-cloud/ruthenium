@@ -3,7 +3,6 @@ package network
 import (
 	p2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/api/connection"
-	"github.com/my-cloud/ruthenium/src/api/node/protocol"
 	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
@@ -18,7 +17,7 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	servableMock.SetHandleFunc = func(topic string, handler p2p.Handler) {}
 	verifiableMock := new(VerifiableMock)
 	verifiableMock.VerifyFunc = func() {}
-	verifiableMock.StartVerificationFunc = func(protocol.Validatable) {}
+	verifiableMock.StartVerificationFunc = func() {}
 	validatableMock := new(ValidatableMock)
 	bootableMock := new(BootableMock)
 	bootableMock.StartFunc = func() {}

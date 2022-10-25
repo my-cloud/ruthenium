@@ -20,13 +20,10 @@ var _ protocol.Validatable = &ValidatableMock{}
 //
 // 		// make and configure a mocked Validatable
 // 		mockedValidatable := &ValidatableMock{
-// 			AddTransactionFunc: func(transactionRequest *network.TransactionRequest, blockchain Verifiable, neighbors []network.Requestable)  {
+// 			AddTransactionFunc: func(transactionRequest *node.TransactionRequest, blockchain Verifiable, neighbors []network.Requestable)  {
 // 				panic("mock out the AddTransaction method")
 // 			},
-// 			ClearFunc: func()  {
-// 				panic("mock out the Clear method")
-// 			},
-// 			TransactionsFunc: func() []*network.TransactionResponse {
+// 			TransactionsFunc: func() []*node.TransactionResponse {
 // 				panic("mock out the Transactions method")
 // 			},
 // 			ValidateFunc: func(timestamp int64, verifiable Verifiable, address string)  {
@@ -41,9 +38,6 @@ var _ protocol.Validatable = &ValidatableMock{}
 type ValidatableMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
 	AddTransactionFunc func(transactionRequest *node.TransactionRequest, blockchain protocol.Verifiable, neighbors []network.Requestable)
-
-	// ClearFunc mocks the Clear method.
-	ClearFunc func()
 
 	// TransactionsFunc mocks the Transactions method.
 	TransactionsFunc func() []*node.TransactionResponse
@@ -62,9 +56,6 @@ type ValidatableMock struct {
 			// Neighbors is the neighbors argument value.
 			Neighbors []network.Requestable
 		}
-		// Clear holds details about calls to the Clear method.
-		Clear []struct {
-		}
 		// Transactions holds details about calls to the Transactions method.
 		Transactions []struct {
 		}
@@ -79,7 +70,6 @@ type ValidatableMock struct {
 		}
 	}
 	lockAddTransaction sync.RWMutex
-	lockClear          sync.RWMutex
 	lockTransactions   sync.RWMutex
 	lockValidate       sync.RWMutex
 }
@@ -120,32 +110,6 @@ func (mock *ValidatableMock) AddTransactionCalls() []struct {
 	mock.lockAddTransaction.RLock()
 	calls = mock.calls.AddTransaction
 	mock.lockAddTransaction.RUnlock()
-	return calls
-}
-
-// Clear calls ClearFunc.
-func (mock *ValidatableMock) Clear() {
-	if mock.ClearFunc == nil {
-		panic("ValidatableMock.ClearFunc: method is nil but Validatable.Clear was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockClear.Lock()
-	mock.calls.Clear = append(mock.calls.Clear, callInfo)
-	mock.lockClear.Unlock()
-	mock.ClearFunc()
-}
-
-// ClearCalls gets all the calls that were made to Clear.
-// Check the length with:
-//     len(mockedValidatable.ClearCalls())
-func (mock *ValidatableMock) ClearCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockClear.RLock()
-	calls = mock.calls.Clear
-	mock.lockClear.RUnlock()
 	return calls
 }
 
