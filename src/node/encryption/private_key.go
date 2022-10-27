@@ -20,10 +20,13 @@ func NewPrivateKey() (*PrivateKey, error) {
 }
 
 func DecodePrivateKey(privateKeyString string) (*PrivateKey, error) {
-	bytes, _ := hexutil.Decode(privateKeyString)
-	ecdsaPrivateKey, err := crypto.ToECDSA(bytes)
+	bytes, err := hexutil.Decode(privateKeyString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode private key: %w", err)
+	}
+	ecdsaPrivateKey, err := crypto.ToECDSA(bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert private key bytes to ECDSA: %w", err)
 	}
 	return &PrivateKey{ecdsaPrivateKey}, nil
 }

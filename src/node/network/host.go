@@ -80,10 +80,10 @@ func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
 	return
 }
 
-func (host *Host) Run() {
+func (host *Host) Run() error {
 	go host.startBlockchain()
 	host.servable.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) { return host.handle(req) })
-	host.startServer()
+	return host.startServer()
 }
 
 func (host *Host) startBlockchain() {
@@ -134,10 +134,7 @@ func (host *Host) handle(req p2p.Data) (res p2p.Data, err error) {
 	return
 }
 
-func (host *Host) startServer() {
+func (host *Host) startServer() error {
 	host.logger.Info("host server is running...")
-	err := host.servable.Serve()
-	if err != nil {
-		host.logger.Fatal(fmt.Errorf("failed to start server: %w", err).Error())
-	}
+	return host.servable.Serve()
 }

@@ -11,8 +11,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/p2p"
 	"github.com/my-cloud/ruthenium/src/poh"
-	"io/ioutil"
-	"net/http"
 	"time"
 )
 
@@ -29,10 +27,6 @@ func main() {
 
 	flag.Parse()
 	logger := log.NewLogger(log.ParseLevel(*logLevel))
-	ip, err := findPublicIp(logger)
-	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
-	}
 	wallet, err := encryption.DecodeWallet(*mnemonic, *derivationPath, *password, *privateKey)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
@@ -41,7 +35,10 @@ func main() {
 	validationTimer := validationIntervalInSeconds * time.Second
 	watch := clock.NewWatch()
 	peering := p2p.NewSenderFactory()
-	synchronizer := network.NewSynchronizer(ip, uint16(*port), watch, peering, *configurationPath, logger)
+	synchronizer, err := network.NewSynchronizer(uint16(*port), watch, peering, *configurationPath, logger)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("failed to create synchronizer: %w", err).Error())
+	}
 	blockchain := protocol.NewBlockchain(registry, validationTimer, watch, synchronizer, logger)
 	pool := protocol.NewTransactionsPool(registry, watch, logger)
 	validation := protocol.NewValidation(wallet.Address(), blockchain, pool, watch, validationTimer, logger)
@@ -50,24 +47,8 @@ func main() {
 		logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
 	}
 	host := network.NewHost(server, blockchain, pool, validation, synchronizer, watch, logger)
-	host.Run()
-}
-
-func findPublicIp(logger *log.Logger) (ip string, err error) {
-	resp, err := http.Get("https://ifconfig.me")
+	err = host.Run()
 	if err != nil {
-		return
+		logger.Fatal(fmt.Errorf("failed to run host: %w", err).Error())
 	}
-	defer func() {
-		if bodyCloseError := resp.Body.Close(); bodyCloseError != nil {
-			logger.Error(fmt.Errorf("failed to close public IP request body: %w", bodyCloseError).Error())
-		}
-	}()
-	var body []byte
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-	ip = string(body)
-	return
 }

@@ -27,11 +27,14 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	senderFactoryMock.CreateSenderFunc = func(string, uint16, string) (network.Sender, error) { return sender, nil }
 	configurationPath := "../../"
 	logger := log.NewLogger(log.Fatal)
-	synchronizer := network.NewSynchronizer("", 0, watchMock, senderFactoryMock, configurationPath, logger)
+	synchronizer, err := network.NewSynchronizer(0, watchMock, senderFactoryMock, configurationPath, logger)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
 	host := network.NewHost(serverMock, blockchainMock, transactionsPoolMock, bootableMock, synchronizer, watchMock, logger)
 
 	// Act
-	host.Run()
+	_ = host.Run()
 
 	// Assert
 	isServerStarted := len(serverMock.ServeCalls()) == 1

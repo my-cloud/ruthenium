@@ -19,7 +19,7 @@ func Test_Synchronize_OneNeighbor_NeighborAdded(t *testing.T) {
 	senderFactoryMock.CreateSenderFunc = func(string, uint16, string) (network.Sender, error) { return sender, nil }
 	configurationPath := "../../"
 	logger := log.NewLogger(log.Fatal)
-	synchronizer := network.NewSynchronizer("", 0, watch, senderFactoryMock, configurationPath, logger)
+	synchronizer, _ := network.NewSynchronizer(0, watch, senderFactoryMock, configurationPath, logger)
 
 	// Act
 	synchronizer.Synchronize()

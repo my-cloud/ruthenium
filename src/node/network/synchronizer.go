@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"math"
 	"math/rand"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -37,39 +38,67 @@ type Synchronizer struct {
 	logger    *log.Logger
 }
 
-func NewSynchronizer(hostIp string, hostPort uint16, timeable clock.Time, senderProvider SenderFactory, configurationPath string, logger *log.Logger) *Synchronizer {
-	synchronizer := new(Synchronizer)
-	synchronizer.hostIp = hostIp
+func NewSynchronizer(hostPort uint16, timeable clock.Time, senderProvider SenderFactory, configurationPath string, logger *log.Logger) (synchronizer *Synchronizer, err error) {
+	synchronizer = new(Synchronizer)
+	synchronizer.hostIp, err = findPublicIp(logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find the public IP: %w", err)
+	}
 	synchronizer.hostPort = hostPort
 	synchronizer.timeable = timeable
 	synchronizer.senderProvider = senderProvider
 	synchronizer.logger = logger
 	var waitGroup sync.WaitGroup
 	synchronizer.waitGroup = &waitGroup
-	seedsIps := readSeedsIps(configurationPath, logger)
+	seedsIps, err := readSeedsIps(configurationPath, logger)
+	if err != nil {
+		return nil, err
+	}
 	synchronizer.seedsTargets = map[string]*Target{}
 	for _, seedIp := range seedsIps {
 		seedTarget := NewTarget(seedIp, DefaultPort)
 		synchronizer.seedsTargets[seedTarget.Value()] = seedTarget
 	}
 	synchronizer.neighborsTargets = map[string]*Target{}
-	return synchronizer
+	return synchronizer, nil
 }
 
-func readSeedsIps(configurationPath string, logger *log.Logger) []string {
+func findPublicIp(logger *log.Logger) (ip string, err error) {
+	resp, err := http.Get("https://ifconfig.me")
+	if err != nil {
+		return
+	}
+	defer func() {
+		if bodyCloseError := resp.Body.Close(); bodyCloseError != nil {
+			logger.Error(fmt.Errorf("failed to close public IP request body: %w", bodyCloseError).Error())
+		}
+	}()
+	var body []byte
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	ip = string(body)
+	return
+}
+
+func readSeedsIps(configurationPath string, logger *log.Logger) ([]string, error) {
 	jsonFile, err := os.Open(configurationPath + "/seeds.json")
 	if err != nil {
-		logger.Fatal(fmt.Errorf("unable to open seeds IPs configuration file: %w", err).Error())
+		return nil, fmt.Errorf("unable to open seeds IPs configuration file: %w", err)
 	}
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+	byteValue, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read seeds IPs configuration file: %w", err)
+	}
 	if err = jsonFile.Close(); err != nil {
 		logger.Error(fmt.Errorf("unable to close seeds IPs configuration file: %w", err).Error())
 	}
 	var seedsIps []string
 	if err = json.Unmarshal(byteValue, &seedsIps); err != nil {
-		logger.Fatal(fmt.Errorf("unable to unmarshal seeds IPs: %w", err).Error())
+		return nil, fmt.Errorf("unable to unmarshal seeds IPs: %w", err)
 	}
-	return seedsIps
+	return seedsIps, nil
 }
 
 func (synchronizer *Synchronizer) Wait() {
