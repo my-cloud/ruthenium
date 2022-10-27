@@ -20,16 +20,16 @@ func Test_AddTransaction_Allowed_TransactionAdded(t *testing.T) {
 	walletAAddress := walletA.Address()
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
-	registrable := new(RegistrableMock)
-	registrable.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-	watch := NewWatchMock()
+	registryMock := new(RegistryMock)
+	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	timeMock := NewTimeMock()
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
-	synchronizable := new(SynchronizableMock)
-	blockchain := protocol.NewBlockchain(registrable, validationTimer, watch, synchronizable, logger)
-	pool := protocol.NewPool(registrable, watch, logger)
-	validation := protocol.NewValidation(minerWalletAddress, blockchain, pool, watch, validationTimer, logger)
-	validation.Do()
+	synchronizerMock := new(SynchronizerMock)
+	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	validation := protocol.NewValidation(minerWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
+	validation.Validate()
 	validation.Wait()
 
 	var amount1 uint64 = 40 * network.ParticlesCount
@@ -60,16 +60,16 @@ func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
 	walletAAddress := walletA.Address()
 	walletB, _ := encryption.NewWallet()
 	walletBAddress := walletB.Address()
-	registrable := new(RegistrableMock)
-	registrable.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-	watch := NewWatchMock()
+	registryMock := new(RegistryMock)
+	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	timeMock := NewTimeMock()
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
-	synchronizable := new(SynchronizableMock)
-	blockchain := protocol.NewBlockchain(registrable, validationTimer, watch, synchronizable, logger)
-	pool := protocol.NewPool(registrable, watch, logger)
-	validation := protocol.NewValidation(minerWalletAddress, blockchain, pool, watch, validationTimer, logger)
-	validation.Do()
+	synchronizerMock := new(SynchronizerMock)
+	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	validation := protocol.NewValidation(minerWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
+	validation.Validate()
 	validation.Wait()
 
 	var amount1 uint64 = 40 * network.ParticlesCount
@@ -93,10 +93,10 @@ func Test_AddTransaction_NotAllowed_TransactionNotAdded(t *testing.T) {
 	test.Assert(t, expectedWalletBAmount == actualWalletBAmount, fmt.Sprintf("Wrong wallet B amount. Expected: %d - Actual: %d", expectedWalletBAmount, actualWalletBAmount))
 }
 
-func addTransaction(pool *protocol.Pool, blockchain *protocol.Blockchain, validation *protocol.Validation, transaction *server.Transaction) {
+func addTransaction(pool *protocol.TransactionsPool, blockchain *protocol.Blockchain, validation *protocol.Validation, transaction *server.Transaction) {
 	transactionRequest := transaction.GetRequest()
 	pool.AddTransaction(&transactionRequest, blockchain, nil)
 	pool.Wait()
-	validation.Do()
+	validation.Validate()
 	validation.Wait()
 }

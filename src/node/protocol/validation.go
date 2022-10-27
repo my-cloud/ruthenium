@@ -1,8 +1,8 @@
 package protocol
 
 import (
-	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"sync"
 	"time"
@@ -13,9 +13,9 @@ const genesisAmount uint64 = 100000 * network.ParticlesCount
 type Validation struct {
 	address    string
 	blockchain *Blockchain
-	pool       *Pool
+	pool       *TransactionsPool
 
-	timeable  clock.Timeable
+	timeable  clock.Time
 	timer     time.Duration
 	ticker    *time.Ticker
 	started   bool
@@ -25,13 +25,13 @@ type Validation struct {
 	logger    *log.Logger
 }
 
-func NewValidation(address string, blockchain *Blockchain, pool *Pool, timing clock.Timeable, timer time.Duration, logger *log.Logger) *Validation {
+func NewValidation(address string, blockchain *Blockchain, pool *TransactionsPool, timing clock.Time, timer time.Duration, logger *log.Logger) *Validation {
 	ticker := time.NewTicker(timer)
 	var waitGroup sync.WaitGroup
 	return &Validation{address, blockchain, pool, timing, timer, ticker, false, false, &waitGroup, logger}
 }
 
-func (validation *Validation) Do() {
+func (validation *Validation) Validate() {
 	if validation.started || validation.requested {
 		return
 	}
@@ -57,7 +57,7 @@ func (validation *Validation) Do() {
 	}()
 }
 
-func (validation *Validation) Start() {
+func (validation *Validation) StartValidation() {
 	if validation.started {
 		return
 	}
@@ -81,7 +81,7 @@ func (validation *Validation) Start() {
 	}()
 }
 
-func (validation *Validation) Stop() {
+func (validation *Validation) StopValidation() {
 	validation.started = false
 	validation.ticker.Reset(time.Nanosecond)
 }

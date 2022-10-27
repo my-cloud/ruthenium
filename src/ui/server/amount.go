@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/my-cloud/ruthenium/src/api/node"
+	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 )
 
 type Amount struct {
@@ -12,6 +12,6 @@ func NewAmount(address string) *Amount {
 	return &Amount{address}
 }
 
-func (amount *Amount) GetRequest() *node.AmountRequest {
-	return &node.AmountRequest{Address: &amount.address}
+func (amount *Amount) GetRequest() *neighborhood.AmountRequest {
+	return &neighborhood.AmountRequest{Address: &amount.address}
 }

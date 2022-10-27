@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/api/connection"
-	"github.com/my-cloud/ruthenium/src/api/node"
-	"github.com/my-cloud/ruthenium/src/api/node/protocol"
-	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/clock"
+	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 )
 
 const (
@@ -17,25 +15,25 @@ const (
 )
 
 type Host struct {
-	servable     connection.Servable
-	blockchain   protocol.Verifiable
-	pool         protocol.Validatable
-	validation   protocol.Validator
-	neighborhood *Neighborhood
-	timeable     clock.Timeable
+	servable     Server
+	blockchain   Blockchain
+	pool         TransactionsPool
+	validation   Validator
+	synchronizer *Synchronizer
+	timeable     clock.Time
 	logger       *log.Logger
 }
 
 func NewHost(
-	servable connection.Servable,
-	blockchain protocol.Verifiable,
-	pool protocol.Validatable,
-	validation protocol.Validator,
-	neighborhood *Neighborhood,
-	timeable clock.Timeable,
+	servable Server,
+	blockchain Blockchain,
+	pool TransactionsPool,
+	validation Validator,
+	synchronizer *Synchronizer,
+	timeable clock.Time,
 	logger *log.Logger,
 ) *Host {
-	return &Host{servable, blockchain, pool, validation, neighborhood, timeable, logger}
+	return &Host{servable, blockchain, pool, validation, synchronizer, timeable, logger}
 }
 
 func (host *Host) GetBlocks() (res p2p.Data) {
@@ -47,8 +45,8 @@ func (host *Host) GetBlocks() (res p2p.Data) {
 	return
 }
 
-func (host *Host) PostTargets(request []node.TargetRequest) {
-	host.neighborhood.AddTargets(request)
+func (host *Host) PostTargets(request []neighborhood.TargetRequest) {
+	host.synchronizer.AddTargets(request)
 }
 
 func (host *Host) GetTransactions() (res p2p.Data) {
@@ -59,23 +57,23 @@ func (host *Host) GetTransactions() (res p2p.Data) {
 	return
 }
 
-func (host *Host) AddTransactions(request *node.TransactionRequest) {
+func (host *Host) AddTransactions(request *neighborhood.TransactionRequest) {
 	if request.IsInvalid() {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
 	}
-	neighbors := host.neighborhood.Neighbors()
+	neighbors := host.synchronizer.Neighbors()
 	host.pool.AddTransaction(request, host.blockchain, neighbors)
 }
 
-func (host *Host) Amount(request *node.AmountRequest) (res p2p.Data) {
+func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
 	if request.IsInvalid() {
 		host.logger.Error("field(s) are missing in amount request")
 		return
 	}
 	blockchainAddress := *request.Address
 	amount := host.blockchain.CalculateTotalAmount(host.timeable.Now().UnixNano(), blockchainAddress)
-	amountResponse := &node.AmountResponse{Amount: amount}
+	amountResponse := &neighborhood.AmountResponse{Amount: amount}
 	if err := res.SetGob(amountResponse); err != nil {
 		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
 	}
@@ -90,20 +88,20 @@ func (host *Host) Run() {
 
 func (host *Host) startBlockchain() {
 	host.logger.Info("updating the blockchain...")
-	host.neighborhood.StartSynchronization()
-	host.neighborhood.Wait()
+	host.synchronizer.StartSynchronization()
+	host.synchronizer.Wait()
 	host.blockchain.Verify()
 	host.logger.Info("the blockchain is now up to date")
-	host.validation.Start()
+	host.validation.StartValidation()
 	host.blockchain.StartVerification()
 }
 
 func (host *Host) handle(req p2p.Data) (res p2p.Data, err error) {
 	var unknownRequest bool
 	var requestString string
-	var transactionRequest node.TransactionRequest
-	var amountRequest node.AmountRequest
-	var targetsRequest []node.TargetRequest
+	var transactionRequest neighborhood.TransactionRequest
+	var amountRequest neighborhood.AmountRequest
+	var targetsRequest []neighborhood.TargetRequest
 	res = p2p.Data{}
 	if err = req.GetGob(&requestString); err == nil {
 		switch requestString {
@@ -112,11 +110,11 @@ func (host *Host) handle(req p2p.Data) (res p2p.Data, err error) {
 		case GetTransactionsRequest:
 			res = host.GetTransactions()
 		case MineRequest:
-			host.validation.Do()
+			host.validation.Validate()
 		case StartMiningRequest:
-			host.validation.Start()
+			host.validation.StartValidation()
 		case StopMiningRequest:
-			host.validation.Stop()
+			host.validation.StopValidation()
 		default:
 			unknownRequest = true
 		}

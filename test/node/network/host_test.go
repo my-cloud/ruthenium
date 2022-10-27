@@ -2,9 +2,8 @@ package network
 
 import (
 	p2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/api/connection"
-	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/test"
 	"testing"
@@ -12,29 +11,29 @@ import (
 
 func Test_Run_NoError_ServerStarted(t *testing.T) {
 	// Arrange
-	servableMock := new(ServableMock)
-	servableMock.ServeFunc = func() error { return nil }
-	servableMock.SetHandleFunc = func(topic string, handler p2p.Handler) {}
-	verifiableMock := new(VerifiableMock)
-	verifiableMock.VerifyFunc = func() {}
-	verifiableMock.StartVerificationFunc = func() {}
-	validatableMock := new(ValidatableMock)
+	serverMock := new(ServerMock)
+	serverMock.ServeFunc = func() error { return nil }
+	serverMock.SetHandleFunc = func(topic string, handler p2p.Handler) {}
+	blockchainMock := new(BlockchainMock)
+	blockchainMock.VerifyFunc = func() {}
+	blockchainMock.StartVerificationFunc = func() {}
+	transactionsPoolMock := new(TransactionsPoolMock)
 	bootableMock := new(ValidatorMock)
-	bootableMock.StartFunc = func() {}
+	bootableMock.StartValidationFunc = func() {}
 	watchMock := clock.NewWatch()
 	sender := new(SenderMock)
 	sender.SendFunc = func(string, p2p.Data) (p2p.Data, error) { return p2p.Data{}, nil }
-	senderProviderMock := new(SenderProviderMock)
-	senderProviderMock.CreateSenderFunc = func(string, uint16, string) (connection.Sender, error) { return sender, nil }
+	senderFactoryMock := new(SenderFactoryMock)
+	senderFactoryMock.CreateSenderFunc = func(string, uint16, string) (network.Sender, error) { return sender, nil }
 	configurationPath := "../../"
 	logger := log.NewLogger(log.Fatal)
-	neighborhood := network.NewNeighborhood("", 0, watchMock, senderProviderMock, configurationPath, logger)
-	host := network.NewHost(servableMock, verifiableMock, validatableMock, bootableMock, neighborhood, watchMock, logger)
+	synchronizer := network.NewSynchronizer("", 0, watchMock, senderFactoryMock, configurationPath, logger)
+	host := network.NewHost(serverMock, blockchainMock, transactionsPoolMock, bootableMock, synchronizer, watchMock, logger)
 
 	// Act
 	host.Run()
 
 	// Assert
-	isServerStarted := len(servableMock.ServeCalls()) == 1
+	isServerStarted := len(serverMock.ServeCalls()) == 1
 	test.Assert(t, isServerStarted, "Server is not started whereas it should be.")
 }

@@ -4,13 +4,13 @@
 package network
 
 import (
-	"github.com/my-cloud/ruthenium/src/api/node/protocol"
+	"github.com/my-cloud/ruthenium/src/node/network"
 	"sync"
 )
 
 // Ensure, that ValidatorMock does implement Validator.
 // If this is not the case, regenerate this file with moq.
-var _ protocol.Validator = &ValidatorMock{}
+var _ network.Validator = &ValidatorMock{}
 
 // ValidatorMock is a mock implementation of Validator.
 //
@@ -18,14 +18,14 @@ var _ protocol.Validator = &ValidatorMock{}
 //
 // 		// make and configure a mocked Validator
 // 		mockedValidator := &ValidatorMock{
-// 			DoFunc: func()  {
-// 				panic("mock out the Do method")
+// 			StartValidationFunc: func()  {
+// 				panic("mock out the StartValidation method")
 // 			},
-// 			StartFunc: func()  {
-// 				panic("mock out the Start method")
+// 			StopValidationFunc: func()  {
+// 				panic("mock out the StopValidation method")
 // 			},
-// 			StopFunc: func()  {
-// 				panic("mock out the Stop method")
+// 			ValidateFunc: func()  {
+// 				panic("mock out the Validate method")
 // 			},
 // 		}
 //
@@ -34,106 +34,106 @@ var _ protocol.Validator = &ValidatorMock{}
 //
 // 	}
 type ValidatorMock struct {
-	// DoFunc mocks the Do method.
-	DoFunc func()
+	// StartValidationFunc mocks the StartValidation method.
+	StartValidationFunc func()
 
-	// StartFunc mocks the Start method.
-	StartFunc func()
+	// StopValidationFunc mocks the StopValidation method.
+	StopValidationFunc func()
 
-	// StopFunc mocks the Stop method.
-	StopFunc func()
+	// ValidateFunc mocks the Validate method.
+	ValidateFunc func()
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// Do holds details about calls to the Do method.
-		Do []struct {
+		// StartValidation holds details about calls to the StartValidation method.
+		StartValidation []struct {
 		}
-		// Start holds details about calls to the Start method.
-		Start []struct {
+		// StopValidation holds details about calls to the StopValidation method.
+		StopValidation []struct {
 		}
-		// Stop holds details about calls to the Stop method.
-		Stop []struct {
+		// Validate holds details about calls to the Validate method.
+		Validate []struct {
 		}
 	}
-	lockDo    sync.RWMutex
-	lockStart sync.RWMutex
-	lockStop  sync.RWMutex
+	lockStartValidation sync.RWMutex
+	lockStopValidation  sync.RWMutex
+	lockValidate        sync.RWMutex
 }
 
-// Do calls DoFunc.
-func (mock *ValidatorMock) Do() {
-	if mock.DoFunc == nil {
-		panic("ValidatorMock.DoFunc: method is nil but Validator.Do was just called")
+// StartValidation calls StartValidationFunc.
+func (mock *ValidatorMock) StartValidation() {
+	if mock.StartValidationFunc == nil {
+		panic("ValidatorMock.StartValidationFunc: method is nil but Validator.StartValidation was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockDo.Lock()
-	mock.calls.Do = append(mock.calls.Do, callInfo)
-	mock.lockDo.Unlock()
-	mock.DoFunc()
+	mock.lockStartValidation.Lock()
+	mock.calls.StartValidation = append(mock.calls.StartValidation, callInfo)
+	mock.lockStartValidation.Unlock()
+	mock.StartValidationFunc()
 }
 
-// DoCalls gets all the calls that were made to Do.
+// StartValidationCalls gets all the calls that were made to StartValidation.
 // Check the length with:
-//     len(mockedValidator.DoCalls())
-func (mock *ValidatorMock) DoCalls() []struct {
+//     len(mockedValidator.StartValidationCalls())
+func (mock *ValidatorMock) StartValidationCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockDo.RLock()
-	calls = mock.calls.Do
-	mock.lockDo.RUnlock()
+	mock.lockStartValidation.RLock()
+	calls = mock.calls.StartValidation
+	mock.lockStartValidation.RUnlock()
 	return calls
 }
 
-// Start calls StartFunc.
-func (mock *ValidatorMock) Start() {
-	if mock.StartFunc == nil {
-		panic("ValidatorMock.StartFunc: method is nil but Validator.Start was just called")
+// StopValidation calls StopValidationFunc.
+func (mock *ValidatorMock) StopValidation() {
+	if mock.StopValidationFunc == nil {
+		panic("ValidatorMock.StopValidationFunc: method is nil but Validator.StopValidation was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockStart.Lock()
-	mock.calls.Start = append(mock.calls.Start, callInfo)
-	mock.lockStart.Unlock()
-	mock.StartFunc()
+	mock.lockStopValidation.Lock()
+	mock.calls.StopValidation = append(mock.calls.StopValidation, callInfo)
+	mock.lockStopValidation.Unlock()
+	mock.StopValidationFunc()
 }
 
-// StartCalls gets all the calls that were made to Start.
+// StopValidationCalls gets all the calls that were made to StopValidation.
 // Check the length with:
-//     len(mockedValidator.StartCalls())
-func (mock *ValidatorMock) StartCalls() []struct {
+//     len(mockedValidator.StopValidationCalls())
+func (mock *ValidatorMock) StopValidationCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockStart.RLock()
-	calls = mock.calls.Start
-	mock.lockStart.RUnlock()
+	mock.lockStopValidation.RLock()
+	calls = mock.calls.StopValidation
+	mock.lockStopValidation.RUnlock()
 	return calls
 }
 
-// Stop calls StopFunc.
-func (mock *ValidatorMock) Stop() {
-	if mock.StopFunc == nil {
-		panic("ValidatorMock.StopFunc: method is nil but Validator.Stop was just called")
+// Validate calls ValidateFunc.
+func (mock *ValidatorMock) Validate() {
+	if mock.ValidateFunc == nil {
+		panic("ValidatorMock.ValidateFunc: method is nil but Validator.Validate was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockStop.Lock()
-	mock.calls.Stop = append(mock.calls.Stop, callInfo)
-	mock.lockStop.Unlock()
-	mock.StopFunc()
+	mock.lockValidate.Lock()
+	mock.calls.Validate = append(mock.calls.Validate, callInfo)
+	mock.lockValidate.Unlock()
+	mock.ValidateFunc()
 }
 
-// StopCalls gets all the calls that were made to Stop.
+// ValidateCalls gets all the calls that were made to Validate.
 // Check the length with:
-//     len(mockedValidator.StopCalls())
-func (mock *ValidatorMock) StopCalls() []struct {
+//     len(mockedValidator.ValidateCalls())
+func (mock *ValidatorMock) ValidateCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockStop.RLock()
-	calls = mock.calls.Stop
-	mock.lockStop.RUnlock()
+	mock.lockValidate.RLock()
+	calls = mock.calls.Validate
+	mock.lockValidate.RUnlock()
 	return calls
 }

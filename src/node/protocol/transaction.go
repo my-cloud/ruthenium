@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/node/encryption"
+	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 )
 
 const (
@@ -34,7 +34,7 @@ func NewRewardTransaction(recipientAddress string, timestamp int64, value uint64
 	}
 }
 
-func NewTransactionFromRequest(transactionRequest *node.TransactionRequest) (*Transaction, error) {
+func NewTransactionFromRequest(transactionRequest *neighborhood.TransactionRequest) (*Transaction, error) {
 	senderPublicKey, err := encryption.DecodePublicKey(*transactionRequest.SenderPublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode transaction public key: %w", err)
@@ -54,7 +54,7 @@ func NewTransactionFromRequest(transactionRequest *node.TransactionRequest) (*Tr
 	}, nil
 }
 
-func NewTransactionFromResponse(transactionResponse *node.TransactionResponse) (transaction *Transaction, err error) {
+func NewTransactionFromResponse(transactionResponse *neighborhood.TransactionResponse) (transaction *Transaction, err error) {
 	var senderPublicKey *encryption.PublicKey
 	if len(transactionResponse.SenderPublicKey) != 0 {
 		senderPublicKey, err = encryption.DecodePublicKey(transactionResponse.SenderPublicKey)
@@ -116,7 +116,7 @@ func (transaction *Transaction) Fee() uint64 {
 	return transaction.fee
 }
 
-func (transaction *Transaction) GetResponse() *node.TransactionResponse {
+func (transaction *Transaction) GetResponse() *neighborhood.TransactionResponse {
 	var encodedPublicKey string
 	if transaction.senderPublicKey != nil {
 		encodedPublicKey = transaction.senderPublicKey.String()
@@ -125,7 +125,7 @@ func (transaction *Transaction) GetResponse() *node.TransactionResponse {
 	if transaction.signature != nil {
 		encodedSignature = transaction.signature.String()
 	}
-	return &node.TransactionResponse{
+	return &neighborhood.TransactionResponse{
 		RecipientAddress: transaction.recipientAddress,
 		SenderAddress:    transaction.senderAddress,
 		SenderPublicKey:  encodedPublicKey,
@@ -136,7 +136,7 @@ func (transaction *Transaction) GetResponse() *node.TransactionResponse {
 	}
 }
 
-func (transaction *Transaction) Equals(other *node.TransactionResponse) bool {
+func (transaction *Transaction) Equals(other *neighborhood.TransactionResponse) bool {
 	return transaction.recipientAddress == other.RecipientAddress &&
 		transaction.senderAddress == other.SenderAddress &&
 		transaction.timestamp == other.Timestamp &&

@@ -1,7 +1,7 @@
 package humanity
 
 import (
-	"github.com/my-cloud/ruthenium/src/humanity"
+	"github.com/my-cloud/ruthenium/src/poh"
 	"github.com/my-cloud/ruthenium/test"
 	"testing"
 )
@@ -9,7 +9,7 @@ import (
 func Test_IsRegistered_NotRegistered_ReturnsFalse(t *testing.T) {
 	// Arrange
 	address := "0x0000000000000000000000000000000000000001"
-	registry := humanity.NewRegistry()
+	registry := poh.NewRegistry()
 
 	// Act
 	isRegistered, _ := registry.IsRegistered(address)
@@ -21,7 +21,7 @@ func Test_IsRegistered_NotRegistered_ReturnsFalse(t *testing.T) {
 func Test_IsRegistered_Registered_ReturnsTrue(t *testing.T) {
 	// Arrange
 	address := "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
-	registry := humanity.NewRegistry()
+	registry := poh.NewRegistry()
 
 	// Act
 	isRegistered, _ := registry.IsRegistered(address)

@@ -3,9 +3,8 @@ package network
 import (
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/api/connection"
-	"github.com/my-cloud/ruthenium/src/api/node"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 )
 
 const (
@@ -18,11 +17,11 @@ const (
 
 type Neighbor struct {
 	target *Target
-	sender connection.Sender
+	sender Sender
 	logger *log.Logger
 }
 
-func NewNeighbor(target *Target, senderProvider connection.SenderProvider, logger *log.Logger) (*Neighbor, error) {
+func NewNeighbor(target *Target, senderProvider SenderFactory, logger *log.Logger) (*Neighbor, error) {
 	client, err := senderProvider.CreateSender(target.Ip(), target.Port(), target.Value())
 	if err != nil {
 		return nil, fmt.Errorf("failed to start client reaching %s: %w", target.Value(), err)
@@ -42,7 +41,7 @@ func (neighbor *Neighbor) Target() string {
 	return neighbor.target.Value()
 }
 
-func (neighbor *Neighbor) GetBlocks() (blockResponses []*node.BlockResponse, err error) {
+func (neighbor *Neighbor) GetBlocks() (blockResponses []*neighborhood.BlockResponse, err error) {
 	res, err := neighbor.sendRequest(GetBlocksRequest)
 	if err == nil {
 		err = res.GetGob(&blockResponses)
@@ -50,29 +49,29 @@ func (neighbor *Neighbor) GetBlocks() (blockResponses []*node.BlockResponse, err
 	return
 }
 
-func (neighbor *Neighbor) SendTargets(request []node.TargetRequest) (err error) {
+func (neighbor *Neighbor) SendTargets(request []neighborhood.TargetRequest) (err error) {
 	_, err = neighbor.sendRequest(request)
 	return
 }
 
-func (neighbor *Neighbor) AddTransaction(request node.TransactionRequest) (err error) {
+func (neighbor *Neighbor) AddTransaction(request neighborhood.TransactionRequest) (err error) {
 	_, err = neighbor.sendRequest(request)
 	return
 }
 
-func (neighbor *Neighbor) GetTransactions() (transactionResponses []node.TransactionResponse, err error) {
+func (neighbor *Neighbor) GetTransactions() (transactionResponses []neighborhood.TransactionResponse, err error) {
 	res, err := neighbor.sendRequest(GetTransactionsRequest)
 	if err != nil {
 		return
 	}
 	err = res.GetGob(&transactionResponses)
 	if transactionResponses == nil {
-		return []node.TransactionResponse{}, err
+		return []neighborhood.TransactionResponse{}, err
 	}
 	return
 }
 
-func (neighbor *Neighbor) GetAmount(request node.AmountRequest) (amountResponse *node.AmountResponse, err error) {
+func (neighbor *Neighbor) GetAmount(request neighborhood.AmountRequest) (amountResponse *neighborhood.AmountResponse, err error) {
 	res, err := neighbor.sendRequest(request)
 	if err == nil {
 		err = res.GetGob(&amountResponse)

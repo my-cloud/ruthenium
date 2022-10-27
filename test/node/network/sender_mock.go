@@ -5,13 +5,13 @@ package network
 
 import (
 	p2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/api/connection"
+	"github.com/my-cloud/ruthenium/src/node/network"
 	"sync"
 )
 
 // Ensure, that SenderMock does implement Sender.
 // If this is not the case, regenerate this file with moq.
-var _ connection.Sender = &SenderMock{}
+var _ network.Sender = &SenderMock{}
 
 // SenderMock is a mock implementation of Sender.
 //
