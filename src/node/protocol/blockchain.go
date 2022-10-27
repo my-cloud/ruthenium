@@ -23,12 +23,12 @@ type Blockchain struct {
 	blockResponses []*neighborhood.BlockResponse
 	mutex          sync.RWMutex
 
-	registrable Registry
+	registry Registry
 
 	validationTimer time.Duration
 	timeable        clock.Time
 
-	synchronizable Synchronizer
+	synchronizer Synchronizer
 
 	lambda float64
 
@@ -36,12 +36,12 @@ type Blockchain struct {
 	isReplaced bool
 }
 
-func NewBlockchain(registrable Registry, validationTimer time.Duration, timeable clock.Time, synchronizable Synchronizer, logger *log.Logger) *Blockchain {
+func NewBlockchain(registry Registry, validationTimer time.Duration, timeable clock.Time, synchronizer Synchronizer, logger *log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
-	blockchain.registrable = registrable
+	blockchain.registry = registry
 	blockchain.validationTimer = validationTimer
 	blockchain.timeable = timeable
-	blockchain.synchronizable = synchronizable
+	blockchain.synchronizer = synchronizer
 	blockchain.logger = logger
 	const hoursADay = 24
 	halfLife := halfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
@@ -78,7 +78,7 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 		return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 	}
 	validatorAddress := lastNeighborBlock.ValidatorAddress()
-	isValidatorRegistered, err := blockchain.registrable.IsRegistered(validatorAddress)
+	isValidatorRegistered, err := blockchain.registry.IsRegistered(validatorAddress)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get validator proof of humanity: %w", err)
 	}
@@ -96,7 +96,7 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 		if !transaction.IsReward() && transaction.Value() > 0 {
 			if _, isRegistered := registeredAddressesMap[transaction.SenderAddress()]; !isRegistered {
 				var isPohValid bool
-				isPohValid, err = blockchain.registrable.IsRegistered(transaction.SenderAddress())
+				isPohValid, err = blockchain.registry.IsRegistered(transaction.SenderAddress())
 				if err != nil {
 					return nil, fmt.Errorf("failed to get proof of humanity: %w", err)
 				} else if isPohValid {
@@ -114,7 +114,7 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 	}
 	for _, address := range lastNeighborBlock.RegisteredAddresses() {
 		var isPohValid bool
-		isPohValid, err = blockchain.registrable.IsRegistered(address)
+		isPohValid, err = blockchain.registry.IsRegistered(address)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get proof of humanity: %w", err)
 		} else if !isPohValid {
@@ -211,7 +211,7 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 
 func (blockchain *Blockchain) Verify() {
 	// Select valid blocks
-	neighbors := blockchain.synchronizable.Neighbors()
+	neighbors := blockchain.synchronizer.Neighbors()
 	blockchain.mutex.RLock()
 	blockResponsesByTarget := make(map[string][]*neighborhood.BlockResponse)
 	blocksByTarget := make(map[string][]*Block)

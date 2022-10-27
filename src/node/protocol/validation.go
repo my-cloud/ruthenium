@@ -15,7 +15,7 @@ type Validation struct {
 	blockchain *Blockchain
 	pool       *TransactionsPool
 
-	timeable  clock.Time
+	time      clock.Time
 	timer     time.Duration
 	ticker    *time.Ticker
 	started   bool
@@ -25,17 +25,17 @@ type Validation struct {
 	logger    *log.Logger
 }
 
-func NewValidation(address string, blockchain *Blockchain, pool *TransactionsPool, timing clock.Time, timer time.Duration, logger *log.Logger) *Validation {
+func NewValidation(address string, blockchain *Blockchain, pool *TransactionsPool, clockTime clock.Time, timer time.Duration, logger *log.Logger) *Validation {
 	ticker := time.NewTicker(timer)
 	var waitGroup sync.WaitGroup
-	return &Validation{address, blockchain, pool, timing, timer, ticker, false, false, &waitGroup, logger}
+	return &Validation{address, blockchain, pool, clockTime, timer, ticker, false, false, &waitGroup, logger}
 }
 
 func (validation *Validation) Validate() {
 	if validation.started || validation.requested {
 		return
 	}
-	startTime := validation.timeable.Now()
+	startTime := validation.time.Now()
 	parsedStartDate := startTime.Truncate(validation.timer).Add(validation.timer)
 	deadline := parsedStartDate.Sub(startTime)
 	validation.ticker.Reset(deadline)
@@ -44,7 +44,7 @@ func (validation *Validation) Validate() {
 	go func() {
 		defer validation.waitGroup.Done()
 		<-validation.ticker.C
-		now := validation.timeable.Now().Round(validation.timer)
+		now := validation.time.Now().Round(validation.timer)
 		validation.do(now.UnixNano())
 		validation.requested = false
 		if validation.started {
@@ -62,7 +62,7 @@ func (validation *Validation) StartValidation() {
 		return
 	}
 	validation.started = true
-	startTime := validation.timeable.Now()
+	startTime := validation.time.Now()
 	parsedStartDate := startTime.Truncate(validation.timer).Add(validation.timer)
 	deadline := parsedStartDate.Sub(startTime)
 	validation.ticker.Reset(deadline)
@@ -74,7 +74,7 @@ func (validation *Validation) StartValidation() {
 				validation.ticker.Stop()
 				return
 			}
-			now := validation.timeable.Now().Round(validation.timer)
+			now := validation.time.Now().Round(validation.timer)
 			validation.do(now.UnixNano())
 			<-validation.ticker.C
 		}

@@ -15,25 +15,25 @@ const (
 )
 
 type Host struct {
-	servable     Server
+	server       Server
 	blockchain   Blockchain
 	pool         TransactionsPool
-	validation   Validator
+	validator    Validator
 	synchronizer *Synchronizer
-	timeable     clock.Time
+	watch        clock.Time
 	logger       *log.Logger
 }
 
 func NewHost(
-	servable Server,
+	server Server,
 	blockchain Blockchain,
 	pool TransactionsPool,
-	validation Validator,
+	validator Validator,
 	synchronizer *Synchronizer,
-	timeable clock.Time,
+	watch clock.Time,
 	logger *log.Logger,
 ) *Host {
-	return &Host{servable, blockchain, pool, validation, synchronizer, timeable, logger}
+	return &Host{server, blockchain, pool, validator, synchronizer, watch, logger}
 }
 
 func (host *Host) GetBlocks() (res p2p.Data) {
@@ -72,7 +72,7 @@ func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
 		return
 	}
 	blockchainAddress := *request.Address
-	amount := host.blockchain.CalculateTotalAmount(host.timeable.Now().UnixNano(), blockchainAddress)
+	amount := host.blockchain.CalculateTotalAmount(host.watch.Now().UnixNano(), blockchainAddress)
 	amountResponse := &neighborhood.AmountResponse{Amount: amount}
 	if err := res.SetGob(amountResponse); err != nil {
 		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
@@ -82,7 +82,7 @@ func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
 
 func (host *Host) Run() error {
 	go host.startBlockchain()
-	host.servable.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) { return host.handle(req) })
+	host.server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) { return host.handle(req) })
 	return host.startServer()
 }
 
@@ -92,7 +92,7 @@ func (host *Host) startBlockchain() {
 	host.synchronizer.Wait()
 	host.blockchain.Verify()
 	host.logger.Info("the blockchain is now up to date")
-	host.validation.StartValidation()
+	host.validator.StartValidation()
 	host.blockchain.StartVerification()
 }
 
@@ -110,11 +110,11 @@ func (host *Host) handle(req p2p.Data) (res p2p.Data, err error) {
 		case GetTransactionsRequest:
 			res = host.GetTransactions()
 		case MineRequest:
-			host.validation.Validate()
+			host.validator.Validate()
 		case StartMiningRequest:
-			host.validation.StartValidation()
+			host.validator.StartValidation()
 		case StopMiningRequest:
-			host.validation.StopValidation()
+			host.validator.StopValidation()
 		default:
 			unknownRequest = true
 		}
@@ -136,5 +136,5 @@ func (host *Host) handle(req p2p.Data) (res p2p.Data, err error) {
 
 func (host *Host) startServer() error {
 	host.logger.Info("host server is running...")
-	return host.servable.Serve()
+	return host.server.Serve()
 }

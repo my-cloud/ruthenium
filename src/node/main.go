@@ -34,15 +34,16 @@ func main() {
 	registry := poh.NewRegistry()
 	validationTimer := validationIntervalInSeconds * time.Second
 	watch := clock.NewWatch()
-	peering := p2p.NewSenderFactory()
-	synchronizer, err := network.NewSynchronizer(uint16(*port), watch, peering, *configurationPath, logger)
+	senderFactory := p2p.NewSenderFactory()
+	synchronizer, err := network.NewSynchronizer(uint16(*port), watch, senderFactory, *configurationPath, logger)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create synchronizer: %w", err).Error())
 	}
 	blockchain := protocol.NewBlockchain(registry, validationTimer, watch, synchronizer, logger)
 	pool := protocol.NewTransactionsPool(registry, watch, logger)
 	validation := protocol.NewValidation(wallet.Address(), blockchain, pool, watch, validationTimer, logger)
-	server, err := p2p.NewServerFactory().CreateServer(int(*port))
+	serverFactory := p2p.NewServerFactory()
+	server, err := serverFactory.CreateServer(int(*port))
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
 	}

@@ -25,8 +25,8 @@ type Synchronizer struct {
 	hostIp   string
 	hostPort uint16
 
-	timeable       clock.Time
-	senderProvider SenderFactory
+	time          clock.Time
+	senderFactory SenderFactory
 
 	neighbors             []neighborhood.Neighbor
 	neighborsMutex        sync.RWMutex
@@ -38,15 +38,15 @@ type Synchronizer struct {
 	logger    *log.Logger
 }
 
-func NewSynchronizer(hostPort uint16, timeable clock.Time, senderProvider SenderFactory, configurationPath string, logger *log.Logger) (synchronizer *Synchronizer, err error) {
+func NewSynchronizer(hostPort uint16, time clock.Time, senderFactory SenderFactory, configurationPath string, logger *log.Logger) (synchronizer *Synchronizer, err error) {
 	synchronizer = new(Synchronizer)
 	synchronizer.hostIp, err = findPublicIp(logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find the public IP: %w", err)
 	}
 	synchronizer.hostPort = hostPort
-	synchronizer.timeable = timeable
-	synchronizer.senderProvider = senderProvider
+	synchronizer.time = time
+	synchronizer.senderFactory = senderFactory
 	synchronizer.logger = logger
 	var waitGroup sync.WaitGroup
 	synchronizer.waitGroup = &waitGroup
@@ -136,7 +136,7 @@ func (synchronizer *Synchronizer) Synchronize() {
 			targetPort := target.Port()
 			if targetIp != synchronizer.hostIp || targetPort != synchronizer.hostPort {
 				var neighbor neighborhood.Neighbor
-				neighbor, err := NewNeighbor(target, synchronizer.senderProvider, synchronizer.logger)
+				neighbor, err := NewNeighbor(target, synchronizer.senderFactory, synchronizer.logger)
 				if err == nil {
 					neighbors = append(neighbors, neighbor)
 					targetRequest := neighborhood.TargetRequest{
@@ -148,7 +148,7 @@ func (synchronizer *Synchronizer) Synchronize() {
 			}
 		}
 		synchronizer.neighborsMutex.RUnlock()
-		rand.Seed(synchronizer.timeable.Now().UnixNano())
+		rand.Seed(synchronizer.time.Now().UnixNano())
 		rand.Shuffle(len(neighbors), func(i, j int) { neighbors[i], neighbors[j] = neighbors[j], neighbors[i] })
 		outboundsCount := int(math.Min(float64(len(neighbors)), maxOutboundsCount))
 		synchronizer.neighborsMutex.Lock()

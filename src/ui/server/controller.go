@@ -19,25 +19,25 @@ import (
 const DefaultPort = 8080
 
 type Controller struct {
-	mnemonic         string
-	derivationPath   string
-	password         string
-	privateKey       string
-	port             uint16
-	blockchainClient *network.Neighbor
-	templatesPath    string
-	logger           *log.Logger
+	mnemonic       string
+	derivationPath string
+	password       string
+	privateKey     string
+	port           uint16
+	host           *network.Neighbor
+	templatesPath  string
+	logger         *log.Logger
 }
 
 func NewController(mnemonic string, derivationPath string, password string, privateKey string, port uint16, hostIp string, hostPort uint16, templatesPath string, level log.Level) *Controller {
 	logger := log.NewLogger(level)
 	target := network.NewTarget(hostIp, hostPort)
-	peering := p2p.NewSenderFactory()
-	blockchainClient, err := network.NewNeighbor(target, peering, logger)
+	senderFactory := p2p.NewSenderFactory()
+	host, err := network.NewNeighbor(target, senderFactory, logger)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
 	}
-	return &Controller{mnemonic, derivationPath, password, privateKey, port, blockchainClient, templatesPath, logger}
+	return &Controller{mnemonic, derivationPath, password, privateKey, port, host, templatesPath, logger}
 }
 
 func (controller *Controller) Port() uint16 {
@@ -45,7 +45,7 @@ func (controller *Controller) Port() uint16 {
 }
 
 func (controller *Controller) BlockchainClient() *network.Neighbor {
-	return controller.blockchainClient
+	return controller.host
 }
 
 func (controller *Controller) Index(w http.ResponseWriter, req *http.Request) {
@@ -128,7 +128,7 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 			return
 		}
 		blockchainTransactionRequest := transaction.GetRequest()
-		err = controller.blockchainClient.AddTransaction(blockchainTransactionRequest)
+		err = controller.host.AddTransaction(blockchainTransactionRequest)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to create transaction: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -144,7 +144,7 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 func (controller *Controller) GetTransactions(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		transactions, err := controller.blockchainClient.GetTransactions()
+		transactions, err := controller.host.GetTransactions()
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -167,7 +167,7 @@ func (controller *Controller) GetTransactions(writer http.ResponseWriter, req *h
 func (controller *Controller) Mine(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		err := controller.blockchainClient.Mine()
+		err := controller.host.Mine()
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to mine: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -181,7 +181,7 @@ func (controller *Controller) Mine(writer http.ResponseWriter, req *http.Request
 func (controller *Controller) StartMining(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		err := controller.blockchainClient.StartMining()
+		err := controller.host.StartMining()
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to start mining: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -195,7 +195,7 @@ func (controller *Controller) StartMining(writer http.ResponseWriter, req *http.
 func (controller *Controller) StopMining(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		err := controller.blockchainClient.StopMining()
+		err := controller.host.StopMining()
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to stop mining: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -219,7 +219,7 @@ func (controller *Controller) WalletAmount(writer http.ResponseWriter, req *http
 			return
 		}
 		amount := NewAmount(*amountRequest.Address)
-		amountResponse, err := controller.blockchainClient.GetAmount(*amount.GetRequest())
+		amountResponse, err := controller.host.GetAmount(*amount.GetRequest())
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to get amountResponse: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)

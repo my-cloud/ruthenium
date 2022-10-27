@@ -16,18 +16,18 @@ type TransactionsPool struct {
 	transactionResponses []*neighborhood.TransactionResponse
 	mutex                sync.RWMutex
 
-	registrable Registry
+	registry Registry
 
-	timeable clock.Time
+	time clock.Time
 
 	waitGroup *sync.WaitGroup
 	logger    *log.Logger
 }
 
-func NewTransactionsPool(registrable Registry, timeable clock.Time, logger *log.Logger) *TransactionsPool {
+func NewTransactionsPool(registry Registry, time clock.Time, logger *log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
-	pool.registrable = registrable
-	pool.timeable = timeable
+	pool.registry = registry
+	pool.time = time
 	var waitGroup sync.WaitGroup
 	pool.waitGroup = &waitGroup
 	pool.logger = logger
@@ -121,7 +121,7 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain network.Block
 		pool.logger.Error(fmt.Errorf("failed calculate last block hash: %w", err).Error())
 		return
 	}
-	isValidatorPohValid, err := pool.registrable.IsRegistered(address)
+	isValidatorPohValid, err := pool.registry.IsRegistered(address)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("failed to get proof of humanity: %w", err).Error())
 		return
@@ -149,7 +149,7 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain network.Block
 		senderTotalAmount := blockchain.CalculateTotalAmount(timestamp, senderAddress)
 		if totalTransactionsValue > senderTotalAmount {
 			var rejectedTransactions []*Transaction
-			rand.Seed(pool.timeable.Now().UnixNano())
+			rand.Seed(pool.time.Now().UnixNano())
 			rand.Shuffle(len(transactions), func(i, j int) { transactions[i], transactions[j] = transactions[j], transactions[i] })
 			for _, transaction := range transactions {
 				if transaction.SenderAddress() == senderAddress {
@@ -176,7 +176,7 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain network.Block
 	var newRegisteredAddresses []string
 	for registeredAddress := range registeredAddressesMap {
 		var isPohValid bool
-		isPohValid, err = pool.registrable.IsRegistered(registeredAddress)
+		isPohValid, err = pool.registry.IsRegistered(registeredAddress)
 		if err != nil {
 			pool.logger.Error(fmt.Errorf("failed to get proof of humanity: %w", err).Error())
 		} else if isPohValid {

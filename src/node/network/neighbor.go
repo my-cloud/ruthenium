@@ -21,8 +21,8 @@ type Neighbor struct {
 	logger *log.Logger
 }
 
-func NewNeighbor(target *Target, senderProvider SenderFactory, logger *log.Logger) (*Neighbor, error) {
-	client, err := senderProvider.CreateSender(target.Ip(), target.Port(), target.Value())
+func NewNeighbor(target *Target, senderFactory SenderFactory, logger *log.Logger) (*Neighbor, error) {
+	client, err := senderFactory.CreateSender(target.Ip(), target.Port(), target.Value())
 	if err != nil {
 		return nil, fmt.Errorf("failed to start client reaching %s: %w", target.Value(), err)
 	}
