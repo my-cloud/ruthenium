@@ -1,0 +1,103 @@
+package protocol
+
+import (
+	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/clock"
+	"github.com/my-cloud/ruthenium/src/node/network"
+	"sync"
+	"time"
+)
+
+const genesisAmount uint64 = 100000 * network.ParticlesCount
+
+type Validation struct {
+	address    string
+	blockchain *Blockchain
+	pool       *TransactionsPool
+
+	time      clock.Time
+	timer     time.Duration
+	ticker    *time.Ticker
+	started   bool
+	requested bool
+
+	waitGroup *sync.WaitGroup
+	logger    *log.Logger
+}
+
+func NewValidation(address string, blockchain *Blockchain, pool *TransactionsPool, clockTime clock.Time, timer time.Duration, logger *log.Logger) *Validation {
+	ticker := time.NewTicker(timer)
+	var waitGroup sync.WaitGroup
+	return &Validation{address, blockchain, pool, clockTime, timer, ticker, false, false, &waitGroup, logger}
+}
+
+func (validation *Validation) Validate() {
+	if validation.started || validation.requested {
+		return
+	}
+	startTime := validation.time.Now()
+	parsedStartDate := startTime.Truncate(validation.timer).Add(validation.timer)
+	deadline := parsedStartDate.Sub(startTime)
+	validation.ticker.Reset(deadline)
+	validation.requested = true
+	validation.waitGroup.Add(1)
+	go func() {
+		defer validation.waitGroup.Done()
+		<-validation.ticker.C
+		now := validation.time.Now().Round(validation.timer)
+		validation.do(now.UnixNano())
+		validation.requested = false
+		if validation.started {
+			newParsedStartDate := now.Add(validation.timer)
+			newDeadline := newParsedStartDate.Sub(now)
+			validation.ticker.Reset(newDeadline)
+		} else {
+			validation.ticker.Stop()
+		}
+	}()
+}
+
+func (validation *Validation) StartValidation() {
+	if validation.started {
+		return
+	}
+	validation.started = true
+	startTime := validation.time.Now()
+	parsedStartDate := startTime.Truncate(validation.timer).Add(validation.timer)
+	deadline := parsedStartDate.Sub(startTime)
+	validation.ticker.Reset(deadline)
+	<-validation.ticker.C
+	validation.ticker.Reset(validation.timer)
+	go func() {
+		for {
+			if !validation.started {
+				validation.ticker.Stop()
+				return
+			}
+			now := validation.time.Now().Round(validation.timer)
+			validation.do(now.UnixNano())
+			<-validation.ticker.C
+		}
+	}()
+}
+
+func (validation *Validation) StopValidation() {
+	validation.started = false
+	validation.ticker.Reset(time.Nanosecond)
+}
+
+func (validation *Validation) Wait() {
+	validation.waitGroup.Wait()
+}
+
+func (validation *Validation) do(timestamp int64) {
+	if validation.blockchain.IsEmpty() {
+		genesisTransaction := NewRewardTransaction(validation.address, timestamp, genesisAmount)
+		transactions := []*Transaction{genesisTransaction}
+		genesisBlock := NewBlock(timestamp, [32]byte{}, transactions, nil)
+		validation.blockchain.AddBlock(genesisBlock.GetResponse())
+		validation.logger.Debug("genesis block added")
+	} else {
+		validation.pool.Validate(timestamp, validation.blockchain, validation.address)
+	}
+}

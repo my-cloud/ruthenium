@@ -1,4 +1,4 @@
-package blockchain
+package protocol
 
 import (
 	"encoding/json"
@@ -8,7 +8,10 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 )
 
-const transactionFee = 1000
+const (
+	transactionFee      = 1000
+	rewardSenderAddress = "REWARD SENDER ADDRESS"
+)
 
 type Transaction struct {
 	recipientAddress string
@@ -20,11 +23,11 @@ type Transaction struct {
 	fee              uint64
 }
 
-func NewTransaction(recipientAddress string, senderAddress string, senderPublicKey *encryption.PublicKey, timestamp int64, value uint64) *Transaction {
+func NewRewardTransaction(recipientAddress string, timestamp int64, value uint64) *Transaction {
 	return &Transaction{
 		recipientAddress: recipientAddress,
-		senderAddress:    senderAddress,
-		senderPublicKey:  senderPublicKey,
+		senderAddress:    rewardSenderAddress,
+		senderPublicKey:  nil,
 		timestamp:        timestamp,
 		value:            value,
 		fee:              transactionFee,
@@ -113,29 +116,6 @@ func (transaction *Transaction) Fee() uint64 {
 	return transaction.fee
 }
 
-func (transaction *Transaction) Sign(privateKey *encryption.PrivateKey) (err error) {
-	marshaledTransaction, err := json.Marshal(transaction)
-	if err != nil {
-		return fmt.Errorf("failed to marshal transaction: %w", err)
-	}
-	transaction.signature, err = encryption.NewSignature(marshaledTransaction, privateKey)
-	return
-}
-
-func (transaction *Transaction) GetRequest() neighborhood.TransactionRequest {
-	encodedPublicKey := transaction.senderPublicKey.String()
-	encodedSignature := transaction.signature.String()
-	return neighborhood.TransactionRequest{
-		RecipientAddress: &transaction.recipientAddress,
-		SenderAddress:    &transaction.senderAddress,
-		SenderPublicKey:  &encodedPublicKey,
-		Signature:        &encodedSignature,
-		Timestamp:        &transaction.timestamp,
-		Value:            &transaction.value,
-		Fee:              &transaction.fee,
-	}
-}
-
 func (transaction *Transaction) GetResponse() *neighborhood.TransactionResponse {
 	var encodedPublicKey string
 	if transaction.senderPublicKey != nil {
@@ -156,12 +136,12 @@ func (transaction *Transaction) GetResponse() *neighborhood.TransactionResponse 
 	}
 }
 
-func (transaction *Transaction) Equals(other *Transaction) bool {
-	return transaction.recipientAddress == other.recipientAddress &&
-		transaction.senderAddress == other.senderAddress &&
-		transaction.timestamp == other.timestamp &&
-		transaction.value == other.value &&
-		transaction.fee == other.fee
+func (transaction *Transaction) Equals(other *neighborhood.TransactionResponse) bool {
+	return transaction.recipientAddress == other.RecipientAddress &&
+		transaction.senderAddress == other.SenderAddress &&
+		transaction.timestamp == other.Timestamp &&
+		transaction.value == other.Value &&
+		transaction.fee == other.Fee
 }
 
 func (transaction *Transaction) VerifySignature() error {
@@ -173,4 +153,8 @@ func (transaction *Transaction) VerifySignature() error {
 		return errors.New("failed to verify signature")
 	}
 	return nil
+}
+
+func (transaction *Transaction) IsReward() bool {
+	return transaction.SenderAddress() == rewardSenderAddress
 }

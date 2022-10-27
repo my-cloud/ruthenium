@@ -1,4 +1,4 @@
-package blockchain
+package protocol
 
 import (
 	"crypto/sha256"
@@ -50,11 +50,6 @@ func (block *Block) Hash() (hash [32]byte, err error) {
 	return
 }
 
-func (block *Block) IsProofOfHumanityValid() (isRegistered bool, err error) {
-	minerAddress := block.minerAddress()
-	return NewHuman(minerAddress).IsRegistered()
-}
-
 func (block *Block) Timestamp() int64 {
 	return block.timestamp
 }
@@ -67,15 +62,19 @@ func (block *Block) Transactions() []*Transaction {
 	return block.transactions
 }
 
-func (block *Block) minerAddress() string {
-	var minerAddress string
+func (block *Block) RegisteredAddresses() []string {
+	return block.registeredAddresses
+}
+
+func (block *Block) ValidatorAddress() string {
+	var validatorAddress string
 	for i := len(block.transactions) - 1; i >= 0; i-- {
-		if block.transactions[i].SenderAddress() == RewardSenderAddress {
-			minerAddress = block.transactions[i].RecipientAddress()
+		if block.transactions[i].IsReward() {
+			validatorAddress = block.transactions[i].RecipientAddress()
 			break
 		}
 	}
-	return minerAddress
+	return validatorAddress
 }
 
 func (block *Block) MarshalJSON() ([]byte, error) {
@@ -103,8 +102,4 @@ func (block *Block) GetResponse() *neighborhood.BlockResponse {
 		Transactions:        transactions,
 		RegisteredAddresses: block.registeredAddresses,
 	}
-}
-
-func (block *Block) RegisteredAddresses() []string {
-	return block.registeredAddresses
 }

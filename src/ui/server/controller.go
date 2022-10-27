@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/blockchain"
 	"github.com/my-cloud/ruthenium/src/node/encryption"
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
+	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/p2p"
 	"html/template"
 	"io"
 	"net/http"
@@ -19,28 +19,33 @@ import (
 const DefaultPort = 8080
 
 type Controller struct {
-	mnemonic         string
-	derivationPath   string
-	password         string
-	privateKey       string
-	port             uint16
-	blockchainClient *neighborhood.Neighbor
-	templatesPath    string
-	logger           *log.Logger
+	mnemonic       string
+	derivationPath string
+	password       string
+	privateKey     string
+	port           uint16
+	host           *network.Neighbor
+	templatesPath  string
+	logger         *log.Logger
 }
 
 func NewController(mnemonic string, derivationPath string, password string, privateKey string, port uint16, hostIp string, hostPort uint16, templatesPath string, level log.Level) *Controller {
 	logger := log.NewLogger(level)
-	blockchainClient := neighborhood.NewNeighbor(hostIp, hostPort, logger)
-	return &Controller{mnemonic, derivationPath, password, privateKey, port, blockchainClient, templatesPath, logger}
+	target := network.NewTarget(hostIp, hostPort)
+	senderFactory := p2p.NewSenderFactory()
+	host, err := network.NewNeighbor(target, senderFactory, logger)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
+	}
+	return &Controller{mnemonic, derivationPath, password, privateKey, port, host, templatesPath, logger}
 }
 
 func (controller *Controller) Port() uint16 {
 	return controller.port
 }
 
-func (controller *Controller) BlockchainClient() *neighborhood.Neighbor {
-	return controller.blockchainClient
+func (controller *Controller) BlockchainClient() *network.Neighbor {
+	return controller.host
 }
 
 func (controller *Controller) Index(w http.ResponseWriter, req *http.Request) {
@@ -114,7 +119,7 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 			return
 		}
 		senderPublicKey := encryption.NewPublicKey(privateKey)
-		transaction := blockchain.NewTransaction(*transactionRequest.RecipientAddress, *transactionRequest.SenderAddress, senderPublicKey, time.Now().UnixNano(), value)
+		transaction := NewTransaction(*transactionRequest.RecipientAddress, *transactionRequest.SenderAddress, senderPublicKey, time.Now().UnixNano(), value)
 		err = transaction.Sign(privateKey)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to generate signature: %w", err).Error())
@@ -123,7 +128,7 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 			return
 		}
 		blockchainTransactionRequest := transaction.GetRequest()
-		err = controller.blockchainClient.AddTransaction(blockchainTransactionRequest)
+		err = controller.host.AddTransaction(blockchainTransactionRequest)
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to create transaction: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -139,7 +144,7 @@ func (controller *Controller) CreateTransaction(writer http.ResponseWriter, req 
 func (controller *Controller) GetTransactions(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		transactions, err := controller.blockchainClient.GetTransactions()
+		transactions, err := controller.host.GetTransactions()
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -162,7 +167,7 @@ func (controller *Controller) GetTransactions(writer http.ResponseWriter, req *h
 func (controller *Controller) Mine(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		err := controller.blockchainClient.Mine()
+		err := controller.host.Mine()
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to mine: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -176,7 +181,7 @@ func (controller *Controller) Mine(writer http.ResponseWriter, req *http.Request
 func (controller *Controller) StartMining(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		err := controller.blockchainClient.StartMining()
+		err := controller.host.StartMining()
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to start mining: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -190,7 +195,7 @@ func (controller *Controller) StartMining(writer http.ResponseWriter, req *http.
 func (controller *Controller) StopMining(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		err := controller.blockchainClient.StopMining()
+		err := controller.host.StopMining()
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to stop mining: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -205,7 +210,7 @@ func (controller *Controller) WalletAmount(writer http.ResponseWriter, req *http
 	switch req.Method {
 	case http.MethodGet:
 		address := req.URL.Query().Get("address")
-		amountRequest := neighborhood.AmountRequest{
+		amountRequest := AmountRequest{
 			Address: &address,
 		}
 		if amountRequest.IsInvalid() {
@@ -213,7 +218,8 @@ func (controller *Controller) WalletAmount(writer http.ResponseWriter, req *http
 			writer.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		amountResponse, err := controller.blockchainClient.GetAmount(amountRequest)
+		amount := NewAmount(*amountRequest.Address)
+		amountResponse, err := controller.host.GetAmount(*amount.GetRequest())
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to get amountResponse: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -221,7 +227,7 @@ func (controller *Controller) WalletAmount(writer http.ResponseWriter, req *http
 		}
 		var marshaledAmount []byte
 		marshaledAmount, err = json.Marshal(&AmountResponse{
-			Amount: float64(amountResponse.Amount) / blockchain.ParticlesCount,
+			Amount: float64(amountResponse.Amount) / network.ParticlesCount,
 		})
 		if err != nil {
 			controller.logger.Error(fmt.Errorf("failed to marshal amountResponse: %w", err).Error())
@@ -271,21 +277,21 @@ func (controller *Controller) atomsToParticles(atoms string) (particles uint64, 
 			return
 		}
 		decimalsString := atoms[i+1:]
-		trailingZerosCount := len(strconv.Itoa(blockchain.ParticlesCount)) - 1 - len(decimalsString)
+		trailingZerosCount := len(strconv.Itoa(network.ParticlesCount)) - 1 - len(decimalsString)
 		trailedDecimalsString := fmt.Sprintf("%s%s", decimalsString, strings.Repeat("0", trailingZerosCount))
 		var decimals uint64
 		decimals, err = parseUint64(trailedDecimalsString)
 		if err != nil {
 			return
 		}
-		particles = units*blockchain.ParticlesCount + decimals
+		particles = units*network.ParticlesCount + decimals
 	} else {
 		var units uint64
 		units, err = parseUint64(atoms)
 		if err != nil {
 			return
 		}
-		particles = units * blockchain.ParticlesCount
+		particles = units * network.ParticlesCount
 	}
 	return
 }
