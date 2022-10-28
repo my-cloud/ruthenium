@@ -57,8 +57,12 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *neighborhood.Tr
 		err = fmt.Errorf("failed to instantiate transaction: %w", err)
 		return
 	}
+	if transaction.Timestamp() > pool.time.Now().UnixNano() {
+		err = errors.New("the transaction timestamp is invalid")
+		return
+	}
 	blocks := blockchain.Blocks()
-	if len(blocks) > 2 {
+	if len(blocks) > 1 {
 		if transaction.Timestamp() < blocks[len(blocks)-2].Timestamp {
 			err = errors.New("the transaction timestamp is invalid")
 			return
@@ -104,14 +108,92 @@ func (pool *TransactionsPool) Transactions() []*neighborhood.TransactionResponse
 	return pool.transactionResponses
 }
 
-func (pool *TransactionsPool) Validate(timestamp int64, blockchain network.Blockchain, address string) {
+func (pool *TransactionsPool) Validate(timestamp int64, blockchain *Blockchain, address string) {
 	blocks := blockchain.Blocks()
-	lastBlockResponse := blocks[len(blocks)-1]
-	lastBlock, err := NewBlockFromResponse(lastBlockResponse)
-	if err != nil {
-		pool.logger.Error(fmt.Errorf("unable to create block: %w", err).Error())
-		return
+	lastBlock := blockchain.LastBlock()
+
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
+	totalTransactionsValueBySenderAddress := make(map[string]uint64)
+	transactions := pool.transactions
+	var reward uint64
+	var rejectedTransactions []*Transaction
+	for _, transaction := range transactions {
+		if transaction.Timestamp() > timestamp {
+			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is invalid, transaction: %v", transaction))
+			rejectedTransactions = append(rejectedTransactions, transaction)
+			continue
+		}
+		if len(blocks) > 1 {
+			if transaction.Timestamp() < blocks[len(blocks)-2].Timestamp {
+				pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is invalid, transaction: %v", transaction))
+				rejectedTransactions = append(rejectedTransactions, transaction)
+				continue
+			}
+			for i := len(blocks) - 2; i < len(blocks); i++ {
+				for _, validatedTransaction := range blocks[i].Transactions {
+					if transaction.Equals(validatedTransaction) {
+						pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction is already in the blockchain, transaction: %v", transaction))
+						rejectedTransactions = append(rejectedTransactions, transaction)
+						continue
+					}
+				}
+			}
+		}
 	}
+	for _, transaction := range rejectedTransactions {
+		transactions = removeTransactions(transactions, transaction)
+	}
+	for _, transaction := range transactions {
+		fee := transaction.Fee()
+		totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + fee
+		reward += fee
+	}
+	registeredAddresses := lastBlock.RegisteredAddresses()
+	registeredAddressesMap := make(map[string]bool)
+	for _, registeredAddress := range registeredAddresses {
+		registeredAddressesMap[registeredAddress] = true
+	}
+	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
+		senderTotalAmount := blockchain.CalculateTotalAmount(timestamp, senderAddress)
+		if totalTransactionsValue > senderTotalAmount {
+			rejectedTransactions = nil
+			rand.Seed(pool.time.Now().UnixNano())
+			rand.Shuffle(len(transactions), func(i, j int) { transactions[i], transactions[j] = transactions[j], transactions[i] })
+			for _, transaction := range transactions {
+				if transaction.SenderAddress() == senderAddress {
+					rejectedTransactions = append(rejectedTransactions, transaction)
+					fee := transaction.Fee()
+					totalTransactionsValue -= transaction.Value() + fee
+					reward -= fee
+					if totalTransactionsValue <= senderTotalAmount {
+						break
+					}
+				}
+			}
+			for _, transaction := range rejectedTransactions {
+				transactions = removeTransactions(transactions, transaction)
+				pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, total transactions value exceeds its sender wallet amount, transaction: %v", transaction))
+			}
+		}
+		if totalTransactionsValue > 0 {
+			if _, isRegistered := registeredAddressesMap[senderAddress]; !isRegistered {
+				registeredAddressesMap[senderAddress] = true
+			}
+		}
+	}
+	var newRegisteredAddresses []string
+	for registeredAddress := range registeredAddressesMap {
+		var isPohValid bool
+		isPohValid, err := pool.registry.IsRegistered(registeredAddress)
+		if err != nil {
+			pool.logger.Error(fmt.Errorf("failed to get proof of humanity: %w", err).Error())
+		} else if isPohValid {
+			newRegisteredAddresses = append(newRegisteredAddresses, registeredAddress)
+		}
+	}
+	pool.clear()
+
 	if lastBlock.Timestamp() == timestamp {
 		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
 		return
@@ -129,65 +211,10 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain network.Block
 		pool.logger.Error("validator proof of humanity is invalid")
 		return
 	}
-
-	pool.mutex.Lock()
-	defer pool.mutex.Unlock()
-	totalTransactionsValueBySenderAddress := make(map[string]uint64)
-	transactions := pool.transactions
-	var reward uint64
-	for _, transaction := range transactions {
-		fee := transaction.Fee()
-		totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + fee
-		reward += fee
-	}
-	registeredAddresses := lastBlock.RegisteredAddresses()
-	registeredAddressesMap := make(map[string]bool)
-	for _, registeredAddress := range registeredAddresses {
-		registeredAddressesMap[registeredAddress] = true
-	}
-	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
-		senderTotalAmount := blockchain.CalculateTotalAmount(timestamp, senderAddress)
-		if totalTransactionsValue > senderTotalAmount {
-			var rejectedTransactions []*Transaction
-			rand.Seed(pool.time.Now().UnixNano())
-			rand.Shuffle(len(transactions), func(i, j int) { transactions[i], transactions[j] = transactions[j], transactions[i] })
-			for _, transaction := range transactions {
-				if transaction.SenderAddress() == senderAddress {
-					rejectedTransactions = append(rejectedTransactions, transaction)
-					fee := transaction.Fee()
-					totalTransactionsValue -= transaction.Value() + fee
-					reward -= fee
-					if totalTransactionsValue <= senderTotalAmount {
-						break
-					}
-				}
-			}
-			for _, transaction := range rejectedTransactions {
-				transactions = removeTransactions(transactions, transaction)
-			}
-			pool.logger.Warn("transactions removed from the transactions pool, total transactions value exceeds its sender wallet amount")
-		}
-		if totalTransactionsValue > 0 {
-			if _, isRegistered := registeredAddressesMap[senderAddress]; !isRegistered {
-				registeredAddressesMap[senderAddress] = true
-			}
-		}
-	}
-	var newRegisteredAddresses []string
-	for registeredAddress := range registeredAddressesMap {
-		var isPohValid bool
-		isPohValid, err = pool.registry.IsRegistered(registeredAddress)
-		if err != nil {
-			pool.logger.Error(fmt.Errorf("failed to get proof of humanity: %w", err).Error())
-		} else if isPohValid {
-			newRegisteredAddresses = append(newRegisteredAddresses, registeredAddress)
-		}
-	}
 	rewardTransaction := NewRewardTransaction(address, timestamp, reward)
 	transactions = append(transactions, rewardTransaction)
 	block := NewBlock(timestamp, lastBlockHash, transactions, newRegisteredAddresses)
 	blockchain.AddBlock(block.GetResponse())
-	pool.clear()
 	pool.logger.Debug(fmt.Sprintf("reward: %d", reward))
 }
 
