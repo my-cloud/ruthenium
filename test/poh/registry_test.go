@@ -1,4 +1,4 @@
-package humanity
+package poh
 
 import (
 	"github.com/my-cloud/ruthenium/src/poh"

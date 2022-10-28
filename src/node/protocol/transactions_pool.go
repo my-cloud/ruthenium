@@ -58,7 +58,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *neighborhood.Tr
 		return
 	}
 	blocks := blockchain.Blocks()
-	if len(blocks) > 2 {
+	if len(blocks) > 1 {
 		if transaction.Timestamp() < blocks[len(blocks)-2].Timestamp || transaction.Timestamp() > pool.time.Now().UnixNano() {
 			err = errors.New("the transaction timestamp is invalid")
 			return
@@ -104,22 +104,16 @@ func (pool *TransactionsPool) Transactions() []*neighborhood.TransactionResponse
 	return pool.transactionResponses
 }
 
-func (pool *TransactionsPool) Validate(timestamp int64, blockchain network.Blockchain, address string) {
+func (pool *TransactionsPool) Validate(timestamp int64, blockchain *Blockchain, address string) {
 	blocks := blockchain.Blocks()
-	lastBlockResponse := blocks[len(blocks)-1]
-	lastBlock, err := NewBlockFromResponse(lastBlockResponse)
-	if err != nil {
-		pool.logger.Error(fmt.Errorf("unable to create block: %w", err).Error())
-		pool.clear()
-		return
-	}
+	lastBlock := blockchain.LastBlock()
 
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 	totalTransactionsValueBySenderAddress := make(map[string]uint64)
 	transactions := pool.transactions
 	var reward uint64
-	if len(blocks) > 2 {
+	if len(blocks) > 1 {
 		var rejectedTransactions []*Transaction
 		for _, transaction := range transactions {
 			if transaction.Timestamp() < blocks[len(blocks)-2].Timestamp || transaction.Timestamp() > timestamp {
@@ -182,7 +176,7 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain network.Block
 	var newRegisteredAddresses []string
 	for registeredAddress := range registeredAddressesMap {
 		var isPohValid bool
-		isPohValid, err = pool.registry.IsRegistered(registeredAddress)
+		isPohValid, err := pool.registry.IsRegistered(registeredAddress)
 		if err != nil {
 			pool.logger.Error(fmt.Errorf("failed to get proof of humanity: %w", err).Error())
 		} else if isPohValid {

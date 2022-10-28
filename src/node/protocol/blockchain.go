@@ -437,3 +437,7 @@ func (blockchain *Blockchain) StartVerification() {
 		}
 	}()
 }
+
+func (blockchain *Blockchain) LastBlock() *Block {
+	return blockchain.blocks[len(blockchain.blocks)-1]
+}
