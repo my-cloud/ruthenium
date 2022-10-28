@@ -157,7 +157,7 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain *Blockchain, 
 	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
 		senderTotalAmount := blockchain.CalculateTotalAmount(timestamp, senderAddress)
 		if totalTransactionsValue > senderTotalAmount {
-			var rejectedTransactions []*Transaction
+			rejectedTransactions = nil
 			rand.Seed(pool.time.Now().UnixNano())
 			rand.Shuffle(len(transactions), func(i, j int) { transactions[i], transactions[j] = transactions[j], transactions[i] })
 			for _, transaction := range transactions {
