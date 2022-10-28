@@ -1,6 +1,6 @@
 # Ruthenium
 
-wip
+wip2
 
 ## Description
 The Ruthenium blockchain protocol.
