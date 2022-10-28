@@ -57,9 +57,13 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *neighborhood.Tr
 		err = fmt.Errorf("failed to instantiate transaction: %w", err)
 		return
 	}
+	if transaction.Timestamp() > pool.time.Now().UnixNano() {
+		err = errors.New("the transaction timestamp is invalid")
+		return
+	}
 	blocks := blockchain.Blocks()
 	if len(blocks) > 1 {
-		if transaction.Timestamp() < blocks[len(blocks)-2].Timestamp || transaction.Timestamp() > pool.time.Now().UnixNano() {
+		if transaction.Timestamp() < blocks[len(blocks)-2].Timestamp {
 			err = errors.New("the transaction timestamp is invalid")
 			return
 		}
@@ -113,10 +117,15 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain *Blockchain, 
 	totalTransactionsValueBySenderAddress := make(map[string]uint64)
 	transactions := pool.transactions
 	var reward uint64
-	if len(blocks) > 1 {
-		var rejectedTransactions []*Transaction
-		for _, transaction := range transactions {
-			if transaction.Timestamp() < blocks[len(blocks)-2].Timestamp || transaction.Timestamp() > timestamp {
+	var rejectedTransactions []*Transaction
+	for _, transaction := range transactions {
+		if transaction.Timestamp() > timestamp {
+			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is invalid, transaction: %v", transaction))
+			rejectedTransactions = append(rejectedTransactions, transaction)
+			continue
+		}
+		if len(blocks) > 1 {
+			if transaction.Timestamp() < blocks[len(blocks)-2].Timestamp {
 				pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is invalid, transaction: %v", transaction))
 				rejectedTransactions = append(rejectedTransactions, transaction)
 				continue
@@ -131,9 +140,9 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain *Blockchain, 
 				}
 			}
 		}
-		for _, transaction := range rejectedTransactions {
-			transactions = removeTransactions(transactions, transaction)
-		}
+	}
+	for _, transaction := range rejectedTransactions {
+		transactions = removeTransactions(transactions, transaction)
 	}
 	for _, transaction := range transactions {
 		fee := transaction.Fee()

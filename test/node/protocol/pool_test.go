@@ -12,14 +12,14 @@ import (
 	"time"
 )
 
-func Test_AddTransaction_TransactionTimestampIsOlderThan2Blocks_TransactionNotAdded(t *testing.T) {
+func Test_AddTransaction_TransactionTimestampIsAfterNow_TransactionNotAdded(t *testing.T) {
 	// Arrange
 	validatorWallet, _ := encryption.NewWallet()
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	timeMock := new(TimeMock)
-	var now int64 = 2
+	var now int64 = 1
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
@@ -27,9 +27,39 @@ func Test_AddTransaction_TransactionTimestampIsOlderThan2Blocks_TransactionNotAd
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
 	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
 	addGenesisBlock(validatorWalletAddress, blockchain)
+	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now+1, 1)
+	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
+	invalidTransactionRequest := invalidTransaction.GetRequest()
+
+	// Act
+	pool.AddTransaction(&invalidTransactionRequest, blockchain, nil)
+	pool.Wait()
+
+	// Assert
+	transactions := pool.Transactions()
+	expectedTransactionsLength := 0
+	actualTransactionsLength := len(transactions)
+	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
+}
+
+func Test_AddTransaction_TransactionTimestampIsOlderThan2Blocks_TransactionNotAdded(t *testing.T) {
+	// Arrange
+	validatorWallet, _ := encryption.NewWallet()
+	validatorWalletAddress := validatorWallet.Address()
+	registryMock := new(RegistryMock)
+	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	timeMock := new(TimeMock)
+	var now int64 = 3
+	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
+	validationTimer := time.Nanosecond
+	logger := log.NewLogger(log.Fatal)
+	synchronizerMock := new(SynchronizerMock)
+	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	addGenesisBlock(validatorWalletAddress, blockchain)
+	addEmptyBlock(blockchain, now-2)
 	addEmptyBlock(blockchain, now-1)
-	addEmptyBlock(blockchain, now)
-	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now-2, 1)
+	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now-3, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
 
@@ -144,14 +174,14 @@ func Test_Validate_InvalidSignature_TransactionNotValidated(t *testing.T) {
 	assertTransactionNotValidated(t, blockchain)
 }
 
-func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidated(t *testing.T) {
+func Test_Validate_TransactionTimestampIsAfterNow_TransactionNotValidated(t *testing.T) {
 	// Arrange
 	validatorWallet, _ := encryption.NewWallet()
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	timeMock := new(TimeMock)
-	var now int64 = 2
+	var now int64 = 1
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
@@ -160,14 +190,43 @@ func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidate
 	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
 	validation := protocol.NewValidation(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
 	addGenesisBlock(validatorWalletAddress, blockchain)
-	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now-2, 1)
+	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now+1, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
 	pool.AddTransaction(&invalidTransactionRequest, blockchain, nil)
 	pool.Wait()
+
+	// Act
+	validation.Validate()
+	validation.Wait()
+
+	// Assert
+	assertTransactionNotValidated(t, blockchain)
+}
+
+func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidated(t *testing.T) {
+	// Arrange
+	validatorWallet, _ := encryption.NewWallet()
+	validatorWalletAddress := validatorWallet.Address()
+	registryMock := new(RegistryMock)
+	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	timeMock := new(TimeMock)
+	var now int64 = 3
+	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
+	validationTimer := time.Nanosecond
+	logger := log.NewLogger(log.Fatal)
+	synchronizerMock := new(SynchronizerMock)
+	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	validation := protocol.NewValidation(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
+	addGenesisBlock(validatorWalletAddress, blockchain)
+	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now-3, 1)
+	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
+	invalidTransactionRequest := invalidTransaction.GetRequest()
+	pool.AddTransaction(&invalidTransactionRequest, blockchain, nil)
+	pool.Wait()
+	addEmptyBlock(blockchain, now-2)
 	addEmptyBlock(blockchain, now-1)
-	addEmptyBlock(blockchain, now)
-	timeMock.NowFunc = func() time.Time { return time.Unix(0, now+1) }
 
 	// Act
 	validation.Validate()
