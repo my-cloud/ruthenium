@@ -14,7 +14,7 @@ import (
 
 func Test_AddTransaction_TransactionTimestampIsAfterNow_TransactionNotAdded(t *testing.T) {
 	// Arrange
-	validatorWallet, _ := encryption.NewWallet()
+	validatorWallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
@@ -44,7 +44,7 @@ func Test_AddTransaction_TransactionTimestampIsAfterNow_TransactionNotAdded(t *t
 
 func Test_AddTransaction_TransactionTimestampIsOlderThan2Blocks_TransactionNotAdded(t *testing.T) {
 	// Arrange
-	validatorWallet, _ := encryption.NewWallet()
+	validatorWallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
@@ -75,7 +75,7 @@ func Test_AddTransaction_TransactionTimestampIsOlderThan2Blocks_TransactionNotAd
 }
 func Test_AddTransaction_TransactionIsAlreadyInTheBlockchain_TransactionNotAdded(t *testing.T) {
 	// Arrange
-	validatorWallet, _ := encryption.NewWallet()
+	validatorWallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
@@ -107,9 +107,9 @@ func Test_AddTransaction_TransactionIsAlreadyInTheBlockchain_TransactionNotAdded
 
 func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	// Arrange
-	validatorWallet, _ := encryption.NewWallet()
+	validatorWallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	validatorWalletAddress := validatorWallet.Address()
-	walletA, _ := encryption.NewWallet()
+	walletA, _ := encryption.DecodeWallet(test.Mnemonic2, test.DerivationPath, "", "")
 	walletAAddress := walletA.Address()
 	registryMock := new(RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
@@ -141,9 +141,9 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 
 func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	// Arrange
-	validatorWallet, _ := encryption.NewWallet()
+	validatorWallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	validatorWalletAddress := validatorWallet.Address()
-	walletA, _ := encryption.NewWallet()
+	walletA, _ := encryption.DecodeWallet(test.Mnemonic2, test.DerivationPath, "", "")
 	walletAAddress := walletA.Address()
 	registryMock := new(RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
@@ -175,9 +175,9 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 
 func Test_Validate_InvalidSignature_TransactionNotValidated(t *testing.T) {
 	// Arrange
-	validatorWallet, _ := encryption.NewWallet()
+	validatorWallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	validatorWalletAddress := validatorWallet.Address()
-	walletA, _ := encryption.NewWallet()
+	walletA, _ := encryption.DecodeWallet(test.Mnemonic2, test.DerivationPath, "", "")
 	walletAAddress := walletA.Address()
 	registryMock := new(RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
@@ -207,7 +207,7 @@ func Test_Validate_InvalidSignature_TransactionNotValidated(t *testing.T) {
 
 func Test_Validate_TransactionTimestampIsAfterNow_TransactionNotValidated(t *testing.T) {
 	// Arrange
-	validatorWallet, _ := encryption.NewWallet()
+	validatorWallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
@@ -237,7 +237,7 @@ func Test_Validate_TransactionTimestampIsAfterNow_TransactionNotValidated(t *tes
 
 func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidated(t *testing.T) {
 	// Arrange
-	validatorWallet, _ := encryption.NewWallet()
+	validatorWallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
@@ -269,7 +269,7 @@ func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidate
 
 func Test_Validate_TransactionIsAlreadyInTheBlockchain_TransactionNotValidated(t *testing.T) {
 	// Arrange
-	validatorWallet, _ := encryption.NewWallet()
+	validatorWallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
@@ -301,7 +301,7 @@ func Test_Validate_TransactionIsAlreadyInTheBlockchain_TransactionNotValidated(t
 
 func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	// Arrange
-	validatorWallet, _ := encryption.NewWallet()
+	validatorWallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }

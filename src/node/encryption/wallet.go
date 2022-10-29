@@ -11,8 +11,8 @@ type Wallet struct {
 	address    string
 }
 
-func NewWallet() (*Wallet, error) {
-	return DecodeWallet("", "", "", "")
+func NewEmptyWallet() *Wallet {
+	return &Wallet{nil, nil, ""}
 }
 
 func DecodeWallet(mnemonicString string, derivationPath string, password string, privateKeyString string) (*Wallet, error) {
@@ -26,7 +26,7 @@ func DecodeWallet(mnemonicString string, derivationPath string, password string,
 	} else if privateKeyString != "" {
 		privateKey, err = DecodePrivateKey(privateKeyString)
 	} else {
-		privateKey, err = NewPrivateKey()
+		return NewEmptyWallet(), nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to create private key: %w", err)
@@ -37,14 +37,22 @@ func DecodeWallet(mnemonicString string, derivationPath string, password string,
 }
 
 func (wallet *Wallet) MarshalJSON() ([]byte, error) {
+	var privateKey string
+	if wallet.privateKey != nil {
+		privateKey = wallet.privateKey.String()
+	}
+	var publicKey string
+	if wallet.publicKey != nil {
+		publicKey = wallet.publicKey.String()
+	}
 	return json.Marshal(struct {
 		PrivateKey string `json:"private_key"`
 		PublicKey  string `json:"public_key"`
 		Address    string `json:"address"`
 	}{
-		PrivateKey: wallet.privateKey.String(),
-		PublicKey:  wallet.publicKey.String(),
-		Address:    wallet.Address(),
+		PrivateKey: privateKey,
+		PublicKey:  publicKey,
+		Address:    wallet.address,
 	})
 }
 
