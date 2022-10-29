@@ -52,7 +52,7 @@ func (wallet *Wallet) MarshalJSON() ([]byte, error) {
 	}{
 		PrivateKey: privateKey,
 		PublicKey:  publicKey,
-		Address:    wallet.Address(),
+		Address:    wallet.address,
 	})
 }
 

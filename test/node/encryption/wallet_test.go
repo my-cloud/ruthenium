@@ -44,3 +44,40 @@ func Test_AddressFromPublicKey(t *testing.T) {
 	expectedAddress := "0x9C69443c3Ec0D660e257934ffc1754EB9aD039CB"
 	test.Assert(t, address == expectedAddress, fmt.Sprintf("Wrong address. Expected: %s - Actual: %s", expectedAddress, address))
 }
+
+func Test_DecodeWallet(t *testing.T) {
+	// Arrange
+	expectedPrivateKey := "0x48913790c2bebc48417491f96a7e07ec94c76ccd0fe1562dc1749479d9715afd"
+
+	// Act
+	wallet, _ := encryption.DecodeWallet("", "", "", expectedPrivateKey)
+
+	// Assert
+	actualPrivateKey := wallet.PrivateKey().String()
+	test.Assert(t, actualPrivateKey == expectedPrivateKey, fmt.Sprintf("Wrong private key. Expected: %s - Actual: %s", expectedPrivateKey, actualPrivateKey))
+}
+
+func Test_MarshalJSON_ValidPrivateKey_ReturnsMarshaledJsonWithoutError(t *testing.T) {
+	// Arrange
+	privateKey := "0x48913790c2bebc48417491f96a7e07ec94c76ccd0fe1562dc1749479d9715afd"
+	wallet, _ := encryption.DecodeWallet("", "", "", privateKey)
+
+	// Act
+	marshaledWallet, err := wallet.MarshalJSON()
+
+	// Assert
+	test.Assert(t, marshaledWallet != nil, "Marshaled wallet is nil.")
+	test.Assert(t, err == nil, "Marshal wallet returned an error.")
+}
+
+func Test_MarshalJSON_EmptyWallet_ReturnsMarshaledJsonWithoutError(t *testing.T) {
+	// Arrange
+	wallet := encryption.NewEmptyWallet()
+
+	// Act
+	marshaledWallet, err := wallet.MarshalJSON()
+
+	// Assert
+	test.Assert(t, marshaledWallet != nil, "Marshaled wallet is nil.")
+	test.Assert(t, err == nil, "Marshal wallet returned an error.")
+}
