@@ -9,10 +9,10 @@ import (
 
 func Test_PrivateKeyFromMnemonic(t *testing.T) {
 	// Arrange
-	mnemonic := encryption.NewMnemonic("artist silver basket insane canvas top drill social reflect park fruit bless")
+	mnemonic := encryption.NewMnemonic(test.Mnemonic1)
 
 	// Act
-	privateKey, _ := mnemonic.PrivateKey("m/44'/60'/0'/0/0", "")
+	privateKey, _ := mnemonic.PrivateKey(test.DerivationPath, "")
 
 	// Assert
 	expectedPrivateKey := "0x48913790c2bebc48417491f96a7e07ec94c76ccd0fe1562dc1749479d9715afd"

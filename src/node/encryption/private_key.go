@@ -11,14 +11,6 @@ type PrivateKey struct {
 	*ecdsa.PrivateKey
 }
 
-func NewPrivateKey() (*PrivateKey, error) {
-	privateKey, err := crypto.GenerateKey()
-	if err != nil {
-		return nil, err
-	}
-	return &PrivateKey{privateKey}, err
-}
-
 func DecodePrivateKey(privateKeyString string) (*PrivateKey, error) {
 	bytes, err := hexutil.Decode(privateKeyString)
 	if err != nil {
