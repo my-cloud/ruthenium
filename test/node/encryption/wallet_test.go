@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func Test_DecodeWallet(t *testing.T) {
+func Test_DecodeWallet_PrivateKeyProvided_ReturnsWalletForPrivateKey(t *testing.T) {
 	// Arrange
 	expectedPrivateKey := "0x48913790c2bebc48417491f96a7e07ec94c76ccd0fe1562dc1749479d9715afd"
 
@@ -17,6 +17,14 @@ func Test_DecodeWallet(t *testing.T) {
 	// Assert
 	actualPrivateKey := wallet.PrivateKey().String()
 	test.Assert(t, actualPrivateKey == expectedPrivateKey, fmt.Sprintf("Wrong private key. Expected: %s - Actual: %s", expectedPrivateKey, actualPrivateKey))
+}
+
+func Test_DecodeWallet_BothPrivateKeyAndMnemonicAreEmpty_ReturnsEmptyWallet(t *testing.T) {
+	// Act
+	wallet, _ := encryption.DecodeWallet("", "", "", "")
+
+	// Assert
+	test.Assert(t, wallet.PrivateKey() == nil, "Private key is not nil whereas it should be.")
 }
 
 func Test_MarshalJSON_ValidPrivateKey_ReturnsMarshaledJsonWithoutError(t *testing.T) {
