@@ -41,7 +41,7 @@ func (factory *ClientFactory) CreateClient(ip string, port uint16, target string
 	var client *p2p.Client
 	client, err = p2p.NewClient(tcp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to start client for target %s: %w", target, err)
+		return nil, err
 	}
 	settings := p2p.NewClientSettings()
 	settings.SetRetry(1, time.Nanosecond)
