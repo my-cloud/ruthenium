@@ -18,20 +18,20 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	blockchainMock.VerifyFunc = func() {}
 	blockchainMock.StartVerificationFunc = func() {}
 	transactionsPoolMock := new(TransactionsPoolMock)
-	bootableMock := new(ValidatorMock)
-	bootableMock.StartValidationFunc = func() {}
+	validatorMock := new(ValidatorMock)
+	validatorMock.StartValidationFunc = func() {}
 	watchMock := clock.NewWatch()
-	sender := new(SenderMock)
-	sender.SendFunc = func(string, p2p.Data) (p2p.Data, error) { return p2p.Data{}, nil }
-	senderFactoryMock := new(SenderFactoryMock)
-	senderFactoryMock.CreateSenderFunc = func(string, uint16, string) (network.Sender, error) { return sender, nil }
+	client := new(ClientMock)
+	client.SendFunc = func(string, p2p.Data) (p2p.Data, error) { return p2p.Data{}, nil }
+	clientFactoryMock := new(ClientFactoryMock)
+	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (network.Client, error) { return client, nil }
 	configurationPath := "../../"
 	logger := log.NewLogger(log.Fatal)
-	synchronizer, err := network.NewSynchronizer(0, watchMock, senderFactoryMock, configurationPath, logger)
+	synchronizer, err := network.NewSynchronizer(0, watchMock, clientFactoryMock, configurationPath, logger)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	host := network.NewHost(serverMock, blockchainMock, transactionsPoolMock, bootableMock, synchronizer, watchMock, logger)
+	host := network.NewHost(serverMock, blockchainMock, transactionsPoolMock, validatorMock, synchronizer, watchMock, logger)
 
 	// Act
 	_ = host.Run()

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/net"
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/encryption"
 	"github.com/my-cloud/ruthenium/src/node/network"
@@ -34,8 +35,8 @@ func main() {
 	registry := poh.NewRegistry()
 	validationTimer := validationIntervalInSeconds * time.Second
 	watch := clock.NewWatch()
-	senderFactory := p2p.NewSenderFactory()
-	synchronizer, err := network.NewSynchronizer(uint16(*port), watch, senderFactory, *configurationPath, logger)
+	clientFactory := p2p.NewClientFactory(net.NewIpFinder())
+	synchronizer, err := network.NewSynchronizer(uint16(*port), watch, clientFactory, *configurationPath, logger)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create synchronizer: %w", err).Error())
 	}

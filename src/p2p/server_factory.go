@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const connectionTimeoutInSeconds = 10
+const serverConnectionTimeoutInSeconds = 10
 
 type ServerFactory struct {
 	logger p2p.Logger
@@ -26,7 +26,7 @@ func (factory *ServerFactory) CreateServer(port int) (network.Server, error) {
 	}
 	server.SetLogger(log.NewLogger(log.Fatal))
 	settings := p2p.NewServerSettings()
-	settings.SetConnTimeout(connectionTimeoutInSeconds * time.Second)
+	settings.SetConnTimeout(serverConnectionTimeoutInSeconds * time.Second)
 	server.SetSettings(settings)
 	return server, nil
 }
