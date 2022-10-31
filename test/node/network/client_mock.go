@@ -9,26 +9,26 @@ import (
 	"sync"
 )
 
-// Ensure, that SenderMock does implement Sender.
+// Ensure, that ClientMock does implement Client.
 // If this is not the case, regenerate this file with moq.
-var _ network.Sender = &SenderMock{}
+var _ network.Client = &ClientMock{}
 
-// SenderMock is a mock implementation of Sender.
+// ClientMock is a mock implementation of Client.
 //
-// 	func TestSomethingThatUsesSender(t *testing.T) {
+// 	func TestSomethingThatUsesClient(t *testing.T) {
 //
-// 		// make and configure a mocked Sender
-// 		mockedSender := &SenderMock{
+// 		// make and configure a mocked Client
+// 		mockedClient := &ClientMock{
 // 			SendFunc: func(topic string, req p2p.Data) (p2p.Data, error) {
 // 				panic("mock out the Send method")
 // 			},
 // 		}
 //
-// 		// use mockedSender in code that requires Sender
+// 		// use mockedClient in code that requires Client
 // 		// and then make assertions.
 //
 // 	}
-type SenderMock struct {
+type ClientMock struct {
 	// SendFunc mocks the Send method.
 	SendFunc func(topic string, req p2p.Data) (p2p.Data, error)
 
@@ -46,9 +46,9 @@ type SenderMock struct {
 }
 
 // Send calls SendFunc.
-func (mock *SenderMock) Send(topic string, req p2p.Data) (p2p.Data, error) {
+func (mock *ClientMock) Send(topic string, req p2p.Data) (p2p.Data, error) {
 	if mock.SendFunc == nil {
-		panic("SenderMock.SendFunc: method is nil but Sender.Send was just called")
+		panic("ClientMock.SendFunc: method is nil but Client.Send was just called")
 	}
 	callInfo := struct {
 		Topic string
@@ -65,8 +65,8 @@ func (mock *SenderMock) Send(topic string, req p2p.Data) (p2p.Data, error) {
 
 // SendCalls gets all the calls that were made to Send.
 // Check the length with:
-//     len(mockedSender.SendCalls())
-func (mock *SenderMock) SendCalls() []struct {
+//     len(mockedClient.SendCalls())
+func (mock *ClientMock) SendCalls() []struct {
 	Topic string
 	Req   p2p.Data
 } {

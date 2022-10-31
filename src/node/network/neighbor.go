@@ -17,12 +17,12 @@ const (
 
 type Neighbor struct {
 	target *Target
-	sender Sender
+	client Client
 	logger *log.Logger
 }
 
-func NewNeighbor(target *Target, senderFactory SenderFactory, logger *log.Logger) (*Neighbor, error) {
-	client, err := senderFactory.CreateSender(target.Ip(), target.Port(), target.Value())
+func NewNeighbor(target *Target, clientFactory ClientFactory, logger *log.Logger) (*Neighbor, error) {
+	client, err := clientFactory.CreateClient(target.Ip(), target.Port(), target.Value())
 	if err != nil {
 		return nil, fmt.Errorf("failed to start client reaching %s: %w", target.Value(), err)
 	}
@@ -100,6 +100,6 @@ func (neighbor *Neighbor) sendRequest(request interface{}) (res p2p.Data, err er
 	if err != nil {
 		return
 	}
-	res, err = neighbor.sender.Send("dialog", req)
+	res, err = neighbor.client.Send("dialog", req)
 	return
 }
