@@ -19,15 +19,17 @@ type TransactionsPool struct {
 
 	registry Registry
 
-	time clock.Time
+	validationTimer time.Duration
+	time            clock.Time
 
 	waitGroup *sync.WaitGroup
 	logger    *log.Logger
 }
 
-func NewTransactionsPool(registry Registry, time clock.Time, logger *log.Logger) *TransactionsPool {
+func NewTransactionsPool(registry Registry, validationTimer time.Duration, time clock.Time, logger *log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.registry = registry
+	pool.validationTimer = validationTimer
 	pool.time = time
 	var waitGroup sync.WaitGroup
 	pool.waitGroup = &waitGroup
@@ -58,14 +60,14 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *neighborhood.Tr
 		err = fmt.Errorf("failed to instantiate transaction: %w", err)
 		return
 	}
-	timestamp := transaction.Timestamp()
-	now := pool.time.Now().UnixNano()
-	if timestamp > now {
-		err = fmt.Errorf("the transaction timestamp is in the future: %v, now: %v", time.Unix(0, timestamp), time.Unix(0, now))
-		return
-	}
 	blocks := blockchain.Blocks()
 	if len(blocks) > 1 {
+		timestamp := transaction.Timestamp()
+		nextBlockTimestamp := blocks[len(blocks)-1].Timestamp + 2*pool.validationTimer.Nanoseconds()
+		if nextBlockTimestamp < timestamp {
+			err = fmt.Errorf("the transaction timestamp is too far in the future: %v, now: %v", time.Unix(0, timestamp), time.Unix(0, nextBlockTimestamp))
+			return
+		}
 		previousBlockTimestamp := blocks[len(blocks)-2].Timestamp
 		if timestamp < previousBlockTimestamp {
 			err = fmt.Errorf("the transaction timestamp is too old: %v, previous block timestamp: %v", time.Unix(0, timestamp), time.Unix(0, previousBlockTimestamp))
@@ -123,14 +125,14 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain *Blockchain, 
 	var reward uint64
 	var rejectedTransactions []*Transaction
 	for _, transaction := range transactions {
-		if transaction.Timestamp() > timestamp {
-			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is invalid, transaction: %v", transaction))
+		if timestamp+pool.validationTimer.Nanoseconds() < transaction.Timestamp() {
+			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too far in the future, transaction: %v", transaction))
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
 		if len(blocks) > 1 {
 			if transaction.Timestamp() < blocks[len(blocks)-2].Timestamp {
-				pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is invalid, transaction: %v", transaction))
+				pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too old, transaction: %v", transaction))
 				rejectedTransactions = append(rejectedTransactions, transaction)
 				continue
 			}

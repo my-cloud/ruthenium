@@ -12,22 +12,23 @@ import (
 	"time"
 )
 
-func Test_AddTransaction_TransactionTimestampIsAfterNow_TransactionNotAdded(t *testing.T) {
+func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t *testing.T) {
 	// Arrange
 	validatorWallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	timeMock := new(TimeMock)
-	var now int64 = 1
+	var now int64 = 2
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
-	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
 	addGenesisBlock(validatorWalletAddress, blockchain)
-	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now+1, 1)
+	addEmptyBlock(blockchain, now-1)
+	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now+2, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
 
@@ -55,7 +56,7 @@ func Test_AddTransaction_TransactionTimestampIsOlderThan2Blocks_TransactionNotAd
 	logger := log.NewLogger(log.Fatal)
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
-	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
 	addGenesisBlock(validatorWalletAddress, blockchain)
 	addEmptyBlock(blockchain, now-2)
 	addEmptyBlock(blockchain, now-1)
@@ -86,7 +87,7 @@ func Test_AddTransaction_TransactionIsAlreadyInTheBlockchain_TransactionNotAdded
 	logger := log.NewLogger(log.Fatal)
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
-	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
 	addGenesisBlock(validatorWalletAddress, blockchain)
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
@@ -120,7 +121,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	logger := log.NewLogger(log.Fatal)
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
-	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
 	addGenesisBlock(validatorWalletAddress, blockchain)
 
 	var amount uint64 = 1
@@ -154,7 +155,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	logger := log.NewLogger(log.Fatal)
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
-	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
 	addGenesisBlock(validatorWalletAddress, blockchain)
 
 	var amount uint64 = 1
@@ -188,7 +189,7 @@ func Test_Validate_InvalidSignature_TransactionNotValidated(t *testing.T) {
 	logger := log.NewLogger(log.Fatal)
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
-	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
 	validation := protocol.NewValidation(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
 	addGenesisBlock(validatorWalletAddress, blockchain)
 	invalidTransaction := server.NewTransaction(walletAAddress, validatorWalletAddress, validatorWallet.PublicKey(), now, 1)
@@ -205,7 +206,7 @@ func Test_Validate_InvalidSignature_TransactionNotValidated(t *testing.T) {
 	assertTransactionNotValidated(t, blockchain)
 }
 
-func Test_Validate_TransactionTimestampIsAfterNow_TransactionNotValidated(t *testing.T) {
+func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *testing.T) {
 	// Arrange
 	validatorWallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	validatorWalletAddress := validatorWallet.Address()
@@ -218,10 +219,10 @@ func Test_Validate_TransactionTimestampIsAfterNow_TransactionNotValidated(t *tes
 	logger := log.NewLogger(log.Fatal)
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
-	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
 	validation := protocol.NewValidation(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
 	addGenesisBlock(validatorWalletAddress, blockchain)
-	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now+1, 1)
+	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now+2, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
 	pool.AddTransaction(&invalidTransactionRequest, blockchain, nil)
@@ -248,7 +249,7 @@ func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidate
 	logger := log.NewLogger(log.Fatal)
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
-	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
 	validation := protocol.NewValidation(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
 	addGenesisBlock(validatorWalletAddress, blockchain)
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now-3, 1)
@@ -280,7 +281,7 @@ func Test_Validate_TransactionIsAlreadyInTheBlockchain_TransactionNotValidated(t
 	logger := log.NewLogger(log.Fatal)
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
-	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
 	validation := protocol.NewValidation(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
 	addGenesisBlock(validatorWalletAddress, blockchain)
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now, 1)
@@ -312,7 +313,7 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	logger := log.NewLogger(log.Fatal)
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
-	pool := protocol.NewTransactionsPool(registryMock, timeMock, logger)
+	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
 	validation := protocol.NewValidation(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
 	addGenesisBlock(validatorWalletAddress, blockchain)
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now, 1)
