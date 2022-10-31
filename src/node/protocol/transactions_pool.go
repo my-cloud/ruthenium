@@ -9,6 +9,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"math/rand"
 	"sync"
+	"time"
 )
 
 type TransactionsPool struct {
@@ -60,14 +61,14 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *neighborhood.Tr
 	timestamp := transaction.Timestamp()
 	now := pool.time.Now().UnixNano()
 	if timestamp > now {
-		err = fmt.Errorf("the transaction timestamp is in the future: %v, now: %v", timestamp, now)
+		err = fmt.Errorf("the transaction timestamp is in the future: %v, now: %v", time.Unix(0, timestamp), time.Unix(0, now))
 		return
 	}
 	blocks := blockchain.Blocks()
 	if len(blocks) > 1 {
 		previousBlockTimestamp := blocks[len(blocks)-2].Timestamp
 		if timestamp < previousBlockTimestamp {
-			err = fmt.Errorf("the transaction timestamp is too old: %v, previous block timestamp: %v", timestamp, previousBlockTimestamp)
+			err = fmt.Errorf("the transaction timestamp is too old: %v, previous block timestamp: %v", time.Unix(0, timestamp), time.Unix(0, previousBlockTimestamp))
 			return
 		}
 		for i := len(blocks) - 2; i < len(blocks); i++ {
