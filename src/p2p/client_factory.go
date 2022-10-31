@@ -5,7 +5,6 @@ import (
 	p2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
-	"net"
 	"strconv"
 	"time"
 )
@@ -16,15 +15,16 @@ const (
 )
 
 type ClientFactory struct {
-	logger p2p.Logger
+	ipFinder IpFinder
+	logger   p2p.Logger
 }
 
-func NewClientFactory() *ClientFactory {
-	return &ClientFactory{log.NewLogger(log.Fatal)}
+func NewClientFactory(ipFinder IpFinder) *ClientFactory {
+	return &ClientFactory{ipFinder, log.NewLogger(log.Fatal)}
 }
 
 func (factory *ClientFactory) CreateClient(ip string, port uint16, target string) (network.Client, error) {
-	lookedUpIps, err := net.LookupIP(ip)
+	lookedUpIps, err := factory.ipFinder.LookupIP(ip)
 	if err != nil {
 		return nil, fmt.Errorf("DNS discovery failed on addresse %s: %w", ip, err)
 	}
@@ -33,7 +33,7 @@ func (factory *ClientFactory) CreateClient(ip string, port uint16, target string
 	if ipsCount != 1 {
 		return nil, fmt.Errorf("DNS discovery did not find a single address (%d addresses found) for the given IP %s", ipsCount, ip)
 	}
-	_, err = net.DialTimeout("tcp", target, neighborFindingTimeoutSecond*time.Second)
+	_, err = factory.ipFinder.DialTimeout("tcp", target, neighborFindingTimeoutSecond*time.Second)
 	if err != nil {
 		return nil, err
 	}
