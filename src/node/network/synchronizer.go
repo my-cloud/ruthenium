@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	DefaultPort                  = 8106
-	synchronizationTimeInSeconds = 10
-	maxOutboundsCount            = 8
+	DefaultPort                      = 8105
+	synchronizationIntervalInSeconds = 10
+	maxOutboundsCount                = 8
 )
 
 type Synchronizer struct {
@@ -26,7 +26,7 @@ type Synchronizer struct {
 	hostPort uint16
 
 	time          clock.Time
-	senderFactory SenderFactory
+	clientFactory ClientFactory
 
 	neighbors             []neighborhood.Neighbor
 	neighborsMutex        sync.RWMutex
@@ -38,7 +38,7 @@ type Synchronizer struct {
 	logger    *log.Logger
 }
 
-func NewSynchronizer(hostPort uint16, time clock.Time, senderFactory SenderFactory, configurationPath string, logger *log.Logger) (synchronizer *Synchronizer, err error) {
+func NewSynchronizer(hostPort uint16, time clock.Time, clientFactory ClientFactory, configurationPath string, logger *log.Logger) (synchronizer *Synchronizer, err error) {
 	synchronizer = new(Synchronizer)
 	synchronizer.hostIp, err = findPublicIp(logger)
 	if err != nil {
@@ -46,7 +46,7 @@ func NewSynchronizer(hostPort uint16, time clock.Time, senderFactory SenderFacto
 	}
 	synchronizer.hostPort = hostPort
 	synchronizer.time = time
-	synchronizer.senderFactory = senderFactory
+	synchronizer.clientFactory = clientFactory
 	synchronizer.logger = logger
 	var waitGroup sync.WaitGroup
 	synchronizer.waitGroup = &waitGroup
@@ -107,7 +107,7 @@ func (synchronizer *Synchronizer) Wait() {
 
 func (synchronizer *Synchronizer) StartSynchronization() {
 	synchronizer.Synchronize()
-	_ = time.AfterFunc(time.Second*synchronizationTimeInSeconds, synchronizer.StartSynchronization)
+	_ = time.AfterFunc(time.Second*synchronizationIntervalInSeconds, synchronizer.StartSynchronization)
 }
 
 func (synchronizer *Synchronizer) Synchronize() {
@@ -136,7 +136,7 @@ func (synchronizer *Synchronizer) Synchronize() {
 			targetPort := target.Port()
 			if targetIp != synchronizer.hostIp || targetPort != synchronizer.hostPort {
 				var neighbor neighborhood.Neighbor
-				neighbor, err := NewNeighbor(target, synchronizer.senderFactory, synchronizer.logger)
+				neighbor, err := NewNeighbor(target, synchronizer.clientFactory, synchronizer.logger)
 				if err == nil {
 					neighbors = append(neighbors, neighbor)
 					targetRequest := neighborhood.TargetRequest{

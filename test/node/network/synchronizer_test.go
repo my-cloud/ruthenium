@@ -13,13 +13,13 @@ import (
 func Test_Synchronize_OneNeighbor_NeighborAdded(t *testing.T) {
 	// Arrange
 	watch := clock.NewWatch()
-	senderFactoryMock := new(SenderFactoryMock)
-	sender := new(SenderMock)
-	sender.SendFunc = func(string, p2p.Data) (p2p.Data, error) { return p2p.Data{}, nil }
-	senderFactoryMock.CreateSenderFunc = func(string, uint16, string) (network.Sender, error) { return sender, nil }
+	clientFactoryMock := new(ClientFactoryMock)
+	client := new(ClientMock)
+	client.SendFunc = func(string, p2p.Data) (p2p.Data, error) { return p2p.Data{}, nil }
+	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (network.Client, error) { return client, nil }
 	configurationPath := "../../"
 	logger := log.NewLogger(log.Fatal)
-	synchronizer, _ := network.NewSynchronizer(0, watch, senderFactoryMock, configurationPath, logger)
+	synchronizer, _ := network.NewSynchronizer(0, watch, clientFactoryMock, configurationPath, logger)
 
 	// Act
 	synchronizer.Synchronize()

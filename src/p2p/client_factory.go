@@ -10,17 +10,20 @@ import (
 	"time"
 )
 
-const neighborFindingTimeoutSecond = 5
+const (
+	clientConnectionTimeoutInSeconds = 10
+	neighborFindingTimeoutSecond     = 5
+)
 
-type SenderFactory struct {
+type ClientFactory struct {
 	logger p2p.Logger
 }
 
-func NewSenderFactory() *SenderFactory {
-	return &SenderFactory{log.NewLogger(log.Fatal)}
+func NewClientFactory() *ClientFactory {
+	return &ClientFactory{log.NewLogger(log.Fatal)}
 }
 
-func (factory *SenderFactory) CreateSender(ip string, port uint16, target string) (network.Sender, error) {
+func (factory *ClientFactory) CreateClient(ip string, port uint16, target string) (network.Client, error) {
 	lookedUpIps, err := net.LookupIP(ip)
 	if err != nil {
 		return nil, fmt.Errorf("DNS discovery failed on addresse %s: %w", ip, err)
@@ -40,6 +43,10 @@ func (factory *SenderFactory) CreateSender(ip string, port uint16, target string
 	if err != nil {
 		return nil, fmt.Errorf("failed to start client for target %s: %w", target, err)
 	}
+	settings := p2p.NewClientSettings()
+	settings.SetRetry(1, time.Nanosecond)
+	settings.SetConnTimeout(clientConnectionTimeoutInSeconds * time.Second)
+	client.SetSettings(settings)
 	client.SetLogger(factory.logger)
 	return client, err
 }
