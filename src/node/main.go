@@ -41,7 +41,7 @@ func main() {
 		logger.Fatal(fmt.Errorf("failed to create synchronizer: %w", err).Error())
 	}
 	blockchain := protocol.NewBlockchain(registry, validationTimer, watch, synchronizer, logger)
-	pool := protocol.NewTransactionsPool(registry, watch, logger)
+	pool := protocol.NewTransactionsPool(registry, validationTimer, watch, logger)
 	validation := protocol.NewValidation(wallet.Address(), blockchain, pool, watch, validationTimer, logger)
 	serverFactory := p2p.NewServerFactory()
 	server, err := serverFactory.CreateServer(int(*port))
