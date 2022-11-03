@@ -96,6 +96,7 @@ For a [tutorial to create a first blockchain in Go][1], thanks to [Yuko Sakai][2
 [![Security](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=security_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=security_rating)
 [![Reliability](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=reliability_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=reliability_rating)
 [![Coverage](https://img.shields.io/sonar/coverage/my-cloud_ruthenium/main?logo=sonarcloud&server=https%3A%2F%2Fsonarcloud.io)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=coverage)
+[![Sonar Documented API Density](https://img.shields.io/sonar/public_documented_api_density/my-cloud_ruthenium/main?logo=sonarcloud&server=https%3A%2F%2Fsonarcloud.io&label=api)](https://sonarcloud.io/project/activity?custom_metrics=public_documented_api_density&graph=custom&id=my-cloud_ruthenium)
 
 The main principles have been implemented.
 
