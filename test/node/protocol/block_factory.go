@@ -14,6 +14,17 @@ func NewGenesisBlockResponse(validatorWalletAddress string) *neighborhood.BlockR
 		RegisteredAddresses: nil,
 	}
 }
+
+func NewRewardedBlockResponse(previousHash [32]byte, timestamp int64) *neighborhood.BlockResponse {
+	rewardTransaction := protocol.NewRewardTransaction("recipient", 0, 0)
+	return &neighborhood.BlockResponse{
+		Timestamp:           timestamp,
+		PreviousHash:        previousHash,
+		Transactions:        []*neighborhood.TransactionResponse{rewardTransaction.GetResponse()},
+		RegisteredAddresses: nil,
+	}
+}
+
 func NewEmptyBlockResponse(timestamp int64) *neighborhood.BlockResponse {
 	return &neighborhood.BlockResponse{
 		Timestamp:           timestamp,
@@ -22,6 +33,7 @@ func NewEmptyBlockResponse(timestamp int64) *neighborhood.BlockResponse {
 		RegisteredAddresses: nil,
 	}
 }
+
 func NewBlockResponse(timestamp int64, transaction *protocol.Transaction) *neighborhood.BlockResponse {
 	return &neighborhood.BlockResponse{
 		Timestamp:           timestamp,
