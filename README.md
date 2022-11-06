@@ -1,9 +1,9 @@
 # Ruthenium
-[![Release](https://img.shields.io/github/release/my-cloud/ruthenium.svg?logo=github)](https://github.com/my-cloud/ruthenium/releases)
+[![Release](https://img.shields.io/github/release/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/releases)
 
 ## Description
-[![Wiki](https://img.shields.io/badge/wiki-home-blue.svg?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
-[![Wiki](https://img.shields.io/badge/wiki-whitepaper-blue.svg?logo=github)](https://github.com/my-cloud/ruthenium/wiki/Whitepaper)
+[![Wiki](https://img.shields.io/badge/wiki-home-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
+[![Wiki](https://img.shields.io/badge/wiki-whitepaper-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki/Whitepaper)
 
 The Ruthenium blockchain protocol.
 
@@ -18,7 +18,7 @@ There are two ways to use the Ruthenium blockchain. You can either use your own 
 * Option A: using sources
   * [![Go](https://img.shields.io/github/go-mod/go-version/my-cloud/ruthenium?logo=go)](https://go.dev/dl/)
 * Option B: using docker image
-  * [![Docker](https://img.shields.io/badge/docker-grey.svg?logo=docker)](https://www.docker.com/)
+  * [![Docker](https://img.shields.io/badge/docker-grey?logo=docker)](https://www.docker.com/)
 * Your DNS port 8106 must be open.
 * You must be registered in the [Proof of Humanity](https://github.com/my-cloud/ruthenium/Whitepaper#proof-of-humanity) registry with an Ethereum wallet address for which you are the owner of the `<private key>`.
 
@@ -71,7 +71,7 @@ If you have a suggestion that would make this better, please do not hesitate to 
 ⭐ Don't forget to give the project a [star](https://docs.github.com/en/get-started/exploring-projects-on-github/saving-repositories-with-stars)! Thanks again!
 
 ## Contact
-[![Project](https://img.shields.io/badge/project-repository-blue.svg?logo=github)](https://github.com/my-cloud/ruthenium)
+[![Project](https://img.shields.io/badge/sources-repository-blue?logo=github)](https://github.com/my-cloud/ruthenium)
 
 Founder: [Jérémy Pansier](https://github.com/JeremyPansier) - jpansier@my-cloud.me
 
@@ -96,7 +96,6 @@ For a [tutorial to create a first blockchain in Go][1], thanks to [Yuko Sakai][2
 [![Security](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=security_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=security_rating)
 [![Reliability](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=reliability_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=reliability_rating)
 [![Coverage](https://img.shields.io/sonar/coverage/my-cloud_ruthenium/main?logo=sonarcloud&server=https%3A%2F%2Fsonarcloud.io)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=coverage)
-[![Sonar Documented API Density](https://img.shields.io/sonar/public_documented_api_density/my-cloud_ruthenium/main?logo=sonarcloud&server=https%3A%2F%2Fsonarcloud.io&label=api)](https://sonarcloud.io/project/activity?custom_metrics=public_documented_api_density&graph=custom&id=my-cloud_ruthenium)
 
 The main principles have been implemented.
 
