@@ -178,8 +178,16 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 					}
 					rewarded = true
 					previousBlockTimestamp := previousBlock.Timestamp()
-					if currentBlockTimestamp != previousBlockTimestamp+blockchain.validationTimer.Nanoseconds() || currentBlockTimestamp > now {
-						return nil, errors.New("neighbor block reward timestamp is invalid")
+					expectedBlockTimestamp := previousBlockTimestamp + blockchain.validationTimer.Nanoseconds()
+					if currentBlockTimestamp != expectedBlockTimestamp {
+						blockDate := time.Unix(0, currentBlockTimestamp)
+						expectedDate := time.Unix(0, expectedBlockTimestamp)
+						return nil, fmt.Errorf("neighbor block reward timestamp is invalid: block date is %v, expected is %v", blockDate, expectedDate)
+					}
+					if currentBlockTimestamp > now {
+						blockDate := time.Unix(0, currentBlockTimestamp)
+						nowDate := time.Unix(0, now)
+						return nil, fmt.Errorf("neighbor block reward timestamp is in the future: block date is %v, now is %v", blockDate, nowDate)
 					}
 					reward = transaction.Value()
 				} else {

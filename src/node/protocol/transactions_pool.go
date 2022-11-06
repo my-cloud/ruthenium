@@ -209,14 +209,6 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain *Blockchain, 
 		pool.logger.Error(fmt.Errorf("failed calculate last block hash: %w", err).Error())
 		return
 	}
-	isValidatorPohValid, err := pool.registry.IsRegistered(address)
-	if err != nil {
-		pool.logger.Error(fmt.Errorf("failed to get proof of humanity: %w", err).Error())
-		return
-	} else if !isValidatorPohValid {
-		pool.logger.Error("validator proof of humanity is invalid")
-		return
-	}
 	rewardTransaction := NewRewardTransaction(address, timestamp, reward)
 	transactions = append(transactions, rewardTransaction)
 	block := NewBlock(timestamp, lastBlockHash, transactions, newRegisteredAddresses)
