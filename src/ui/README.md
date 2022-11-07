@@ -3,7 +3,7 @@
 Base url: `<UI server url>:<UI server port>` (example: `localhost:8080`)
 
 ### Transactions pool
-<details open>
+<details>
 <summary><b>Add transaction</b></summary>
 
 ![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
