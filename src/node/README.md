@@ -2,66 +2,77 @@
 
 This version supports [Gobs][1] only.
 
-#### Blockchain
+### Blockchain
 <details>
-<summary>Get blocks</summary>
+<summary><b>Get blocks</b></summary>
 
-request value: `GET BLOCKS REQUEST`  
-response value: Array of [block responses](#block-response)
+*Description*: Get all the blocks of the blockchain for the current timestamp.
+  * **request value:** `GET BLOCKS REQUEST`  
+  * **response value:** Array of [block responses](#block-response)
 </details>
 
-#### Network
+### Network
 <details>
-<summary>Share targets</summary>
+<summary><b>Share targets</b></summary>
 
-request value: Array of [target requests](#target-request)  
-response value: *none*
+*Description:* Share known validator node targets (IP and port).
+* **request value:** Array of [target requests](#target-request)  
+* **response value:** no response
 </details>
 
-#### Transactions pool
+### Transactions pool
 <details>
-<summary>Add transaction</summary>
+<summary><b>Add transaction</b></summary>
 
-request value: [TransactionRequest](#transaction-request)  
-response value: *none*
+*Description:* Add a transaction to the transactions pool.
+* **request value:** [TransactionRequest](#transaction-request)  
+* **response value:** *none*
 </details>
 <details>
-<summary>Get transactions</summary>
+<summary><b>Get transactions</b></summary>
 
-request value: `GET TRANSACTIONS REQUEST`  
-response value: Array of [transaction responses](#transaction-response)
+*Description:* Get all the transactions of the current transactions pool.
+* **request value:** `GET TRANSACTIONS REQUEST`  
+* **response value:** Array of [transaction responses](#transaction-response)
 </details>
 
-#### Validation
+### Validation
 <details>
-<summary>Start validation</summary>
+<summary><b>Start validation</b></summary>
 
-request value: `START MINING REQUEST`  
+*Description:* Start validating one block per minute.
+* **request value:** `START MINING REQUEST`  
+* **response value:** *none*
 </details>
 <details>
-<summary>Stop validation</summary>
+<summary><b>Stop validation</b></summary>
 
-request value: `STOP MINING REQUEST`  
+*Description:* Stop validating one block per minute.
+* **request value:** `STOP MINING REQUEST`  
+* **response value:** *none*
 </details>
 <details>
-<summary>Validate</summary>
+<summary><b>Validate</b></summary>
 
-request value: `MINE REQUEST`
+*Description:* Validate the next block.
+* **request value:** `MINE REQUEST`
+* **response value:** *none*
 </details>
 
-#### Wallet
+### Wallet
 <details>
-<summary>Get amount</summary>
+<summary><b>Get amount</b></summary>
 
-request value: [Amount request](#amount-request)  
-response value: [Amount response](#amount-response)
+*Description:* Get the amount for the given wallet address.
+* **request value:** [Amount request](#amount-request)  
+* **response value:** [Amount response](#amount-response)
 </details>
 
 ---
 <details open>
-<summary>Schemas</summary>
+<summary style="font-size:24px"><b>Schemas</b></summary>
 
-#### Amount request
+### Amount request
 <table>
 <th>
 Schema
@@ -100,7 +111,7 @@ The wallet address for which to get the amount
 </tr>
 </table>
 
-#### Amount response
+### Amount response
 <table>
 <th>
 Schema
@@ -139,7 +150,7 @@ The amount
 </tr>
 </table>
 
-#### Block response
+### Block response
 <table>
 <th>
 Schema
@@ -187,7 +198,7 @@ The addresses registered in the PoH registry
 </tr>
 </table>
 
-#### Target request
+### Target request
 <table>
 <th>
 Schema
@@ -229,7 +240,7 @@ The port
 </tr>
 </table>
 
-#### Transaction request
+### Transaction request
 
 <table>
 <th>
@@ -287,7 +298,7 @@ The fee
 </tr>
 </table>
 
-#### Transaction response
+### Transaction response
 
 <table>
 <th>

@@ -2,9 +2,9 @@
 
 base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 
-#### Transactions pool
+### Transactions pool
 <details>
-<summary>Add transaction</summary>
+<summary><b>Add transaction</b></summary>
 
 <table>
 <tr>
@@ -13,10 +13,9 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 </tr>
 </table>
 
-* **parameters:**  
-  *none*
-* **request body:**  
-  [Transaction request](#transaction-request)
+*Description:* Add a transaction to the transactions pool.
+* **parameters:** *none*
+* **request body:** [Transaction request](#transaction-request)
 * **responses:**
   
   |Code|Description|
@@ -26,7 +25,7 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
   |500|Internal server error|
 </details>
 <details>
-<summary>Get transactions</summary>
+<summary><b>Get transactions</b></summary>
 
 <table>
 <tr>
@@ -35,10 +34,9 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 </tr>
 </table>
 
-* **parameters:**  
-  *none*
-* **request body:**  
-  *none*
+*Description:* Get all the transactions of the current transactions pool.
+* **parameters:** *none*
+* **request body:** *none*
 * **responses:**
   
   |Code|Description|
@@ -47,9 +45,9 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
   |500|Internal server error|
 </details>
 
-#### Validation
+### Validation
 <details>
-<summary>Start validation</summary>
+<summary><b>Start validation</b></summary>
 
 <table>
 <tr>
@@ -58,10 +56,9 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 </tr>
 </table>
 
-* **parameters:**  
-  *none*
-* **request body:**  
-  *none*
+*Description:* Start validating one block per minute.
+* **parameters:** *none*
+* **request body:** *none*
 * **responses:**
 
   |Code|Description|
@@ -70,7 +67,7 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
   |500|Internal server error|
 </details>
 <details>
-<summary>Stop validation</summary>
+<summary><b>Stop validation</b></summary>
 
 <table>
 <tr>
@@ -79,10 +76,9 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 </tr>
 </table>
 
-* **parameters:**  
-  *none*
-* **request body:**  
-  *none*
+*Description:* Stop validating one block per minute.
+* **parameters:** *none*
+* **request body:** *none*
 * **responses:**
 
   |Code|Description|
@@ -91,7 +87,7 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
   |500|Internal server error|
 </details>
 <details>
-<summary>Validate</summary>
+<summary><b>Validate</b></summary>
 
 <table>
 <tr>
@@ -100,21 +96,20 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 </tr>
 </table>
 
-* **parameters:**  
-  *none*
-* **request body:**  
-  *none*
+*Description:* Validate the next block.
+* **parameters:** *none*
+* **request body:** *none*
 * **responses:**
 
   |Code|Description|
-    |---|---|
-  |200|Validate one block|
+  |---|---|
+  |200|The next block will be validated|
   |500|Internal server error|
 </details>
 
-#### Wallet
+### Wallet
 <details>
-<summary>Create wallet</summary>
+<summary><b>Create wallet</b></summary>
 
 <table>
 <tr>
@@ -123,19 +118,18 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 </tr>
 </table>
 
-* **parameters:**  
-  *none*
-* **request body:**  
-  *none*
+*Description:* Create a new wallet instance with the provided program arguments.
+* **parameters:** *none*
+* **request body:** *none*
 * **responses:**
 
   |Code|Description|
-    |---|---|
+  |---|---|
   |200|Wallet created|
   |500|Internal server error|
 </details>
 <details>
-<summary>Get wallet amount</summary>
+<summary><b>Get wallet amount</b></summary>
 
 <table>
 <tr>
@@ -144,17 +138,17 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 </tr>
 </table>
 
+*Description:* Get the amount for the given wallet address.
 * **parameters:**
 
   |Name|Description|Example|
-      |---|---|---|
+  |---|---|---|
   |`address`|42 characters hexadecimal wallet address|`0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a`|
-* **request body:**  
-  *none*
+* **request body:** *none*
 * **responses:**
 
   |Code|Description|
-      |---|---|
+  |---|---|
   |200|[Amount response](#amount-response)|
   |400|Bad request|
   |500|Internal server error|
@@ -162,9 +156,9 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 
 ---
 <details open>
-<summary><b>Schemas</b></summary>
+<summary style="font-size:24px"><b>Schemas</b></summary>
 
-#### Amount response
+### Amount response
 <table>
 <th>
 Schema
@@ -203,7 +197,7 @@ The amount
 </tr>
 </table>
 
-#### Transaction request
+### Transaction request
 <table>
 <th>
 Schema
@@ -254,7 +248,7 @@ The value
 </tr>
 </table>
 
-#### Transaction response
+### Transaction response
 <table>
 <th>
 Schema
