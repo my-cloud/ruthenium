@@ -1,31 +1,36 @@
 This version supports [Gobs][1] only.
 
+#### Blockchain
 <details>
 <summary>Get blocks</summary>
 
 request value: `GET BLOCKS REQUEST`  
 response value: Array of [block responses](#block-response)
 </details>
+
+#### Transactions pool
 <details>
 <summary>Get transactions</summary>
 
 request value: `GET TRANSACTIONS REQUEST`  
 response value: Array of [transaction responses](#transaction-response)
 </details>
-<details>
-<summary>Mine</summary>
 
-request value: `MINE REQUEST`  
-</details>
+#### Validation
 <details>
-<summary>Start mining</summary>
+<summary>Start validation</summary>
 
 request value: `START MINING REQUEST`  
 </details>
 <details>
-<summary>Stop mining</summary>
+<summary>Stop validation</summary>
 
 request value: `STOP MINING REQUEST`  
+</details>
+<details>
+<summary>Validate</summary>
+
+request value: `MINE REQUEST`
 </details>
 
 ---

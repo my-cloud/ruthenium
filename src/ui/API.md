@@ -1,26 +1,6 @@
 base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 
-<details>
-<summary>Create wallet</summary>
-
-<table>
-<tr>
-<td style="background-color:seagreen;width:50px;text-align:center">POST</td>
-<td style="background-color:dimgray">/wallet</td>
-</tr>
-</table>
-
-* **parameters:**  
-  *none*
-* **request body:**  
-  *none*
-* **responses:**
-  
-  |Code|Description|
-  |---|---|
-  |200|Wallet created|
-  |500|Internal server error|
-</details>
+#### Transactions pool
 <details>
 <summary>Add transaction</summary>
 
@@ -64,54 +44,10 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
   |200|Array of [transaction responses](#transaction-response)|
   |500|Internal server error|
 </details>
+
+#### Validation
 <details>
-<summary>Get wallet amount</summary>
-
-<table>
-<tr>
-<td style="background-color:steelblue;width:50px;text-align:center">GET</td>
-<td style="background-color:dimgray">/wallet/amount</td>
-</tr>
-</table>
-
-* **parameters:**
-  
-  |Name|Description|Example|
-  |---|---|---|
-  |`address`|42 characters hexadecimal wallet address|`0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a`|
-* **request body:**  
-  *none*
-* **responses:**
-  
-  |Code|Description|
-  |---|---|
-  |200|[Amount response](#amount-response)|
-  |400|Bad request|
-  |500|Internal server error|
-</details>
-<details>
-<summary>Mine</summary>
-
-<table>
-<tr>
-<td style="background-color:seagreen;width:50px;text-align:center">POST</td>
-<td style="background-color:dimgray">/mine</td>
-</tr>
-</table>
-
-* **parameters:**  
-  *none*
-* **request body:**  
-  *none*
-* **responses:**
-
-  |Code|Description|
-  |---|---|
-  |200|Mine one block|
-  |500|Internal server error|
-</details>
-<details>
-<summary>Start mining</summary>
+<summary>Start validation</summary>
 
 <table>
 <tr>
@@ -128,11 +64,11 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 
   |Code|Description|
   |---|---|
-  |200|Mining started|
+  |200|Validation started|
   |500|Internal server error|
 </details>
 <details>
-<summary>Stop mining</summary>
+<summary>Stop validation</summary>
 
 <table>
 <tr>
@@ -149,7 +85,76 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 
   |Code|Description|
   |---|---|
-  |200|Mining stopped|
+  |200|Validation stopped|
+  |500|Internal server error|
+</details>
+<details>
+<summary>Validate</summary>
+
+<table>
+<tr>
+<td style="background-color:seagreen;width:50px;text-align:center">POST</td>
+<td style="background-color:dimgray">/mine</td>
+</tr>
+</table>
+
+* **parameters:**  
+  *none*
+* **request body:**  
+  *none*
+* **responses:**
+
+  |Code|Description|
+    |---|---|
+  |200|Validate one block|
+  |500|Internal server error|
+</details>
+
+#### Wallet
+<details>
+<summary>Create wallet</summary>
+
+<table>
+<tr>
+<td style="background-color:seagreen;width:50px;text-align:center">POST</td>
+<td style="background-color:dimgray">/wallet</td>
+</tr>
+</table>
+
+* **parameters:**  
+  *none*
+* **request body:**  
+  *none*
+* **responses:**
+
+  |Code|Description|
+    |---|---|
+  |200|Wallet created|
+  |500|Internal server error|
+</details>
+<details>
+<summary>Get wallet amount</summary>
+
+<table>
+<tr>
+<td style="background-color:steelblue;width:50px;text-align:center">GET</td>
+<td style="background-color:dimgray">/wallet/amount</td>
+</tr>
+</table>
+
+* **parameters:**
+
+  |Name|Description|Example|
+      |---|---|---|
+  |`address`|42 characters hexadecimal wallet address|`0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a`|
+* **request body:**  
+  *none*
+* **responses:**
+
+  |Code|Description|
+      |---|---|
+  |200|[Amount response](#amount-response)|
+  |400|Bad request|
   |500|Internal server error|
 </details>
 
