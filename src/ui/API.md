@@ -1,3 +1,5 @@
+# Ruthenium UI server API
+
 base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 
 #### Transactions pool
@@ -162,6 +164,45 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 <details open>
 <summary><b>Schemas</b></summary>
 
+#### Amount response
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+AmountResponse {
+  Amount float64
+}
+```
+</td>
+<td>
+
+```
+The amount data structure for response
+The amount
+
+```
+</td>
+<td>
+
+```
+{
+  "Amount": 100000000
+}
+```
+</td>
+</tr>
+</table>
+
 #### Transaction request
 <table>
 <th>
@@ -264,45 +305,6 @@ The fee
   "Timestamp":        1667768884780639700
   "Value":            100000000
   "Fee":              1000
-}
-```
-</td>
-</tr>
-</table>
-
-#### Amount response
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-AmountResponse {
-  Amount float64
-}
-```
-</td>
-<td>
-
-```
-The amount data structure for response
-The amount
-
-```
-</td>
-<td>
-
-```
-{
-  "Amount": 100000000
 }
 ```
 </td>
