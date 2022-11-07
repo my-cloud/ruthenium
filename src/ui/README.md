@@ -1,17 +1,13 @@
 # Ruthenium UI server API
 
-base url: `<UI server url>:<UI server port>` example: `localhost:8080`
+Base url: `<UI server url>:<UI server port>` (example: `localhost:8080`)
 
 ### Transactions pool
-<details>
+<details open>
 <summary><b>Add transaction</b></summary>
 
-<table>
-<tr>
-<td style="background-color:green;width:50px;text-align:center">POST</td>
-<td style="background-color:dimgray">/transaction</td>
-</tr>
-</table>
+![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
+![Transaction](https://img.shields.io/badge//transaction-dimgray?style=flat-square)
 
 *Description:* Add a transaction to the transactions pool.
 * **parameters:** *none*
@@ -27,12 +23,8 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 <details>
 <summary><b>Get transactions</b></summary>
 
-<table>
-<tr>
-<td style="background-color:steelblue;width:50px;text-align:center">GET</td>
-<td style="background-color:dimgray">/transactions</td>
-</tr>
-</table>
+![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
+![Transactions](https://img.shields.io/badge//transactions-dimgray?style=flat-square)
 
 *Description:* Get all the transactions of the current transactions pool.
 * **parameters:** *none*
@@ -49,12 +41,8 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 <details>
 <summary><b>Start validation</b></summary>
 
-<table>
-<tr>
-<td style="background-color:seagreen;width:50px;text-align:center">POST</td>
-<td style="background-color:dimgray">/mine/start</td>
-</tr>
-</table>
+![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
+![Mine start](https://img.shields.io/badge//mine/start-dimgray?style=flat-square)
 
 *Description:* Start validating one block per minute.
 * **parameters:** *none*
@@ -69,12 +57,8 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 <details>
 <summary><b>Stop validation</b></summary>
 
-<table>
-<tr>
-<td style="background-color:seagreen;width:50px;text-align:center">POST</td>
-<td style="background-color:dimgray">/mine/stop</td>
-</tr>
-</table>
+![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
+![Mine stop](https://img.shields.io/badge//mine/stop-dimgray?style=flat-square)
 
 *Description:* Stop validating one block per minute.
 * **parameters:** *none*
@@ -89,12 +73,8 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 <details>
 <summary><b>Validate</b></summary>
 
-<table>
-<tr>
-<td style="background-color:seagreen;width:50px;text-align:center">POST</td>
-<td style="background-color:dimgray">/mine</td>
-</tr>
-</table>
+![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
+![Mine start](https://img.shields.io/badge//mine-dimgray?style=flat-square)
 
 *Description:* Validate the next block.
 * **parameters:** *none*
@@ -111,12 +91,8 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 <details>
 <summary><b>Create wallet</b></summary>
 
-<table>
-<tr>
-<td style="background-color:seagreen;width:50px;text-align:center">POST</td>
-<td style="background-color:dimgray">/wallet</td>
-</tr>
-</table>
+![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
+![Wallet](https://img.shields.io/badge//wallet-dimgray?style=flat-square)
 
 *Description:* Create a new wallet instance with the provided program arguments.
 * **parameters:** *none*
@@ -131,12 +107,8 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 <details>
 <summary><b>Get wallet amount</b></summary>
 
-<table>
-<tr>
-<td style="background-color:steelblue;width:50px;text-align:center">GET</td>
-<td style="background-color:dimgray">/wallet/amount</td>
-</tr>
-</table>
+![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
+![Wallet amount](https://img.shields.io/badge//wallet/amount-dimgray?style=flat-square)
 
 *Description:* Get the amount for the given wallet address.
 * **parameters:**
