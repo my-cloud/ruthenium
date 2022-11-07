@@ -8,7 +8,7 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 
 <table>
 <tr>
-<td style="background-color:seagreen;width:50px;text-align:center">POST</td>
+<td style="background-color:green;width:50px;text-align:center">POST</td>
 <td style="background-color:dimgray">/transaction</td>
 </tr>
 </table>
