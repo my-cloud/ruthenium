@@ -125,7 +125,7 @@ base url: `<UI server url>:<UI server port>` example: `localhost:8080`
 
   |Code|Description|
   |---|---|
-  |200|Wallet created|
+  |200|[Wallet response](#wallet-response)|
   |500|Internal server error|
 </details>
 <details>
@@ -299,6 +299,51 @@ The fee
   "Timestamp":        1667768884780639700
   "Value":            100000000
   "Fee":              1000
+}
+```
+</td>
+</tr>
+</table>
+
+### Wallet response
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+Wallet {
+  PrivateKey string
+  PublicKey  string
+  Address    string
+}
+```
+</td>
+<td>
+
+```
+The wallet data structure
+The wallet private key
+The wallet public key
+The wallet address
+
+```
+</td>
+<td>
+
+```
+{
+  "PrivateKey": 0x48913790c2bebc48417491f96a7e07ec94c76ccd0fe1562dc1749479d9715afd
+  "PublicKey":  0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782
+  "Address":    0x9C69443c3Ec0D660e257934ffc1754EB9aD039CB
 }
 ```
 </td>
