@@ -59,7 +59,7 @@ For further details concerning the node, look at the node [README](src/node/READ
 For further details concerning the UI, look at the UI [README](src/ui/README.md).
 
 ## API
-The application programming interfaces for the node and UI are described in their package:
+The application programming interfaces for the node and UI are described in their own package:
 * [host node API](src/node/README.md#api)
 * [UI server API](src/ui/README.md#api)
 

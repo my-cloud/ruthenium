@@ -28,7 +28,7 @@ go run src/ui/main.go -host-ip=0.0.0.0 -private-key=0x48913790c2bebc48417491f96a
 Using a web browser, go to `http://localhost:8080` (If needed, replace `localhost` by the UI server IP address and `8080` by the TCP port number for the UI server)
 
 ## API
-Base url: `<UI server url>:<UI server port>` (example: `localhost:8080`)
+Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 
 ### Transactions pool
 <details>
