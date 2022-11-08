@@ -168,6 +168,18 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 			var rewarded bool
 			totalTransactionsValueBySenderAddress := make(map[string]uint64)
 			currentBlockTimestamp := currentBlock.Timestamp()
+			previousBlockTimestamp := previousBlock.Timestamp()
+			expectedBlockTimestamp := previousBlockTimestamp + blockchain.validationTimer.Nanoseconds()
+			if currentBlockTimestamp != expectedBlockTimestamp {
+				blockDate := time.Unix(0, currentBlockTimestamp)
+				expectedDate := time.Unix(0, expectedBlockTimestamp)
+				return nil, fmt.Errorf("neighbor block reward timestamp is invalid: block date is %v, expected is %v", blockDate, expectedDate)
+			}
+			if currentBlockTimestamp > now {
+				blockDate := time.Unix(0, currentBlockTimestamp)
+				nowDate := time.Unix(0, now)
+				return nil, fmt.Errorf("neighbor block reward timestamp is in the future: block date is %v, now is %v", blockDate, nowDate)
+			}
 			var reward uint64
 			var totalTransactionsFees uint64
 			for _, transaction := range currentBlock.Transactions() {
@@ -177,18 +189,6 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 						return nil, errors.New("multiple rewards attempt for the same neighbor block")
 					}
 					rewarded = true
-					previousBlockTimestamp := previousBlock.Timestamp()
-					expectedBlockTimestamp := previousBlockTimestamp + blockchain.validationTimer.Nanoseconds()
-					if currentBlockTimestamp != expectedBlockTimestamp {
-						blockDate := time.Unix(0, currentBlockTimestamp)
-						expectedDate := time.Unix(0, expectedBlockTimestamp)
-						return nil, fmt.Errorf("neighbor block reward timestamp is invalid: block date is %v, expected is %v", blockDate, expectedDate)
-					}
-					if currentBlockTimestamp > now {
-						blockDate := time.Unix(0, currentBlockTimestamp)
-						nowDate := time.Unix(0, now)
-						return nil, fmt.Errorf("neighbor block reward timestamp is in the future: block date is %v, now is %v", blockDate, nowDate)
-					}
 					reward = transaction.Value()
 				} else {
 					if err = transaction.VerifySignature(); err != nil {
@@ -197,6 +197,12 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 					fee := transaction.Fee()
 					totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + fee
 					totalTransactionsFees += fee
+					if currentBlockTimestamp+blockchain.validationTimer.Nanoseconds() < transaction.Timestamp() {
+						return nil, fmt.Errorf("a neighbor block transaction timestamp is too far in the future, transaction: %v", transaction)
+					}
+					if transaction.Timestamp() < neighborBlocks[len(neighborBlocks)-2].Timestamp {
+						return nil, fmt.Errorf("a neighbor block transaction timestamp is too old, transaction: %v", transaction)
+					}
 				}
 			}
 			if !rewarded {
