@@ -6,7 +6,7 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) to keep our community appr
 In this guide you will get an overview of the contribution workflow from opening an issue, creating a PR, reviewing, merging the PR and releasing.
 
 ## New contributor guide
-To get an overview of the project, read the [README](README.md).
+To get an overview of the project, read the [README](../README.md).
 
 
 
@@ -32,7 +32,6 @@ As a general rule, we don’t assign issues to anyone. If you find an issue to w
 ## Review
 🛡 Restricted to write access members.
 1. Follow the [checklist](https://github.com/my-cloud/ruthenium/blob/main/.github/pull_request_template.md) displayed in the PR.
-1. Manually [test](https://github.com/my-cloud/ruthenium/wiki/Usage) the changes. 
 1. Submit your [review](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/reviewing-proposed-changes-in-a-pull-request).
 
 ## Release
