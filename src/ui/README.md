@@ -7,11 +7,12 @@ In this repository, the UI is described in a simple `index.html`. Any other impl
 A Ruthenium node must be running.
 
 ## Launch
-At root level (ruthenium folder), run the ui using the command `go run src/ui/main.go` with some of the arguments described bellow. For example:
+At root level (ruthenium folder), run the ui using the command `go run src/ui/main.go` with the add of some [program arguments](#program-arguments). For example:
 ```
 go run src/ui/main.go -host-ip=0.0.0.0 -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0fe1562dc1749479d9715afd
 ```
-Program arguments:
+
+## Program arguments:
 ```
 -mnemonic: The mnemonic (required if the private key is not provided)
 -derivation-path: The derivation path (unused if the mnemonic is omitted, default: "m/44'/60'/0'/0/0")
