@@ -1,5 +1,7 @@
 # UI server
-The UI server lets to have a graphical user interface to easily use a Ruthenium node. For further details concerning the node, look at the node [README](../node/README.md).
+The user interface (UI) server lets to have a graphical user interface to easily communicate with a Ruthenium [host node](../node/README.md).
+Any other implementation of this UI server can communicate with a node using its [API](../node/README.md#api).
+In this repository, the UI is described in a simple `index.html`. Any other implementation of this UI can communicate with the UI server using its [API](#api). 
 
 ## Prerequisites
 A Ruthenium node must be running.
