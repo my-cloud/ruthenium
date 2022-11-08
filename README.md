@@ -1,5 +1,6 @@
 # Ruthenium
 [![Release](https://img.shields.io/github/release/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/releases)
+[![Build](https://img.shields.io/github/workflow/status/my-cloud/ruthenium/Build?logo=github)](https://github.com/my-cloud/ruthenium/actions?query=workflow%3ABuild+event%3Apush+branch%3Amain)
 
 ## Description
 [![Wiki](https://img.shields.io/badge/doc-wiki-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
@@ -10,8 +11,6 @@ The Ruthenium blockchain protocol using [Proof of Humanity](https://github.com/m
 This README contains essential information for a quick start. You will find a detailed description of the project in the [wiki](https://github.com/my-cloud/ruthenium/wiki/Home). If you want to know what reasons led to create this blockchain, you can directly dive into the Ruthenium [whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
 
 ## Quickstart
-[![Build](https://img.shields.io/github/workflow/status/my-cloud/ruthenium/Build?logo=github)](https://github.com/my-cloud/ruthenium/actions?query=workflow%3ABuild+event%3Apush+branch%3Amain)
-
 There are two ways to use the Ruthenium blockchain. You can either use your own build from [sources](https://github.com/my-cloud/ruthenium/releases) (Option A) or use a docker image provided in the [repository packages](https://github.com/my-cloud/ruthenium/pkgs/container/ruthenium) (Option B).
 
 ### Prerequisites
@@ -75,9 +74,9 @@ If you have a suggestion that would make this better, please do not hesitate to 
 ⭐ Don't forget to give the project a [star](https://docs.github.com/en/get-started/exploring-projects-on-github/saving-repositories-with-stars)! Thanks again!
 
 ## Contact
-[![Project](https://img.shields.io/badge/sources-repository-blue?logo=github)](https://github.com/my-cloud/ruthenium)
-
 Founder: [Jérémy Pansier](https://github.com/JeremyPansier) - jpansier@my-cloud.me
+
+Repository: https://github.com/my-cloud/ruthenium
 
 ## Authors and Acknowledgments
 [![Contributors](https://img.shields.io/github/contributors/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/graphs/contributors)
