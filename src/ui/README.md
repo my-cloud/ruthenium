@@ -1,5 +1,30 @@
-# Ruthenium UI server API
+# UI server
+The UI server lets to have a graphical user interface to easily use a Ruthenium node. For further details concerning the node, look at the node [README](../node/README.md).
 
+## Prerequisites
+A Ruthenium node must be running.
+
+## Launch
+At root level (ruthenium folder), run the ui using the command `go run src/ui/main.go` with some of the arguments described bellow. For example:
+```
+go run src/ui/main.go -host-ip=0.0.0.0 -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0fe1562dc1749479d9715afd
+```
+Program arguments:
+```
+-mnemonic: The mnemonic (required if the private key is not provided)
+-derivation-path: The derivation path (unused if the mnemonic is omitted, default: "m/44'/60'/0'/0/0")
+-password: The mnemonic password (unused if the mnemonic is omitted)
+-private-key: The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)
+-port: The TCP port number for the UI server (default: 8080)
+-host-ip: The node host IP address
+-host-port: The TCP port number of the host node (default: 8106)
+-templates-path: The UI templates path (default: "src/ui/templates")
+-log-level: The log level (default: "info")  
+```
+
+Using a web browser, go to `http://localhost:8080` (If needed, replace `localhost` by the UI server IP address and `8080` by the TCP port number for the UI server)
+
+## API
 Base url: `<UI server url>:<UI server port>` (example: `localhost:8080`)
 
 ### Transactions pool
@@ -13,9 +38,9 @@ Base url: `<UI server url>:<UI server port>` (example: `localhost:8080`)
 * **parameters:** *none*
 * **request body:** [Transaction request](#transaction-request)
 * **responses:**
-  
+
   |Code|Description|
-  |---|---|
+    |---|---|
   |200|Transaction added|
   |400|Bad request|
   |500|Internal server error|
@@ -30,9 +55,9 @@ Base url: `<UI server url>:<UI server port>` (example: `localhost:8080`)
 * **parameters:** *none*
 * **request body:** *none*
 * **responses:**
-  
+
   |Code|Description|
-  |---|---|
+    |---|---|
   |200|Array of [transaction responses](#transaction-response)|
   |500|Internal server error|
 </details>
@@ -50,7 +75,7 @@ Base url: `<UI server url>:<UI server port>` (example: `localhost:8080`)
 * **responses:**
 
   |Code|Description|
-  |---|---|
+    |---|---|
   |200|Validation started|
   |500|Internal server error|
 </details>
@@ -66,7 +91,7 @@ Base url: `<UI server url>:<UI server port>` (example: `localhost:8080`)
 * **responses:**
 
   |Code|Description|
-  |---|---|
+    |---|---|
   |200|Validation stopped|
   |500|Internal server error|
 </details>
@@ -82,7 +107,7 @@ Base url: `<UI server url>:<UI server port>` (example: `localhost:8080`)
 * **responses:**
 
   |Code|Description|
-  |---|---|
+    |---|---|
   |200|The next block will be validated|
   |500|Internal server error|
 </details>
@@ -100,7 +125,7 @@ Base url: `<UI server url>:<UI server port>` (example: `localhost:8080`)
 * **responses:**
 
   |Code|Description|
-  |---|---|
+    |---|---|
   |200|[Wallet response](#wallet-response)|
   |500|Internal server error|
 </details>
@@ -114,23 +139,21 @@ Base url: `<UI server url>:<UI server port>` (example: `localhost:8080`)
 * **parameters:**
 
   |Name|Description|Example|
-  |---|---|---|
+    |---|---|---|
   |`address`|42 characters hexadecimal wallet address|`0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a`|
 * **request body:** *none*
 * **responses:**
 
   |Code|Description|
-  |---|---|
+    |---|---|
   |200|[Amount response](#amount-response)|
   |400|Bad request|
   |500|Internal server error|
 </details>
 
----
-<details open>
-<summary style="font-size:24px"><b>Schemas</b></summary>
+### Schemas
 
-### Amount response
+#### Amount response
 <table>
 <th>
 Schema
@@ -169,7 +192,7 @@ The amount
 </tr>
 </table>
 
-### Transaction request
+#### Transaction request
 <table>
 <th>
 Schema
@@ -220,7 +243,7 @@ The value
 </tr>
 </table>
 
-### Transaction response
+#### Transaction response
 <table>
 <th>
 Schema
@@ -277,7 +300,7 @@ The fee
 </tr>
 </table>
 
-### Wallet response
+#### Wallet response
 <table>
 <th>
 Schema
@@ -321,4 +344,3 @@ The wallet address
 </td>
 </tr>
 </table>
-</details>

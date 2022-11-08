@@ -1,5 +1,25 @@
-# Ruthenium host node API
+# Host node
+## Prerequisites
+* Your DNS port 8106 must be open.
+* If you want to [validate](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#validation) [blocks](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#block) or get an [income](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#income), you must be registered in the [Proof of Humanity](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#proof-of-humanity) registry with an Ethereum wallet address for which you are the owner of the private key.
 
+## Launch
+At root level (ruthenium folder), run the node using the command `go run src/node/main.go` with some of the arguments described bellow. For example:
+```
+go run src/node/main.go -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0fe1562dc1749479d9715afd
+```
+Program arguments:
+```
+-mnemonic: The mnemonic (required if the private key is not provided)
+-derivation-path: The derivation path (unused if the mnemonic is omitted, default: "m/44'/60'/0'/0/0")
+-password: The mnemonic password (unused if the mnemonic is omitted)
+-privateKey: The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)
+-port: TCP port number of host node (default: 8106)
+-configuration-path: The configuration files path (default: "config")
+-log-level: The log level (default: "info")
+```
+  
+## API
 This version supports [Gobs][1] only.
 
 ### Blockchain
