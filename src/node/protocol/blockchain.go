@@ -173,12 +173,12 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.Bloc
 			if currentBlockTimestamp != expectedBlockTimestamp {
 				blockDate := time.Unix(0, currentBlockTimestamp)
 				expectedDate := time.Unix(0, expectedBlockTimestamp)
-				return nil, fmt.Errorf("neighbor block reward timestamp is invalid: block date is %v, expected is %v", blockDate, expectedDate)
+				return nil, fmt.Errorf("neighbor block timestamp is invalid: block date is %v, expected is %v", blockDate, expectedDate)
 			}
 			if currentBlockTimestamp > now {
 				blockDate := time.Unix(0, currentBlockTimestamp)
 				nowDate := time.Unix(0, now)
-				return nil, fmt.Errorf("neighbor block reward timestamp is in the future: block date is %v, now is %v", blockDate, nowDate)
+				return nil, fmt.Errorf("neighbor block timestamp is in the future: block date is %v, now is %v", blockDate, nowDate)
 			}
 			var reward uint64
 			var totalTransactionsFees uint64
@@ -232,9 +232,9 @@ func (blockchain *Blockchain) Verify() {
 	var selectedTargets []string
 	for _, neighbor := range neighbors {
 		neighborBlocks, err := neighbor.GetBlocks()
-		target := neighbor.Target()
-		blockResponsesByTarget[target] = neighborBlocks
 		if err == nil {
+			target := neighbor.Target()
+			blockResponsesByTarget[target] = neighborBlocks
 			var validBlocks []*Block
 			validBlocks, err = blockchain.getValidBlocks(neighborBlocks)
 			if err != nil || validBlocks == nil {
