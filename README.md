@@ -3,8 +3,8 @@
 [![Build](https://img.shields.io/github/workflow/status/my-cloud/ruthenium/Build?logo=github)](https://github.com/my-cloud/ruthenium/actions?query=workflow%3ABuild+event%3Apush+branch%3Amain)
 
 ## Description
-[![Wiki](https://img.shields.io/badge/doc-wiki-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
-[![Whitepaper](https://img.shields.io/badge/doc-whitepaper-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki/Whitepaper)
+[![Doc](https://img.shields.io/badge/doc-wiki-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
+[![Doc](https://img.shields.io/badge/doc-whitepaper-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki/Whitepaper)
 
 The Ruthenium blockchain protocol.
 
@@ -19,7 +19,7 @@ There are two ways to use the Ruthenium blockchain. You can either use your own 
 * Option B (using docker image):
   * You need to have [![Docker](https://img.shields.io/badge/docker-grey?logo=docker)](https://www.docker.com/) installed.
 * Your DNS port 8106 must be open.
-* To get an income or validate blocks ou need to be registered in the [Proof of Humanity](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#proof-of-humanity) registry.
+* To get an income or validate blocks ou need to be registered in the [Proof of Humanity](https://github.com/my-cloud/ruthenium/Whitepaper#proof-of-humanity) registry.
 
 ### Installation
 * Option A (using sources):
@@ -88,9 +88,9 @@ For a [tutorial to create a first blockchain in Go][1], thanks to [Yuko Sakai][2
 ![license.png](doc/license.png)
 
 ## Project status
-[![Activity](https://img.shields.io/github/commit-activity/m/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/commits/main)
-[![Open milestones](https://img.shields.io/github/milestones/open/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/milestones)
-[![Closed milestones](https://img.shields.io/github/milestones/closed/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/milestones)
+[![Commit activity](https://img.shields.io/github/commit-activity/m/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/commits/main)
+[![Active milestones](https://img.shields.io/github/milestones/open/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/milestones)
+[![Completed milestones](https://img.shields.io/github/milestones/closed/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/milestones)
 
 [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=sqale_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=sqale_rating)
 [![Security](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=security_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=security_rating)
