@@ -6,7 +6,7 @@
 [![Wiki](https://img.shields.io/badge/doc-wiki-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
 [![Whitepaper](https://img.shields.io/badge/doc-whitepaper-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki/Whitepaper)
 
-The Ruthenium blockchain protocol using [Proof of Humanity](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#proof-of-humanity).
+The Ruthenium blockchain protocol.
 
 This README contains essential information for a quick start. You will find a detailed description of the project in the [wiki](https://github.com/my-cloud/ruthenium/wiki/Home). If you want to know what reasons led to create this blockchain, you can directly dive into the Ruthenium [whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
 
@@ -14,26 +14,27 @@ This README contains essential information for a quick start. You will find a de
 There are two ways to use the Ruthenium blockchain. You can either use your own build from [sources](https://github.com/my-cloud/ruthenium/releases) (Option A) or use a docker image provided in the [repository packages](https://github.com/my-cloud/ruthenium/pkgs/container/ruthenium) (Option B).
 
 ### Prerequisites
-* Option A: using sources
-  * [![Go](https://img.shields.io/github/go-mod/go-version/my-cloud/ruthenium?logo=go)](https://go.dev/dl/)
-* Option B: using docker image
-  * [![Docker](https://img.shields.io/badge/docker-grey?logo=docker)](https://www.docker.com/)
+* Option A (using sources):
+  * You need to have [![Go](https://img.shields.io/github/go-mod/go-version/my-cloud/ruthenium?logo=go)](https://go.dev/dl/) installed.
+* Option B (using docker image):
+  * You need to have [![Docker](https://img.shields.io/badge/docker-grey?logo=docker)](https://www.docker.com/) installed.
 * Your DNS port 8106 must be open.
+* To get an income or validate blocks ou need to be registered in the [Proof of Humanity](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#proof-of-humanity) registry.
 
 ### Installation
-* Option A: using sources
+* Option A (using sources):
   * Download the sources archive:
     ```
     https://github.com/my-cloud/ruthenium/releases/latest
     ```
-* Option B: using docker image
+* Option B (using docker image):
   * Pull the image:
     ```
     sudo docker pull ghcr.io/my-cloud/ruthenium:latest
     ```
 
 ### Launch
-* Option A: using sources
+* Option A (using sources):
   * Extract files from the sources archive
   * At root level (ruthenium folder), run the [node](src/node/README.md):
     ```
@@ -43,7 +44,7 @@ There are two ways to use the Ruthenium blockchain. You can either use your own 
     ```
     go run src/ui/main.go -host-ip=<your external IP address> -private-key=<private key>
     ```
-* Option B: using docker image
+* Option B (using docker image):
   * Run the [node](src/node/README.md):
     ```
     sudo docker run -p 8106:8106 -ti ghcr.io/my-cloud/ruthenium:latest \app\node -host-ip=<your external IP address> -private-key=<private key>
