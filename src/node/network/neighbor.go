@@ -7,14 +7,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 )
 
-const (
-	GetBlocksRequest       = "GET BLOCKS REQUEST"
-	GetTransactionsRequest = "GET TRANSACTIONS REQUEST"
-	MineRequest            = "MINE REQUEST"
-	StartMiningRequest     = "START MINING REQUEST"
-	StopMiningRequest      = "STOP MINING REQUEST"
-)
-
 type Neighbor struct {
 	target *Target
 	client Client

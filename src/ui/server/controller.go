@@ -6,6 +6,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/net"
 	"github.com/my-cloud/ruthenium/src/node/encryption"
+	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/p2p"
 	"html/template"
@@ -39,14 +40,6 @@ func NewController(mnemonic string, derivationPath string, password string, priv
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
 	}
 	return &Controller{mnemonic, derivationPath, password, privateKey, port, host, templatesPath, logger}
-}
-
-func (controller *Controller) Port() uint16 {
-	return controller.port
-}
-
-func (controller *Controller) BlockchainClient() *network.Neighbor {
-	return controller.host
 }
 
 func (controller *Controller) Index(w http.ResponseWriter, req *http.Request) {
@@ -211,7 +204,7 @@ func (controller *Controller) WalletAmount(writer http.ResponseWriter, req *http
 	switch req.Method {
 	case http.MethodGet:
 		address := req.URL.Query().Get("address")
-		amountRequest := AmountRequest{
+		amountRequest := neighborhood.AmountRequest{
 			Address: &address,
 		}
 		if amountRequest.IsInvalid() {
@@ -253,7 +246,7 @@ func (controller *Controller) Run() {
 	http.HandleFunc("/mine/start", controller.StartMining)
 	http.HandleFunc("/mine/stop", controller.StopMining)
 	controller.logger.Info("user interface server is running...")
-	controller.logger.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(int(controller.Port())), nil).Error())
+	controller.logger.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(int(controller.port)), nil).Error())
 }
 
 func (controller *Controller) write(writer http.ResponseWriter, message string) {
