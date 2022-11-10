@@ -35,31 +35,27 @@ There are two ways to use the Ruthenium blockchain. You can either use your own 
 ### Launch
 * Option A: using sources
   * Extract files from the sources archive
-  * At root level (ruthenium folder), run the node:
+  * At root level (ruthenium folder), run the [node](src/node/README.md):
     ```
     go run src/node/main.go -private-key=<private key>
     ```
-  * At root level (ruthenium folder), run the ui:
+  * At root level (ruthenium folder), run the [UI server](src/ui/README.md):
     ```
     go run src/ui/main.go -host-ip=<your external IP address> -private-key=<private key>
     ```
 * Option B: using docker image
-  * Run the node:
+  * Run the [node](src/node/README.md):
     ```
     sudo docker run -p 8106:8106 -ti ghcr.io/my-cloud/ruthenium:latest \app\node -host-ip=<your external IP address> -private-key=<private key>
     ```
-  * Run the ui:
+  * Run the [UI server](src/ui/README.md):
     ```
     sudo docker run -p 8080:8080 -ti ghcr.io/my-cloud/ruthenium:latest \app\ui -private-key=<private key>
     ```
 * Using a web browser, go to:
   * http://localhost:8080
 
-For further details concerning the node, look at the node [README](src/node/README.md).
-For further details concerning the UI, look at the UI [README](src/ui/README.md).
-
-## API
-The application programming interfaces for the node and UI are described in their own package:
+## APIs
 * [host node API](src/node/README.md#api)
 * [UI server API](src/ui/README.md#api)
 
