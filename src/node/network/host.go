@@ -12,6 +12,12 @@ import (
 const (
 	// TODO rename and extract ParticlesCount to a config file
 	ParticlesCount = 100000000
+
+	GetBlocksRequest       = "GET BLOCKS REQUEST"
+	GetTransactionsRequest = "GET TRANSACTIONS REQUEST"
+	MineRequest            = "MINE REQUEST"
+	StartMiningRequest     = "START MINING REQUEST"
+	StopMiningRequest      = "STOP MINING REQUEST"
 )
 
 type Host struct {
@@ -20,8 +26,9 @@ type Host struct {
 	pool         TransactionsPool
 	validator    Validator
 	synchronizer *Synchronizer
-	watch        clock.Time
-	logger       *log.Logger
+	// TODO rename to time
+	watch  clock.Time
+	logger *log.Logger
 }
 
 func NewHost(
