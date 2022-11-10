@@ -34,11 +34,23 @@ func NewEmptyBlockResponse(timestamp int64) *neighborhood.BlockResponse {
 	}
 }
 
-func NewBlockResponse(timestamp int64, transaction *protocol.Transaction) *neighborhood.BlockResponse {
+func NewBlockResponse(timestamp int64, hash [32]byte, transactions ...*protocol.Transaction) *neighborhood.BlockResponse {
+	var transactionResponses []*neighborhood.TransactionResponse
+	var registeredAddresses []string
+	registeredAddressesMap := make(map[string]bool)
+	for _, transaction := range transactions {
+		transactionResponses = append(transactionResponses, transaction.GetResponse())
+		if _, ok := registeredAddressesMap[transaction.SenderAddress()]; !ok && !transaction.IsReward() {
+			registeredAddressesMap[transaction.SenderAddress()] = true
+		}
+	}
+	for address := range registeredAddressesMap {
+		registeredAddresses = append(registeredAddresses, address)
+	}
 	return &neighborhood.BlockResponse{
 		Timestamp:           timestamp,
-		PreviousHash:        [32]byte{},
-		Transactions:        []*neighborhood.TransactionResponse{transaction.GetResponse()},
-		RegisteredAddresses: nil,
+		PreviousHash:        hash,
+		Transactions:        transactionResponses,
+		RegisteredAddresses: registeredAddresses,
 	}
 }

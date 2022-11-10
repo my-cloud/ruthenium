@@ -127,7 +127,7 @@ func Test_Validate_TransactionIsAlreadyInTheBlockchain_TransactionNotValidated(t
 	pool.AddTransaction(&invalidTransactionRequest, blockchain, nil)
 	pool.Wait()
 	transaction, _ := protocol.NewTransactionFromRequest(&invalidTransactionRequest)
-	blockchain.AddBlock(NewBlockResponse(now-1, transaction))
+	blockchain.AddBlock(NewBlockResponse(now-1, [32]byte{}, transaction))
 
 	// Act
 	validation.Validate()

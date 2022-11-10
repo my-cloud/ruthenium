@@ -2,8 +2,10 @@ package protocol
 
 import (
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/encryption"
 	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
+	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/test"
 	"testing"
 	"time"
@@ -131,6 +133,89 @@ func Test_Verify_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 		hash, _ := block1.Hash()
 		blockResponse2 := NewRewardedBlockResponse(hash, 2)
 		return []*neighborhood.BlockResponse{blockResponse1, blockResponse2}, nil
+	}
+	neighborMock.TargetFunc = func() string {
+		return "neighbor"
+	}
+	synchronizer := new(SynchronizerMock)
+	synchronizer.NeighborsFunc = func() []neighborhood.Neighbor {
+		return []neighborhood.Neighbor{neighborMock}
+	}
+	blockchain := protocol.NewBlockchain(registry, 1, timeMock, synchronizer, logger)
+
+	// Act
+	blockchain.Verify()
+
+	// Assert
+	isReplaced := blockchain.IsReplaced()
+	test.Assert(t, !isReplaced, "blockchain is replaced whereas it should not")
+}
+
+func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
+	// Arrange
+	registry := new(RegistryMock)
+	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
+	timeMock := new(TimeMock)
+	timeMock.NowFunc = func() time.Time { return time.Unix(0, 1) }
+	logger := log.NewLogger(log.Fatal)
+	neighborMock := new(NeighborMock)
+	neighborMock.GetBlocksFunc = func() ([]*neighborhood.BlockResponse, error) {
+		wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
+		address := wallet.Address()
+		blockResponse1 := NewGenesisBlockResponse(address)
+		block1, _ := protocol.NewBlockFromResponse(blockResponse1)
+		hash, _ := block1.Hash()
+		var block2Timestamp int64 = 1
+		serverTransaction := server.NewTransaction("A", wallet.Address(), wallet.PublicKey(), 3, 1)
+		_ = serverTransaction.Sign(wallet.PrivateKey())
+		transactionRequest := serverTransaction.GetRequest()
+		transaction, _ := protocol.NewTransactionFromRequest(&transactionRequest)
+		transactions := []*protocol.Transaction{protocol.NewRewardTransaction(address, block2Timestamp, 0), transaction}
+		blockResponse2 := NewBlockResponse(block2Timestamp, hash, transactions...)
+		return []*neighborhood.BlockResponse{blockResponse1, blockResponse2}, nil
+	}
+	neighborMock.TargetFunc = func() string {
+		return "neighbor"
+	}
+	synchronizer := new(SynchronizerMock)
+	synchronizer.NeighborsFunc = func() []neighborhood.Neighbor {
+		return []neighborhood.Neighbor{neighborMock}
+	}
+	blockchain := protocol.NewBlockchain(registry, 1, timeMock, synchronizer, logger)
+
+	// Act
+	blockchain.Verify()
+
+	// Assert
+	isReplaced := blockchain.IsReplaced()
+	test.Assert(t, !isReplaced, "blockchain is replaced whereas it should not")
+}
+
+func Test_Verify_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
+	// Arrange
+	registry := new(RegistryMock)
+	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
+	timeMock := new(TimeMock)
+	timeMock.NowFunc = func() time.Time { return time.Unix(0, 2) }
+	logger := log.NewLogger(log.Fatal)
+	neighborMock := new(NeighborMock)
+	neighborMock.GetBlocksFunc = func() ([]*neighborhood.BlockResponse, error) {
+		wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
+		address := wallet.Address()
+		blockResponse1 := NewGenesisBlockResponse(address)
+		block1, _ := protocol.NewBlockFromResponse(blockResponse1)
+		hash1, _ := block1.Hash()
+		blockResponse2 := NewRewardedBlockResponse(hash1, 1)
+		block2, _ := protocol.NewBlockFromResponse(blockResponse2)
+		hash2, _ := block2.Hash()
+		var block3Timestamp int64 = 2
+		serverTransaction := server.NewTransaction("A", wallet.Address(), wallet.PublicKey(), 0, 1)
+		_ = serverTransaction.Sign(wallet.PrivateKey())
+		transactionRequest := serverTransaction.GetRequest()
+		transaction, _ := protocol.NewTransactionFromRequest(&transactionRequest)
+		transactions := []*protocol.Transaction{protocol.NewRewardTransaction(address, block3Timestamp, 0), transaction}
+		blockResponse3 := NewBlockResponse(block3Timestamp, hash2, transactions...)
+		return []*neighborhood.BlockResponse{blockResponse1, blockResponse2, blockResponse3}, nil
 	}
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
