@@ -4,25 +4,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
-	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/network"
 	"net/http"
 )
 
 type WalletAmountHandler struct {
-	host   neighborhood.Neighbor
-	logger *log.Logger
+	host           network.Neighbor
+	particlesCount uint64
+	logger         *log.Logger
 }
 
-func NewWalletAmountHandler(host neighborhood.Neighbor, logger *log.Logger) *WalletAmountHandler {
-	return &WalletAmountHandler{host, logger}
+func NewWalletAmountHandler(host network.Neighbor, particlesCount uint64, logger *log.Logger) *WalletAmountHandler {
+	return &WalletAmountHandler{host, particlesCount, logger}
 }
 
 func (handler *WalletAmountHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 		address := req.URL.Query().Get("address")
-		amountRequest := neighborhood.AmountRequest{
+		amountRequest := network.AmountRequest{
 			Address: &address,
 		}
 		if amountRequest.IsInvalid() {
@@ -39,7 +39,7 @@ func (handler *WalletAmountHandler) ServeHTTP(writer http.ResponseWriter, req *h
 		}
 		var marshaledAmount []byte
 		marshaledAmount, err = json.Marshal(&AmountResponse{
-			Amount: float64(amountResponse.Amount) / network.ParticlesCount,
+			Amount: float64(amountResponse.Amount) / float64(handler.particlesCount),
 		})
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to marshal amountResponse: %w", err).Error())

@@ -3,8 +3,8 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/node/encryption"
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
+	"github.com/my-cloud/ruthenium/src/encryption"
+	"github.com/my-cloud/ruthenium/src/network"
 )
 
 const transactionFee = 1000
@@ -39,10 +39,10 @@ func (transaction *Transaction) Sign(privateKey *encryption.PrivateKey) (err err
 	return
 }
 
-func (transaction *Transaction) GetRequest() neighborhood.TransactionRequest {
+func (transaction *Transaction) GetRequest() network.TransactionRequest {
 	encodedPublicKey := transaction.senderPublicKey.String()
 	encodedSignature := transaction.signature.String()
-	return neighborhood.TransactionRequest{
+	return network.TransactionRequest{
 		RecipientAddress: &transaction.recipientAddress,
 		SenderAddress:    &transaction.senderAddress,
 		SenderPublicKey:  &encodedPublicKey,

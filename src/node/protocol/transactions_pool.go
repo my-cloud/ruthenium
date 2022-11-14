@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/network"
 	"github.com/my-cloud/ruthenium/src/node/clock"
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
-	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/protocol"
 	"math/rand"
 	"sync"
 	"time"
@@ -14,7 +14,7 @@ import (
 
 type TransactionsPool struct {
 	transactions         []*Transaction
-	transactionResponses []*neighborhood.TransactionResponse
+	transactionResponses []*network.TransactionResponse
 	mutex                sync.RWMutex
 
 	registry Registry
@@ -37,7 +37,7 @@ func NewTransactionsPool(registry Registry, validationTimer time.Duration, time 
 	return pool
 }
 
-func (pool *TransactionsPool) AddTransaction(transactionRequest *neighborhood.TransactionRequest, blockchain network.Blockchain, neighbors []neighborhood.Neighbor) {
+func (pool *TransactionsPool) AddTransaction(transactionRequest *network.TransactionRequest, blockchain protocol.Blockchain, neighbors []network.Neighbor) {
 	pool.waitGroup.Add(1)
 	go func() {
 		defer pool.waitGroup.Done()
@@ -47,14 +47,14 @@ func (pool *TransactionsPool) AddTransaction(transactionRequest *neighborhood.Tr
 			return
 		}
 		for _, neighbor := range neighbors {
-			go func(neighbor neighborhood.Neighbor) {
+			go func(neighbor network.Neighbor) {
 				_ = neighbor.AddTransaction(*transactionRequest)
 			}(neighbor)
 		}
 	}()
 }
 
-func (pool *TransactionsPool) addTransaction(transactionRequest *neighborhood.TransactionRequest, blockchain network.Blockchain) (err error) {
+func (pool *TransactionsPool) addTransaction(transactionRequest *network.TransactionRequest, blockchain protocol.Blockchain) (err error) {
 	transaction, err := NewTransactionFromRequest(transactionRequest)
 	if err != nil {
 		err = fmt.Errorf("failed to instantiate transaction: %w", err)
@@ -108,7 +108,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *neighborhood.Tr
 	return
 }
 
-func (pool *TransactionsPool) Transactions() []*neighborhood.TransactionResponse {
+func (pool *TransactionsPool) Transactions() []*network.TransactionResponse {
 	pool.mutex.RLock()
 	defer pool.mutex.RUnlock()
 	return pool.transactionResponses

@@ -3,16 +3,16 @@ package server
 import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
+	"github.com/my-cloud/ruthenium/src/network"
 	"net/http"
 )
 
 type ValidationStartHandler struct {
-	host   neighborhood.Neighbor
+	host   network.Neighbor
 	logger *log.Logger
 }
 
-func NewValidationStartHandler(host neighborhood.Neighbor, logger *log.Logger) *ValidationStartHandler {
+func NewValidationStartHandler(host network.Neighbor, logger *log.Logger) *ValidationStartHandler {
 	return &ValidationStartHandler{host, logger}
 }
 

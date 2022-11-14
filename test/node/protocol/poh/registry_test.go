@@ -1,7 +1,7 @@
 package poh
 
 import (
-	"github.com/my-cloud/ruthenium/src/poh"
+	"github.com/my-cloud/ruthenium/src/node/protocol/poh"
 	"github.com/my-cloud/ruthenium/test"
 	"testing"
 )

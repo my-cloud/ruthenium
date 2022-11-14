@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
+	"github.com/my-cloud/ruthenium/src/network"
 	"net/http"
 )
 
 type TransactionsHandler struct {
-	host   neighborhood.Neighbor
+	host   network.Neighbor
 	logger *log.Logger
 }
 
-func NewTransactionsHandler(host neighborhood.Neighbor, logger *log.Logger) *TransactionsHandler {
+func NewTransactionsHandler(host network.Neighbor, logger *log.Logger) *TransactionsHandler {
 	return &TransactionsHandler{host, logger}
 }
 

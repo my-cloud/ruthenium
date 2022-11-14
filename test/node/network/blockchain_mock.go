@@ -4,14 +4,14 @@
 package network
 
 import (
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
-	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/network"
+	"github.com/my-cloud/ruthenium/src/protocol"
 	"sync"
 )
 
 // Ensure, that BlockchainMock does implement Blockchain.
 // If this is not the case, regenerate this file with moq.
-var _ network.Blockchain = &BlockchainMock{}
+var _ protocol.Blockchain = &BlockchainMock{}
 
 // BlockchainMock is a mock implementation of Blockchain.
 //
@@ -19,10 +19,10 @@ var _ network.Blockchain = &BlockchainMock{}
 //
 // 		// make and configure a mocked Blockchain
 // 		mockedBlockchain := &BlockchainMock{
-// 			AddBlockFunc: func(blockResponse *neighborhood.BlockResponse)  {
+// 			AddBlockFunc: func(blockResponse *network.BlockResponse)  {
 // 				panic("mock out the AddBlock method")
 // 			},
-// 			BlocksFunc: func() []*neighborhood.BlockResponse {
+// 			BlocksFunc: func() []*network.BlockResponse {
 // 				panic("mock out the Blocks method")
 // 			},
 // 			CalculateTotalAmountFunc: func(currentTimestamp int64, blockchainAddress string) uint64 {
@@ -42,10 +42,10 @@ var _ network.Blockchain = &BlockchainMock{}
 // 	}
 type BlockchainMock struct {
 	// AddBlockFunc mocks the AddBlock method.
-	AddBlockFunc func(blockResponse *neighborhood.BlockResponse)
+	AddBlockFunc func(blockResponse *network.BlockResponse)
 
 	// BlocksFunc mocks the Blocks method.
-	BlocksFunc func() []*neighborhood.BlockResponse
+	BlocksFunc func() []*network.BlockResponse
 
 	// CalculateTotalAmountFunc mocks the CalculateTotalAmount method.
 	CalculateTotalAmountFunc func(currentTimestamp int64, blockchainAddress string) uint64
@@ -61,7 +61,7 @@ type BlockchainMock struct {
 		// AddBlock holds details about calls to the AddBlock method.
 		AddBlock []struct {
 			// BlockResponse is the blockResponse argument value.
-			BlockResponse *neighborhood.BlockResponse
+			BlockResponse *network.BlockResponse
 		}
 		// Blocks holds details about calls to the Blocks method.
 		Blocks []struct {
@@ -88,12 +88,12 @@ type BlockchainMock struct {
 }
 
 // AddBlock calls AddBlockFunc.
-func (mock *BlockchainMock) AddBlock(blockResponse *neighborhood.BlockResponse) {
+func (mock *BlockchainMock) AddBlock(blockResponse *network.BlockResponse) {
 	if mock.AddBlockFunc == nil {
 		panic("BlockchainMock.AddBlockFunc: method is nil but Blockchain.AddBlock was just called")
 	}
 	callInfo := struct {
-		BlockResponse *neighborhood.BlockResponse
+		BlockResponse *network.BlockResponse
 	}{
 		BlockResponse: blockResponse,
 	}
@@ -107,10 +107,10 @@ func (mock *BlockchainMock) AddBlock(blockResponse *neighborhood.BlockResponse) 
 // Check the length with:
 //     len(mockedBlockchain.AddBlockCalls())
 func (mock *BlockchainMock) AddBlockCalls() []struct {
-	BlockResponse *neighborhood.BlockResponse
+	BlockResponse *network.BlockResponse
 } {
 	var calls []struct {
-		BlockResponse *neighborhood.BlockResponse
+		BlockResponse *network.BlockResponse
 	}
 	mock.lockAddBlock.RLock()
 	calls = mock.calls.AddBlock
@@ -119,7 +119,7 @@ func (mock *BlockchainMock) AddBlockCalls() []struct {
 }
 
 // Blocks calls BlocksFunc.
-func (mock *BlockchainMock) Blocks() []*neighborhood.BlockResponse {
+func (mock *BlockchainMock) Blocks() []*network.BlockResponse {
 	if mock.BlocksFunc == nil {
 		panic("BlockchainMock.BlocksFunc: method is nil but Blockchain.Blocks was just called")
 	}

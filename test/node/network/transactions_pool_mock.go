@@ -4,14 +4,14 @@
 package network
 
 import (
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
-	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/network"
+	"github.com/my-cloud/ruthenium/src/protocol"
 	"sync"
 )
 
 // Ensure, that TransactionsPoolMock does implement TransactionsPool.
 // If this is not the case, regenerate this file with moq.
-var _ network.TransactionsPool = &TransactionsPoolMock{}
+var _ protocol.TransactionsPool = &TransactionsPoolMock{}
 
 // TransactionsPoolMock is a mock implementation of TransactionsPool.
 //
@@ -19,10 +19,10 @@ var _ network.TransactionsPool = &TransactionsPoolMock{}
 //
 // 		// make and configure a mocked TransactionsPool
 // 		mockedTransactionsPool := &TransactionsPoolMock{
-// 			AddTransactionFunc: func(transactionRequest *neighborhood.TransactionRequest, blockchain Blockchain, neighbors []neighborhood.Neighbor)  {
+// 			AddTransactionFunc: func(transactionRequest *network.TransactionRequest, blockchain Blockchain, neighbors []network.Neighbor)  {
 // 				panic("mock out the AddTransaction method")
 // 			},
-// 			TransactionsFunc: func() []*neighborhood.TransactionResponse {
+// 			TransactionsFunc: func() []*network.TransactionResponse {
 // 				panic("mock out the Transactions method")
 // 			},
 // 		}
@@ -33,21 +33,21 @@ var _ network.TransactionsPool = &TransactionsPoolMock{}
 // 	}
 type TransactionsPoolMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
-	AddTransactionFunc func(transactionRequest *neighborhood.TransactionRequest, blockchain network.Blockchain, neighbors []neighborhood.Neighbor)
+	AddTransactionFunc func(transactionRequest *network.TransactionRequest, blockchain protocol.Blockchain, neighbors []network.Neighbor)
 
 	// TransactionsFunc mocks the Transactions method.
-	TransactionsFunc func() []*neighborhood.TransactionResponse
+	TransactionsFunc func() []*network.TransactionResponse
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// AddTransaction holds details about calls to the AddTransaction method.
 		AddTransaction []struct {
 			// TransactionRequest is the transactionRequest argument value.
-			TransactionRequest *neighborhood.TransactionRequest
+			TransactionRequest *network.TransactionRequest
 			// Blockchain is the blockchain argument value.
-			Blockchain network.Blockchain
+			Blockchain protocol.Blockchain
 			// Neighbors is the neighbors argument value.
-			Neighbors []neighborhood.Neighbor
+			Neighbors []network.Neighbor
 		}
 		// Transactions holds details about calls to the Transactions method.
 		Transactions []struct {
@@ -58,14 +58,14 @@ type TransactionsPoolMock struct {
 }
 
 // AddTransaction calls AddTransactionFunc.
-func (mock *TransactionsPoolMock) AddTransaction(transactionRequest *neighborhood.TransactionRequest, blockchain network.Blockchain, neighbors []neighborhood.Neighbor) {
+func (mock *TransactionsPoolMock) AddTransaction(transactionRequest *network.TransactionRequest, blockchain protocol.Blockchain, neighbors []network.Neighbor) {
 	if mock.AddTransactionFunc == nil {
 		panic("TransactionsPoolMock.AddTransactionFunc: method is nil but TransactionsPool.AddTransaction was just called")
 	}
 	callInfo := struct {
-		TransactionRequest *neighborhood.TransactionRequest
-		Blockchain         network.Blockchain
-		Neighbors          []neighborhood.Neighbor
+		TransactionRequest *network.TransactionRequest
+		Blockchain         protocol.Blockchain
+		Neighbors          []network.Neighbor
 	}{
 		TransactionRequest: transactionRequest,
 		Blockchain:         blockchain,
@@ -81,14 +81,14 @@ func (mock *TransactionsPoolMock) AddTransaction(transactionRequest *neighborhoo
 // Check the length with:
 //     len(mockedTransactionsPool.AddTransactionCalls())
 func (mock *TransactionsPoolMock) AddTransactionCalls() []struct {
-	TransactionRequest *neighborhood.TransactionRequest
-	Blockchain         network.Blockchain
-	Neighbors          []neighborhood.Neighbor
+	TransactionRequest *network.TransactionRequest
+	Blockchain         protocol.Blockchain
+	Neighbors          []network.Neighbor
 } {
 	var calls []struct {
-		TransactionRequest *neighborhood.TransactionRequest
-		Blockchain         network.Blockchain
-		Neighbors          []neighborhood.Neighbor
+		TransactionRequest *network.TransactionRequest
+		Blockchain         protocol.Blockchain
+		Neighbors          []network.Neighbor
 	}
 	mock.lockAddTransaction.RLock()
 	calls = mock.calls.AddTransaction
@@ -97,7 +97,7 @@ func (mock *TransactionsPoolMock) AddTransactionCalls() []struct {
 }
 
 // Transactions calls TransactionsFunc.
-func (mock *TransactionsPoolMock) Transactions() []*neighborhood.TransactionResponse {
+func (mock *TransactionsPoolMock) Transactions() []*network.TransactionResponse {
 	if mock.TransactionsFunc == nil {
 		panic("TransactionsPoolMock.TransactionsFunc: method is nil but TransactionsPool.Transactions was just called")
 	}

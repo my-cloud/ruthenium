@@ -3,16 +3,16 @@ package server
 import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
+	"github.com/my-cloud/ruthenium/src/network"
 	"net/http"
 )
 
 type ValidationStopHandler struct {
-	host   neighborhood.Neighbor
+	host   network.Neighbor
 	logger *log.Logger
 }
 
-func NewValidationStopHandler(host neighborhood.Neighbor, logger *log.Logger) *ValidationStopHandler {
+func NewValidationStopHandler(host network.Neighbor, logger *log.Logger) *ValidationStopHandler {
 	return &ValidationStopHandler{host, logger}
 }
 

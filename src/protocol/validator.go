@@ -1,4 +1,4 @@
-package network
+package protocol
 
 type Validator interface {
 	StartValidation()

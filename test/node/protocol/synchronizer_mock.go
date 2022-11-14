@@ -4,14 +4,13 @@
 package protocol
 
 import (
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
-	"github.com/my-cloud/ruthenium/src/node/protocol"
+	"github.com/my-cloud/ruthenium/src/network"
 	"sync"
 )
 
 // Ensure, that SynchronizerMock does implement Synchronizer.
 // If this is not the case, regenerate this file with moq.
-var _ protocol.Synchronizer = &SynchronizerMock{}
+var _ network.Synchronizer = &SynchronizerMock{}
 
 // SynchronizerMock is a mock implementation of Synchronizer.
 //
@@ -19,7 +18,7 @@ var _ protocol.Synchronizer = &SynchronizerMock{}
 //
 // 		// make and configure a mocked Synchronizer
 // 		mockedSynchronizer := &SynchronizerMock{
-// 			NeighborsFunc: func() []neighborhood.Neighbor {
+// 			NeighborsFunc: func() []network.Neighbor {
 // 				panic("mock out the Neighbors method")
 // 			},
 // 		}
@@ -30,7 +29,7 @@ var _ protocol.Synchronizer = &SynchronizerMock{}
 // 	}
 type SynchronizerMock struct {
 	// NeighborsFunc mocks the Neighbors method.
-	NeighborsFunc func() []neighborhood.Neighbor
+	NeighborsFunc func() []network.Neighbor
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -42,7 +41,7 @@ type SynchronizerMock struct {
 }
 
 // Neighbors calls NeighborsFunc.
-func (mock *SynchronizerMock) Neighbors() []neighborhood.Neighbor {
+func (mock *SynchronizerMock) Neighbors() []network.Neighbor {
 	if mock.NeighborsFunc == nil {
 		panic("SynchronizerMock.NeighborsFunc: method is nil but Synchronizer.Neighbors was just called")
 	}

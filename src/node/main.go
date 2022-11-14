@@ -3,15 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/net"
 	"github.com/my-cloud/ruthenium/src/node/clock"
-	"github.com/my-cloud/ruthenium/src/node/encryption"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
+	"github.com/my-cloud/ruthenium/src/node/protocol/poh"
 	"github.com/my-cloud/ruthenium/src/p2p"
-	"github.com/my-cloud/ruthenium/src/poh"
+	"github.com/my-cloud/ruthenium/src/p2p/net"
 	"time"
 )
 

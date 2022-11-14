@@ -1,4 +1,4 @@
-package neighborhood
+package network
 
 type BlockResponse struct {
 	Timestamp           int64

@@ -4,13 +4,13 @@
 package network
 
 import (
-	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/protocol"
 	"sync"
 )
 
 // Ensure, that ValidatorMock does implement Validator.
 // If this is not the case, regenerate this file with moq.
-var _ network.Validator = &ValidatorMock{}
+var _ protocol.Validator = &ValidatorMock{}
 
 // ValidatorMock is a mock implementation of Validator.
 //

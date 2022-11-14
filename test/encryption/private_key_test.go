@@ -2,7 +2,7 @@ package encryption
 
 import (
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/node/encryption"
+	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/test"
 	"testing"
 )

@@ -1,4 +1,4 @@
-package neighborhood
+package network
 
 type TargetRequest struct {
 	Ip   *string

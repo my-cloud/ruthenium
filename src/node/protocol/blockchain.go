@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/network"
 	"github.com/my-cloud/ruthenium/src/node/clock"
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
 	"math"
 	"sort"
 	"sync"
@@ -20,7 +20,7 @@ const (
 
 type Blockchain struct {
 	blocks         []*Block
-	blockResponses []*neighborhood.BlockResponse
+	blockResponses []*network.BlockResponse
 	mutex          sync.RWMutex
 
 	registry Registry
@@ -28,7 +28,7 @@ type Blockchain struct {
 	validationTimer time.Duration
 	timeable        clock.Time
 
-	synchronizer Synchronizer
+	synchronizer network.Synchronizer
 
 	lambda float64
 
@@ -36,7 +36,7 @@ type Blockchain struct {
 	isReplaced bool
 }
 
-func NewBlockchain(registry Registry, validationTimer time.Duration, timeable clock.Time, synchronizer Synchronizer, logger *log.Logger) *Blockchain {
+func NewBlockchain(registry Registry, validationTimer time.Duration, timeable clock.Time, synchronizer network.Synchronizer, logger *log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.registry = registry
 	blockchain.validationTimer = validationTimer
@@ -49,7 +49,7 @@ func NewBlockchain(registry Registry, validationTimer time.Duration, timeable cl
 	return blockchain
 }
 
-func (blockchain *Blockchain) AddBlock(blockResponse *neighborhood.BlockResponse) {
+func (blockchain *Blockchain) AddBlock(blockResponse *network.BlockResponse) {
 	block, err := NewBlockFromResponse(blockResponse)
 	if err != nil {
 		blockchain.logger.Error(fmt.Errorf("unable to add block: %w", err).Error())
@@ -63,13 +63,13 @@ func (blockchain *Blockchain) IsEmpty() bool {
 	return blockchain.blocks == nil
 }
 
-func (blockchain *Blockchain) Blocks() []*neighborhood.BlockResponse {
+func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
 	return blockchain.blockResponses
 }
 
-func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*neighborhood.BlockResponse) (validBlocks []*Block, err error) {
+func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResponse) (validBlocks []*Block, err error) {
 	if len(neighborBlocks) < 2 || len(neighborBlocks) < len(blockchain.blocks) {
 		return nil, errors.New("neighbor's blockchain is too short")
 	}
@@ -227,7 +227,7 @@ func (blockchain *Blockchain) Verify() {
 	// Select valid blocks
 	neighbors := blockchain.synchronizer.Neighbors()
 	blockchain.mutex.RLock()
-	blockResponsesByTarget := make(map[string][]*neighborhood.BlockResponse)
+	blockResponsesByTarget := make(map[string][]*network.BlockResponse)
 	blocksByTarget := make(map[string][]*Block)
 	var selectedTargets []string
 	for _, neighbor := range neighbors {
@@ -253,7 +253,7 @@ func (blockchain *Blockchain) Verify() {
 		selectedTargets = append(selectedTargets, hostTarget)
 	}
 
-	var selectedBlocksResponse []*neighborhood.BlockResponse
+	var selectedBlocksResponse []*network.BlockResponse
 	var selectedBlocks []*Block
 	var isReplaced bool
 	if selectedTargets != nil {

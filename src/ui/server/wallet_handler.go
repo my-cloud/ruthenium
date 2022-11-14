@@ -2,8 +2,8 @@ package server
 
 import (
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/encryption"
 	"net/http"
 )
 

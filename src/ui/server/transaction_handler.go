@@ -3,10 +3,9 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/encryption"
-	"github.com/my-cloud/ruthenium/src/node/neighborhood"
-	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/network"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,12 +13,13 @@ import (
 )
 
 type TransactionHandler struct {
-	host   neighborhood.Neighbor
-	logger *log.Logger
+	host               network.Neighbor
+	particlesInOneAtom uint64
+	logger             *log.Logger
 }
 
-func NewTransactionHandler(host neighborhood.Neighbor, logger *log.Logger) *TransactionHandler {
-	return &TransactionHandler{host, logger}
+func NewTransactionHandler(host network.Neighbor, particlesInOneAtom uint64, logger *log.Logger) *TransactionHandler {
+	return &TransactionHandler{host, particlesInOneAtom, logger}
 }
 
 func (handler *TransactionHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -49,7 +49,7 @@ func (handler *TransactionHandler) ServeHTTP(writer http.ResponseWriter, req *ht
 			jsonWriter.Write("invalid private key")
 			return
 		}
-		value, err := atomsToParticles(*transactionRequest.Value)
+		value, err := atomsToParticles(*transactionRequest.Value, handler.particlesInOneAtom)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to parse transaction value: %w", err).Error())
 			writer.WriteHeader(http.StatusBadRequest)
@@ -79,7 +79,7 @@ func (handler *TransactionHandler) ServeHTTP(writer http.ResponseWriter, req *ht
 	}
 }
 
-func atomsToParticles(atoms string) (particles uint64, err error) {
+func atomsToParticles(atoms string, particlesInOneAtom uint64) (particles uint64, err error) {
 	const decimalSeparator = "."
 	i := strings.Index(atoms, decimalSeparator)
 	if i > 12 || (i == -1 && len(atoms) > 12) {
@@ -94,21 +94,21 @@ func atomsToParticles(atoms string) (particles uint64, err error) {
 			return
 		}
 		decimalsString := atoms[i+1:]
-		trailingZerosCount := len(strconv.Itoa(network.ParticlesCount)) - 1 - len(decimalsString)
+		trailingZerosCount := len(strconv.Itoa(int(particlesInOneAtom))) - 1 - len(decimalsString)
 		trailedDecimalsString := fmt.Sprintf("%s%s", decimalsString, strings.Repeat("0", trailingZerosCount))
 		var decimals uint64
 		decimals, err = parseUint64(trailedDecimalsString)
 		if err != nil {
 			return
 		}
-		particles = units*network.ParticlesCount + decimals
+		particles = units*particlesInOneAtom + decimals
 	} else {
 		var units uint64
 		units, err = parseUint64(atoms)
 		if err != nil {
 			return
 		}
-		particles = units * network.ParticlesCount
+		particles = units * particlesInOneAtom
 	}
 	return
 }
