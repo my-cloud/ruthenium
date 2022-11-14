@@ -6,6 +6,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/test"
+	"github.com/my-cloud/ruthenium/test/node"
 	"testing"
 )
 
@@ -14,7 +15,7 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	serverMock := new(ServerMock)
 	serverMock.ServeFunc = func() error { return nil }
 	serverMock.SetHandleFunc = func(topic string, handler p2p.Handler) {}
-	blockchainMock := new(BlockchainMock)
+	blockchainMock := new(node.BlockchainMock)
 	blockchainMock.VerifyFunc = func() {}
 	blockchainMock.StartVerificationFunc = func() {}
 	transactionsPoolMock := new(TransactionsPoolMock)

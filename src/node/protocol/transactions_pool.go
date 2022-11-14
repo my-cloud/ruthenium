@@ -114,9 +114,9 @@ func (pool *TransactionsPool) Transactions() []*network.TransactionResponse {
 	return pool.transactionResponses
 }
 
-func (pool *TransactionsPool) Validate(timestamp int64, blockchain *Blockchain, address string) {
+func (pool *TransactionsPool) Validate(timestamp int64, blockchain protocol.Blockchain, address string) *network.BlockResponse {
 	blocks := blockchain.Blocks()
-	lastBlock := blockchain.LastBlock()
+	lastBlock := blocks[len(blocks)-1]
 
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
@@ -155,7 +155,7 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain *Blockchain, 
 		totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + fee
 		reward += fee
 	}
-	registeredAddresses := lastBlock.RegisteredAddresses()
+	registeredAddresses := lastBlock.RegisteredAddresses
 	registeredAddressesMap := make(map[string]bool)
 	for _, registeredAddress := range registeredAddresses {
 		registeredAddressesMap[registeredAddress] = true
@@ -200,20 +200,25 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain *Blockchain, 
 	}
 	pool.clear()
 
-	if lastBlock.Timestamp() == timestamp {
+	if lastBlock.Timestamp == timestamp {
 		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
-		return
+		return nil
 	}
-	lastBlockHash, err := lastBlock.Hash()
+	lastBlockResponse, err := NewBlockFromResponse(lastBlock)
+	if err != nil {
+		pool.logger.Error(fmt.Errorf("failed instantiate last block: %w", err).Error())
+		return nil
+	}
+	lastBlockHash, err := lastBlockResponse.Hash()
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("failed calculate last block hash: %w", err).Error())
-		return
+		return nil
 	}
 	rewardTransaction := NewRewardTransaction(address, timestamp, reward)
 	transactions = append(transactions, rewardTransaction)
 	block := NewBlock(timestamp, lastBlockHash, transactions, newRegisteredAddresses)
-	blockchain.AddBlock(block.GetResponse())
 	pool.logger.Debug(fmt.Sprintf("reward: %d", reward))
+	return block.GetResponse()
 }
 
 func (pool *TransactionsPool) clear() {

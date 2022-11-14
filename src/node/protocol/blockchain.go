@@ -26,7 +26,8 @@ type Blockchain struct {
 	registry Registry
 
 	validationTimer time.Duration
-	timeable        clock.Time
+	// TODO rename to time
+	timeable clock.Time
 
 	synchronizer network.Synchronizer
 
@@ -55,6 +56,8 @@ func (blockchain *Blockchain) AddBlock(blockResponse *network.BlockResponse) {
 		blockchain.logger.Error(fmt.Errorf("unable to add block: %w", err).Error())
 		return
 	}
+	blockchain.mutex.Lock()
+	defer blockchain.mutex.Unlock()
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
 	blockchain.blocks = append(blockchain.blocks, block)
 }
@@ -211,8 +214,9 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResp
 			if reward > totalTransactionsFees {
 				return nil, errors.New("neighbor block reward exceeds the consented one")
 			}
+			currentBlockchain := blockchain.Copy()
 			for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
-				if totalTransactionsValue > blockchain.calculateTotalAmount(currentBlockTimestamp, senderAddress, validBlocks) {
+				if totalTransactionsValue > currentBlockchain.CalculateTotalAmount(currentBlockTimestamp, senderAddress) {
 					return nil, errors.New("neighbor block total transactions value exceeds its sender wallet amount")
 				}
 			}
@@ -221,6 +225,21 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResp
 		previousBlock = currentBlock
 	}
 	return validBlocks, nil
+}
+
+func (blockchain *Blockchain) Copy() *Blockchain {
+	blockchainCopy := new(Blockchain)
+	blockchainCopy.registry = blockchain.registry
+	blockchainCopy.validationTimer = blockchain.validationTimer
+	blockchainCopy.timeable = blockchain.timeable
+	blockchainCopy.synchronizer = blockchain.synchronizer
+	blockchainCopy.logger = blockchain.logger
+	blockchainCopy.lambda = blockchain.lambda
+	blockchain.mutex.RLock()
+	defer blockchain.mutex.RUnlock()
+	blockchainCopy.blocks = blockchain.blocks
+	blockchainCopy.blockResponses = blockchain.blockResponses
+	return blockchainCopy
 }
 
 func (blockchain *Blockchain) Verify() {
@@ -387,13 +406,9 @@ func removeTransactions(transactions []*Transaction, removedTransaction *Transac
 func (blockchain *Blockchain) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64 {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
-	return blockchain.calculateTotalAmount(currentTimestamp, blockchainAddress, blockchain.blocks)
-}
-
-func (blockchain *Blockchain) calculateTotalAmount(currentTimestamp int64, blockchainAddress string, blocks []*Block) uint64 {
 	var totalAmount uint64
 	var lastTimestamp int64
-	for _, block := range blocks {
+	for _, block := range blockchain.blocks {
 		for _, registeredAddress := range block.RegisteredAddresses() {
 			if blockchainAddress == registeredAddress {
 				if totalAmount > 0 {
@@ -450,8 +465,4 @@ func (blockchain *Blockchain) StartVerification() {
 			}
 		}
 	}()
-}
-
-func (blockchain *Blockchain) LastBlock() *Block {
-	return blockchain.blocks[len(blockchain.blocks)-1]
 }

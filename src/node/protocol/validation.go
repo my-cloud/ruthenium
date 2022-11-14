@@ -98,6 +98,7 @@ func (validation *Validation) do(timestamp int64) {
 		validation.blockchain.AddBlock(genesisBlock.GetResponse())
 		validation.logger.Debug("genesis block added")
 	} else {
-		validation.pool.Validate(timestamp, validation.blockchain, validation.address)
+		block := validation.pool.Validate(timestamp, validation.blockchain.Copy(), validation.address)
+		validation.blockchain.AddBlock(block)
 	}
 }

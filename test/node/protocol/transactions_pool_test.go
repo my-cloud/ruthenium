@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/test"
+	"github.com/my-cloud/ruthenium/test/node"
 	"testing"
 	"time"
 )
@@ -22,17 +24,18 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
-	synchronizerMock := new(SynchronizerMock)
-	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
-	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
-	blockchain.AddBlock(NewGenesisBlockResponse(validatorWalletAddress))
-	blockchain.AddBlock(NewEmptyBlockResponse(now - 1))
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now+2, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
+	var blockResponses []*network.BlockResponse
+	blockResponses = append(blockResponses, NewGenesisBlockResponse(validatorWalletAddress))
+	blockResponses = append(blockResponses, NewEmptyBlockResponse(now-1))
+	blockchainMock := new(node.BlockchainMock)
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
+	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
 
 	// Act
-	pool.AddTransaction(&invalidTransactionRequest, blockchain, nil)
+	pool.AddTransaction(&invalidTransactionRequest, blockchainMock, nil)
 	pool.Wait()
 
 	// Assert
@@ -53,18 +56,19 @@ func Test_AddTransaction_TransactionTimestampIsOlderThan2Blocks_TransactionNotAd
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
-	synchronizerMock := new(SynchronizerMock)
-	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
-	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
-	blockchain.AddBlock(NewGenesisBlockResponse(validatorWalletAddress))
-	blockchain.AddBlock(NewEmptyBlockResponse(now - 2))
-	blockchain.AddBlock(NewEmptyBlockResponse(now - 1))
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now-3, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
+	var blockResponses []*network.BlockResponse
+	blockResponses = append(blockResponses, NewGenesisBlockResponse(validatorWalletAddress))
+	blockResponses = append(blockResponses, NewEmptyBlockResponse(now-2))
+	blockResponses = append(blockResponses, NewEmptyBlockResponse(now-1))
+	blockchainMock := new(node.BlockchainMock)
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
+	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
 
 	// Act
-	pool.AddTransaction(&invalidTransactionRequest, blockchain, nil)
+	pool.AddTransaction(&invalidTransactionRequest, blockchainMock, nil)
 	pool.Wait()
 
 	// Assert
@@ -85,18 +89,19 @@ func Test_AddTransaction_TransactionIsAlreadyInTheBlockchain_TransactionNotAdded
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
-	synchronizerMock := new(SynchronizerMock)
-	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
-	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
-	blockchain.AddBlock(NewGenesisBlockResponse(validatorWalletAddress))
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
 	transaction, _ := protocol.NewTransactionFromRequest(&invalidTransactionRequest)
-	blockchain.AddBlock(NewBlockResponse(now-1, [32]byte{}, transaction))
+	var blockResponses []*network.BlockResponse
+	blockResponses = append(blockResponses, NewGenesisBlockResponse(validatorWalletAddress))
+	blockResponses = append(blockResponses, NewBlockResponse(now-1, [32]byte{}, transaction))
+	blockchainMock := new(node.BlockchainMock)
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
+	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
 
 	// Act
-	pool.AddTransaction(&invalidTransactionRequest, blockchain, nil)
+	pool.AddTransaction(&invalidTransactionRequest, blockchainMock, nil)
 	pool.Wait()
 
 	// Assert
@@ -119,10 +124,11 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
-	synchronizerMock := new(SynchronizerMock)
-	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
+	var blockResponses []*network.BlockResponse
+	blockResponses = append(blockResponses, NewGenesisBlockResponse(validatorWalletAddress))
+	blockchainMock := new(node.BlockchainMock)
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
-	blockchain.AddBlock(NewGenesisBlockResponse(validatorWalletAddress))
 
 	var amount uint64 = 1
 	transaction := server.NewTransaction(walletAAddress, validatorWalletAddress, validatorWallet.PublicKey(), now, amount)
@@ -130,7 +136,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	transactionRequest := transaction.GetRequest()
 
 	// Act
-	pool.AddTransaction(&transactionRequest, blockchain, nil)
+	pool.AddTransaction(&transactionRequest, blockchainMock, nil)
 	pool.Wait()
 
 	// Assert
@@ -153,18 +159,20 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
-	synchronizerMock := new(SynchronizerMock)
-	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
+	var blockResponses []*network.BlockResponse
+	blockResponses = append(blockResponses, NewGenesisBlockResponse(validatorWalletAddress))
+	blockchainMock := new(node.BlockchainMock)
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
-	blockchain.AddBlock(NewGenesisBlockResponse(validatorWalletAddress))
 
 	var amount uint64 = 1
 	transaction := server.NewTransaction(walletAAddress, validatorWalletAddress, validatorWallet.PublicKey(), now, amount)
 	_ = transaction.Sign(validatorWallet.PrivateKey())
 	transactionRequest := transaction.GetRequest()
+	blockchainMock.CalculateTotalAmountFunc = func(int64, string) uint64 { return *transactionRequest.Value + *transactionRequest.Fee }
 
 	// Act
-	pool.AddTransaction(&transactionRequest, blockchain, nil)
+	pool.AddTransaction(&transactionRequest, blockchainMock, nil)
 	pool.Wait()
 
 	// Assert
