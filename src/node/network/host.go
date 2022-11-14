@@ -89,7 +89,7 @@ func (host *Host) Amount(request *neighborhood.AmountRequest) (res p2p.Data) {
 
 func (host *Host) Run() error {
 	go host.startBlockchain()
-	host.server.SetHandle("dialog", func(ctx context.Context, req p2p.Data) (res p2p.Data, err error) { return host.handle(req) })
+	host.server.SetHandle("dialog", host.handle)
 	return host.startServer()
 }
 
@@ -103,7 +103,7 @@ func (host *Host) startBlockchain() {
 	host.blockchain.StartVerification()
 }
 
-func (host *Host) handle(req p2p.Data) (res p2p.Data, err error) {
+func (host *Host) handle(_ context.Context, req p2p.Data) (res p2p.Data, err error) {
 	var unknownRequest bool
 	var requestString string
 	var transactionRequest neighborhood.TransactionRequest
