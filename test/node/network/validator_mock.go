@@ -19,13 +19,13 @@ var _ protocol.Validator = &ValidatorMock{}
 // 		// make and configure a mocked Validator
 // 		mockedValidator := &ValidatorMock{
 // 			StartValidationFunc: func()  {
-// 				panic("mock out the StartValidation method")
+// 				panic("mock out the Start method")
 // 			},
 // 			StopValidationFunc: func()  {
-// 				panic("mock out the StopValidation method")
+// 				panic("mock out the Stop method")
 // 			},
 // 			ValidateFunc: func()  {
-// 				panic("mock out the Validate method")
+// 				panic("mock out the Do method")
 // 			},
 // 		}
 //
@@ -34,24 +34,24 @@ var _ protocol.Validator = &ValidatorMock{}
 //
 // 	}
 type ValidatorMock struct {
-	// StartValidationFunc mocks the StartValidation method.
+	// StartValidationFunc mocks the Start method.
 	StartValidationFunc func()
 
-	// StopValidationFunc mocks the StopValidation method.
+	// StopValidationFunc mocks the Stop method.
 	StopValidationFunc func()
 
-	// ValidateFunc mocks the Validate method.
+	// ValidateFunc mocks the Do method.
 	ValidateFunc func()
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// StartValidation holds details about calls to the StartValidation method.
+		// Start holds details about calls to the Start method.
 		StartValidation []struct {
 		}
-		// StopValidation holds details about calls to the StopValidation method.
+		// Stop holds details about calls to the Stop method.
 		StopValidation []struct {
 		}
-		// Validate holds details about calls to the Validate method.
+		// Do holds details about calls to the Do method.
 		Validate []struct {
 		}
 	}
@@ -60,10 +60,10 @@ type ValidatorMock struct {
 	lockValidate        sync.RWMutex
 }
 
-// StartValidation calls StartValidationFunc.
-func (mock *ValidatorMock) StartValidation() {
+// Start calls StartValidationFunc.
+func (mock *ValidatorMock) Start() {
 	if mock.StartValidationFunc == nil {
-		panic("ValidatorMock.StartValidationFunc: method is nil but Validator.StartValidation was just called")
+		panic("ValidatorMock.StartValidationFunc: method is nil but Validator.Start was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -73,7 +73,7 @@ func (mock *ValidatorMock) StartValidation() {
 	mock.StartValidationFunc()
 }
 
-// StartValidationCalls gets all the calls that were made to StartValidation.
+// StartValidationCalls gets all the calls that were made to Start.
 // Check the length with:
 //     len(mockedValidator.StartValidationCalls())
 func (mock *ValidatorMock) StartValidationCalls() []struct {
@@ -86,10 +86,10 @@ func (mock *ValidatorMock) StartValidationCalls() []struct {
 	return calls
 }
 
-// StopValidation calls StopValidationFunc.
-func (mock *ValidatorMock) StopValidation() {
+// Stop calls StopValidationFunc.
+func (mock *ValidatorMock) Stop() {
 	if mock.StopValidationFunc == nil {
-		panic("ValidatorMock.StopValidationFunc: method is nil but Validator.StopValidation was just called")
+		panic("ValidatorMock.StopValidationFunc: method is nil but Validator.Stop was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -99,7 +99,7 @@ func (mock *ValidatorMock) StopValidation() {
 	mock.StopValidationFunc()
 }
 
-// StopValidationCalls gets all the calls that were made to StopValidation.
+// StopValidationCalls gets all the calls that were made to Stop.
 // Check the length with:
 //     len(mockedValidator.StopValidationCalls())
 func (mock *ValidatorMock) StopValidationCalls() []struct {
@@ -112,10 +112,10 @@ func (mock *ValidatorMock) StopValidationCalls() []struct {
 	return calls
 }
 
-// Validate calls ValidateFunc.
-func (mock *ValidatorMock) Validate() {
+// Do calls ValidateFunc.
+func (mock *ValidatorMock) Do() {
 	if mock.ValidateFunc == nil {
-		panic("ValidatorMock.ValidateFunc: method is nil but Validator.Validate was just called")
+		panic("ValidatorMock.ValidateFunc: method is nil but Validator.Do was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -125,7 +125,7 @@ func (mock *ValidatorMock) Validate() {
 	mock.ValidateFunc()
 }
 
-// ValidateCalls gets all the calls that were made to Validate.
+// ValidateCalls gets all the calls that were made to Do.
 // Check the length with:
 //     len(mockedValidator.ValidateCalls())
 func (mock *ValidatorMock) ValidateCalls() []struct {

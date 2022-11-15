@@ -8,6 +8,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/network"
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/protocol"
+	"time"
 )
 
 const (
@@ -22,23 +23,24 @@ type Host struct {
 	server       Server
 	blockchain   protocol.Blockchain
 	pool         protocol.TransactionsPool
-	validator    protocol.Validator
+	validation   protocol.Engine
+	verification protocol.Engine
 	synchronizer *Synchronizer
-	// TODO rename to time
-	watch  clock.Time
-	logger *log.Logger
+	time         clock.Time
+	logger       *log.Logger
 }
 
 func NewHost(
 	server Server,
 	blockchain protocol.Blockchain,
 	pool protocol.TransactionsPool,
-	validator protocol.Validator,
+	validation protocol.Engine,
+	verification protocol.Engine,
 	synchronizer *Synchronizer,
-	watch clock.Time,
+	time clock.Time,
 	logger *log.Logger,
 ) *Host {
-	return &Host{server, blockchain, pool, validator, synchronizer, watch, logger}
+	return &Host{server, blockchain, pool, validation, verification, synchronizer, time, logger}
 }
 
 func (host *Host) GetBlocks() (res p2p.Data) {
@@ -77,7 +79,7 @@ func (host *Host) Amount(request *network.AmountRequest) (res p2p.Data) {
 		return
 	}
 	blockchainAddress := *request.Address
-	amount := host.blockchain.CalculateTotalAmount(host.watch.Now().UnixNano(), blockchainAddress)
+	amount := host.blockchain.Copy().CalculateTotalAmount(host.time.Now().UnixNano(), blockchainAddress)
 	amountResponse := &network.AmountResponse{Amount: amount}
 	if err := res.SetGob(amountResponse); err != nil {
 		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
@@ -95,10 +97,10 @@ func (host *Host) startBlockchain() {
 	host.logger.Info("updating the blockchain...")
 	host.synchronizer.StartSynchronization()
 	host.synchronizer.Wait()
-	host.blockchain.Verify()
+	host.blockchain.Verify(time.Now().UnixNano())
 	host.logger.Info("the blockchain is now up to date")
-	host.validator.StartValidation()
-	host.blockchain.StartVerification()
+	host.validation.Start()
+	host.verification.Start()
 }
 
 func (host *Host) handle(_ context.Context, req p2p.Data) (res p2p.Data, err error) {
@@ -115,11 +117,11 @@ func (host *Host) handle(_ context.Context, req p2p.Data) (res p2p.Data, err err
 		case GetTransactionsRequest:
 			res = host.GetTransactions()
 		case MineRequest:
-			host.validator.Validate()
+			host.validation.Do()
 		case StartMiningRequest:
-			host.validator.StartValidation()
+			host.validation.Start()
 		case StopMiningRequest:
-			host.validator.StopValidation()
+			host.validation.Stop()
 		default:
 			unknownRequest = true
 		}

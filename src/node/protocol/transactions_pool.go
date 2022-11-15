@@ -122,7 +122,8 @@ func (pool *TransactionsPool) Transactions() []*network.TransactionResponse {
 }
 
 func (pool *TransactionsPool) Validate(timestamp int64) {
-	if pool.blockchain.IsEmpty() {
+	currentBlockchain := pool.blockchain.Copy()
+	if currentBlockchain.IsEmpty() {
 		genesisTransaction := NewRewardTransaction(pool.validatorAddress, timestamp, pool.genesisAmount)
 		transactions := []*network.TransactionResponse{genesisTransaction}
 		pool.blockchain.AddBlock(timestamp, [32]byte{}, transactions, nil)
@@ -130,7 +131,6 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		return
 	}
 
-	currentBlockchain := pool.blockchain.Copy()
 	blocks := currentBlockchain.Blocks()
 	lastBlock := blocks[len(blocks)-1]
 

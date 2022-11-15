@@ -5,8 +5,7 @@ import (
 )
 
 type Blockchain interface {
-	Verify()
-	StartVerification()
+	Verify(timestamp int64)
 	Blocks() []*network.BlockResponse
 	CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64
 	AddBlock(timestamp int64, previousHash [32]byte, transactions []*network.TransactionResponse, registeredAddresses []string)

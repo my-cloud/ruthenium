@@ -16,7 +16,10 @@ import (
 	"time"
 )
 
-const validationIntervalInSeconds = 60
+const (
+	validationIntervalInSeconds     = 60
+	verificationsCountPerValidation = 6
+)
 
 func main() {
 	mnemonic := flag.String("mnemonic", environment.NewVariable("MNEMONIC").GetStringValue(""), "The mnemonic (required if the private key is not provided)")
@@ -45,15 +48,16 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create synchronizer: %w", err).Error())
 	}
-	blockchain := protocol.NewBlockchain(registry, validationTimer, watch, synchronizer, logger)
+	blockchain := protocol.NewBlockchain(registry, validationTimer, synchronizer, logger)
 	pool := protocol.NewTransactionsPool(blockchain, registry, wallet.Address(), settings.GenesisAmount, validationTimer, watch, logger)
-	validation := protocol.NewValidation(wallet.Address(), blockchain, pool, watch, validationTimer, logger)
+	validation := protocol.NewEngine(pool.Validate, watch, validationTimer, 1, 0, logger)
+	verification := protocol.NewEngine(blockchain.Verify, watch, validationTimer, verificationsCountPerValidation, 1, logger)
 	serverFactory := p2p.NewServerFactory()
 	server, err := serverFactory.CreateServer(int(*port))
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
 	}
-	host := network.NewHost(server, blockchain, pool, validation, synchronizer, watch, logger)
+	host := network.NewHost(server, blockchain, pool, validation, verification, synchronizer, watch, logger)
 	err = host.Run()
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to run host: %w", err).Error())

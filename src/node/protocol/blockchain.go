@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/network"
-	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/protocol"
 	"math"
 	"sort"
@@ -14,9 +13,8 @@ import (
 )
 
 const (
-	incomeExponent                  = 0.54692829
-	halfLifeInDays                  = 373.59
-	verificationsCountPerValidation = 6
+	incomeExponent = 0.54692829
+	halfLifeInDays = 373.59
 )
 
 type Blockchain struct {
@@ -27,8 +25,6 @@ type Blockchain struct {
 	registry Registry
 
 	validationTimer time.Duration
-	// TODO rename to time
-	timeable clock.Time
 
 	synchronizer network.Synchronizer
 
@@ -38,11 +34,10 @@ type Blockchain struct {
 	isReplaced bool
 }
 
-func NewBlockchain(registry Registry, validationTimer time.Duration, timeable clock.Time, synchronizer network.Synchronizer, logger *log.Logger) *Blockchain {
+func NewBlockchain(registry Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger *log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.registry = registry
 	blockchain.validationTimer = validationTimer
-	blockchain.timeable = timeable
 	blockchain.synchronizer = synchronizer
 	blockchain.logger = logger
 	const hoursADay = 24
@@ -60,6 +55,7 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, previousHash [32]byte, t
 	}
 	blockchain.mutex.Lock()
 	defer blockchain.mutex.Unlock()
+	// TODO verify block
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
 	blockchain.blocks = append(blockchain.blocks, block)
 }
@@ -74,8 +70,8 @@ func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
 	return blockchain.blockResponses
 }
 
-func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResponse) (validBlocks []*Block, err error) {
-	if len(neighborBlocks) < 2 || len(neighborBlocks) < len(blockchain.blocks) {
+func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResponse, hostBlocks []*Block, currentBlockchain protocol.Blockchain, timestamp int64) (validBlocks []*Block, err error) {
+	if len(neighborBlocks) < 2 || len(neighborBlocks) < len(hostBlocks) {
 		return nil, errors.New("neighbor's blockchain is too short")
 	}
 	lastNeighborBlock, err := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
@@ -134,7 +130,6 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResp
 		return nil, fmt.Errorf("failed to instantiate first neighbor block: %w", err)
 	}
 	validBlocks = append(validBlocks, previousBlock)
-	now := blockchain.timeable.Now().UnixNano()
 	for i := 1; i < len(neighborBlocks); i++ {
 		var currentBlock *Block
 		currentBlock, err = NewBlockFromResponse(neighborBlocks[i])
@@ -151,16 +146,16 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResp
 			return nil, errors.New("a previous neighbor block hash is invalid")
 		}
 		var isNewBlock bool
-		if i >= len(blockchain.blocks) {
+		if i >= len(hostBlocks) {
 			isNewBlock = true
-		} else if len(blockchain.blocks) > 2 {
+		} else if len(hostBlocks) > 2 {
 			var hostBlockHash [32]byte
 			var currentBlockHash [32]byte
 			currentBlockHash, err = currentBlock.Hash()
 			if err != nil {
 				return nil, fmt.Errorf("failed to calculate neighbor block hash: %w", err)
 			}
-			hostBlockHash, err = blockchain.blocks[i].Hash()
+			hostBlockHash, err = hostBlocks[i].Hash()
 			if err != nil {
 				blockchain.logger.Error(fmt.Errorf("failed to calculate host block hash: %w", err).Error())
 			}
@@ -180,9 +175,9 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResp
 				expectedDate := time.Unix(0, expectedBlockTimestamp)
 				return nil, fmt.Errorf("neighbor block timestamp is invalid: block date is %v, expected is %v", blockDate, expectedDate)
 			}
-			if currentBlockTimestamp > now {
+			if currentBlockTimestamp > timestamp {
 				blockDate := time.Unix(0, currentBlockTimestamp)
-				nowDate := time.Unix(0, now)
+				nowDate := time.Unix(0, timestamp)
 				return nil, fmt.Errorf("neighbor block timestamp is in the future: block date is %v, now is %v", blockDate, nowDate)
 			}
 			var reward uint64
@@ -216,7 +211,6 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResp
 			if reward > totalTransactionsFees {
 				return nil, errors.New("neighbor block reward exceeds the consented one")
 			}
-			currentBlockchain := blockchain.Copy()
 			for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
 				if totalTransactionsValue > currentBlockchain.CalculateTotalAmount(currentBlockTimestamp, senderAddress) {
 					return nil, errors.New("neighbor block total transactions value exceeds its sender wallet amount")
@@ -233,7 +227,6 @@ func (blockchain *Blockchain) Copy() protocol.Blockchain {
 	blockchainCopy := new(Blockchain)
 	blockchainCopy.registry = blockchain.registry
 	blockchainCopy.validationTimer = blockchain.validationTimer
-	blockchainCopy.timeable = blockchain.timeable
 	blockchainCopy.synchronizer = blockchain.synchronizer
 	blockchainCopy.logger = blockchain.logger
 	blockchainCopy.lambda = blockchain.lambda
@@ -244,20 +237,20 @@ func (blockchain *Blockchain) Copy() protocol.Blockchain {
 	return blockchainCopy
 }
 
-func (blockchain *Blockchain) Verify() {
+func (blockchain *Blockchain) Verify(timestamp int64) {
 	// Select valid blocks
 	neighbors := blockchain.synchronizer.Neighbors()
-	blockchain.mutex.RLock()
 	blockResponsesByTarget := make(map[string][]*network.BlockResponse)
 	blocksByTarget := make(map[string][]*Block)
 	var selectedTargets []string
+	hostBlocks := blockchain.blocks
 	for _, neighbor := range neighbors {
 		neighborBlocks, err := neighbor.GetBlocks()
 		if err == nil {
 			target := neighbor.Target()
 			blockResponsesByTarget[target] = neighborBlocks
 			var validBlocks []*Block
-			validBlocks, err = blockchain.getValidBlocks(neighborBlocks)
+			validBlocks, err = blockchain.getValidBlocks(neighborBlocks, hostBlocks, blockchain.Copy(), timestamp)
 			if err != nil || validBlocks == nil {
 				blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 			} else {
@@ -267,10 +260,10 @@ func (blockchain *Blockchain) Verify() {
 		}
 	}
 
-	if len(blockchain.blocks) > 2 {
+	if len(hostBlocks) > 2 {
 		hostTarget := "host"
 		blockResponsesByTarget[hostTarget] = blockchain.blockResponses
-		blocksByTarget[hostTarget] = blockchain.blocks
+		blocksByTarget[hostTarget] = hostBlocks
 		selectedTargets = append(selectedTargets, hostTarget)
 	}
 
@@ -345,14 +338,14 @@ func (blockchain *Blockchain) Verify() {
 			}
 		}
 		// Check if blockchain is replaced
-		if len(blockchain.blocks) < 2 && selectedBlocks != nil || len(blockchain.blocks) < len(selectedBlocks) {
+		if len(hostBlocks) < 2 && selectedBlocks != nil || len(hostBlocks) < len(selectedBlocks) {
 			isReplaced = true
 		} else if len(selectedBlocks) >= 2 {
 			lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()
 			if newBlockHashError != nil {
 				blockchain.logger.Error("failed to calculate new block hash")
 			} else {
-				lastOldBlockHash, oldBlockHashError := blockchain.blocks[len(blockchain.blocks)-1].Hash()
+				lastOldBlockHash, oldBlockHashError := hostBlocks[len(hostBlocks)-1].Hash()
 				if oldBlockHashError != nil {
 					blockchain.logger.Error("failed to calculate old block hash")
 					isReplaced = true
@@ -362,12 +355,15 @@ func (blockchain *Blockchain) Verify() {
 			}
 		}
 	}
-	blockchain.mutex.RUnlock()
-	if isReplaced {
-		blockchain.mutex.Lock()
+	blockchain.mutex.Lock()
+	defer blockchain.mutex.Unlock()
+	var hostBlockchainHasChanged bool
+	if !blockchain.IsEmpty() {
+		hostBlockchainHasChanged = hostBlocks[len(hostBlocks)-1].PreviousHash() != blockchain.blocks[len(blockchain.blocks)-1].PreviousHash()
+	}
+	if isReplaced && !hostBlockchainHasChanged {
 		blockchain.blockResponses = selectedBlocksResponse
 		blockchain.blocks = selectedBlocks
-		blockchain.mutex.Unlock()
 		blockchain.logger.Debug("verification done: blockchain replaced")
 	} else {
 		blockchain.logger.Debug("verification done: blockchain kept")
@@ -443,18 +439,4 @@ func calculateIncome(amount uint64) uint64 {
 func (blockchain *Blockchain) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
 	elapsedTimestamp := newTimestamp - lastTimestamp
 	return uint64(math.Floor(float64(amount) * math.Exp(-blockchain.lambda*float64(elapsedTimestamp))))
-}
-
-func (blockchain *Blockchain) StartVerification() {
-	ticker := time.NewTicker(blockchain.validationTimer / verificationsCountPerValidation)
-	go func() {
-		for {
-			for i := 0; i < verificationsCountPerValidation; i++ {
-				if i > 0 {
-					go blockchain.Verify()
-				}
-				<-ticker.C
-			}
-		}
-	}()
 }

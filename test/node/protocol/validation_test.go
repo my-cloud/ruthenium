@@ -27,7 +27,7 @@ func Test_Validate_InvalidSignature_TransactionNotValidated(t *testing.T) {
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
 	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
-	validation := protocol.NewValidation(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
+	validation := protocol.NewEngine(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
 	blockchain.AddBlock(NewGenesisBlockResponse(validatorWalletAddress))
 	invalidTransaction := server.NewTransaction(walletAAddress, validatorWalletAddress, validatorWallet.PublicKey(), now, 1)
 	_ = invalidTransaction.Sign(walletA.PrivateKey())
@@ -36,7 +36,7 @@ func Test_Validate_InvalidSignature_TransactionNotValidated(t *testing.T) {
 	pool.Wait()
 
 	// Act
-	validation.Validate()
+	validation.Do()
 	validation.Wait()
 
 	// Assert
@@ -57,7 +57,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
 	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
-	validation := protocol.NewValidation(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
+	validation := protocol.NewEngine(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
 	blockchain.AddBlock(NewGenesisBlockResponse(validatorWalletAddress))
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now+2, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
@@ -66,7 +66,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	pool.Wait()
 
 	// Act
-	validation.Validate()
+	validation.Do()
 	validation.Wait()
 
 	// Assert
@@ -87,7 +87,7 @@ func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidate
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
 	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
-	validation := protocol.NewValidation(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
+	validation := protocol.NewEngine(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
 	blockchain.AddBlock(NewGenesisBlockResponse(validatorWalletAddress))
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now-3, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
@@ -98,7 +98,7 @@ func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidate
 	blockchain.AddBlock(NewEmptyBlockResponse(now - 1))
 
 	// Act
-	validation.Validate()
+	validation.Do()
 	validation.Wait()
 
 	// Assert
@@ -119,7 +119,7 @@ func Test_Validate_TransactionIsAlreadyInTheBlockchain_TransactionNotValidated(t
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
 	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
-	validation := protocol.NewValidation(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
+	validation := protocol.NewEngine(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
 	blockchain.AddBlock(NewGenesisBlockResponse(validatorWalletAddress))
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
@@ -130,7 +130,7 @@ func Test_Validate_TransactionIsAlreadyInTheBlockchain_TransactionNotValidated(t
 	blockchain.AddBlock(NewBlockResponse(now-1, [32]byte{}, transaction))
 
 	// Act
-	validation.Validate()
+	validation.Do()
 	validation.Wait()
 
 	// Assert
@@ -151,7 +151,7 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	synchronizerMock := new(SynchronizerMock)
 	blockchain := protocol.NewBlockchain(registryMock, validationTimer, timeMock, synchronizerMock, logger)
 	pool := protocol.NewTransactionsPool(registryMock, validationTimer, timeMock, logger)
-	validation := protocol.NewValidation(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
+	validation := protocol.NewEngine(validatorWalletAddress, blockchain, pool, timeMock, validationTimer, logger)
 	blockchain.AddBlock(NewGenesisBlockResponse(validatorWalletAddress))
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
@@ -160,7 +160,7 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	pool.Wait()
 
 	// Act
-	validation.Validate()
+	validation.Do()
 	validation.Wait()
 
 	// Assert
