@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/config"
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/log"
@@ -28,6 +29,10 @@ func main() {
 
 	flag.Parse()
 	logger := log.NewLogger(log.ParseLevel(*logLevel))
+	settings, err := config.NewSettings(*configurationPath)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("unable to instantiate settings: %w", err).Error())
+	}
 	wallet, err := encryption.DecodeWallet(*mnemonic, *derivationPath, *password, *privateKey)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
@@ -41,7 +46,7 @@ func main() {
 		logger.Fatal(fmt.Errorf("failed to create synchronizer: %w", err).Error())
 	}
 	blockchain := protocol.NewBlockchain(registry, validationTimer, watch, synchronizer, logger)
-	pool := protocol.NewTransactionsPool(registry, validationTimer, watch, logger)
+	pool := protocol.NewTransactionsPool(blockchain, registry, wallet.Address(), settings.GenesisAmount, validationTimer, watch, logger)
 	validation := protocol.NewValidation(wallet.Address(), blockchain, pool, watch, validationTimer, logger)
 	serverFactory := p2p.NewServerFactory()
 	server, err := serverFactory.CreateServer(int(*port))

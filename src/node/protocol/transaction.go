@@ -23,14 +23,13 @@ type Transaction struct {
 	fee              uint64
 }
 
-func NewRewardTransaction(recipientAddress string, timestamp int64, value uint64) *Transaction {
-	return &Transaction{
-		recipientAddress: recipientAddress,
-		senderAddress:    rewardSenderAddress,
-		senderPublicKey:  nil,
-		timestamp:        timestamp,
-		value:            value,
-		fee:              transactionFee,
+func NewRewardTransaction(recipientAddress string, timestamp int64, value uint64) *network.TransactionResponse {
+	return &network.TransactionResponse{
+		RecipientAddress: recipientAddress,
+		SenderAddress:    rewardSenderAddress,
+		Timestamp:        timestamp,
+		Value:            value,
+		Fee:              transactionFee,
 	}
 }
 

@@ -5,6 +5,6 @@ import (
 )
 
 type TransactionsPool interface {
-	AddTransaction(transactionRequest *network.TransactionRequest, blockchain Blockchain, neighbors []network.Neighbor)
+	AddTransaction(transactionRequest *network.TransactionRequest, neighbors []network.Neighbor)
 	Transactions() []*network.TransactionResponse
 }

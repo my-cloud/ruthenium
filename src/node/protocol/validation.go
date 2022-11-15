@@ -3,12 +3,9 @@ package protocol
 import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
-	"github.com/my-cloud/ruthenium/src/node/network"
 	"sync"
 	"time"
 )
-
-const genesisAmount uint64 = 100000 * network.ParticlesCount
 
 type Validation struct {
 	address    string
@@ -91,14 +88,5 @@ func (validation *Validation) Wait() {
 }
 
 func (validation *Validation) do(timestamp int64) {
-	if validation.blockchain.IsEmpty() {
-		genesisTransaction := NewRewardTransaction(validation.address, timestamp, genesisAmount)
-		transactions := []*Transaction{genesisTransaction}
-		genesisBlock := NewBlock(timestamp, [32]byte{}, transactions, nil)
-		validation.blockchain.AddBlock(genesisBlock.GetResponse())
-		validation.logger.Debug("genesis block added")
-	} else {
-		block := validation.pool.Validate(timestamp, validation.blockchain.Copy(), validation.address)
-		validation.blockchain.AddBlock(block)
-	}
+	validation.pool.Validate(timestamp)
 }

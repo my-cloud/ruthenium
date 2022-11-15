@@ -11,9 +11,6 @@ import (
 )
 
 const (
-	// TODO rename and extract ParticlesCount to a config file
-	ParticlesCount = 100000000
-
 	GetBlocksRequest       = "GET BLOCKS REQUEST"
 	GetTransactionsRequest = "GET TRANSACTIONS REQUEST"
 	MineRequest            = "MINE REQUEST"
@@ -71,7 +68,7 @@ func (host *Host) AddTransactions(request *network.TransactionRequest) {
 		return
 	}
 	neighbors := host.synchronizer.Neighbors()
-	host.pool.AddTransaction(request, host.blockchain, neighbors)
+	host.pool.AddTransaction(request, neighbors)
 }
 
 func (host *Host) Amount(request *network.AmountRequest) (res p2p.Data) {

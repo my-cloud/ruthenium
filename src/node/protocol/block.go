@@ -14,12 +14,12 @@ type Block struct {
 	registeredAddresses []string
 }
 
-func NewBlock(timestamp int64, previousHash [32]byte, transactions []*Transaction, registeredAddresses []string) *Block {
-	return &Block{
-		timestamp,
-		previousHash,
-		transactions,
-		registeredAddresses,
+func NewBlockResponse(timestamp int64, previousHash [32]byte, transactions []*network.TransactionResponse, registeredAddresses []string) *network.BlockResponse {
+	return &network.BlockResponse{
+		Timestamp:           timestamp,
+		PreviousHash:        previousHash,
+		Transactions:        transactions,
+		RegisteredAddresses: registeredAddresses,
 	}
 }
 

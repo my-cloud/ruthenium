@@ -6,6 +6,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/network"
 	"github.com/my-cloud/ruthenium/src/node/clock"
+	"github.com/my-cloud/ruthenium/src/protocol"
 	"math"
 	"sort"
 	"sync"
@@ -50,7 +51,8 @@ func NewBlockchain(registry Registry, validationTimer time.Duration, timeable cl
 	return blockchain
 }
 
-func (blockchain *Blockchain) AddBlock(blockResponse *network.BlockResponse) {
+func (blockchain *Blockchain) AddBlock(timestamp int64, previousHash [32]byte, transactions []*network.TransactionResponse, registeredAddresses []string) {
+	blockResponse := NewBlockResponse(timestamp, previousHash, transactions, registeredAddresses)
 	block, err := NewBlockFromResponse(blockResponse)
 	if err != nil {
 		blockchain.logger.Error(fmt.Errorf("unable to add block: %w", err).Error())
@@ -227,7 +229,7 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResp
 	return validBlocks, nil
 }
 
-func (blockchain *Blockchain) Copy() *Blockchain {
+func (blockchain *Blockchain) Copy() protocol.Blockchain {
 	blockchainCopy := new(Blockchain)
 	blockchainCopy.registry = blockchain.registry
 	blockchainCopy.validationTimer = blockchain.validationTimer
@@ -391,16 +393,6 @@ func removeTarget(targets []string, removedTarget string) []string {
 		}
 	}
 	return targets
-}
-
-func removeTransactions(transactions []*Transaction, removedTransaction *Transaction) []*Transaction {
-	for i := 0; i < len(transactions); i++ {
-		if transactions[i] == removedTransaction {
-			transactions = append(transactions[:i], transactions[i+1:]...)
-			return transactions
-		}
-	}
-	return transactions
 }
 
 func (blockchain *Blockchain) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64 {

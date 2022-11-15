@@ -17,7 +17,10 @@ type TransactionsPool struct {
 	transactionResponses []*network.TransactionResponse
 	mutex                sync.RWMutex
 
-	registry Registry
+	blockchain       protocol.Blockchain
+	registry         Registry
+	validatorAddress string
+	genesisAmount    uint64
 
 	validationTimer time.Duration
 	time            clock.Time
@@ -26,9 +29,12 @@ type TransactionsPool struct {
 	logger    *log.Logger
 }
 
-func NewTransactionsPool(registry Registry, validationTimer time.Duration, time clock.Time, logger *log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain protocol.Blockchain, registry Registry, validatorAddress string, genesisAmount uint64, validationTimer time.Duration, time clock.Time, logger *log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
+	pool.blockchain = blockchain
 	pool.registry = registry
+	pool.validatorAddress = validatorAddress
+	pool.genesisAmount = genesisAmount
 	pool.validationTimer = validationTimer
 	pool.time = time
 	var waitGroup sync.WaitGroup
@@ -37,11 +43,11 @@ func NewTransactionsPool(registry Registry, validationTimer time.Duration, time 
 	return pool
 }
 
-func (pool *TransactionsPool) AddTransaction(transactionRequest *network.TransactionRequest, blockchain protocol.Blockchain, neighbors []network.Neighbor) {
+func (pool *TransactionsPool) AddTransaction(transactionRequest *network.TransactionRequest, neighbors []network.Neighbor) {
 	pool.waitGroup.Add(1)
 	go func() {
 		defer pool.waitGroup.Done()
-		err := pool.addTransaction(transactionRequest, blockchain)
+		err := pool.addTransaction(transactionRequest)
 		if err != nil {
 			pool.logger.Debug(fmt.Errorf("failed to add transaction: %w", err).Error())
 			return
@@ -54,13 +60,14 @@ func (pool *TransactionsPool) AddTransaction(transactionRequest *network.Transac
 	}()
 }
 
-func (pool *TransactionsPool) addTransaction(transactionRequest *network.TransactionRequest, blockchain protocol.Blockchain) (err error) {
+func (pool *TransactionsPool) addTransaction(transactionRequest *network.TransactionRequest) (err error) {
 	transaction, err := NewTransactionFromRequest(transactionRequest)
 	if err != nil {
 		err = fmt.Errorf("failed to instantiate transaction: %w", err)
 		return
 	}
-	blocks := blockchain.Blocks()
+	currentBlockchain := pool.blockchain.Copy()
+	blocks := currentBlockchain.Blocks()
 	if len(blocks) > 1 {
 		timestamp := transaction.Timestamp()
 		nextBlockTimestamp := blocks[len(blocks)-1].Timestamp + 2*pool.validationTimer.Nanoseconds()
@@ -94,7 +101,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	}
 	var senderWalletAmount uint64
 	if len(blocks) > 0 {
-		senderWalletAmount = blockchain.CalculateTotalAmount(blocks[len(blocks)-1].Timestamp, transaction.SenderAddress())
+		senderWalletAmount = currentBlockchain.CalculateTotalAmount(blocks[len(blocks)-1].Timestamp, transaction.SenderAddress())
 	}
 	insufficientBalance := senderWalletAmount < transaction.Value()+transaction.Fee()
 	if insufficientBalance {
@@ -114,31 +121,40 @@ func (pool *TransactionsPool) Transactions() []*network.TransactionResponse {
 	return pool.transactionResponses
 }
 
-func (pool *TransactionsPool) Validate(timestamp int64, blockchain protocol.Blockchain, address string) *network.BlockResponse {
-	blocks := blockchain.Blocks()
+func (pool *TransactionsPool) Validate(timestamp int64) {
+	if pool.blockchain.IsEmpty() {
+		genesisTransaction := NewRewardTransaction(pool.validatorAddress, timestamp, pool.genesisAmount)
+		transactions := []*network.TransactionResponse{genesisTransaction}
+		pool.blockchain.AddBlock(timestamp, [32]byte{}, transactions, nil)
+		pool.logger.Debug("genesis block added")
+		return
+	}
+
+	currentBlockchain := pool.blockchain.Copy()
+	blocks := currentBlockchain.Blocks()
 	lastBlock := blocks[len(blocks)-1]
 
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 	totalTransactionsValueBySenderAddress := make(map[string]uint64)
-	transactions := pool.transactions
+	transactionResponses := pool.transactionResponses
 	var reward uint64
-	var rejectedTransactions []*Transaction
-	for _, transaction := range transactions {
-		if timestamp+pool.validationTimer.Nanoseconds() < transaction.Timestamp() {
+	var rejectedTransactions []*network.TransactionResponse
+	for i, transaction := range transactionResponses {
+		if timestamp+pool.validationTimer.Nanoseconds() < transaction.Timestamp {
 			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too far in the future, transaction: %v", transaction))
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
 		if len(blocks) > 1 {
-			if transaction.Timestamp() < blocks[len(blocks)-2].Timestamp {
+			if transaction.Timestamp < blocks[len(blocks)-2].Timestamp {
 				pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too old, transaction: %v", transaction))
 				rejectedTransactions = append(rejectedTransactions, transaction)
 				continue
 			}
-			for i := len(blocks) - 2; i < len(blocks); i++ {
-				for _, validatedTransaction := range blocks[i].Transactions {
-					if transaction.Equals(validatedTransaction) {
+			for j := len(blocks) - 2; j < len(blocks); j++ {
+				for _, validatedTransaction := range blocks[j].Transactions {
+					if pool.transactions[i].Equals(validatedTransaction) {
 						pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction is already in the blockchain, transaction: %v", transaction))
 						rejectedTransactions = append(rejectedTransactions, transaction)
 						continue
@@ -148,11 +164,11 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain protocol.Bloc
 		}
 	}
 	for _, transaction := range rejectedTransactions {
-		transactions = removeTransactions(transactions, transaction)
+		transactionResponses = removeTransactions(transactionResponses, transaction)
 	}
-	for _, transaction := range transactions {
-		fee := transaction.Fee()
-		totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + fee
+	for _, transaction := range transactionResponses {
+		fee := transaction.Fee
+		totalTransactionsValueBySenderAddress[transaction.SenderAddress] += transaction.Value + fee
 		reward += fee
 	}
 	registeredAddresses := lastBlock.RegisteredAddresses
@@ -161,16 +177,18 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain protocol.Bloc
 		registeredAddressesMap[registeredAddress] = true
 	}
 	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
-		senderTotalAmount := blockchain.CalculateTotalAmount(timestamp, senderAddress)
+		senderTotalAmount := currentBlockchain.CalculateTotalAmount(timestamp, senderAddress)
 		if totalTransactionsValue > senderTotalAmount {
 			rejectedTransactions = nil
 			rand.Seed(pool.time.Now().UnixNano())
-			rand.Shuffle(len(transactions), func(i, j int) { transactions[i], transactions[j] = transactions[j], transactions[i] })
-			for _, transaction := range transactions {
-				if transaction.SenderAddress() == senderAddress {
+			rand.Shuffle(len(transactionResponses), func(i, j int) {
+				transactionResponses[i], transactionResponses[j] = transactionResponses[j], transactionResponses[i]
+			})
+			for _, transaction := range transactionResponses {
+				if transaction.SenderAddress == senderAddress {
 					rejectedTransactions = append(rejectedTransactions, transaction)
-					fee := transaction.Fee()
-					totalTransactionsValue -= transaction.Value() + fee
+					fee := transaction.Fee
+					totalTransactionsValue -= transaction.Value + fee
 					reward -= fee
 					if totalTransactionsValue <= senderTotalAmount {
 						break
@@ -178,7 +196,7 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain protocol.Bloc
 				}
 			}
 			for _, transaction := range rejectedTransactions {
-				transactions = removeTransactions(transactions, transaction)
+				transactionResponses = removeTransactions(transactionResponses, transaction)
 				pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, total transactions value exceeds its sender wallet amount, transaction: %v", transaction))
 			}
 		}
@@ -202,23 +220,22 @@ func (pool *TransactionsPool) Validate(timestamp int64, blockchain protocol.Bloc
 
 	if lastBlock.Timestamp == timestamp {
 		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
-		return nil
+		return
 	}
 	lastBlockResponse, err := NewBlockFromResponse(lastBlock)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("failed instantiate last block: %w", err).Error())
-		return nil
+		return
 	}
 	lastBlockHash, err := lastBlockResponse.Hash()
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("failed calculate last block hash: %w", err).Error())
-		return nil
+		return
 	}
-	rewardTransaction := NewRewardTransaction(address, timestamp, reward)
-	transactions = append(transactions, rewardTransaction)
-	block := NewBlock(timestamp, lastBlockHash, transactions, newRegisteredAddresses)
+	rewardTransaction := NewRewardTransaction(pool.validatorAddress, timestamp, reward)
+	transactionResponses = append(transactionResponses, rewardTransaction)
+	pool.blockchain.AddBlock(timestamp, lastBlockHash, transactionResponses, newRegisteredAddresses)
 	pool.logger.Debug(fmt.Sprintf("reward: %d", reward))
-	return block.GetResponse()
 }
 
 func (pool *TransactionsPool) clear() {
@@ -228,4 +245,14 @@ func (pool *TransactionsPool) clear() {
 
 func (pool *TransactionsPool) Wait() {
 	pool.waitGroup.Wait()
+}
+
+func removeTransactions(transactions []*network.TransactionResponse, removedTransaction *network.TransactionResponse) []*network.TransactionResponse {
+	for i := 0; i < len(transactions); i++ {
+		if transactions[i] == removedTransaction {
+			transactions = append(transactions[:i], transactions[i+1:]...)
+			return transactions
+		}
+	}
+	return transactions
 }
