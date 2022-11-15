@@ -8,6 +8,8 @@ import (
 	"github.com/my-cloud/ruthenium/src/network"
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/protocol"
+	"github.com/my-cloud/ruthenium/src/protocol/validation"
+	"github.com/my-cloud/ruthenium/src/protocol/verification"
 	"time"
 )
 
@@ -20,27 +22,27 @@ const (
 )
 
 type Host struct {
-	server       Server
-	blockchain   protocol.Blockchain
-	pool         protocol.TransactionsPool
-	validation   protocol.Engine
-	verification protocol.Engine
-	synchronizer *Synchronizer
-	time         clock.Time
-	logger       *log.Logger
+	server             Server
+	blockchain         verification.Blockchain
+	pool               validation.TransactionsPool
+	validationEngine   protocol.Engine
+	verificationEngine protocol.Engine
+	synchronizer       *Synchronizer
+	time               clock.Time
+	logger             *log.Logger
 }
 
 func NewHost(
 	server Server,
-	blockchain protocol.Blockchain,
-	pool protocol.TransactionsPool,
-	validation protocol.Engine,
-	verification protocol.Engine,
+	blockchain verification.Blockchain,
+	pool validation.TransactionsPool,
+	validationEngine protocol.Engine,
+	verificationEngine protocol.Engine,
 	synchronizer *Synchronizer,
 	time clock.Time,
 	logger *log.Logger,
 ) *Host {
-	return &Host{server, blockchain, pool, validation, verification, synchronizer, time, logger}
+	return &Host{server, blockchain, pool, validationEngine, verificationEngine, synchronizer, time, logger}
 }
 
 func (host *Host) GetBlocks() (res p2p.Data) {
@@ -99,8 +101,8 @@ func (host *Host) startBlockchain() {
 	host.synchronizer.Wait()
 	host.blockchain.Verify(time.Now().UnixNano())
 	host.logger.Info("the blockchain is now up to date")
-	host.validation.Start()
-	host.verification.Start()
+	host.validationEngine.Start()
+	host.verificationEngine.Start()
 }
 
 func (host *Host) handle(_ context.Context, req p2p.Data) (res p2p.Data, err error) {
@@ -117,11 +119,11 @@ func (host *Host) handle(_ context.Context, req p2p.Data) (res p2p.Data, err err
 		case GetTransactionsRequest:
 			res = host.GetTransactions()
 		case MineRequest:
-			host.validation.Do()
+			host.validationEngine.Do()
 		case StartMiningRequest:
-			host.validation.Start()
+			host.validationEngine.Start()
 		case StopMiningRequest:
-			host.validation.Stop()
+			host.validationEngine.Stop()
 		default:
 			unknownRequest = true
 		}

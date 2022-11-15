@@ -11,6 +11,8 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/node/protocol/poh"
+	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
+	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/src/p2p"
 	"github.com/my-cloud/ruthenium/src/p2p/net"
 	"time"
@@ -48,16 +50,16 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create synchronizer: %w", err).Error())
 	}
-	blockchain := protocol.NewBlockchain(registry, validationTimer, synchronizer, logger)
-	pool := protocol.NewTransactionsPool(blockchain, registry, wallet.Address(), settings.GenesisAmount, validationTimer, watch, logger)
-	validation := protocol.NewEngine(pool.Validate, watch, validationTimer, 1, 0, logger)
-	verification := protocol.NewEngine(blockchain.Verify, watch, validationTimer, verificationsCountPerValidation, 1, logger)
+	blockchain := verification.NewBlockchain(registry, validationTimer, synchronizer, logger)
+	pool := validation.NewTransactionsPool(blockchain, registry, wallet.Address(), settings.GenesisAmount, validationTimer, watch, logger)
+	validationEngine := protocol.NewEngine(pool.Validate, watch, validationTimer, 1, 0, logger)
+	verificationEngine := protocol.NewEngine(blockchain.Verify, watch, validationTimer, verificationsCountPerValidation, 1, logger)
 	serverFactory := p2p.NewServerFactory()
 	server, err := serverFactory.CreateServer(int(*port))
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
 	}
-	host := network.NewHost(server, blockchain, pool, validation, verification, synchronizer, watch, logger)
+	host := network.NewHost(server, blockchain, pool, validationEngine, verificationEngine, synchronizer, watch, logger)
 	err = host.Run()
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to run host: %w", err).Error())

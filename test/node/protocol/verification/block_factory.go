@@ -1,12 +1,12 @@
-package protocol
+package verification
 
 import (
 	"github.com/my-cloud/ruthenium/src/network"
-	"github.com/my-cloud/ruthenium/src/node/protocol"
+	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 )
 
 func NewGenesisBlockResponse(validatorWalletAddress string) *network.BlockResponse {
-	genesisTransaction := protocol.NewRewardTransaction(validatorWalletAddress, 0, 1e13)
+	genesisTransaction := validation.NewRewardTransaction(validatorWalletAddress, 0, 1e13)
 	return &network.BlockResponse{
 		Timestamp:           0,
 		PreviousHash:        [32]byte{},
@@ -16,7 +16,7 @@ func NewGenesisBlockResponse(validatorWalletAddress string) *network.BlockRespon
 }
 
 func NewRewardedBlockResponse(previousHash [32]byte, timestamp int64) *network.BlockResponse {
-	rewardTransaction := protocol.NewRewardTransaction("recipient", 0, 0)
+	rewardTransaction := validation.NewRewardTransaction("recipient", 0, 0)
 	return &network.BlockResponse{
 		Timestamp:           timestamp,
 		PreviousHash:        previousHash,
@@ -34,7 +34,7 @@ func NewEmptyBlockResponse(timestamp int64) *network.BlockResponse {
 	}
 }
 
-func NewBlockResponse(timestamp int64, hash [32]byte, transactions ...*protocol.Transaction) *network.BlockResponse {
+func NewBlockResponse(timestamp int64, hash [32]byte, transactions ...*validation.Transaction) *network.BlockResponse {
 	var transactionResponses []*network.TransactionResponse
 	var registeredAddresses []string
 	registeredAddressesMap := make(map[string]bool)

@@ -1,4 +1,4 @@
-package protocol
+package validation
 
 import (
 	"github.com/my-cloud/ruthenium/src/network"

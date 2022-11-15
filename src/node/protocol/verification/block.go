@@ -1,16 +1,17 @@
-package protocol
+package verification
 
 import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/network"
+	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 )
 
 type Block struct {
 	timestamp           int64
 	previousHash        [32]byte
-	transactions        []*Transaction
+	transactions        []*validation.Transaction
 	registeredAddresses []string
 }
 
@@ -24,9 +25,9 @@ func NewBlockResponse(timestamp int64, previousHash [32]byte, transactions []*ne
 }
 
 func NewBlockFromResponse(block *network.BlockResponse) (*Block, error) {
-	var transactions []*Transaction
+	var transactions []*validation.Transaction
 	for _, transactionResponse := range block.Transactions {
-		transaction, err := NewTransactionFromResponse(transactionResponse)
+		transaction, err := validation.NewTransactionFromResponse(transactionResponse)
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate transaction: %w", err)
 		}
@@ -58,7 +59,7 @@ func (block *Block) PreviousHash() [32]byte {
 	return block.previousHash
 }
 
-func (block *Block) Transactions() []*Transaction {
+func (block *Block) Transactions() []*validation.Transaction {
 	return block.transactions
 }
 
@@ -79,10 +80,10 @@ func (block *Block) ValidatorAddress() string {
 
 func (block *Block) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Timestamp           int64          `json:"timestamp"`
-		PreviousHash        string         `json:"previous_hash"`
-		Transactions        []*Transaction `json:"transactions"`
-		RegisteredAddresses []string       `json:"registered_addresses"`
+		Timestamp           int64                     `json:"timestamp"`
+		PreviousHash        string                    `json:"previous_hash"`
+		Transactions        []*validation.Transaction `json:"transactions"`
+		RegisteredAddresses []string                  `json:"registered_addresses"`
 	}{
 		Timestamp:           block.timestamp,
 		PreviousHash:        fmt.Sprintf("%x", block.previousHash),

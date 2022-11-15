@@ -1,4 +1,4 @@
-package protocol
+package verification
 
 import (
 	"github.com/my-cloud/ruthenium/src/network"
@@ -11,4 +11,5 @@ type Blockchain interface {
 	AddBlock(timestamp int64, previousHash [32]byte, transactions []*network.TransactionResponse, registeredAddresses []string)
 	Copy() Blockchain
 	IsEmpty() bool
+	LastBlockHash() ([32]byte, error)
 }

@@ -5,13 +5,13 @@ package node
 
 import (
 	"github.com/my-cloud/ruthenium/src/network"
-	"github.com/my-cloud/ruthenium/src/protocol"
+	"github.com/my-cloud/ruthenium/src/protocol/verification"
 	"sync"
 )
 
 // Ensure, that BlockchainMock does implement Blockchain.
 // If this is not the case, regenerate this file with moq.
-var _ protocol.Blockchain = &BlockchainMock{}
+var _ verification.Blockchain = &BlockchainMock{}
 
 // BlockchainMock is a mock implementation of Blockchain.
 //

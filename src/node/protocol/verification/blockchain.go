@@ -1,11 +1,12 @@
-package protocol
+package verification
 
 import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/network"
-	"github.com/my-cloud/ruthenium/src/protocol"
+	"github.com/my-cloud/ruthenium/src/node/protocol"
+	"github.com/my-cloud/ruthenium/src/protocol/verification"
 	"math"
 	"sort"
 	"sync"
@@ -22,7 +23,7 @@ type Blockchain struct {
 	blockResponses []*network.BlockResponse
 	mutex          sync.RWMutex
 
-	registry Registry
+	registry protocol.Registry
 
 	validationTimer time.Duration
 
@@ -34,7 +35,7 @@ type Blockchain struct {
 	isReplaced bool
 }
 
-func NewBlockchain(registry Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger *log.Logger) *Blockchain {
+func NewBlockchain(registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger *log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.registry = registry
 	blockchain.validationTimer = validationTimer
@@ -70,7 +71,7 @@ func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
 	return blockchain.blockResponses
 }
 
-func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResponse, hostBlocks []*Block, currentBlockchain protocol.Blockchain, timestamp int64) (validBlocks []*Block, err error) {
+func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResponse, hostBlocks []*Block, currentBlockchain verification.Blockchain, timestamp int64) (validBlocks []*Block, err error) {
 	if len(neighborBlocks) < 2 || len(neighborBlocks) < len(hostBlocks) {
 		return nil, errors.New("neighbor's blockchain is too short")
 	}
@@ -223,7 +224,7 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResp
 	return validBlocks, nil
 }
 
-func (blockchain *Blockchain) Copy() protocol.Blockchain {
+func (blockchain *Blockchain) Copy() verification.Blockchain {
 	blockchainCopy := new(Blockchain)
 	blockchainCopy.registry = blockchain.registry
 	blockchainCopy.validationTimer = blockchain.validationTimer
@@ -434,6 +435,13 @@ func (blockchain *Blockchain) CalculateTotalAmount(currentTimestamp int64, block
 
 func calculateIncome(amount uint64) uint64 {
 	return uint64(math.Round(math.Pow(float64(amount), incomeExponent)))
+}
+
+func (blockchain *Blockchain) LastBlockHash() ([32]byte, error) {
+	if blockchain.IsEmpty() {
+		return [32]byte{}, fmt.Errorf("the blockchain is empty")
+	}
+	return blockchain.blocks[len(blockchain.blocks)-1].Hash()
 }
 
 func (blockchain *Blockchain) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {

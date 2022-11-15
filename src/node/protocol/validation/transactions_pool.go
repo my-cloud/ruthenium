@@ -1,4 +1,4 @@
-package protocol
+package validation
 
 import (
 	"errors"
@@ -6,7 +6,8 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/network"
 	"github.com/my-cloud/ruthenium/src/node/clock"
-	"github.com/my-cloud/ruthenium/src/protocol"
+	"github.com/my-cloud/ruthenium/src/node/protocol"
+	"github.com/my-cloud/ruthenium/src/protocol/verification"
 	"math/rand"
 	"sync"
 	"time"
@@ -17,8 +18,8 @@ type TransactionsPool struct {
 	transactionResponses []*network.TransactionResponse
 	mutex                sync.RWMutex
 
-	blockchain       protocol.Blockchain
-	registry         Registry
+	blockchain       verification.Blockchain
+	registry         protocol.Registry
 	validatorAddress string
 	genesisAmount    uint64
 
@@ -29,7 +30,7 @@ type TransactionsPool struct {
 	logger    *log.Logger
 }
 
-func NewTransactionsPool(blockchain protocol.Blockchain, registry Registry, validatorAddress string, genesisAmount uint64, validationTimer time.Duration, time clock.Time, logger *log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain verification.Blockchain, registry protocol.Registry, validatorAddress string, genesisAmount uint64, validationTimer time.Duration, time clock.Time, logger *log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blockchain = blockchain
 	pool.registry = registry
@@ -222,12 +223,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
 		return
 	}
-	lastBlockResponse, err := NewBlockFromResponse(lastBlock)
-	if err != nil {
-		pool.logger.Error(fmt.Errorf("failed instantiate last block: %w", err).Error())
-		return
-	}
-	lastBlockHash, err := lastBlockResponse.Hash()
+	lastBlockHash, err := currentBlockchain.LastBlockHash()
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("failed calculate last block hash: %w", err).Error())
 		return
