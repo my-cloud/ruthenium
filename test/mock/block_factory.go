@@ -1,4 +1,4 @@
-package verification
+package mock
 
 import (
 	"github.com/my-cloud/ruthenium/src/network"
@@ -10,7 +10,7 @@ func NewGenesisBlockResponse(validatorWalletAddress string) *network.BlockRespon
 	return &network.BlockResponse{
 		Timestamp:           0,
 		PreviousHash:        [32]byte{},
-		Transactions:        []*network.TransactionResponse{genesisTransaction.GetResponse()},
+		Transactions:        []*network.TransactionResponse{genesisTransaction},
 		RegisteredAddresses: nil,
 	}
 }
@@ -20,7 +20,7 @@ func NewRewardedBlockResponse(previousHash [32]byte, timestamp int64) *network.B
 	return &network.BlockResponse{
 		Timestamp:           timestamp,
 		PreviousHash:        previousHash,
-		Transactions:        []*network.TransactionResponse{rewardTransaction.GetResponse()},
+		Transactions:        []*network.TransactionResponse{rewardTransaction},
 		RegisteredAddresses: nil,
 	}
 }
@@ -34,19 +34,7 @@ func NewEmptyBlockResponse(timestamp int64) *network.BlockResponse {
 	}
 }
 
-func NewBlockResponse(timestamp int64, hash [32]byte, transactions ...*validation.Transaction) *network.BlockResponse {
-	var transactionResponses []*network.TransactionResponse
-	var registeredAddresses []string
-	registeredAddressesMap := make(map[string]bool)
-	for _, transaction := range transactions {
-		transactionResponses = append(transactionResponses, transaction.GetResponse())
-		if _, ok := registeredAddressesMap[transaction.SenderAddress()]; !ok && !transaction.IsReward() {
-			registeredAddressesMap[transaction.SenderAddress()] = true
-		}
-	}
-	for address := range registeredAddressesMap {
-		registeredAddresses = append(registeredAddresses, address)
-	}
+func NewBlockResponse(timestamp int64, hash [32]byte, transactionResponses []*network.TransactionResponse, registeredAddresses []string) *network.BlockResponse {
 	return &network.BlockResponse{
 		Timestamp:           timestamp,
 		PreviousHash:        hash,

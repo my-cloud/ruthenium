@@ -47,11 +47,20 @@ func NewBlockchain(registry protocol.Registry, validationTimer time.Duration, sy
 	return blockchain
 }
 
-func (blockchain *Blockchain) AddBlock(timestamp int64, previousHash [32]byte, transactions []*network.TransactionResponse, registeredAddresses []string) {
+func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.TransactionResponse, registeredAddresses []string) {
+	var previousHash [32]byte
+	var err error
+	if !blockchain.IsEmpty() {
+		previousHash, err = blockchain.blocks[len(blockchain.blocks)-1].Hash()
+		if err != nil {
+			blockchain.logger.Error(fmt.Errorf("unable to calculate last block hash: %w", err).Error())
+			return
+		}
+	}
 	blockResponse := NewBlockResponse(timestamp, previousHash, transactions, registeredAddresses)
 	block, err := NewBlockFromResponse(blockResponse)
 	if err != nil {
-		blockchain.logger.Error(fmt.Errorf("unable to add block: %w", err).Error())
+		blockchain.logger.Error(fmt.Errorf("unable to instantiate block: %w", err).Error())
 		return
 	}
 	blockchain.mutex.Lock()
@@ -435,13 +444,6 @@ func (blockchain *Blockchain) CalculateTotalAmount(currentTimestamp int64, block
 
 func calculateIncome(amount uint64) uint64 {
 	return uint64(math.Round(math.Pow(float64(amount), incomeExponent)))
-}
-
-func (blockchain *Blockchain) LastBlockHash() ([32]byte, error) {
-	if blockchain.IsEmpty() {
-		return [32]byte{}, fmt.Errorf("the blockchain is empty")
-	}
-	return blockchain.blocks[len(blockchain.blocks)-1].Hash()
 }
 
 func (blockchain *Blockchain) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {

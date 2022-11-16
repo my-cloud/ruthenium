@@ -127,7 +127,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	if currentBlockchain.IsEmpty() {
 		genesisTransaction := NewRewardTransaction(pool.validatorAddress, timestamp, pool.genesisAmount)
 		transactions := []*network.TransactionResponse{genesisTransaction}
-		pool.blockchain.AddBlock(timestamp, [32]byte{}, transactions, nil)
+		pool.blockchain.AddBlock(timestamp, transactions, nil)
 		pool.logger.Debug("genesis block added")
 		return
 	}
@@ -223,14 +223,9 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
 		return
 	}
-	lastBlockHash, err := currentBlockchain.LastBlockHash()
-	if err != nil {
-		pool.logger.Error(fmt.Errorf("failed calculate last block hash: %w", err).Error())
-		return
-	}
 	rewardTransaction := NewRewardTransaction(pool.validatorAddress, timestamp, reward)
 	transactionResponses = append(transactionResponses, rewardTransaction)
-	pool.blockchain.AddBlock(timestamp, lastBlockHash, transactionResponses, newRegisteredAddresses)
+	pool.blockchain.AddBlock(timestamp, transactionResponses, newRegisteredAddresses)
 	pool.logger.Debug(fmt.Sprintf("reward: %d", reward))
 }
 
