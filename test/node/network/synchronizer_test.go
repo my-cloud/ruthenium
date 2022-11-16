@@ -7,14 +7,13 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/mock"
-	"github.com/my-cloud/ruthenium/test/node/clock"
 	"testing"
 	"time"
 )
 
 func Test_Synchronize_OneNeighbor_NeighborAdded(t *testing.T) {
 	// Arrange
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	timeMock.NowFunc = func() time.Time { return time.Now() }
 	clientFactoryMock := new(mock.ClientFactoryMock)
 	client := new(mock.ClientMock)

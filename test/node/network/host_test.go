@@ -6,7 +6,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/mock"
-	"github.com/my-cloud/ruthenium/test/node/clock"
 	"testing"
 	"time"
 )
@@ -22,7 +21,7 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	engineMock := new(mock.EngineMock)
 	engineMock.StartFunc = func() {}
 	engineMock.DoFunc = func() {}
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	timeMock.NowFunc = func() time.Time { return time.Now() }
 	client := new(mock.ClientMock)
 	client.SendFunc = func(string, p2p.Data) (p2p.Data, error) { return p2p.Data{}, nil }

@@ -10,7 +10,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/mock"
-	"github.com/my-cloud/ruthenium/test/node/clock"
 	"testing"
 	"time"
 )
@@ -21,7 +20,7 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(mock.RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	var now int64 = 2
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
@@ -54,7 +53,7 @@ func Test_AddTransaction_TransactionTimestampIsOlderThan2Blocks_TransactionNotAd
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(mock.RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	var now int64 = 3
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
@@ -88,7 +87,7 @@ func Test_AddTransaction_TransactionIsAlreadyInTheBlockchain_TransactionNotAdded
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(mock.RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	var now int64 = 2
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
@@ -126,7 +125,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	walletAAddress := walletA.Address()
 	registryMock := new(mock.RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	var now int64 = 1
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
@@ -162,7 +161,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	walletAAddress := walletA.Address()
 	registryMock := new(mock.RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	var now int64 = 1
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
@@ -197,7 +196,7 @@ func Test_Validate_BlockchainIsEmpty_GenesisTransactionValidated(t *testing.T) {
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(mock.RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	var now int64 = 1
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
@@ -257,7 +256,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(mock.RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	var now int64 = 1
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
@@ -291,7 +290,7 @@ func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidate
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(mock.RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	var now int64 = 3
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
@@ -328,7 +327,7 @@ func Test_Validate_TransactionIsAlreadyInTheBlockchain_TransactionNotValidated(t
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(mock.RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	var now int64 = 2
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
@@ -367,7 +366,7 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	validatorWalletAddress := validatorWallet.Address()
 	registryMock := new(mock.RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	var now int64 = 1
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond

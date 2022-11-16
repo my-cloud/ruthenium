@@ -9,7 +9,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/mock"
-	"github.com/my-cloud/ruthenium/test/node/clock"
 	"testing"
 	"time"
 )
@@ -18,7 +17,7 @@ func Test_Verify_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	// Arrange
 	registry := new(mock.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, 1) }
 	logger := log.NewLogger(log.Fatal)
 	neighborMock := new(mock.NeighborMock)
@@ -50,7 +49,7 @@ func Test_Verify_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	// Arrange
 	registry := new(mock.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, 2) }
 	logger := log.NewLogger(log.Fatal)
 	neighborMock := new(mock.NeighborMock)
@@ -126,7 +125,7 @@ func Test_Verify_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	// Arrange
 	registry := new(mock.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, 1) }
 	logger := log.NewLogger(log.Fatal)
 	neighborMock := new(mock.NeighborMock)
@@ -158,7 +157,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	// Arrange
 	registry := new(mock.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, 1) }
 	logger := log.NewLogger(log.Fatal)
 	neighborMock := new(mock.NeighborMock)
@@ -200,7 +199,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	// Arrange
 	registry := new(mock.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
-	timeMock := new(clock.TimeMock)
+	timeMock := new(mock.TimeMock)
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, 2) }
 	logger := log.NewLogger(log.Fatal)
 	neighborMock := new(mock.NeighborMock)

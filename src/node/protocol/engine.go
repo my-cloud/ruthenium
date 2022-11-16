@@ -78,11 +78,6 @@ func (engine *Engine) Start() {
 					engine.function(now.UnixNano())
 				}
 				<-engine.ticker.C
-				//for i := 0; i < verificationsCountPerValidation; i++ {
-				//	if i > 0 {
-				//		go blockchain.Verify()
-				//	}
-				//	<-ticker.C
 			}
 		}
 	}()
@@ -91,8 +86,4 @@ func (engine *Engine) Start() {
 func (engine *Engine) Stop() {
 	engine.started = false
 	engine.ticker.Reset(time.Nanosecond)
-}
-
-func (engine *Engine) Wait() {
-	engine.waitGroup.Wait()
 }
