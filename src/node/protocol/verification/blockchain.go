@@ -381,6 +381,7 @@ func (blockchain *Blockchain) Verify(timestamp int64) {
 	blockchain.isReplaced = isReplaced
 }
 
+// TODO remove these unused method and field
 func (blockchain *Blockchain) IsReplaced() bool {
 	return blockchain.isReplaced
 }
