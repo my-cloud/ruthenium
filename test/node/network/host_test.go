@@ -17,6 +17,7 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	serverMock.ServeFunc = func() error { return nil }
 	serverMock.SetHandleFunc = func(topic string, handler p2p.Handler) {}
 	blockchainMock := new(mock.BlockchainMock)
+	blockchainMock.VerifyFunc = func(int64) {}
 	transactionsPoolMock := new(mock.TransactionsPoolMock)
 	engineMock := new(mock.EngineMock)
 	engineMock.StartFunc = func() {}
