@@ -1,4 +1,4 @@
-package server
+package start
 
 import (
 	"fmt"
@@ -7,16 +7,16 @@ import (
 	"net/http"
 )
 
-type ValidationStartHandler struct {
+type Handler struct {
 	host   network.Neighbor
 	logger *log.Logger
 }
 
-func NewValidationStartHandler(host network.Neighbor, logger *log.Logger) *ValidationStartHandler {
-	return &ValidationStartHandler{host, logger}
+func NewHandler(host network.Neighbor, logger *log.Logger) *Handler {
+	return &Handler{host, logger}
 }
 
-func (handler *ValidationStartHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
+func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
 		err := handler.host.StartMining()

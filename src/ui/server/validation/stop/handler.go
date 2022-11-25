@@ -1,4 +1,4 @@
-package server
+package stop
 
 import (
 	"fmt"
@@ -7,21 +7,21 @@ import (
 	"net/http"
 )
 
-type ValidationHandler struct {
+type Handler struct {
 	host   network.Neighbor
 	logger *log.Logger
 }
 
-func NewValidationHandler(host network.Neighbor, logger *log.Logger) *ValidationHandler {
-	return &ValidationHandler{host, logger}
+func NewHandler(host network.Neighbor, logger *log.Logger) *Handler {
+	return &Handler{host, logger}
 }
 
-func (handler *ValidationHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
+func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		err := handler.host.Mine()
+		err := handler.host.StopMining()
 		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to mine: %w", err).Error())
+			handler.logger.Error(fmt.Errorf("failed to stop mining: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 		}
 	default:

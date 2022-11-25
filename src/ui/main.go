@@ -9,7 +9,14 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/p2p"
 	"github.com/my-cloud/ruthenium/src/p2p/net"
-	"github.com/my-cloud/ruthenium/src/ui/server"
+	"github.com/my-cloud/ruthenium/src/ui/server/index"
+	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
+	"github.com/my-cloud/ruthenium/src/ui/server/transactions"
+	"github.com/my-cloud/ruthenium/src/ui/server/validation"
+	"github.com/my-cloud/ruthenium/src/ui/server/validation/start"
+	"github.com/my-cloud/ruthenium/src/ui/server/validation/stop"
+	"github.com/my-cloud/ruthenium/src/ui/server/wallet"
+	"github.com/my-cloud/ruthenium/src/ui/server/wallet/amount"
 	"net/http"
 	"strconv"
 )
@@ -41,14 +48,14 @@ func main() {
 		logger.Fatal(fmt.Errorf("unable to instantiate settings: %w", err).Error())
 	}
 	particlesCount := settings.ParticlesCount
-	http.Handle("/", server.NewIndexHandler(*templatesPath, logger))
-	http.Handle("/wallet", server.NewWalletHandler(*mnemonic, *derivationPath, *password, *privateKey, logger))
-	http.Handle("/transaction", server.NewTransactionHandler(host, particlesCount, logger))
-	http.Handle("/transactions", server.NewTransactionsHandler(host, logger))
-	http.Handle("/wallet/amount", server.NewWalletAmountHandler(host, particlesCount, logger))
-	http.Handle("/mine", server.NewValidationHandler(host, logger))
-	http.Handle("/mine/start", server.NewValidationStartHandler(host, logger))
-	http.Handle("/mine/stop", server.NewValidationStopHandler(host, logger))
+	http.Handle("/", index.NewHandler(*templatesPath, logger))
+	http.Handle("/wallet", wallet.NewHandler(*mnemonic, *derivationPath, *password, *privateKey, logger))
+	http.Handle("/transaction", transaction.NewHandler(host, particlesCount, logger))
+	http.Handle("/transactions", transactions.NewHandler(host, logger))
+	http.Handle("/wallet/amount", amount.NewHandler(host, particlesCount, logger))
+	http.Handle("/mine", validation.NewHandler(host, logger))
+	http.Handle("/mine/start", start.NewHandler(host, logger))
+	http.Handle("/mine/stop", stop.NewHandler(host, logger))
 	logger.Info("user interface server is running...")
 	logger.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(int(*port)), nil).Error())
 }

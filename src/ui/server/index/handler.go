@@ -1,4 +1,4 @@
-package server
+package index
 
 import (
 	"fmt"
@@ -8,16 +8,16 @@ import (
 	"path"
 )
 
-type IndexHandler struct {
+type Handler struct {
 	templatesPath string
 	logger        *log.Logger
 }
 
-func NewIndexHandler(templatesPath string, logger *log.Logger) *IndexHandler {
-	return &IndexHandler{templatesPath, logger}
+func NewHandler(templatesPath string, logger *log.Logger) *Handler {
+	return &Handler{templatesPath, logger}
 }
 
-func (handler *IndexHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
+func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 		t, err := template.ParseFiles(path.Join(handler.templatesPath, "index.html"))

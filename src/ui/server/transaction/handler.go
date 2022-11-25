@@ -1,4 +1,4 @@
-package server
+package transaction
 
 import (
 	"encoding/json"
@@ -6,27 +6,28 @@ import (
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/network"
+	"github.com/my-cloud/ruthenium/src/ui/server"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 )
 
-type TransactionHandler struct {
+type Handler struct {
 	host               network.Neighbor
 	particlesInOneAtom uint64
 	logger             *log.Logger
 }
 
-func NewTransactionHandler(host network.Neighbor, particlesInOneAtom uint64, logger *log.Logger) *TransactionHandler {
-	return &TransactionHandler{host, particlesInOneAtom, logger}
+func NewHandler(host network.Neighbor, particlesInOneAtom uint64, logger *log.Logger) *Handler {
+	return &Handler{host, particlesInOneAtom, logger}
 }
 
-func (handler *TransactionHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
+func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		var transactionRequest TransactionRequest
-		jsonWriter := NewIoWriter(writer, handler.logger)
+		var transactionRequest server.TransactionRequest
+		jsonWriter := server.NewIoWriter(writer, handler.logger)
 		decoder := json.NewDecoder(req.Body)
 		err := decoder.Decode(&transactionRequest)
 		if err != nil {
@@ -57,7 +58,7 @@ func (handler *TransactionHandler) ServeHTTP(writer http.ResponseWriter, req *ht
 			return
 		}
 		senderPublicKey := encryption.NewPublicKey(privateKey)
-		transaction := NewTransaction(*transactionRequest.RecipientAddress, *transactionRequest.SenderAddress, senderPublicKey, time.Now().UnixNano(), value)
+		transaction := server.NewTransaction(*transactionRequest.RecipientAddress, *transactionRequest.SenderAddress, senderPublicKey, time.Now().UnixNano(), value)
 		err = transaction.Sign(privateKey)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to generate signature: %w", err).Error())

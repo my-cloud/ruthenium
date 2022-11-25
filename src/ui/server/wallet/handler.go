@@ -1,13 +1,14 @@
-package server
+package wallet
 
 import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/ui/server"
 	"net/http"
 )
 
-type WalletHandler struct {
+type Handler struct {
 	mnemonic       string
 	derivationPath string
 	password       string
@@ -15,11 +16,11 @@ type WalletHandler struct {
 	logger         *log.Logger
 }
 
-func NewWalletHandler(mnemonic string, derivationPath string, password string, privateKey string, logger *log.Logger) *WalletHandler {
-	return &WalletHandler{mnemonic, derivationPath, password, privateKey, logger}
+func NewHandler(mnemonic string, derivationPath string, password string, privateKey string, logger *log.Logger) *Handler {
+	return &Handler{mnemonic, derivationPath, password, privateKey, logger}
 }
 
-func (handler *WalletHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
+func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
 		wallet, err := encryption.DecodeWallet(handler.mnemonic, handler.derivationPath, handler.password, handler.privateKey)
@@ -33,7 +34,7 @@ func (handler *WalletHandler) ServeHTTP(writer http.ResponseWriter, req *http.Re
 			return
 		}
 		writer.Header().Add("Content-Type", "application/json")
-		NewIoWriter(writer, handler.logger).Write(string(marshaledWallet[:]))
+		server.NewIoWriter(writer, handler.logger).Write(string(marshaledWallet[:]))
 	default:
 		handler.logger.Error("invalid HTTP method")
 		writer.WriteHeader(http.StatusBadRequest)

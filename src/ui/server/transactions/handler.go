@@ -1,23 +1,24 @@
-package server
+package transactions
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/network"
+	"github.com/my-cloud/ruthenium/src/ui/server"
 	"net/http"
 )
 
-type TransactionsHandler struct {
+type Handler struct {
 	host   network.Neighbor
 	logger *log.Logger
 }
 
-func NewTransactionsHandler(host network.Neighbor, logger *log.Logger) *TransactionsHandler {
-	return &TransactionsHandler{host, logger}
+func NewHandler(host network.Neighbor, logger *log.Logger) *Handler {
+	return &Handler{host, logger}
 }
 
-func (handler *TransactionsHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
+func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 		transactions, err := handler.host.GetTransactions()
@@ -33,7 +34,7 @@ func (handler *TransactionsHandler) ServeHTTP(writer http.ResponseWriter, req *h
 			return
 		}
 		writer.Header().Add("Content-Type", "application/json")
-		NewIoWriter(writer, handler.logger).Write(string(marshaledTransactions[:]))
+		server.NewIoWriter(writer, handler.logger).Write(string(marshaledTransactions[:]))
 	default:
 		handler.logger.Error("invalid HTTP method")
 		writer.WriteHeader(http.StatusBadRequest)

@@ -1,4 +1,4 @@
-package server
+package wallet
 
 import (
 	"github.com/my-cloud/ruthenium/src/network"

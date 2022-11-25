@@ -1,4 +1,4 @@
-package server
+package transaction
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/network"
 	"github.com/my-cloud/ruthenium/src/ui/server"
+	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/mock"
 	"net/http"
@@ -19,10 +20,9 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	neighborMock := new(mock.NeighborMock)
 	logger := log.NewLogger(log.Fatal)
-	handler := server.NewTransactionHandler(neighborMock, 1, logger)
+	handler := transaction.NewHandler(neighborMock, 1, logger)
 	recorder := httptest.NewRecorder()
 	invalidHttpMethods := []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
-
 	for _, method := range invalidHttpMethods {
 		t.Run(method, func(t *testing.T) {
 			request := httptest.NewRequest(method, "/transaction", nil)
@@ -43,8 +43,7 @@ func Test_ServeHTTP_UndecipherableTransaction_BadRequest(t *testing.T) {
 	// Arrange
 	neighborMock := new(mock.NeighborMock)
 	logger := log.NewLogger(log.Fatal)
-	handler := server.NewTransactionHandler(neighborMock, 1, logger)
-
+	handler := transaction.NewHandler(neighborMock, 1, logger)
 	transactionRequest := ""
 	b, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(b)
@@ -65,8 +64,7 @@ func Test_ServeHTTP_InvalidTransaction_BadRequest(t *testing.T) {
 	// Arrange
 	neighborMock := new(mock.NeighborMock)
 	logger := log.NewLogger(log.Fatal)
-	handler := server.NewTransactionHandler(neighborMock, 1, logger)
-
+	handler := transaction.NewHandler(neighborMock, 1, logger)
 	transactionRequest := newTransactionRequest("", "", "", "", "")
 	b, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(b)
@@ -87,8 +85,7 @@ func Test_ServeHTTP_InvalidPrivateKey_BadRequest(t *testing.T) {
 	// Arrange
 	neighborMock := new(mock.NeighborMock)
 	logger := log.NewLogger(log.Fatal)
-	handler := server.NewTransactionHandler(neighborMock, 1, logger)
-
+	handler := transaction.NewHandler(neighborMock, 1, logger)
 	transactionRequest := newTransactionRequest(
 		"InvalidPrivateKey",
 		test.Address,
@@ -115,8 +112,7 @@ func Test_ServeHTTP_InvalidTransactionValue_BadRequest(t *testing.T) {
 	// Arrange
 	neighborMock := new(mock.NeighborMock)
 	logger := log.NewLogger(log.Fatal)
-	handler := server.NewTransactionHandler(neighborMock, 1, logger)
-
+	handler := transaction.NewHandler(neighborMock, 1, logger)
 	transactionRequest := newTransactionRequest(
 		test.PrivateKey,
 		test.Address,
@@ -144,8 +140,7 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	neighborMock := new(mock.NeighborMock)
 	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return errors.New("") }
 	logger := log.NewLogger(log.Fatal)
-	handler := server.NewTransactionHandler(neighborMock, 1, logger)
-
+	handler := transaction.NewHandler(neighborMock, 1, logger)
 	transactionRequest := newTransactionRequest(
 		test.PrivateKey,
 		test.Address,
@@ -173,8 +168,7 @@ func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	neighborMock := new(mock.NeighborMock)
 	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return nil }
 	logger := log.NewLogger(log.Fatal)
-	handler := server.NewTransactionHandler(neighborMock, 1, logger)
-
+	handler := transaction.NewHandler(neighborMock, 1, logger)
 	transactionRequest := newTransactionRequest(
 		test.PrivateKey,
 		test.Address,
