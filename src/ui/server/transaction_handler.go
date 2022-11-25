@@ -26,9 +26,9 @@ func (handler *TransactionHandler) ServeHTTP(writer http.ResponseWriter, req *ht
 	switch req.Method {
 	case http.MethodPost:
 		var transactionRequest TransactionRequest
+		jsonWriter := NewIoWriter(writer, handler.logger)
 		decoder := json.NewDecoder(req.Body)
 		err := decoder.Decode(&transactionRequest)
-		jsonWriter := NewIoWriter(writer, handler.logger)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to decode transaction request: %w", err).Error())
 			writer.WriteHeader(http.StatusBadRequest)
