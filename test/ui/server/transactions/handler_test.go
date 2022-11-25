@@ -7,7 +7,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/ui/server/transactions"
 	"github.com/my-cloud/ruthenium/test"
-	"github.com/my-cloud/ruthenium/test/mock"
+	"github.com/my-cloud/ruthenium/test/node/network/networkmock"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,7 +15,7 @@ import (
 
 func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
-	neighborMock := new(mock.NeighborMock)
+	neighborMock := new(networkmock.NeighborMock)
 	logger := log.NewLogger(log.Fatal)
 	handler := transactions.NewHandler(neighborMock, logger)
 	recorder := httptest.NewRecorder()
@@ -38,7 +38,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 
 func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	// Arrange
-	neighborMock := new(mock.NeighborMock)
+	neighborMock := new(networkmock.NeighborMock)
 	neighborMock.GetTransactionsFunc = func() ([]network.TransactionResponse, error) { return nil, errors.New("") }
 	logger := log.NewLogger(log.Fatal)
 	handler := transactions.NewHandler(neighborMock, logger)
@@ -57,7 +57,7 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 
 func Test_ServeHTTP_ValidRequest_NeighborMethodCalled(t *testing.T) {
 	// Arrange
-	neighborMock := new(mock.NeighborMock)
+	neighborMock := new(networkmock.NeighborMock)
 	neighborMock.GetTransactionsFunc = func() ([]network.TransactionResponse, error) { return nil, nil }
 	logger := log.NewLogger(log.Fatal)
 	handler := transactions.NewHandler(neighborMock, logger)

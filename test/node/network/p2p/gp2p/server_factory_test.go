@@ -1,4 +1,4 @@
-package p2p
+package gp2p
 
 import (
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"

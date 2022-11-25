@@ -23,8 +23,8 @@ type Host struct {
 	server             Server
 	blockchain         protocol.Blockchain
 	pool               protocol.TransactionsPool
-	validationEngine   protocol.Engine
-	verificationEngine protocol.Engine
+	validationEngine   clock.Engine
+	verificationEngine clock.Engine
 	synchronizer       *Synchronizer
 	time               clock.Time
 	logger             *log.Logger
@@ -34,8 +34,8 @@ func NewHost(
 	server Server,
 	blockchain protocol.Blockchain,
 	pool protocol.TransactionsPool,
-	validationEngine protocol.Engine,
-	verificationEngine protocol.Engine,
+	validationEngine clock.Engine,
+	verificationEngine clock.Engine,
 	synchronizer *Synchronizer,
 	time clock.Time,
 	logger *log.Logger,

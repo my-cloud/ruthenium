@@ -1,10 +1,10 @@
-package p2p
+package gp2p
 
 import (
 	"errors"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/test"
-	"github.com/my-cloud/ruthenium/test/mock"
+	"github.com/my-cloud/ruthenium/test/node/network/networkmock"
 	"net"
 	"testing"
 	"time"
@@ -12,7 +12,7 @@ import (
 
 func Test_CreateClient_NoSuchHost_ReturnsNil(t *testing.T) {
 	// Arrange
-	ipFinder := new(mock.IpFinderMock)
+	ipFinder := new(networkmock.IpFinderMock)
 	ipFinder.LookupIPFunc = func(ip string) ([]net.IP, error) {
 		return nil, errors.New("no such host")
 	}
@@ -27,7 +27,7 @@ func Test_CreateClient_NoSuchHost_ReturnsNil(t *testing.T) {
 
 func Test_CreateClient_NoIpAddress_ReturnsNil(t *testing.T) {
 	// Arrange
-	ipFinder := new(mock.IpFinderMock)
+	ipFinder := new(networkmock.IpFinderMock)
 	ipFinder.LookupIPFunc = func(ip string) ([]net.IP, error) {
 		return []net.IP{}, nil
 	}
@@ -42,7 +42,7 @@ func Test_CreateClient_NoIpAddress_ReturnsNil(t *testing.T) {
 
 func Test_CreateClient_NoReachableIpAddress_ReturnsNil(t *testing.T) {
 	// Arrange
-	ipFinder := new(mock.IpFinderMock)
+	ipFinder := new(networkmock.IpFinderMock)
 	ipFinder.LookupIPFunc = func(ip string) ([]net.IP, error) {
 		return []net.IP{{}}, nil
 	}
@@ -60,7 +60,7 @@ func Test_CreateClient_NoReachableIpAddress_ReturnsNil(t *testing.T) {
 
 func Test_CreateClient_ValidIp_ReturnsClient(t *testing.T) {
 	// Arrange
-	ipFinder := new(mock.IpFinderMock)
+	ipFinder := new(networkmock.IpFinderMock)
 	ipFinder.LookupIPFunc = func(ip string) ([]net.IP, error) {
 		return []net.IP{{}}, nil
 	}

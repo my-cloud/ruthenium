@@ -1,4 +1,4 @@
-package mock
+package protocolmock
 
 import (
 	"github.com/my-cloud/ruthenium/src/node/network"
