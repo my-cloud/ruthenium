@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/network"
+	network2 "github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"net/http"
 	"strconv"
@@ -14,12 +14,12 @@ import (
 )
 
 type Handler struct {
-	host               network.Neighbor
+	host               network2.Neighbor
 	particlesInOneAtom uint64
 	logger             *log.Logger
 }
 
-func NewHandler(host network.Neighbor, particlesInOneAtom uint64, logger *log.Logger) *Handler {
+func NewHandler(host network2.Neighbor, particlesInOneAtom uint64, logger *log.Logger) *Handler {
 	return &Handler{host, particlesInOneAtom, logger}
 }
 

@@ -1,10 +1,10 @@
-package p2p
+package gp2p
 
 import (
 	"fmt"
 	p2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/network"
+	p2p2 "github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"strconv"
 	"time"
 )
@@ -15,15 +15,15 @@ const (
 )
 
 type ClientFactory struct {
-	ipFinder IpFinder
+	ipFinder p2p2.IpFinder
 	logger   p2p.Logger
 }
 
-func NewClientFactory(ipFinder IpFinder) *ClientFactory {
+func NewClientFactory(ipFinder p2p2.IpFinder) *ClientFactory {
 	return &ClientFactory{ipFinder, log.NewLogger(log.Fatal)}
 }
 
-func (factory *ClientFactory) CreateClient(ip string, port uint16, target string) (network.Client, error) {
+func (factory *ClientFactory) CreateClient(ip string, port uint16, target string) (p2p2.Client, error) {
 	lookedUpIps, err := factory.ipFinder.LookupIP(ip)
 	if err != nil {
 		return nil, fmt.Errorf("DNS discovery failed on addresse %s: %w", ip, err)

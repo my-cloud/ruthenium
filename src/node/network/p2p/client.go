@@ -1,4 +1,4 @@
-package network
+package p2p
 
 import p2p "github.com/leprosus/golang-p2p"
 

@@ -2,7 +2,7 @@ package p2p
 
 import (
 	"errors"
-	"github.com/my-cloud/ruthenium/src/p2p"
+	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/mock"
 	"net"
@@ -16,7 +16,7 @@ func Test_CreateClient_NoSuchHost_ReturnsNil(t *testing.T) {
 	ipFinder.LookupIPFunc = func(ip string) ([]net.IP, error) {
 		return nil, errors.New("no such host")
 	}
-	clientFactory := p2p.NewClientFactory(ipFinder)
+	clientFactory := gp2p.NewClientFactory(ipFinder)
 
 	// Act
 	client, _ := clientFactory.CreateClient("", 0, "")
@@ -31,7 +31,7 @@ func Test_CreateClient_NoIpAddress_ReturnsNil(t *testing.T) {
 	ipFinder.LookupIPFunc = func(ip string) ([]net.IP, error) {
 		return []net.IP{}, nil
 	}
-	clientFactory := p2p.NewClientFactory(ipFinder)
+	clientFactory := gp2p.NewClientFactory(ipFinder)
 
 	// Act
 	client, _ := clientFactory.CreateClient("", 0, "")
@@ -49,7 +49,7 @@ func Test_CreateClient_NoReachableIpAddress_ReturnsNil(t *testing.T) {
 	ipFinder.DialTimeoutFunc = func(string, string, time.Duration) (net.Conn, error) {
 		return nil, errors.New("missing address")
 	}
-	clientFactory := p2p.NewClientFactory(ipFinder)
+	clientFactory := gp2p.NewClientFactory(ipFinder)
 
 	// Act
 	client, _ := clientFactory.CreateClient("", 0, "")
@@ -67,7 +67,7 @@ func Test_CreateClient_ValidIp_ReturnsClient(t *testing.T) {
 	ipFinder.DialTimeoutFunc = func(string, string, time.Duration) (net.Conn, error) {
 		return nil, nil
 	}
-	clientFactory := p2p.NewClientFactory(ipFinder)
+	clientFactory := gp2p.NewClientFactory(ipFinder)
 
 	// Act
 	client, _ := clientFactory.CreateClient("", 0, "")

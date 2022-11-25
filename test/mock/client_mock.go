@@ -5,13 +5,13 @@ package mock
 
 import (
 	p2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/node/network"
+	p2p2 "github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"sync"
 )
 
 // Ensure, that ClientMock does implement Client.
 // If this is not the case, regenerate this file with moq.
-var _ network.Client = &ClientMock{}
+var _ p2p2.Client = &ClientMock{}
 
 // ClientMock is a mock implementation of Client.
 //

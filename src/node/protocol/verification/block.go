@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/network"
+	network2 "github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 )
 
@@ -15,8 +15,8 @@ type Block struct {
 	registeredAddresses []string
 }
 
-func NewBlockResponse(timestamp int64, previousHash [32]byte, transactions []*network.TransactionResponse, registeredAddresses []string) *network.BlockResponse {
-	return &network.BlockResponse{
+func NewBlockResponse(timestamp int64, previousHash [32]byte, transactions []*network2.TransactionResponse, registeredAddresses []string) *network2.BlockResponse {
+	return &network2.BlockResponse{
 		Timestamp:           timestamp,
 		PreviousHash:        previousHash,
 		Transactions:        transactions,
@@ -24,7 +24,7 @@ func NewBlockResponse(timestamp int64, previousHash [32]byte, transactions []*ne
 	}
 }
 
-func NewBlockFromResponse(block *network.BlockResponse) (*Block, error) {
+func NewBlockFromResponse(block *network2.BlockResponse) (*Block, error) {
 	var transactions []*validation.Transaction
 	for _, transactionResponse := range block.Transactions {
 		transaction, err := validation.NewTransactionFromResponse(transactionResponse)
@@ -92,12 +92,12 @@ func (block *Block) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (block *Block) GetResponse() *network.BlockResponse {
-	var transactions []*network.TransactionResponse
+func (block *Block) GetResponse() *network2.BlockResponse {
+	var transactions []*network2.TransactionResponse
 	for _, transaction := range block.transactions {
 		transactions = append(transactions, transaction.GetResponse())
 	}
-	return &network.BlockResponse{
+	return &network2.BlockResponse{
 		Timestamp:           block.timestamp,
 		PreviousHash:        block.previousHash,
 		Transactions:        transactions,

@@ -6,9 +6,9 @@ import (
 	"github.com/my-cloud/ruthenium/src/config"
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/network"
-	"github.com/my-cloud/ruthenium/src/p2p"
-	"github.com/my-cloud/ruthenium/src/p2p/net"
+	"github.com/my-cloud/ruthenium/src/node/network/p2p"
+	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
+	"github.com/my-cloud/ruthenium/src/node/network/p2p/net"
 	"github.com/my-cloud/ruthenium/src/ui/server/index"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
 	"github.com/my-cloud/ruthenium/src/ui/server/transactions"
@@ -30,16 +30,16 @@ func main() {
 	privateKey := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)")
 	port := flag.Uint64("port", environment.NewVariable("PORT").GetUint64Value(defaultPort), "The TCP port number of the UI server")
 	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue(""), "The node host IP address")
-	hostPort := flag.Uint64("host-port", environment.NewVariable("HOST_PORT").GetUint64Value(network.DefaultPort), "The TCP port number of the host node")
+	hostPort := flag.Uint64("host-port", environment.NewVariable("HOST_PORT").GetUint64Value(p2p.DefaultPort), "The TCP port number of the host node")
 	templatesPath := flag.String("templates-path", environment.NewVariable("TEMPLATES_PATH").GetStringValue("src/ui/templates"), "The UI templates path")
 	configurationPath := flag.String("configuration-path", environment.NewVariable("CONFIGURATION_PATH").GetStringValue("config"), "The configuration files path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level")
 
 	flag.Parse()
 	logger := log.NewLogger(log.ParseLevel(*logLevel))
-	target := network.NewTarget(*hostIp, uint16(*hostPort))
-	clientFactory := p2p.NewClientFactory(net.NewIpFinder())
-	host, err := network.NewNeighbor(target, clientFactory, logger)
+	target := p2p.NewTarget(*hostIp, uint16(*hostPort))
+	clientFactory := gp2p.NewClientFactory(net.NewIpFinder())
+	host, err := p2p.NewNeighbor(target, clientFactory, logger)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
 	}

@@ -3,16 +3,16 @@ package stop
 import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/network"
+	network2 "github.com/my-cloud/ruthenium/src/node/network"
 	"net/http"
 )
 
 type Handler struct {
-	host   network.Neighbor
+	host   network2.Neighbor
 	logger *log.Logger
 }
 
-func NewHandler(host network.Neighbor, logger *log.Logger) *Handler {
+func NewHandler(host network2.Neighbor, logger *log.Logger) *Handler {
 	return &Handler{host, logger}
 }
 

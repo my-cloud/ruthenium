@@ -4,13 +4,13 @@
 package mock
 
 import (
-	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"sync"
 )
 
 // Ensure, that ClientFactoryMock does implement ClientFactory.
 // If this is not the case, regenerate this file with moq.
-var _ network.ClientFactory = &ClientFactoryMock{}
+var _ p2p.ClientFactory = &ClientFactoryMock{}
 
 // ClientFactoryMock is a mock implementation of ClientFactory.
 //
@@ -29,7 +29,7 @@ var _ network.ClientFactory = &ClientFactoryMock{}
 // 	}
 type ClientFactoryMock struct {
 	// CreateClientFunc mocks the CreateClient method.
-	CreateClientFunc func(ip string, port uint16, target string) (network.Client, error)
+	CreateClientFunc func(ip string, port uint16, target string) (p2p.Client, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -47,7 +47,7 @@ type ClientFactoryMock struct {
 }
 
 // CreateClient calls CreateClientFunc.
-func (mock *ClientFactoryMock) CreateClient(ip string, port uint16, target string) (network.Client, error) {
+func (mock *ClientFactoryMock) CreateClient(ip string, port uint16, target string) (p2p.Client, error) {
 	if mock.CreateClientFunc == nil {
 		panic("ClientFactoryMock.CreateClientFunc: method is nil but ClientFactory.CreateClient was just called")
 	}

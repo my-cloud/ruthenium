@@ -5,13 +5,13 @@ package mock
 
 import (
 	p2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/node/network"
+	p2p2 "github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"sync"
 )
 
 // Ensure, that ServerMock does implement Server.
 // If this is not the case, regenerate this file with moq.
-var _ network.Server = &ServerMock{}
+var _ p2p2.Server = &ServerMock{}
 
 // ServerMock is a mock implementation of Server.
 //

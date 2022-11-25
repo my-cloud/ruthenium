@@ -4,7 +4,7 @@
 package mock
 
 import (
-	"github.com/my-cloud/ruthenium/src/p2p"
+	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"net"
 	"sync"
 	"time"

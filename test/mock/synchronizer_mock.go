@@ -4,13 +4,13 @@
 package mock
 
 import (
-	"github.com/my-cloud/ruthenium/src/network"
+	network2 "github.com/my-cloud/ruthenium/src/node/network"
 	"sync"
 )
 
 // Ensure, that SynchronizerMock does implement Synchronizer.
 // If this is not the case, regenerate this file with moq.
-var _ network.Synchronizer = &SynchronizerMock{}
+var _ network2.Synchronizer = &SynchronizerMock{}
 
 // SynchronizerMock is a mock implementation of Synchronizer.
 //
@@ -29,7 +29,7 @@ var _ network.Synchronizer = &SynchronizerMock{}
 // 	}
 type SynchronizerMock struct {
 	// NeighborsFunc mocks the Neighbors method.
-	NeighborsFunc func() []network.Neighbor
+	NeighborsFunc func() []network2.Neighbor
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -41,7 +41,7 @@ type SynchronizerMock struct {
 }
 
 // Neighbors calls NeighborsFunc.
-func (mock *SynchronizerMock) Neighbors() []network.Neighbor {
+func (mock *SynchronizerMock) Neighbors() []network2.Neighbor {
 	if mock.NeighborsFunc == nil {
 		panic("SynchronizerMock.NeighborsFunc: method is nil but Synchronizer.Neighbors was just called")
 	}

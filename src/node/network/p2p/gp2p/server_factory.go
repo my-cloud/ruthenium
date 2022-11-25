@@ -1,9 +1,9 @@
-package p2p
+package gp2p
 
 import (
 	p2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/network"
+	p2p2 "github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"strconv"
 	"time"
 )
@@ -18,7 +18,7 @@ func NewServerFactory() *ServerFactory {
 	return &ServerFactory{log.NewLogger(log.Fatal)}
 }
 
-func (factory *ServerFactory) CreateServer(port int) (network.Server, error) {
+func (factory *ServerFactory) CreateServer(port int) (p2p2.Server, error) {
 	tcp := p2p.NewTCP("0.0.0.0", strconv.Itoa(port))
 	server, err := p2p.NewServer(tcp)
 	if err != nil {

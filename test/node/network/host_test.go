@@ -3,7 +3,7 @@ package network
 import (
 	p2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/network"
+	p2p2 "github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/mock"
 	"testing"
@@ -26,14 +26,14 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	client := new(mock.ClientMock)
 	client.SendFunc = func(string, p2p.Data) (p2p.Data, error) { return p2p.Data{}, nil }
 	clientFactoryMock := new(mock.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (network.Client, error) { return client, nil }
+	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (p2p2.Client, error) { return client, nil }
 	configurationPath := "../../"
 	logger := log.NewLogger(log.Fatal)
-	synchronizer, err := network.NewSynchronizer(0, timeMock, clientFactoryMock, configurationPath, logger)
+	synchronizer, err := p2p2.NewSynchronizer(0, timeMock, clientFactoryMock, configurationPath, logger)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	host := network.NewHost(serverMock, blockchainMock, transactionsPoolMock, engineMock, engineMock, synchronizer, timeMock, logger)
+	host := p2p2.NewHost(serverMock, blockchainMock, transactionsPoolMock, engineMock, engineMock, synchronizer, timeMock, logger)
 
 	// Act
 	_ = host.Run()

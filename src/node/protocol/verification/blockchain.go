@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/network"
+	network2 "github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
-	"github.com/my-cloud/ruthenium/src/protocol/verification"
 	"math"
 	"sort"
 	"sync"
@@ -20,14 +19,14 @@ const (
 
 type Blockchain struct {
 	blocks         []*Block
-	blockResponses []*network.BlockResponse
+	blockResponses []*network2.BlockResponse
 	mutex          sync.RWMutex
 
 	registry protocol.Registry
 
 	validationTimer time.Duration
 
-	synchronizer network.Synchronizer
+	synchronizer network2.Synchronizer
 
 	lambda float64
 
@@ -35,7 +34,7 @@ type Blockchain struct {
 	isReplaced bool
 }
 
-func NewBlockchain(registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger *log.Logger) *Blockchain {
+func NewBlockchain(registry protocol.Registry, validationTimer time.Duration, synchronizer network2.Synchronizer, logger *log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.registry = registry
 	blockchain.validationTimer = validationTimer
@@ -47,7 +46,7 @@ func NewBlockchain(registry protocol.Registry, validationTimer time.Duration, sy
 	return blockchain
 }
 
-func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.TransactionResponse, registeredAddresses []string) {
+func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network2.TransactionResponse, registeredAddresses []string) {
 	var previousHash [32]byte
 	var err error
 	if !blockchain.IsEmpty() {
@@ -74,13 +73,13 @@ func (blockchain *Blockchain) IsEmpty() bool {
 	return blockchain.blocks == nil
 }
 
-func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
+func (blockchain *Blockchain) Blocks() []*network2.BlockResponse {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
 	return blockchain.blockResponses
 }
 
-func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResponse, hostBlocks []*Block, currentBlockchain verification.Blockchain, timestamp int64) (validBlocks []*Block, err error) {
+func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network2.BlockResponse, hostBlocks []*Block, currentBlockchain protocol.Blockchain, timestamp int64) (validBlocks []*Block, err error) {
 	if len(neighborBlocks) < 2 || len(neighborBlocks) < len(hostBlocks) {
 		return nil, errors.New("neighbor's blockchain is too short")
 	}
@@ -233,7 +232,7 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResp
 	return validBlocks, nil
 }
 
-func (blockchain *Blockchain) Copy() verification.Blockchain {
+func (blockchain *Blockchain) Copy() protocol.Blockchain {
 	blockchainCopy := new(Blockchain)
 	blockchainCopy.registry = blockchain.registry
 	blockchainCopy.validationTimer = blockchain.validationTimer
@@ -250,7 +249,7 @@ func (blockchain *Blockchain) Copy() verification.Blockchain {
 func (blockchain *Blockchain) Verify(timestamp int64) {
 	// Select valid blocks
 	neighbors := blockchain.synchronizer.Neighbors()
-	blockResponsesByTarget := make(map[string][]*network.BlockResponse)
+	blockResponsesByTarget := make(map[string][]*network2.BlockResponse)
 	blocksByTarget := make(map[string][]*Block)
 	var selectedTargets []string
 	hostBlocks := blockchain.blocks
@@ -277,7 +276,7 @@ func (blockchain *Blockchain) Verify(timestamp int64) {
 		selectedTargets = append(selectedTargets, hostTarget)
 	}
 
-	var selectedBlocksResponse []*network.BlockResponse
+	var selectedBlocksResponse []*network2.BlockResponse
 	var selectedBlocks []*Block
 	var isReplaced bool
 	if selectedTargets != nil {

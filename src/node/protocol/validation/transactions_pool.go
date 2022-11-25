@@ -4,10 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/network"
 	"github.com/my-cloud/ruthenium/src/node/clock"
+	network2 "github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
-	"github.com/my-cloud/ruthenium/src/protocol/verification"
 	"math/rand"
 	"sync"
 	"time"
@@ -15,10 +14,10 @@ import (
 
 type TransactionsPool struct {
 	transactions         []*Transaction
-	transactionResponses []*network.TransactionResponse
+	transactionResponses []*network2.TransactionResponse
 	mutex                sync.RWMutex
 
-	blockchain       verification.Blockchain
+	blockchain       protocol.Blockchain
 	registry         protocol.Registry
 	validatorAddress string
 	genesisAmount    uint64
@@ -30,7 +29,7 @@ type TransactionsPool struct {
 	logger    *log.Logger
 }
 
-func NewTransactionsPool(blockchain verification.Blockchain, registry protocol.Registry, validatorAddress string, genesisAmount uint64, validationTimer time.Duration, time clock.Time, logger *log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain protocol.Blockchain, registry protocol.Registry, validatorAddress string, genesisAmount uint64, validationTimer time.Duration, time clock.Time, logger *log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blockchain = blockchain
 	pool.registry = registry
@@ -44,7 +43,7 @@ func NewTransactionsPool(blockchain verification.Blockchain, registry protocol.R
 	return pool
 }
 
-func (pool *TransactionsPool) AddTransaction(transactionRequest *network.TransactionRequest, neighbors []network.Neighbor) {
+func (pool *TransactionsPool) AddTransaction(transactionRequest *network2.TransactionRequest, neighbors []network2.Neighbor) {
 	pool.waitGroup.Add(1)
 	go func() {
 		defer pool.waitGroup.Done()
@@ -54,14 +53,14 @@ func (pool *TransactionsPool) AddTransaction(transactionRequest *network.Transac
 			return
 		}
 		for _, neighbor := range neighbors {
-			go func(neighbor network.Neighbor) {
+			go func(neighbor network2.Neighbor) {
 				_ = neighbor.AddTransaction(*transactionRequest)
 			}(neighbor)
 		}
 	}()
 }
 
-func (pool *TransactionsPool) addTransaction(transactionRequest *network.TransactionRequest) (err error) {
+func (pool *TransactionsPool) addTransaction(transactionRequest *network2.TransactionRequest) (err error) {
 	transaction, err := NewTransactionFromRequest(transactionRequest)
 	if err != nil {
 		err = fmt.Errorf("failed to instantiate transaction: %w", err)
@@ -116,7 +115,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	return
 }
 
-func (pool *TransactionsPool) Transactions() []*network.TransactionResponse {
+func (pool *TransactionsPool) Transactions() []*network2.TransactionResponse {
 	pool.mutex.RLock()
 	defer pool.mutex.RUnlock()
 	return pool.transactionResponses
@@ -126,7 +125,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	currentBlockchain := pool.blockchain.Copy()
 	if currentBlockchain.IsEmpty() {
 		genesisTransaction := NewRewardTransaction(pool.validatorAddress, timestamp, pool.genesisAmount)
-		transactions := []*network.TransactionResponse{genesisTransaction}
+		transactions := []*network2.TransactionResponse{genesisTransaction}
 		pool.blockchain.AddBlock(timestamp, transactions, nil)
 		pool.logger.Debug("genesis block added")
 		return
@@ -140,7 +139,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	totalTransactionsValueBySenderAddress := make(map[string]uint64)
 	transactionResponses := pool.transactionResponses
 	var reward uint64
-	var rejectedTransactions []*network.TransactionResponse
+	var rejectedTransactions []*network2.TransactionResponse
 	for i, transaction := range transactionResponses {
 		if timestamp+pool.validationTimer.Nanoseconds() < transaction.Timestamp {
 			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too far in the future, transaction: %v", transaction))
@@ -238,7 +237,7 @@ func (pool *TransactionsPool) Wait() {
 	pool.waitGroup.Wait()
 }
 
-func removeTransactions(transactions []*network.TransactionResponse, removedTransaction *network.TransactionResponse) []*network.TransactionResponse {
+func removeTransactions(transactions []*network2.TransactionResponse, removedTransaction *network2.TransactionResponse) []*network2.TransactionResponse {
 	for i := 0; i < len(transactions); i++ {
 		if transactions[i] == removedTransaction {
 			transactions = append(transactions[:i], transactions[i+1:]...)

@@ -4,14 +4,14 @@
 package mock
 
 import (
-	"github.com/my-cloud/ruthenium/src/network"
-	"github.com/my-cloud/ruthenium/src/protocol/verification"
+	network2 "github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"sync"
 )
 
 // Ensure, that BlockchainMock does implement Blockchain.
 // If this is not the case, regenerate this file with moq.
-var _ verification.Blockchain = &BlockchainMock{}
+var _ protocol.Blockchain = &BlockchainMock{}
 
 // BlockchainMock is a mock implementation of Blockchain.
 //
@@ -45,16 +45,16 @@ var _ verification.Blockchain = &BlockchainMock{}
 // 	}
 type BlockchainMock struct {
 	// AddBlockFunc mocks the AddBlock method.
-	AddBlockFunc func(timestamp int64, transactions []*network.TransactionResponse, registeredAddresses []string)
+	AddBlockFunc func(timestamp int64, transactions []*network2.TransactionResponse, registeredAddresses []string)
 
 	// BlocksFunc mocks the Blocks method.
-	BlocksFunc func() []*network.BlockResponse
+	BlocksFunc func() []*network2.BlockResponse
 
 	// CalculateTotalAmountFunc mocks the CalculateTotalAmount method.
 	CalculateTotalAmountFunc func(currentTimestamp int64, blockchainAddress string) uint64
 
 	// CopyFunc mocks the Copy method.
-	CopyFunc func() verification.Blockchain
+	CopyFunc func() protocol.Blockchain
 
 	// IsEmptyFunc mocks the IsEmpty method.
 	IsEmptyFunc func() bool
@@ -69,7 +69,7 @@ type BlockchainMock struct {
 			// Timestamp is the timestamp argument value.
 			Timestamp int64
 			// Transactions is the transactions argument value.
-			Transactions []*network.TransactionResponse
+			Transactions []*network2.TransactionResponse
 			// RegisteredAddresses is the registeredAddresses argument value.
 			RegisteredAddresses []string
 		}
@@ -104,13 +104,13 @@ type BlockchainMock struct {
 }
 
 // AddBlock calls AddBlockFunc.
-func (mock *BlockchainMock) AddBlock(timestamp int64, transactions []*network.TransactionResponse, registeredAddresses []string) {
+func (mock *BlockchainMock) AddBlock(timestamp int64, transactions []*network2.TransactionResponse, registeredAddresses []string) {
 	if mock.AddBlockFunc == nil {
 		panic("BlockchainMock.AddBlockFunc: method is nil but Blockchain.AddBlock was just called")
 	}
 	callInfo := struct {
 		Timestamp           int64
-		Transactions        []*network.TransactionResponse
+		Transactions        []*network2.TransactionResponse
 		RegisteredAddresses []string
 	}{
 		Timestamp:           timestamp,
@@ -128,12 +128,12 @@ func (mock *BlockchainMock) AddBlock(timestamp int64, transactions []*network.Tr
 //     len(mockedBlockchain.AddBlockCalls())
 func (mock *BlockchainMock) AddBlockCalls() []struct {
 	Timestamp           int64
-	Transactions        []*network.TransactionResponse
+	Transactions        []*network2.TransactionResponse
 	RegisteredAddresses []string
 } {
 	var calls []struct {
 		Timestamp           int64
-		Transactions        []*network.TransactionResponse
+		Transactions        []*network2.TransactionResponse
 		RegisteredAddresses []string
 	}
 	mock.lockAddBlock.RLock()
@@ -143,7 +143,7 @@ func (mock *BlockchainMock) AddBlockCalls() []struct {
 }
 
 // Blocks calls BlocksFunc.
-func (mock *BlockchainMock) Blocks() []*network.BlockResponse {
+func (mock *BlockchainMock) Blocks() []*network2.BlockResponse {
 	if mock.BlocksFunc == nil {
 		panic("BlockchainMock.BlocksFunc: method is nil but Blockchain.Blocks was just called")
 	}
@@ -204,7 +204,7 @@ func (mock *BlockchainMock) CalculateTotalAmountCalls() []struct {
 }
 
 // Copy calls CopyFunc.
-func (mock *BlockchainMock) Copy() verification.Blockchain {
+func (mock *BlockchainMock) Copy() protocol.Blockchain {
 	if mock.CopyFunc == nil {
 		panic("BlockchainMock.CopyFunc: method is nil but Blockchain.Copy was just called")
 	}

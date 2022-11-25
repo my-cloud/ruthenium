@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/encryption"
-	"github.com/my-cloud/ruthenium/src/network"
+	network2 "github.com/my-cloud/ruthenium/src/node/network"
 )
 
 const (
@@ -23,8 +23,8 @@ type Transaction struct {
 	fee              uint64
 }
 
-func NewRewardTransaction(recipientAddress string, timestamp int64, value uint64) *network.TransactionResponse {
-	return &network.TransactionResponse{
+func NewRewardTransaction(recipientAddress string, timestamp int64, value uint64) *network2.TransactionResponse {
+	return &network2.TransactionResponse{
 		RecipientAddress: recipientAddress,
 		SenderAddress:    rewardSenderAddress,
 		Timestamp:        timestamp,
@@ -33,7 +33,7 @@ func NewRewardTransaction(recipientAddress string, timestamp int64, value uint64
 	}
 }
 
-func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (*Transaction, error) {
+func NewTransactionFromRequest(transactionRequest *network2.TransactionRequest) (*Transaction, error) {
 	senderPublicKey, err := encryption.DecodePublicKey(*transactionRequest.SenderPublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode transaction public key: %w", err)
@@ -53,7 +53,7 @@ func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (
 	}, nil
 }
 
-func NewTransactionFromResponse(transactionResponse *network.TransactionResponse) (transaction *Transaction, err error) {
+func NewTransactionFromResponse(transactionResponse *network2.TransactionResponse) (transaction *Transaction, err error) {
 	var senderPublicKey *encryption.PublicKey
 	if len(transactionResponse.SenderPublicKey) != 0 {
 		senderPublicKey, err = encryption.DecodePublicKey(transactionResponse.SenderPublicKey)
@@ -115,7 +115,7 @@ func (transaction *Transaction) Fee() uint64 {
 	return transaction.fee
 }
 
-func (transaction *Transaction) GetResponse() *network.TransactionResponse {
+func (transaction *Transaction) GetResponse() *network2.TransactionResponse {
 	var encodedPublicKey string
 	if transaction.senderPublicKey != nil {
 		encodedPublicKey = transaction.senderPublicKey.String()
@@ -124,7 +124,7 @@ func (transaction *Transaction) GetResponse() *network.TransactionResponse {
 	if transaction.signature != nil {
 		encodedSignature = transaction.signature.String()
 	}
-	return &network.TransactionResponse{
+	return &network2.TransactionResponse{
 		RecipientAddress: transaction.recipientAddress,
 		SenderAddress:    transaction.senderAddress,
 		SenderPublicKey:  encodedPublicKey,
@@ -135,7 +135,7 @@ func (transaction *Transaction) GetResponse() *network.TransactionResponse {
 	}
 }
 
-func (transaction *Transaction) Equals(other *network.TransactionResponse) bool {
+func (transaction *Transaction) Equals(other *network2.TransactionResponse) bool {
 	return transaction.recipientAddress == other.RecipientAddress &&
 		transaction.senderAddress == other.SenderAddress &&
 		transaction.timestamp == other.Timestamp &&

@@ -2,7 +2,7 @@ package protocol
 
 import (
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/node/protocol"
+	"github.com/my-cloud/ruthenium/src/node/protocol/clock"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/mock"
 	"testing"
@@ -14,7 +14,7 @@ func Test_Do(t *testing.T) {
 	timeMock := new(mock.TimeMock)
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	var calls int
-	engine := protocol.NewEngine(func(int64) { calls++ }, timeMock, 1, 0, 0, nil)
+	engine := clock.NewEngine(func(int64) { calls++ }, timeMock, 1, 0, 0, nil)
 
 	// Act
 	engine.Do()

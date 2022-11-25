@@ -4,19 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/network"
+	network2 "github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet"
 	"net/http"
 )
 
 type Handler struct {
-	host           network.Neighbor
+	host           network2.Neighbor
 	particlesCount uint64
 	logger         *log.Logger
 }
 
-func NewHandler(host network.Neighbor, particlesCount uint64, logger *log.Logger) *Handler {
+func NewHandler(host network2.Neighbor, particlesCount uint64, logger *log.Logger) *Handler {
 	return &Handler{host, particlesCount, logger}
 }
 
@@ -24,7 +24,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 	switch req.Method {
 	case http.MethodGet:
 		address := req.URL.Query().Get("address")
-		amountRequest := network.AmountRequest{
+		amountRequest := network2.AmountRequest{
 			Address: &address,
 		}
 		if amountRequest.IsInvalid() {
