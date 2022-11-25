@@ -221,7 +221,7 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network2.BlockRes
 					if currentBlockTimestamp+blockchain.validationTimer.Nanoseconds() < transaction.Timestamp() {
 						return nil, fmt.Errorf("a neighbor block transaction timestamp is too far in the future, transaction: %v", transaction)
 					}
-					if transaction.Timestamp() < neighborBlocks[len(neighborBlocks)-2].Timestamp {
+					if i > 0 && transaction.Timestamp() < neighborBlocks[i-1].Timestamp {
 						return nil, fmt.Errorf("a neighbor block transaction timestamp is too old, transaction: %v", transaction)
 					}
 				}
