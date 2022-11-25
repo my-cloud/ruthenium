@@ -4,7 +4,7 @@
 package mock
 
 import (
-	"github.com/my-cloud/ruthenium/src/node/clock"
+	"github.com/my-cloud/ruthenium/src/clock"
 	"sync"
 	"time"
 )

@@ -2,7 +2,7 @@ package protocol
 
 import (
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/node/protocol/clock"
+	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/mock"
 	"testing"

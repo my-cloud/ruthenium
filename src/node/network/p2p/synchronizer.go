@@ -3,8 +3,8 @@ package p2p
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"io/ioutil"
 	"math"
