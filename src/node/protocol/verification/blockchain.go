@@ -35,7 +35,12 @@ type Blockchain struct {
 }
 
 func NewBlockchain(registry protocol.Registry, validationTimer time.Duration, synchronizer network2.Synchronizer, logger *log.Logger) *Blockchain {
+	return newBlockchain(nil, registry, validationTimer, synchronizer, logger)
+}
+
+func newBlockchain(blockResponses []*network2.BlockResponse, registry protocol.Registry, validationTimer time.Duration, synchronizer network2.Synchronizer, logger *log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
+	blockchain.blockResponses = blockResponses
 	blockchain.registry = registry
 	blockchain.validationTimer = validationTimer
 	blockchain.synchronizer = synchronizer
@@ -79,7 +84,7 @@ func (blockchain *Blockchain) Blocks() []*network2.BlockResponse {
 	return blockchain.blockResponses
 }
 
-func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network2.BlockResponse, hostBlocks []*Block, currentBlockchain protocol.Blockchain, timestamp int64) (validBlocks []*Block, err error) {
+func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network2.BlockResponse, hostBlocks []*Block, timestamp int64) (validBlocks []*Block, err error) {
 	if len(neighborBlocks) < 2 || len(neighborBlocks) < len(hostBlocks) {
 		return nil, errors.New("neighbor's blockchain is too short")
 	}
@@ -139,6 +144,13 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network2.BlockRes
 		return nil, fmt.Errorf("failed to instantiate first neighbor block: %w", err)
 	}
 	validBlocks = append(validBlocks, previousBlock)
+	neighborBlockchain := newBlockchain(
+		neighborBlocks,
+		blockchain.registry,
+		blockchain.validationTimer,
+		blockchain.synchronizer,
+		blockchain.logger,
+	)
 	for i := 1; i < len(neighborBlocks); i++ {
 		var currentBlock *Block
 		currentBlock, err = NewBlockFromResponse(neighborBlocks[i])
@@ -221,7 +233,8 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network2.BlockRes
 				return nil, errors.New("neighbor block reward exceeds the consented one")
 			}
 			for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
-				if totalTransactionsValue > currentBlockchain.CalculateTotalAmount(currentBlockTimestamp, senderAddress) {
+				amount := neighborBlockchain.CalculateTotalAmount(currentBlockTimestamp, senderAddress)
+				if totalTransactionsValue > amount {
 					return nil, errors.New("neighbor block total transactions value exceeds its sender wallet amount")
 				}
 			}
@@ -259,7 +272,7 @@ func (blockchain *Blockchain) Verify(timestamp int64) {
 			target := neighbor.Target()
 			blockResponsesByTarget[target] = neighborBlocks
 			var validBlocks []*Block
-			validBlocks, err = blockchain.getValidBlocks(neighborBlocks, hostBlocks, blockchain.Copy(), timestamp)
+			validBlocks, err = blockchain.getValidBlocks(neighborBlocks, hostBlocks, timestamp)
 			if err != nil || validBlocks == nil {
 				blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 			} else {
@@ -406,36 +419,36 @@ func (blockchain *Blockchain) CalculateTotalAmount(currentTimestamp int64, block
 	defer blockchain.mutex.RUnlock()
 	var totalAmount uint64
 	var lastTimestamp int64
-	for _, block := range blockchain.blocks {
-		for _, registeredAddress := range block.RegisteredAddresses() {
+	for _, block := range blockchain.blockResponses {
+		for _, registeredAddress := range block.RegisteredAddresses {
 			if blockchainAddress == registeredAddress {
 				if totalAmount > 0 {
-					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp(), totalAmount)
+					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp, totalAmount)
 					totalAmount += calculateIncome(totalAmount)
-					lastTimestamp = block.Timestamp()
+					lastTimestamp = block.Timestamp
 				}
 				break
 			}
 		}
-		for _, transaction := range block.Transactions() {
-			value := transaction.Value()
-			if blockchainAddress == transaction.RecipientAddress() {
+		for _, transaction := range block.Transactions {
+			value := transaction.Value
+			if blockchainAddress == transaction.RecipientAddress {
 				if totalAmount > 0 {
-					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp(), totalAmount)
+					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp, totalAmount)
 				}
 				totalAmount += value
-				lastTimestamp = block.Timestamp()
-			} else if blockchainAddress == transaction.SenderAddress() {
+				lastTimestamp = block.Timestamp
+			} else if blockchainAddress == transaction.SenderAddress {
 				if totalAmount > 0 {
-					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp(), totalAmount)
+					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp, totalAmount)
 				}
-				if totalAmount < value+transaction.Fee() {
+				if totalAmount < value+transaction.Fee {
 					blockchain.logger.Error(fmt.Sprintf("historical transaction have not been properly validated: wallet amount=%d, transaction value=%d", totalAmount, value))
 					totalAmount = 0
 				} else {
-					totalAmount -= value + transaction.Fee()
+					totalAmount -= value + transaction.Fee
 				}
-				lastTimestamp = block.Timestamp()
+				lastTimestamp = block.Timestamp
 			}
 		}
 	}
