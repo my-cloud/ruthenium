@@ -4,14 +4,14 @@
 package mock
 
 import (
-	p2p "github.com/leprosus/golang-p2p"
-	p2p2 "github.com/my-cloud/ruthenium/src/node/network/p2p"
+	gp2p "github.com/leprosus/golang-p2p"
+	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"sync"
 )
 
 // Ensure, that ClientMock does implement Client.
 // If this is not the case, regenerate this file with moq.
-var _ p2p2.Client = &ClientMock{}
+var _ p2p.Client = &ClientMock{}
 
 // ClientMock is a mock implementation of Client.
 //
@@ -30,7 +30,7 @@ var _ p2p2.Client = &ClientMock{}
 // 	}
 type ClientMock struct {
 	// SendFunc mocks the Send method.
-	SendFunc func(topic string, req p2p.Data) (p2p.Data, error)
+	SendFunc func(topic string, req gp2p.Data) (gp2p.Data, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -39,20 +39,20 @@ type ClientMock struct {
 			// Topic is the topic argument value.
 			Topic string
 			// Req is the req argument value.
-			Req p2p.Data
+			Req gp2p.Data
 		}
 	}
 	lockSend sync.RWMutex
 }
 
 // Send calls SendFunc.
-func (mock *ClientMock) Send(topic string, req p2p.Data) (p2p.Data, error) {
+func (mock *ClientMock) Send(topic string, req gp2p.Data) (gp2p.Data, error) {
 	if mock.SendFunc == nil {
 		panic("ClientMock.SendFunc: method is nil but Client.Send was just called")
 	}
 	callInfo := struct {
 		Topic string
-		Req   p2p.Data
+		Req   gp2p.Data
 	}{
 		Topic: topic,
 		Req:   req,
@@ -68,11 +68,11 @@ func (mock *ClientMock) Send(topic string, req p2p.Data) (p2p.Data, error) {
 //     len(mockedClient.SendCalls())
 func (mock *ClientMock) SendCalls() []struct {
 	Topic string
-	Req   p2p.Data
+	Req   gp2p.Data
 } {
 	var calls []struct {
 		Topic string
-		Req   p2p.Data
+		Req   gp2p.Data
 	}
 	mock.lockSend.RLock()
 	calls = mock.calls.Send

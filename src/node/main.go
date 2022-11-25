@@ -10,7 +10,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/net"
-	clock2 "github.com/my-cloud/ruthenium/src/node/protocol/clock"
+	"github.com/my-cloud/ruthenium/src/node/protocol/clock"
 	"github.com/my-cloud/ruthenium/src/node/protocol/poh"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
@@ -43,7 +43,7 @@ func main() {
 	}
 	registry := poh.NewRegistry()
 	validationTimer := validationIntervalInSeconds * time.Second
-	watch := clock2.NewTime()
+	watch := clock.NewTime()
 	clientFactory := gp2p.NewClientFactory(net.NewIpFinder())
 	synchronizer, err := p2p.NewSynchronizer(uint16(*port), watch, clientFactory, *configurationPath, logger)
 	if err != nil {
@@ -51,8 +51,8 @@ func main() {
 	}
 	blockchain := verification.NewBlockchain(registry, validationTimer, synchronizer, logger)
 	pool := validation.NewTransactionsPool(blockchain, registry, wallet.Address(), settings.GenesisAmount, validationTimer, watch, logger)
-	validationEngine := clock2.NewEngine(pool.Validate, watch, validationTimer, 1, 0, logger)
-	verificationEngine := clock2.NewEngine(blockchain.Verify, watch, validationTimer, verificationsCountPerValidation, 1, logger)
+	validationEngine := clock.NewEngine(pool.Validate, watch, validationTimer, 1, 0, logger)
+	verificationEngine := clock.NewEngine(blockchain.Verify, watch, validationTimer, verificationsCountPerValidation, 1, logger)
 	serverFactory := gp2p.NewServerFactory()
 	server, err := serverFactory.CreateServer(int(*port))
 	if err != nil {

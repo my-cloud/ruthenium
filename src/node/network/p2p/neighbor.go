@@ -2,9 +2,9 @@ package p2p
 
 import (
 	"fmt"
-	p2p "github.com/leprosus/golang-p2p"
+	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
-	network2 "github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/network"
 )
 
 type Neighbor struct {
@@ -33,7 +33,7 @@ func (neighbor *Neighbor) Target() string {
 	return neighbor.target.Value()
 }
 
-func (neighbor *Neighbor) GetBlocks() (blockResponses []*network2.BlockResponse, err error) {
+func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, err error) {
 	res, err := neighbor.sendRequest(GetBlocksRequest)
 	if err == nil {
 		err = res.GetGob(&blockResponses)
@@ -41,29 +41,29 @@ func (neighbor *Neighbor) GetBlocks() (blockResponses []*network2.BlockResponse,
 	return
 }
 
-func (neighbor *Neighbor) SendTargets(request []network2.TargetRequest) (err error) {
+func (neighbor *Neighbor) SendTargets(request []network.TargetRequest) (err error) {
 	_, err = neighbor.sendRequest(request)
 	return
 }
 
-func (neighbor *Neighbor) AddTransaction(request network2.TransactionRequest) (err error) {
+func (neighbor *Neighbor) AddTransaction(request network.TransactionRequest) (err error) {
 	_, err = neighbor.sendRequest(request)
 	return
 }
 
-func (neighbor *Neighbor) GetTransactions() (transactionResponses []network2.TransactionResponse, err error) {
+func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.TransactionResponse, err error) {
 	res, err := neighbor.sendRequest(GetTransactionsRequest)
 	if err != nil {
 		return
 	}
 	err = res.GetGob(&transactionResponses)
 	if transactionResponses == nil {
-		return []network2.TransactionResponse{}, err
+		return []network.TransactionResponse{}, err
 	}
 	return
 }
 
-func (neighbor *Neighbor) GetAmount(request network2.AmountRequest) (amountResponse *network2.AmountResponse, err error) {
+func (neighbor *Neighbor) GetAmount(request network.AmountRequest) (amountResponse *network.AmountResponse, err error) {
 	res, err := neighbor.sendRequest(request)
 	if err == nil {
 		err = res.GetGob(&amountResponse)
@@ -86,8 +86,8 @@ func (neighbor *Neighbor) StopMining() (err error) {
 	return
 }
 
-func (neighbor *Neighbor) sendRequest(request interface{}) (res p2p.Data, err error) {
-	req := p2p.Data{}
+func (neighbor *Neighbor) sendRequest(request interface{}) (res gp2p.Data, err error) {
+	req := gp2p.Data{}
 	err = req.SetGob(request)
 	if err != nil {
 		return

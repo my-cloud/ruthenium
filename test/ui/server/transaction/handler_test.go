@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
-	network2 "github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
 	"github.com/my-cloud/ruthenium/test"
@@ -138,7 +138,7 @@ func Test_ServeHTTP_InvalidTransactionValue_BadRequest(t *testing.T) {
 func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	// Arrange
 	neighborMock := new(mock.NeighborMock)
-	neighborMock.AddTransactionFunc = func(network2.TransactionRequest) error { return errors.New("") }
+	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return errors.New("") }
 	logger := log.NewLogger(log.Fatal)
 	handler := transaction.NewHandler(neighborMock, 1, logger)
 	transactionRequest := newTransactionRequest(
@@ -166,7 +166,7 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	// Arrange
 	neighborMock := new(mock.NeighborMock)
-	neighborMock.AddTransactionFunc = func(network2.TransactionRequest) error { return nil }
+	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return nil }
 	logger := log.NewLogger(log.Fatal)
 	handler := transaction.NewHandler(neighborMock, 1, logger)
 	transactionRequest := newTransactionRequest(

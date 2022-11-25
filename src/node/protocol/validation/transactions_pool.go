@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
-	network2 "github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"math/rand"
 	"sync"
@@ -14,7 +14,7 @@ import (
 
 type TransactionsPool struct {
 	transactions         []*Transaction
-	transactionResponses []*network2.TransactionResponse
+	transactionResponses []*network.TransactionResponse
 	mutex                sync.RWMutex
 
 	blockchain       protocol.Blockchain
@@ -43,7 +43,7 @@ func NewTransactionsPool(blockchain protocol.Blockchain, registry protocol.Regis
 	return pool
 }
 
-func (pool *TransactionsPool) AddTransaction(transactionRequest *network2.TransactionRequest, neighbors []network2.Neighbor) {
+func (pool *TransactionsPool) AddTransaction(transactionRequest *network.TransactionRequest, neighbors []network.Neighbor) {
 	pool.waitGroup.Add(1)
 	go func() {
 		defer pool.waitGroup.Done()
@@ -53,14 +53,14 @@ func (pool *TransactionsPool) AddTransaction(transactionRequest *network2.Transa
 			return
 		}
 		for _, neighbor := range neighbors {
-			go func(neighbor network2.Neighbor) {
+			go func(neighbor network.Neighbor) {
 				_ = neighbor.AddTransaction(*transactionRequest)
 			}(neighbor)
 		}
 	}()
 }
 
-func (pool *TransactionsPool) addTransaction(transactionRequest *network2.TransactionRequest) (err error) {
+func (pool *TransactionsPool) addTransaction(transactionRequest *network.TransactionRequest) (err error) {
 	transaction, err := NewTransactionFromRequest(transactionRequest)
 	if err != nil {
 		err = fmt.Errorf("failed to instantiate transaction: %w", err)
@@ -115,7 +115,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network2.Transa
 	return
 }
 
-func (pool *TransactionsPool) Transactions() []*network2.TransactionResponse {
+func (pool *TransactionsPool) Transactions() []*network.TransactionResponse {
 	pool.mutex.RLock()
 	defer pool.mutex.RUnlock()
 	return pool.transactionResponses
@@ -125,7 +125,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	currentBlockchain := pool.blockchain.Copy()
 	if currentBlockchain.IsEmpty() {
 		genesisTransaction := NewRewardTransaction(pool.validatorAddress, timestamp, pool.genesisAmount)
-		transactions := []*network2.TransactionResponse{genesisTransaction}
+		transactions := []*network.TransactionResponse{genesisTransaction}
 		pool.blockchain.AddBlock(timestamp, transactions, nil)
 		pool.logger.Debug("genesis block added")
 		return
@@ -139,7 +139,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	totalTransactionsValueBySenderAddress := make(map[string]uint64)
 	transactionResponses := pool.transactionResponses
 	var reward uint64
-	var rejectedTransactions []*network2.TransactionResponse
+	var rejectedTransactions []*network.TransactionResponse
 	for i, transaction := range transactionResponses {
 		if timestamp+pool.validationTimer.Nanoseconds() < transaction.Timestamp {
 			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too far in the future, transaction: %v", transaction))
@@ -237,7 +237,7 @@ func (pool *TransactionsPool) Wait() {
 	pool.waitGroup.Wait()
 }
 
-func removeTransactions(transactions []*network2.TransactionResponse, removedTransaction *network2.TransactionResponse) []*network2.TransactionResponse {
+func removeTransactions(transactions []*network.TransactionResponse, removedTransaction *network.TransactionResponse) []*network.TransactionResponse {
 	for i := 0; i < len(transactions); i++ {
 		if transactions[i] == removedTransaction {
 			transactions = append(transactions[:i], transactions[i+1:]...)

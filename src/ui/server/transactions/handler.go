@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
-	network2 "github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"net/http"
 )
 
 type Handler struct {
-	host   network2.Neighbor
+	host   network.Neighbor
 	logger *log.Logger
 }
 
-func NewHandler(host network2.Neighbor, logger *log.Logger) *Handler {
+func NewHandler(host network.Neighbor, logger *log.Logger) *Handler {
 	return &Handler{host, logger}
 }
 

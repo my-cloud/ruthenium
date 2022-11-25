@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/log"
-	network2 "github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/ui/server"
@@ -28,11 +28,11 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now+2, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
-	var blockResponses []*network2.BlockResponse
+	var blockResponses []*network.BlockResponse
 	blockResponses = append(blockResponses, mock.NewGenesisBlockResponse(validatorWalletAddress))
 	blockResponses = append(blockResponses, mock.NewEmptyBlockResponse(now-1))
 	blockchainMock := new(mock.BlockchainMock)
-	blockchainMock.BlocksFunc = func() []*network2.BlockResponse { return blockResponses }
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	pool := validation.NewTransactionsPool(blockchainMock, registryMock, validatorWalletAddress, 0, validationTimer, timeMock, logger)
 
@@ -61,12 +61,12 @@ func Test_AddTransaction_TransactionTimestampIsOlderThan2Blocks_TransactionNotAd
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now-3, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
-	var blockResponses []*network2.BlockResponse
+	var blockResponses []*network.BlockResponse
 	blockResponses = append(blockResponses, mock.NewGenesisBlockResponse(validatorWalletAddress))
 	blockResponses = append(blockResponses, mock.NewEmptyBlockResponse(now-2))
 	blockResponses = append(blockResponses, mock.NewEmptyBlockResponse(now-1))
 	blockchainMock := new(mock.BlockchainMock)
-	blockchainMock.BlocksFunc = func() []*network2.BlockResponse { return blockResponses }
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	pool := validation.NewTransactionsPool(blockchainMock, registryMock, validatorWalletAddress, 0, validationTimer, timeMock, logger)
 
@@ -96,13 +96,13 @@ func Test_AddTransaction_TransactionIsAlreadyInTheBlockchain_TransactionNotAdded
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
 	transaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
-	var blockResponses []*network2.BlockResponse
+	var blockResponses []*network.BlockResponse
 	blockResponses = append(blockResponses, mock.NewGenesisBlockResponse(validatorWalletAddress))
-	var transactionResponses []*network2.TransactionResponse
+	var transactionResponses []*network.TransactionResponse
 	transactionResponses = append(transactionResponses, transaction.GetResponse())
 	blockResponses = append(blockResponses, mock.NewBlockResponse(now-1, [32]byte{}, transactionResponses, nil))
 	blockchainMock := new(mock.BlockchainMock)
-	blockchainMock.BlocksFunc = func() []*network2.BlockResponse { return blockResponses }
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	pool := validation.NewTransactionsPool(blockchainMock, registryMock, validatorWalletAddress, 0, validationTimer, timeMock, logger)
 
@@ -130,10 +130,10 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
-	var blockResponses []*network2.BlockResponse
+	var blockResponses []*network.BlockResponse
 	blockResponses = append(blockResponses, mock.NewGenesisBlockResponse(validatorWalletAddress))
 	blockchainMock := new(mock.BlockchainMock)
-	blockchainMock.BlocksFunc = func() []*network2.BlockResponse { return blockResponses }
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	pool := validation.NewTransactionsPool(blockchainMock, registryMock, validatorWalletAddress, 0, validationTimer, timeMock, logger)
 
@@ -166,10 +166,10 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
 	logger := log.NewLogger(log.Fatal)
-	var blockResponses []*network2.BlockResponse
+	var blockResponses []*network.BlockResponse
 	blockResponses = append(blockResponses, mock.NewGenesisBlockResponse(validatorWalletAddress))
 	blockchainMock := new(mock.BlockchainMock)
-	blockchainMock.BlocksFunc = func() []*network2.BlockResponse { return blockResponses }
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	pool := validation.NewTransactionsPool(blockchainMock, registryMock, validatorWalletAddress, 0, validationTimer, timeMock, logger)
 
@@ -204,7 +204,7 @@ func Test_Validate_BlockchainIsEmpty_GenesisTransactionValidated(t *testing.T) {
 	blockchainMock := new(mock.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.IsEmptyFunc = func() bool { return true }
-	blockchainMock.AddBlockFunc = func(int64, []*network2.TransactionResponse, []string) {}
+	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) {}
 	pool := validation.NewTransactionsPool(blockchainMock, registryMock, validatorWalletAddress, 0, validationTimer, timeMock, logger)
 
 	// Act
@@ -264,10 +264,10 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	blockchainMock := new(mock.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.IsEmptyFunc = func() bool { return false }
-	blockchainMock.AddBlockFunc = func(int64, []*network2.TransactionResponse, []string) {}
-	var blockResponses []*network2.BlockResponse
+	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) {}
+	var blockResponses []*network.BlockResponse
 	blockResponses = append(blockResponses, mock.NewGenesisBlockResponse(validatorWalletAddress))
-	blockchainMock.BlocksFunc = func() []*network2.BlockResponse { return blockResponses }
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now+2, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
@@ -298,10 +298,10 @@ func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidate
 	blockchainMock := new(mock.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.IsEmptyFunc = func() bool { return false }
-	blockchainMock.AddBlockFunc = func(int64, []*network2.TransactionResponse, []string) {}
-	var blockResponses []*network2.BlockResponse
+	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) {}
+	var blockResponses []*network.BlockResponse
 	blockResponses = append(blockResponses, mock.NewGenesisBlockResponse(validatorWalletAddress))
-	blockchainMock.BlocksFunc = func() []*network2.BlockResponse { return blockResponses }
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now-3, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
@@ -312,7 +312,7 @@ func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidate
 	pool.Wait()
 	blockResponses = append(blockResponses, mock.NewEmptyBlockResponse(now-2))
 	blockResponses = append(blockResponses, mock.NewEmptyBlockResponse(now-1))
-	blockchainMock.BlocksFunc = func() []*network2.BlockResponse { return blockResponses }
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 
 	// Act
 	pool.Validate(timeMock.Now().UnixNano())
@@ -335,10 +335,10 @@ func Test_Validate_TransactionIsAlreadyInTheBlockchain_TransactionNotValidated(t
 	blockchainMock := new(mock.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.IsEmptyFunc = func() bool { return false }
-	blockchainMock.AddBlockFunc = func(int64, []*network2.TransactionResponse, []string) {}
-	var blockResponses []*network2.BlockResponse
+	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) {}
+	var blockResponses []*network.BlockResponse
 	blockResponses = append(blockResponses, mock.NewGenesisBlockResponse(validatorWalletAddress))
-	blockchainMock.BlocksFunc = func() []*network2.BlockResponse { return blockResponses }
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
@@ -348,10 +348,10 @@ func Test_Validate_TransactionIsAlreadyInTheBlockchain_TransactionNotValidated(t
 	pool.AddTransaction(&invalidTransactionRequest, nil)
 	pool.Wait()
 	transaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
-	var transactionResponses []*network2.TransactionResponse
+	var transactionResponses []*network.TransactionResponse
 	transactionResponses = append(transactionResponses, transaction.GetResponse())
 	blockResponses = append(blockResponses, mock.NewBlockResponse(now-1, [32]byte{}, transactionResponses, nil))
-	blockchainMock.BlocksFunc = func() []*network2.BlockResponse { return blockResponses }
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 
 	// Act
 	pool.Validate(timeMock.Now().UnixNano())
@@ -374,10 +374,10 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	blockchainMock := new(mock.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.IsEmptyFunc = func() bool { return false }
-	blockchainMock.AddBlockFunc = func(int64, []*network2.TransactionResponse, []string) {}
-	var blockResponses []*network2.BlockResponse
+	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) {}
+	var blockResponses []*network.BlockResponse
 	blockResponses = append(blockResponses, mock.NewGenesisBlockResponse(validatorWalletAddress))
-	blockchainMock.BlocksFunc = func() []*network2.BlockResponse { return blockResponses }
+	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	validTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now, 1)
 	_ = validTransaction.Sign(validatorWallet.PrivateKey())
 	validTransactionRequest := validTransaction.GetRequest()

@@ -1,7 +1,7 @@
 package wallet
 
 import (
-	network2 "github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/network"
 )
 
 type Amount struct {
@@ -12,6 +12,6 @@ func NewAmount(address string) *Amount {
 	return &Amount{address}
 }
 
-func (amount *Amount) GetRequest() *network2.AmountRequest {
-	return &network2.AmountRequest{Address: &amount.address}
+func (amount *Amount) GetRequest() *network.AmountRequest {
+	return &network.AmountRequest{Address: &amount.address}
 }

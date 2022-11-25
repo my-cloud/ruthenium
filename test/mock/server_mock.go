@@ -4,14 +4,14 @@
 package mock
 
 import (
-	p2p "github.com/leprosus/golang-p2p"
-	p2p2 "github.com/my-cloud/ruthenium/src/node/network/p2p"
+	gp2p "github.com/leprosus/golang-p2p"
+	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"sync"
 )
 
 // Ensure, that ServerMock does implement Server.
 // If this is not the case, regenerate this file with moq.
-var _ p2p2.Server = &ServerMock{}
+var _ p2p.Server = &ServerMock{}
 
 // ServerMock is a mock implementation of Server.
 //
@@ -36,7 +36,7 @@ type ServerMock struct {
 	ServeFunc func() error
 
 	// SetHandleFunc mocks the SetHandle method.
-	SetHandleFunc func(topic string, handler p2p.Handler)
+	SetHandleFunc func(topic string, handler gp2p.Handler)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -48,7 +48,7 @@ type ServerMock struct {
 			// Topic is the topic argument value.
 			Topic string
 			// Handler is the handler argument value.
-			Handler p2p.Handler
+			Handler gp2p.Handler
 		}
 	}
 	lockServe     sync.RWMutex
@@ -82,13 +82,13 @@ func (mock *ServerMock) ServeCalls() []struct {
 }
 
 // SetHandle calls SetHandleFunc.
-func (mock *ServerMock) SetHandle(topic string, handler p2p.Handler) {
+func (mock *ServerMock) SetHandle(topic string, handler gp2p.Handler) {
 	if mock.SetHandleFunc == nil {
 		panic("ServerMock.SetHandleFunc: method is nil but Server.SetHandle was just called")
 	}
 	callInfo := struct {
 		Topic   string
-		Handler p2p.Handler
+		Handler gp2p.Handler
 	}{
 		Topic:   topic,
 		Handler: handler,
@@ -104,11 +104,11 @@ func (mock *ServerMock) SetHandle(topic string, handler p2p.Handler) {
 //     len(mockedServer.SetHandleCalls())
 func (mock *ServerMock) SetHandleCalls() []struct {
 	Topic   string
-	Handler p2p.Handler
+	Handler gp2p.Handler
 } {
 	var calls []struct {
 		Topic   string
-		Handler p2p.Handler
+		Handler gp2p.Handler
 	}
 	mock.lockSetHandle.RLock()
 	calls = mock.calls.SetHandle

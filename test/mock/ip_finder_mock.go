@@ -4,7 +4,7 @@
 package mock
 
 import (
-	"github.com/my-cloud/ruthenium/src/node/network/p2p"
+	"github.com/my-cloud/ruthenium/src/node/network"
 	"net"
 	"sync"
 	"time"
@@ -12,7 +12,7 @@ import (
 
 // Ensure, that IpFinderMock does implement IpFinder.
 // If this is not the case, regenerate this file with moq.
-var _ p2p.IpFinder = &IpFinderMock{}
+var _ network.IpFinder = &IpFinderMock{}
 
 // IpFinderMock is a mock implementation of IpFinder.
 //

@@ -3,7 +3,7 @@ package verification
 import (
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/log"
-	network2 "github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/src/ui/server"
@@ -21,19 +21,19 @@ func Test_Verify_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, 1) }
 	logger := log.NewLogger(log.Fatal)
 	neighborMock := new(mock.NeighborMock)
-	neighborMock.GetBlocksFunc = func() ([]*network2.BlockResponse, error) {
+	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
 		blockResponse1 := mock.NewRewardedBlockResponse([32]byte{}, 0)
 		block1, _ := verification.NewBlockFromResponse(blockResponse1)
 		hash, _ := block1.Hash()
 		blockResponse2 := mock.NewRewardedBlockResponse(hash, 1)
-		return []*network2.BlockResponse{blockResponse1, blockResponse2}, nil
+		return []*network.BlockResponse{blockResponse1, blockResponse2}, nil
 	}
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
 	synchronizer := new(mock.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network2.Neighbor {
-		return []network2.Neighbor{neighborMock}
+	synchronizer.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
 	}
 	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
 
@@ -57,8 +57,8 @@ func Test_Verify_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 		return "neighbor"
 	}
 	synchronizer := new(mock.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network2.Neighbor {
-		return []network2.Neighbor{neighborMock}
+	synchronizer.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
 	}
 	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
 
@@ -102,12 +102,12 @@ func Test_Verify_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			neighborMock.GetBlocksFunc = func() ([]*network2.BlockResponse, error) {
+			neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
 				blockResponse1 := mock.NewRewardedBlockResponse([32]byte{}, tt.args.firstBlockTimestamp)
 				block1, _ := verification.NewBlockFromResponse(blockResponse1)
 				hash, _ := block1.Hash()
 				blockResponse2 := mock.NewRewardedBlockResponse(hash, tt.args.secondBlockTimestamp)
-				return []*network2.BlockResponse{blockResponse1, blockResponse2}, nil
+				return []*network.BlockResponse{blockResponse1, blockResponse2}, nil
 			}
 
 			// Act
@@ -129,19 +129,19 @@ func Test_Verify_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, 1) }
 	logger := log.NewLogger(log.Fatal)
 	neighborMock := new(mock.NeighborMock)
-	neighborMock.GetBlocksFunc = func() ([]*network2.BlockResponse, error) {
+	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
 		blockResponse1 := mock.NewRewardedBlockResponse([32]byte{}, 1)
 		block1, _ := verification.NewBlockFromResponse(blockResponse1)
 		hash, _ := block1.Hash()
 		blockResponse2 := mock.NewRewardedBlockResponse(hash, 2)
-		return []*network2.BlockResponse{blockResponse1, blockResponse2}, nil
+		return []*network.BlockResponse{blockResponse1, blockResponse2}, nil
 	}
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
 	synchronizer := new(mock.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network2.Neighbor {
-		return []network2.Neighbor{neighborMock}
+	synchronizer.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
 	}
 	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
 
@@ -161,7 +161,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, 1) }
 	logger := log.NewLogger(log.Fatal)
 	neighborMock := new(mock.NeighborMock)
-	neighborMock.GetBlocksFunc = func() ([]*network2.BlockResponse, error) {
+	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
 		wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 		address := wallet.Address()
 		blockResponse1 := mock.NewGenesisBlockResponse(address)
@@ -172,18 +172,18 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 		_ = serverTransaction.Sign(wallet.PrivateKey())
 		transactionRequest := serverTransaction.GetRequest()
 		transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
-		transactions := []*network2.TransactionResponse{validation.NewRewardTransaction(address, block2Timestamp, 0), transaction.GetResponse()}
+		transactions := []*network.TransactionResponse{validation.NewRewardTransaction(address, block2Timestamp, 0), transaction.GetResponse()}
 		var registeredAddresses []string
 		registeredAddresses = append(registeredAddresses, address)
 		blockResponse2 := mock.NewBlockResponse(block2Timestamp, hash, transactions, registeredAddresses)
-		return []*network2.BlockResponse{blockResponse1, blockResponse2}, nil
+		return []*network.BlockResponse{blockResponse1, blockResponse2}, nil
 	}
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
 	synchronizer := new(mock.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network2.Neighbor {
-		return []network2.Neighbor{neighborMock}
+	synchronizer.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
 	}
 	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
 
@@ -203,7 +203,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	timeMock.NowFunc = func() time.Time { return time.Unix(0, 2) }
 	logger := log.NewLogger(log.Fatal)
 	neighborMock := new(mock.NeighborMock)
-	neighborMock.GetBlocksFunc = func() ([]*network2.BlockResponse, error) {
+	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
 		wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 		address := wallet.Address()
 		blockResponse1 := mock.NewGenesisBlockResponse(address)
@@ -217,18 +217,18 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 		_ = serverTransaction.Sign(wallet.PrivateKey())
 		transactionRequest := serverTransaction.GetRequest()
 		transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
-		transactions := []*network2.TransactionResponse{validation.NewRewardTransaction(address, block3Timestamp, 0), transaction.GetResponse()}
+		transactions := []*network.TransactionResponse{validation.NewRewardTransaction(address, block3Timestamp, 0), transaction.GetResponse()}
 		var registeredAddresses []string
 		registeredAddresses = append(registeredAddresses, address)
 		blockResponse3 := mock.NewBlockResponse(block3Timestamp, hash2, transactions, registeredAddresses)
-		return []*network2.BlockResponse{blockResponse1, blockResponse2, blockResponse3}, nil
+		return []*network.BlockResponse{blockResponse1, blockResponse2, blockResponse3}, nil
 	}
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
 	synchronizer := new(mock.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network2.Neighbor {
-		return []network2.Neighbor{neighborMock}
+	synchronizer.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
 	}
 	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
 

@@ -4,7 +4,7 @@
 package mock
 
 import (
-	network2 "github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"sync"
 )
@@ -33,19 +33,19 @@ var _ protocol.TransactionsPool = &TransactionsPoolMock{}
 // 	}
 type TransactionsPoolMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
-	AddTransactionFunc func(transactionRequest *network2.TransactionRequest, neighbors []network2.Neighbor)
+	AddTransactionFunc func(transactionRequest *network.TransactionRequest, neighbors []network.Neighbor)
 
 	// TransactionsFunc mocks the Transactions method.
-	TransactionsFunc func() []*network2.TransactionResponse
+	TransactionsFunc func() []*network.TransactionResponse
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// AddTransaction holds details about calls to the AddTransaction method.
 		AddTransaction []struct {
 			// TransactionRequest is the transactionRequest argument value.
-			TransactionRequest *network2.TransactionRequest
+			TransactionRequest *network.TransactionRequest
 			// Neighbors is the neighbors argument value.
-			Neighbors []network2.Neighbor
+			Neighbors []network.Neighbor
 		}
 		// Transactions holds details about calls to the Transactions method.
 		Transactions []struct {
@@ -56,13 +56,13 @@ type TransactionsPoolMock struct {
 }
 
 // AddTransaction calls AddTransactionFunc.
-func (mock *TransactionsPoolMock) AddTransaction(transactionRequest *network2.TransactionRequest, neighbors []network2.Neighbor) {
+func (mock *TransactionsPoolMock) AddTransaction(transactionRequest *network.TransactionRequest, neighbors []network.Neighbor) {
 	if mock.AddTransactionFunc == nil {
 		panic("TransactionsPoolMock.AddTransactionFunc: method is nil but TransactionsPool.AddTransaction was just called")
 	}
 	callInfo := struct {
-		TransactionRequest *network2.TransactionRequest
-		Neighbors          []network2.Neighbor
+		TransactionRequest *network.TransactionRequest
+		Neighbors          []network.Neighbor
 	}{
 		TransactionRequest: transactionRequest,
 		Neighbors:          neighbors,
@@ -77,12 +77,12 @@ func (mock *TransactionsPoolMock) AddTransaction(transactionRequest *network2.Tr
 // Check the length with:
 //     len(mockedTransactionsPool.AddTransactionCalls())
 func (mock *TransactionsPoolMock) AddTransactionCalls() []struct {
-	TransactionRequest *network2.TransactionRequest
-	Neighbors          []network2.Neighbor
+	TransactionRequest *network.TransactionRequest
+	Neighbors          []network.Neighbor
 } {
 	var calls []struct {
-		TransactionRequest *network2.TransactionRequest
-		Neighbors          []network2.Neighbor
+		TransactionRequest *network.TransactionRequest
+		Neighbors          []network.Neighbor
 	}
 	mock.lockAddTransaction.RLock()
 	calls = mock.calls.AddTransaction
@@ -91,7 +91,7 @@ func (mock *TransactionsPoolMock) AddTransactionCalls() []struct {
 }
 
 // Transactions calls TransactionsFunc.
-func (mock *TransactionsPoolMock) Transactions() []*network2.TransactionResponse {
+func (mock *TransactionsPoolMock) Transactions() []*network.TransactionResponse {
 	if mock.TransactionsFunc == nil {
 		panic("TransactionsPoolMock.TransactionsFunc: method is nil but TransactionsPool.Transactions was just called")
 	}

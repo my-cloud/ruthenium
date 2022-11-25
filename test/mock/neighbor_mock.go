@@ -4,13 +4,13 @@
 package mock
 
 import (
-	network2 "github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/network"
 	"sync"
 )
 
 // Ensure, that NeighborMock does implement Neighbor.
 // If this is not the case, regenerate this file with moq.
-var _ network2.Neighbor = &NeighborMock{}
+var _ network.Neighbor = &NeighborMock{}
 
 // NeighborMock is a mock implementation of Neighbor.
 //
@@ -59,16 +59,16 @@ var _ network2.Neighbor = &NeighborMock{}
 // 	}
 type NeighborMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
-	AddTransactionFunc func(request network2.TransactionRequest) error
+	AddTransactionFunc func(request network.TransactionRequest) error
 
 	// GetAmountFunc mocks the GetAmount method.
-	GetAmountFunc func(request network2.AmountRequest) (*network2.AmountResponse, error)
+	GetAmountFunc func(request network.AmountRequest) (*network.AmountResponse, error)
 
 	// GetBlocksFunc mocks the GetBlocks method.
-	GetBlocksFunc func() ([]*network2.BlockResponse, error)
+	GetBlocksFunc func() ([]*network.BlockResponse, error)
 
 	// GetTransactionsFunc mocks the GetTransactions method.
-	GetTransactionsFunc func() ([]network2.TransactionResponse, error)
+	GetTransactionsFunc func() ([]network.TransactionResponse, error)
 
 	// IpFunc mocks the Ip method.
 	IpFunc func() string
@@ -80,7 +80,7 @@ type NeighborMock struct {
 	PortFunc func() uint16
 
 	// SendTargetsFunc mocks the SendTargets method.
-	SendTargetsFunc func(request []network2.TargetRequest) error
+	SendTargetsFunc func(request []network.TargetRequest) error
 
 	// StartMiningFunc mocks the StartMining method.
 	StartMiningFunc func() error
@@ -96,12 +96,12 @@ type NeighborMock struct {
 		// AddTransaction holds details about calls to the AddTransaction method.
 		AddTransaction []struct {
 			// Request is the request argument value.
-			Request network2.TransactionRequest
+			Request network.TransactionRequest
 		}
 		// GetAmount holds details about calls to the GetAmount method.
 		GetAmount []struct {
 			// Request is the request argument value.
-			Request network2.AmountRequest
+			Request network.AmountRequest
 		}
 		// GetBlocks holds details about calls to the GetBlocks method.
 		GetBlocks []struct {
@@ -121,7 +121,7 @@ type NeighborMock struct {
 		// SendTargets holds details about calls to the SendTargets method.
 		SendTargets []struct {
 			// Request is the request argument value.
-			Request []network2.TargetRequest
+			Request []network.TargetRequest
 		}
 		// StartMining holds details about calls to the StartMining method.
 		StartMining []struct {
@@ -147,12 +147,12 @@ type NeighborMock struct {
 }
 
 // AddTransaction calls AddTransactionFunc.
-func (mock *NeighborMock) AddTransaction(request network2.TransactionRequest) error {
+func (mock *NeighborMock) AddTransaction(request network.TransactionRequest) error {
 	if mock.AddTransactionFunc == nil {
 		panic("NeighborMock.AddTransactionFunc: method is nil but Neighbor.AddTransaction was just called")
 	}
 	callInfo := struct {
-		Request network2.TransactionRequest
+		Request network.TransactionRequest
 	}{
 		Request: request,
 	}
@@ -166,10 +166,10 @@ func (mock *NeighborMock) AddTransaction(request network2.TransactionRequest) er
 // Check the length with:
 //     len(mockedNeighbor.AddTransactionCalls())
 func (mock *NeighborMock) AddTransactionCalls() []struct {
-	Request network2.TransactionRequest
+	Request network.TransactionRequest
 } {
 	var calls []struct {
-		Request network2.TransactionRequest
+		Request network.TransactionRequest
 	}
 	mock.lockAddTransaction.RLock()
 	calls = mock.calls.AddTransaction
@@ -178,12 +178,12 @@ func (mock *NeighborMock) AddTransactionCalls() []struct {
 }
 
 // GetAmount calls GetAmountFunc.
-func (mock *NeighborMock) GetAmount(request network2.AmountRequest) (*network2.AmountResponse, error) {
+func (mock *NeighborMock) GetAmount(request network.AmountRequest) (*network.AmountResponse, error) {
 	if mock.GetAmountFunc == nil {
 		panic("NeighborMock.GetAmountFunc: method is nil but Neighbor.GetAmount was just called")
 	}
 	callInfo := struct {
-		Request network2.AmountRequest
+		Request network.AmountRequest
 	}{
 		Request: request,
 	}
@@ -197,10 +197,10 @@ func (mock *NeighborMock) GetAmount(request network2.AmountRequest) (*network2.A
 // Check the length with:
 //     len(mockedNeighbor.GetAmountCalls())
 func (mock *NeighborMock) GetAmountCalls() []struct {
-	Request network2.AmountRequest
+	Request network.AmountRequest
 } {
 	var calls []struct {
-		Request network2.AmountRequest
+		Request network.AmountRequest
 	}
 	mock.lockGetAmount.RLock()
 	calls = mock.calls.GetAmount
@@ -209,7 +209,7 @@ func (mock *NeighborMock) GetAmountCalls() []struct {
 }
 
 // GetBlocks calls GetBlocksFunc.
-func (mock *NeighborMock) GetBlocks() ([]*network2.BlockResponse, error) {
+func (mock *NeighborMock) GetBlocks() ([]*network.BlockResponse, error) {
 	if mock.GetBlocksFunc == nil {
 		panic("NeighborMock.GetBlocksFunc: method is nil but Neighbor.GetBlocks was just called")
 	}
@@ -235,7 +235,7 @@ func (mock *NeighborMock) GetBlocksCalls() []struct {
 }
 
 // GetTransactions calls GetTransactionsFunc.
-func (mock *NeighborMock) GetTransactions() ([]network2.TransactionResponse, error) {
+func (mock *NeighborMock) GetTransactions() ([]network.TransactionResponse, error) {
 	if mock.GetTransactionsFunc == nil {
 		panic("NeighborMock.GetTransactionsFunc: method is nil but Neighbor.GetTransactions was just called")
 	}
@@ -339,12 +339,12 @@ func (mock *NeighborMock) PortCalls() []struct {
 }
 
 // SendTargets calls SendTargetsFunc.
-func (mock *NeighborMock) SendTargets(request []network2.TargetRequest) error {
+func (mock *NeighborMock) SendTargets(request []network.TargetRequest) error {
 	if mock.SendTargetsFunc == nil {
 		panic("NeighborMock.SendTargetsFunc: method is nil but Neighbor.SendTargets was just called")
 	}
 	callInfo := struct {
-		Request []network2.TargetRequest
+		Request []network.TargetRequest
 	}{
 		Request: request,
 	}
@@ -358,10 +358,10 @@ func (mock *NeighborMock) SendTargets(request []network2.TargetRequest) error {
 // Check the length with:
 //     len(mockedNeighbor.SendTargetsCalls())
 func (mock *NeighborMock) SendTargetsCalls() []struct {
-	Request []network2.TargetRequest
+	Request []network.TargetRequest
 } {
 	var calls []struct {
-		Request []network2.TargetRequest
+		Request []network.TargetRequest
 	}
 	mock.lockSendTargets.RLock()
 	calls = mock.calls.SendTargets

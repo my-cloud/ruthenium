@@ -2,9 +2,9 @@ package network
 
 import (
 	"fmt"
-	p2p "github.com/leprosus/golang-p2p"
+	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
-	p2p2 "github.com/my-cloud/ruthenium/src/node/network/p2p"
+	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/mock"
 	"testing"
@@ -17,11 +17,11 @@ func Test_Synchronize_OneNeighbor_NeighborAdded(t *testing.T) {
 	timeMock.NowFunc = func() time.Time { return time.Now() }
 	clientFactoryMock := new(mock.ClientFactoryMock)
 	client := new(mock.ClientMock)
-	client.SendFunc = func(string, p2p.Data) (p2p.Data, error) { return p2p.Data{}, nil }
-	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (p2p2.Client, error) { return client, nil }
+	client.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
+	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (p2p.Client, error) { return client, nil }
 	configurationPath := "../../"
 	logger := log.NewLogger(log.Fatal)
-	synchronizer, _ := p2p2.NewSynchronizer(0, timeMock, clientFactoryMock, configurationPath, logger)
+	synchronizer, _ := p2p.NewSynchronizer(0, timeMock, clientFactoryMock, configurationPath, logger)
 
 	// Act
 	synchronizer.Synchronize()

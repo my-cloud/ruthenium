@@ -1,10 +1,10 @@
 package protocol
 
 import (
-	network2 "github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/network"
 )
 
 type TransactionsPool interface {
-	AddTransaction(transactionRequest *network2.TransactionRequest, neighbors []network2.Neighbor)
-	Transactions() []*network2.TransactionResponse
+	AddTransaction(transactionRequest *network.TransactionRequest, neighbors []network.Neighbor)
+	Transactions() []*network.TransactionResponse
 }

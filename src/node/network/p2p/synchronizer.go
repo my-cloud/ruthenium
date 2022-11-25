@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
-	network2 "github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/network"
 	"io/ioutil"
 	"math"
 	"math/rand"
@@ -28,7 +28,7 @@ type Synchronizer struct {
 	time          clock.Time
 	clientFactory ClientFactory
 
-	neighbors             []network2.Neighbor
+	neighbors             []network.Neighbor
 	neighborsMutex        sync.RWMutex
 	neighborsTargets      map[string]*Target
 	neighborsTargetsMutex sync.RWMutex
@@ -123,9 +123,9 @@ func (synchronizer *Synchronizer) Synchronize() {
 	synchronizer.waitGroup.Add(1)
 	go func(neighborsTargets map[string]*Target) {
 		defer synchronizer.waitGroup.Done()
-		var neighbors []network2.Neighbor
-		var targetRequests []network2.TargetRequest
-		hostTargetRequest := network2.TargetRequest{
+		var neighbors []network.Neighbor
+		var targetRequests []network.TargetRequest
+		hostTargetRequest := network.TargetRequest{
 			Ip:   &synchronizer.hostIp,
 			Port: &synchronizer.hostPort,
 		}
@@ -135,11 +135,11 @@ func (synchronizer *Synchronizer) Synchronize() {
 			targetIp := target.Ip()
 			targetPort := target.Port()
 			if targetIp != synchronizer.hostIp || targetPort != synchronizer.hostPort {
-				var neighbor network2.Neighbor
+				var neighbor network.Neighbor
 				neighbor, err := NewNeighbor(target, synchronizer.clientFactory, synchronizer.logger)
 				if err == nil {
 					neighbors = append(neighbors, neighbor)
-					targetRequest := network2.TargetRequest{
+					targetRequest := network.TargetRequest{
 						Ip:   &targetIp,
 						Port: &targetPort,
 					}
@@ -155,7 +155,7 @@ func (synchronizer *Synchronizer) Synchronize() {
 		synchronizer.neighbors = neighbors[:outboundsCount]
 		synchronizer.neighborsMutex.Unlock()
 		for _, neighbor := range neighbors[:outboundsCount] {
-			var neighborTargetRequests []network2.TargetRequest
+			var neighborTargetRequests []network.TargetRequest
 			for _, targetRequest := range targetRequests {
 				neighborIp := neighbor.Ip()
 				neighborPort := neighbor.Port()
@@ -163,14 +163,14 @@ func (synchronizer *Synchronizer) Synchronize() {
 					neighborTargetRequests = append(neighborTargetRequests, targetRequest)
 				}
 			}
-			go func(neighbor network2.Neighbor) {
+			go func(neighbor network.Neighbor) {
 				_ = neighbor.SendTargets(neighborTargetRequests)
 			}(neighbor)
 		}
 	}(neighborsTargets)
 }
 
-func (synchronizer *Synchronizer) AddTargets(targetRequests []network2.TargetRequest) {
+func (synchronizer *Synchronizer) AddTargets(targetRequests []network.TargetRequest) {
 	synchronizer.waitGroup.Add(1)
 	go func() {
 		defer synchronizer.waitGroup.Done()
@@ -185,6 +185,6 @@ func (synchronizer *Synchronizer) AddTargets(targetRequests []network2.TargetReq
 	}()
 }
 
-func (synchronizer *Synchronizer) Neighbors() []network2.Neighbor {
+func (synchronizer *Synchronizer) Neighbors() []network.Neighbor {
 	return synchronizer.neighbors
 }

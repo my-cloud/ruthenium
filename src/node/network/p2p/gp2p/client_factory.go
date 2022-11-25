@@ -2,9 +2,10 @@ package gp2p
 
 import (
 	"fmt"
-	p2p "github.com/leprosus/golang-p2p"
+	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
-	p2p2 "github.com/my-cloud/ruthenium/src/node/network/p2p"
+	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"strconv"
 	"time"
 )
@@ -15,15 +16,15 @@ const (
 )
 
 type ClientFactory struct {
-	ipFinder p2p2.IpFinder
-	logger   p2p.Logger
+	ipFinder network.IpFinder
+	logger   gp2p.Logger
 }
 
-func NewClientFactory(ipFinder p2p2.IpFinder) *ClientFactory {
+func NewClientFactory(ipFinder network.IpFinder) *ClientFactory {
 	return &ClientFactory{ipFinder, log.NewLogger(log.Fatal)}
 }
 
-func (factory *ClientFactory) CreateClient(ip string, port uint16, target string) (p2p2.Client, error) {
+func (factory *ClientFactory) CreateClient(ip string, port uint16, target string) (p2p.Client, error) {
 	lookedUpIps, err := factory.ipFinder.LookupIP(ip)
 	if err != nil {
 		return nil, fmt.Errorf("DNS discovery failed on addresse %s: %w", ip, err)
@@ -37,13 +38,13 @@ func (factory *ClientFactory) CreateClient(ip string, port uint16, target string
 	if err != nil {
 		return nil, err
 	}
-	tcp := p2p.NewTCP(ip, strconv.Itoa(int(port)))
-	var client *p2p.Client
-	client, err = p2p.NewClient(tcp)
+	tcp := gp2p.NewTCP(ip, strconv.Itoa(int(port)))
+	var client *gp2p.Client
+	client, err = gp2p.NewClient(tcp)
 	if err != nil {
 		return nil, err
 	}
-	settings := p2p.NewClientSettings()
+	settings := gp2p.NewClientSettings()
 	settings.SetRetry(1, time.Nanosecond)
 	settings.SetConnTimeout(clientConnectionTimeoutInSeconds * time.Second)
 	client.SetSettings(settings)

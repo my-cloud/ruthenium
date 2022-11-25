@@ -4,13 +4,13 @@
 package mock
 
 import (
-	protocol2 "github.com/my-cloud/ruthenium/src/node/protocol"
+	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"sync"
 )
 
 // Ensure, that EngineMock does implement Engine.
 // If this is not the case, regenerate this file with moq.
-var _ protocol2.Engine = &EngineMock{}
+var _ protocol.Engine = &EngineMock{}
 
 // EngineMock is a mock implementation of Engine.
 //

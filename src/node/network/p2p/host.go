@@ -3,11 +3,11 @@ package p2p
 import (
 	"context"
 	"fmt"
-	p2p "github.com/leprosus/golang-p2p"
+	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
-	network2 "github.com/my-cloud/ruthenium/src/node/network"
-	protocol2 "github.com/my-cloud/ruthenium/src/node/protocol"
+	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"time"
 )
 
@@ -21,10 +21,10 @@ const (
 
 type Host struct {
 	server             Server
-	blockchain         protocol2.Blockchain
-	pool               protocol2.TransactionsPool
-	validationEngine   protocol2.Engine
-	verificationEngine protocol2.Engine
+	blockchain         protocol.Blockchain
+	pool               protocol.TransactionsPool
+	validationEngine   protocol.Engine
+	verificationEngine protocol.Engine
 	synchronizer       *Synchronizer
 	time               clock.Time
 	logger             *log.Logger
@@ -32,10 +32,10 @@ type Host struct {
 
 func NewHost(
 	server Server,
-	blockchain protocol2.Blockchain,
-	pool protocol2.TransactionsPool,
-	validationEngine protocol2.Engine,
-	verificationEngine protocol2.Engine,
+	blockchain protocol.Blockchain,
+	pool protocol.TransactionsPool,
+	validationEngine protocol.Engine,
+	verificationEngine protocol.Engine,
 	synchronizer *Synchronizer,
 	time clock.Time,
 	logger *log.Logger,
@@ -43,7 +43,7 @@ func NewHost(
 	return &Host{server, blockchain, pool, validationEngine, verificationEngine, synchronizer, time, logger}
 }
 
-func (host *Host) GetBlocks() (res p2p.Data) {
+func (host *Host) GetBlocks() (res gp2p.Data) {
 	blockResponses := host.blockchain.Blocks()
 	err := res.SetGob(blockResponses)
 	if err != nil {
@@ -52,11 +52,11 @@ func (host *Host) GetBlocks() (res p2p.Data) {
 	return
 }
 
-func (host *Host) PostTargets(request []network2.TargetRequest) {
+func (host *Host) PostTargets(request []network.TargetRequest) {
 	host.synchronizer.AddTargets(request)
 }
 
-func (host *Host) GetTransactions() (res p2p.Data) {
+func (host *Host) GetTransactions() (res gp2p.Data) {
 	transactionResponses := host.pool.Transactions()
 	if err := res.SetGob(transactionResponses); err != nil {
 		host.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
@@ -64,7 +64,7 @@ func (host *Host) GetTransactions() (res p2p.Data) {
 	return
 }
 
-func (host *Host) AddTransactions(request *network2.TransactionRequest) {
+func (host *Host) AddTransactions(request *network.TransactionRequest) {
 	if request.IsInvalid() {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
@@ -73,14 +73,14 @@ func (host *Host) AddTransactions(request *network2.TransactionRequest) {
 	host.pool.AddTransaction(request, neighbors)
 }
 
-func (host *Host) Amount(request *network2.AmountRequest) (res p2p.Data) {
+func (host *Host) Amount(request *network.AmountRequest) (res gp2p.Data) {
 	if request.IsInvalid() {
 		host.logger.Error("field(s) are missing in amount request")
 		return
 	}
 	blockchainAddress := *request.Address
 	amount := host.blockchain.Copy().CalculateTotalAmount(host.time.Now().UnixNano(), blockchainAddress)
-	amountResponse := &network2.AmountResponse{Amount: amount}
+	amountResponse := &network.AmountResponse{Amount: amount}
 	if err := res.SetGob(amountResponse); err != nil {
 		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
 	}
@@ -103,13 +103,13 @@ func (host *Host) startBlockchain() {
 	host.verificationEngine.Start()
 }
 
-func (host *Host) handle(_ context.Context, req p2p.Data) (res p2p.Data, err error) {
+func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err error) {
 	var unknownRequest bool
 	var requestString string
-	var transactionRequest network2.TransactionRequest
-	var amountRequest network2.AmountRequest
-	var targetsRequest []network2.TargetRequest
-	res = p2p.Data{}
+	var transactionRequest network.TransactionRequest
+	var amountRequest network.AmountRequest
+	var targetsRequest []network.TargetRequest
+	res = gp2p.Data{}
 	if err = req.GetGob(&requestString); err == nil {
 		switch requestString {
 		case GetBlocksRequest:
