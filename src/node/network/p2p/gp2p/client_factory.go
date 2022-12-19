@@ -4,6 +4,7 @@ import (
 	"fmt"
 	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"strconv"
@@ -17,11 +18,11 @@ const (
 
 type ClientFactory struct {
 	ipFinder network.IpFinder
-	logger   gp2p.Logger
+	logger   log.Logger
 }
 
 func NewClientFactory(ipFinder network.IpFinder) *ClientFactory {
-	return &ClientFactory{ipFinder, log.NewLogger(log.Fatal)}
+	return &ClientFactory{ipFinder, console.NewLogger(console.Fatal)}
 }
 
 func (factory *ClientFactory) CreateClient(ip string, port uint16, target string) (p2p.Client, error) {

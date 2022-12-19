@@ -16,10 +16,10 @@ import (
 type Handler struct {
 	host               network.Neighbor
 	particlesInOneAtom uint64
-	logger             *log.Logger
+	logger             log.Logger
 }
 
-func NewHandler(host network.Neighbor, particlesInOneAtom uint64, logger *log.Logger) *Handler {
+func NewHandler(host network.Neighbor, particlesInOneAtom uint64, logger log.Logger) *Handler {
 	return &Handler{host, particlesInOneAtom, logger}
 }
 

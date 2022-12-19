@@ -26,8 +26,8 @@ type Host struct {
 	synchronizationEngine clock.Engine
 	validationEngine      clock.Engine
 	verificationEngine    clock.Engine
-	time                  clock.Time
-	logger                *log.Logger
+	watch                 clock.Watch
+	logger                log.Logger
 }
 
 func NewHost(
@@ -38,10 +38,10 @@ func NewHost(
 	synchronizationEngine clock.Engine,
 	validationEngine clock.Engine,
 	verificationEngine clock.Engine,
-	time clock.Time,
-	logger *log.Logger,
+	watch clock.Watch,
+	logger log.Logger,
 ) *Host {
-	return &Host{server, synchronizer, blockchain, pool, synchronizationEngine, validationEngine, verificationEngine, time, logger}
+	return &Host{server, synchronizer, blockchain, pool, synchronizationEngine, validationEngine, verificationEngine, watch, logger}
 }
 
 func (host *Host) GetBlocks() (res gp2p.Data) {
@@ -80,7 +80,7 @@ func (host *Host) Amount(request *network.AmountRequest) (res gp2p.Data) {
 		return
 	}
 	blockchainAddress := *request.Address
-	amount := host.blockchain.Copy().CalculateTotalAmount(host.time.Now().UnixNano(), blockchainAddress)
+	amount := host.blockchain.Copy().CalculateTotalAmount(host.watch.Now().UnixNano(), blockchainAddress)
 	amountResponse := &network.AmountResponse{Amount: amount}
 	if err := res.SetGob(amountResponse); err != nil {
 		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())

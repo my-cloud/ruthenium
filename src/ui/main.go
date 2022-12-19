@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/config"
 	"github.com/my-cloud/ruthenium/src/environment"
-	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/net"
@@ -36,10 +36,10 @@ func main() {
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level")
 
 	flag.Parse()
-	logger := log.NewLogger(log.ParseLevel(*logLevel))
+	logger := console.NewLogger(console.ParseLevel(*logLevel))
 	target := p2p.NewTarget(*hostIp, uint16(*hostPort))
 	clientFactory := gp2p.NewClientFactory(net.NewIpFinder())
-	host, err := p2p.NewNeighbor(target, clientFactory, logger)
+	host, err := p2p.NewNeighbor(target, clientFactory)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
 	}

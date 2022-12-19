@@ -13,10 +13,10 @@ type Handler struct {
 	derivationPath string
 	password       string
 	privateKey     string
-	logger         *log.Logger
+	logger         log.Logger
 }
 
-func NewHandler(mnemonic string, derivationPath string, password string, privateKey string, logger *log.Logger) *Handler {
+func NewHandler(mnemonic string, derivationPath string, password string, privateKey string, logger log.Logger) *Handler {
 	return &Handler{mnemonic, derivationPath, password, privateKey, logger}
 }
 

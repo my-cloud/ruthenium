@@ -1,4 +1,4 @@
-package clock
+package node
 
 import (
 	"github.com/my-cloud/ruthenium/src/clock"
@@ -10,7 +10,7 @@ import (
 type Engine struct {
 	function func(timestamp int64)
 
-	time               clock.Time
+	watch              clock.Watch
 	timer              time.Duration
 	ticker             *time.Ticker
 	occurrences        int
@@ -19,24 +19,24 @@ type Engine struct {
 	requested          bool
 
 	waitGroup *sync.WaitGroup
-	logger    *log.Logger
+	logger    log.Logger
 }
 
-func NewEngine(function func(timestamp int64), clockTime clock.Time, timer time.Duration, occurrences int, skippedOccurrences int, logger *log.Logger) *Engine {
+func NewEngine(function func(timestamp int64), watch clock.Watch, timer time.Duration, occurrences int, skippedOccurrences int, logger log.Logger) *Engine {
 	subTimer := timer
 	if occurrences > 0 {
 		subTimer = time.Duration(timer.Nanoseconds() / int64(occurrences))
 	}
 	ticker := time.NewTicker(subTimer)
 	var waitGroup sync.WaitGroup
-	return &Engine{function, clockTime, subTimer, ticker, occurrences, skippedOccurrences, false, false, &waitGroup, logger}
+	return &Engine{function, watch, subTimer, ticker, occurrences, skippedOccurrences, false, false, &waitGroup, logger}
 }
 
 func (engine *Engine) Do() {
 	if engine.started || engine.requested {
 		return
 	}
-	startTime := engine.time.Now()
+	startTime := engine.watch.Now()
 	parsedStartDate := startTime.Truncate(engine.timer).Add(engine.timer)
 	deadline := parsedStartDate.Sub(startTime)
 	engine.ticker.Reset(deadline)
@@ -45,7 +45,7 @@ func (engine *Engine) Do() {
 	go func() {
 		defer engine.waitGroup.Done()
 		<-engine.ticker.C
-		now := engine.time.Now().Round(engine.timer)
+		now := engine.watch.Now().Round(engine.timer)
 		engine.function(now.UnixNano())
 		engine.requested = false
 		if engine.started {
@@ -63,7 +63,7 @@ func (engine *Engine) Start() {
 		return
 	}
 	engine.started = true
-	startTime := engine.time.Now()
+	startTime := engine.watch.Now()
 	parsedStartDate := startTime.Truncate(engine.timer).Add(engine.timer)
 	deadline := parsedStartDate.Sub(startTime)
 	engine.ticker.Reset(deadline)
@@ -77,7 +77,7 @@ func (engine *Engine) Start() {
 						engine.ticker.Stop()
 						return
 					}
-					now := engine.time.Now().Round(engine.timer)
+					now := engine.watch.Now().Round(engine.timer)
 					engine.function(now.UnixNano())
 				}
 				<-engine.ticker.C

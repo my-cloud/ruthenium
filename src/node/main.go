@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/clock/node"
 	"github.com/my-cloud/ruthenium/src/config"
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/environment"
-	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/clock"
+	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/net"
@@ -33,7 +33,7 @@ func main() {
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level")
 
 	flag.Parse()
-	logger := log.NewLogger(log.ParseLevel(*logLevel))
+	logger := console.NewLogger(console.ParseLevel(*logLevel))
 	settings, err := config.NewSettings(*configurationPath)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to instantiate settings: %w", err).Error())
@@ -44,17 +44,17 @@ func main() {
 	}
 	registry := poh.NewRegistry()
 	validationTimer := validationIntervalInSeconds * time.Second
-	watch := clock.NewTime()
+	watch := node.NewWatch()
 	clientFactory := gp2p.NewClientFactory(net.NewIpFinder())
 	synchronizer, err := p2p.NewSynchronizer(uint16(*port), watch, clientFactory, *configurationPath, logger)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create synchronizer: %w", err).Error())
 	}
-	synchronizationEngine := clock.NewEngine(synchronizer.Synchronize, watch, time.Second*synchronizationIntervalInSeconds, 1, 0, logger)
+	synchronizationEngine := node.NewEngine(synchronizer.Synchronize, watch, time.Second*synchronizationIntervalInSeconds, 1, 0, logger)
 	blockchain := verification.NewBlockchain(registry, validationTimer, synchronizer, logger)
 	pool := validation.NewTransactionsPool(blockchain, registry, wallet.Address(), settings.GenesisAmount, validationTimer, watch, logger)
-	validationEngine := clock.NewEngine(pool.Validate, watch, validationTimer, 1, 0, logger)
-	verificationEngine := clock.NewEngine(blockchain.Verify, watch, validationTimer, verificationsCountPerValidation, 1, logger)
+	validationEngine := node.NewEngine(pool.Validate, watch, validationTimer, 1, 0, logger)
+	verificationEngine := node.NewEngine(blockchain.Verify, watch, validationTimer, verificationsCountPerValidation, 1, logger)
 	serverFactory := gp2p.NewServerFactory()
 	server, err := serverFactory.CreateServer(int(*port))
 	if err != nil {

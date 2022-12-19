@@ -10,10 +10,10 @@ import (
 
 type Handler struct {
 	templatesPath string
-	logger        *log.Logger
+	logger        log.Logger
 }
 
-func NewHandler(templatesPath string, logger *log.Logger) *Handler {
+func NewHandler(templatesPath string, logger log.Logger) *Handler {
 	return &Handler{templatesPath, logger}
 }
 

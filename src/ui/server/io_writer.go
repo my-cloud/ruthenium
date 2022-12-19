@@ -9,10 +9,10 @@ import (
 
 type IoWriter struct {
 	writer io.Writer
-	logger *log.Logger
+	logger log.Logger
 }
 
-func NewIoWriter(writer http.ResponseWriter, logger *log.Logger) *IoWriter {
+func NewIoWriter(writer http.ResponseWriter, logger log.Logger) *IoWriter {
 	return &IoWriter{writer, logger}
 }
 

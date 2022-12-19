@@ -23,7 +23,7 @@ type Synchronizer struct {
 	hostIp   string
 	hostPort uint16
 
-	time          clock.Time
+	watch         clock.Watch
 	clientFactory ClientFactory
 
 	neighbors             []network.Neighbor
@@ -33,19 +33,17 @@ type Synchronizer struct {
 	seedsTargets          map[string]*Target
 
 	waitGroup *sync.WaitGroup
-	logger    *log.Logger
 }
 
-func NewSynchronizer(hostPort uint16, time clock.Time, clientFactory ClientFactory, configurationPath string, logger *log.Logger) (synchronizer *Synchronizer, err error) {
+func NewSynchronizer(hostPort uint16, watch clock.Watch, clientFactory ClientFactory, configurationPath string, logger log.Logger) (synchronizer *Synchronizer, err error) {
 	synchronizer = new(Synchronizer)
 	synchronizer.hostIp, err = findPublicIp(logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find the public IP: %w", err)
 	}
 	synchronizer.hostPort = hostPort
-	synchronizer.time = time
+	synchronizer.watch = watch
 	synchronizer.clientFactory = clientFactory
-	synchronizer.logger = logger
 	var waitGroup sync.WaitGroup
 	synchronizer.waitGroup = &waitGroup
 	seedsIps, err := readSeedsIps(configurationPath, logger)
@@ -84,7 +82,7 @@ func (synchronizer *Synchronizer) Synchronize(int64) {
 		targetPort := target.Port()
 		if targetIp != synchronizer.hostIp || targetPort != synchronizer.hostPort {
 			var neighbor network.Neighbor
-			neighbor, err := NewNeighbor(target, synchronizer.clientFactory, synchronizer.logger)
+			neighbor, err := NewNeighbor(target, synchronizer.clientFactory)
 			if err == nil {
 				neighbors = append(neighbors, neighbor)
 				targetRequest := network.TargetRequest{
@@ -96,7 +94,7 @@ func (synchronizer *Synchronizer) Synchronize(int64) {
 		}
 	}
 	synchronizer.neighborsMutex.RUnlock()
-	rand.Seed(synchronizer.time.Now().UnixNano())
+	rand.Seed(synchronizer.watch.Now().UnixNano())
 	rand.Shuffle(len(neighbors), func(i, j int) { neighbors[i], neighbors[j] = neighbors[j], neighbors[i] })
 	outboundsCount := int(math.Min(float64(len(neighbors)), maxOutboundsCount))
 	synchronizer.neighborsMutex.Lock()
@@ -136,7 +134,7 @@ func (synchronizer *Synchronizer) Neighbors() []network.Neighbor {
 	return synchronizer.neighbors
 }
 
-func findPublicIp(logger *log.Logger) (ip string, err error) {
+func findPublicIp(logger log.Logger) (ip string, err error) {
 	resp, err := http.Get("https://ifconfig.me")
 	if err != nil {
 		return
@@ -155,7 +153,7 @@ func findPublicIp(logger *log.Logger) (ip string, err error) {
 	return
 }
 
-func readSeedsIps(configurationPath string, logger *log.Logger) ([]string, error) {
+func readSeedsIps(configurationPath string, logger log.Logger) ([]string, error) {
 	jsonFile, err := os.Open(configurationPath + "/seeds.json")
 	if err != nil {
 		return nil, fmt.Errorf("unable to open seeds IPs configuration file: %w", err)

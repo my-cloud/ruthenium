@@ -23,20 +23,20 @@ type TransactionsPool struct {
 	genesisAmount    uint64
 
 	validationTimer time.Duration
-	time            clock.Time
+	watch           clock.Watch
 
 	waitGroup *sync.WaitGroup
-	logger    *log.Logger
+	logger    log.Logger
 }
 
-func NewTransactionsPool(blockchain protocol.Blockchain, registry protocol.Registry, validatorAddress string, genesisAmount uint64, validationTimer time.Duration, time clock.Time, logger *log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain protocol.Blockchain, registry protocol.Registry, validatorAddress string, genesisAmount uint64, validationTimer time.Duration, watch clock.Watch, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blockchain = blockchain
 	pool.registry = registry
 	pool.validatorAddress = validatorAddress
 	pool.genesisAmount = genesisAmount
 	pool.validationTimer = validationTimer
-	pool.time = time
+	pool.watch = watch
 	var waitGroup sync.WaitGroup
 	pool.waitGroup = &waitGroup
 	pool.logger = logger
@@ -180,7 +180,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		senderTotalAmount := currentBlockchain.CalculateTotalAmount(timestamp, senderAddress)
 		if totalTransactionsValue > senderTotalAmount {
 			rejectedTransactions = nil
-			rand.Seed(pool.time.Now().UnixNano())
+			rand.Seed(pool.watch.Now().UnixNano())
 			rand.Shuffle(len(transactionResponses), func(i, j int) {
 				transactionResponses[i], transactionResponses[j] = transactionResponses[j], transactionResponses[i]
 			})

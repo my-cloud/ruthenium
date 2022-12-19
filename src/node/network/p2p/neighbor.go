@@ -3,22 +3,20 @@ package p2p
 import (
 	"fmt"
 	gp2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
 )
 
 type Neighbor struct {
 	target *Target
 	client Client
-	logger *log.Logger
 }
 
-func NewNeighbor(target *Target, clientFactory ClientFactory, logger *log.Logger) (*Neighbor, error) {
+func NewNeighbor(target *Target, clientFactory ClientFactory) (*Neighbor, error) {
 	client, err := clientFactory.CreateClient(target.Ip(), target.Port(), target.Value())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client reaching %s: %w", target.Value(), err)
 	}
-	return &Neighbor{target, client, logger}, nil
+	return &Neighbor{target, client}, nil
 }
 
 func (neighbor *Neighbor) Ip() string {

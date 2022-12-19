@@ -30,15 +30,15 @@ type Blockchain struct {
 
 	lambda float64
 
-	logger     *log.Logger
+	logger     log.Logger
 	isReplaced bool
 }
 
-func NewBlockchain(registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger *log.Logger) *Blockchain {
+func NewBlockchain(registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
 	return newBlockchain(nil, registry, validationTimer, synchronizer, logger)
 }
 
-func newBlockchain(blockResponses []*network.BlockResponse, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger *log.Logger) *Blockchain {
+func newBlockchain(blockResponses []*network.BlockResponse, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blockResponses = blockResponses
 	blockchain.registry = registry
