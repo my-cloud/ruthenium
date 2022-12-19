@@ -100,7 +100,6 @@ func (host *Host) startBlockchain() {
 	host.synchronizationEngine.Start()
 	host.validationEngine.Start()
 	host.verificationEngine.Start()
-	host.logger.Info("validation started")
 }
 
 func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err error) {
@@ -142,6 +141,6 @@ func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err e
 }
 
 func (host *Host) startServer() error {
-	host.logger.Info("host server is running...")
+	host.logger.Info("host node started...")
 	return host.server.Serve()
 }

@@ -29,7 +29,6 @@ func (factory *ClientFactory) CreateClient(ip string, port uint16, target string
 	if err != nil {
 		return nil, fmt.Errorf("DNS discovery failed on addresse %s: %w", ip, err)
 	}
-
 	ipsCount := len(lookedUpIps)
 	if ipsCount != 1 {
 		return nil, fmt.Errorf("DNS discovery did not find a single address (%d addresses found) for the given IP %s", ipsCount, ip)
