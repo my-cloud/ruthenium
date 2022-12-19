@@ -2,10 +2,10 @@ package p2p
 
 import (
 	gp2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/clock"
+	"github.com/my-cloud/ruthenium/test/log"
 	"github.com/my-cloud/ruthenium/test/node/network"
 	"github.com/my-cloud/ruthenium/test/node/protocol"
 	"testing"
@@ -31,7 +31,7 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	client.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	clientFactoryMock := new(ClientFactoryMock)
 	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (p2p.Client, error) { return client, nil }
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	host := p2p.NewHost(serverMock, synchronizerMock, blockchainMock, transactionsPoolMock, engineMock, engineMock, engineMock, watchMock, logger)
 
 	// Act

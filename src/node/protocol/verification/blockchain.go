@@ -30,8 +30,7 @@ type Blockchain struct {
 
 	lambda float64
 
-	logger     log.Logger
-	isReplaced bool
+	logger log.Logger
 }
 
 func NewBlockchain(registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
@@ -69,7 +68,6 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 	}
 	blockchain.mutex.Lock()
 	defer blockchain.mutex.Unlock()
-	// TODO verify block
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
 	blockchain.blocks = append(blockchain.blocks, block)
 }
@@ -390,12 +388,6 @@ func (blockchain *Blockchain) Verify(timestamp int64) {
 	} else {
 		blockchain.logger.Debug("verification done: blockchain kept")
 	}
-	blockchain.isReplaced = isReplaced
-}
-
-// TODO remove these unused method and field
-func (blockchain *Blockchain) IsReplaced() bool {
-	return blockchain.isReplaced
 }
 
 func (blockchain *Blockchain) sortByBlocksLength(selectedTargets []string, blocksByTarget map[string][]*Block) {

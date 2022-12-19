@@ -2,16 +2,21 @@ package verification
 
 import (
 	"github.com/my-cloud/ruthenium/src/encryption"
-	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/clock"
+	"github.com/my-cloud/ruthenium/test/log"
 	network2 "github.com/my-cloud/ruthenium/test/node/network"
 	"github.com/my-cloud/ruthenium/test/node/protocol"
 	"testing"
 	"time"
+)
+
+const (
+	blockchainReplacedMessage = "verification done: blockchain replaced"
+	blockchainKeptMessage     = "verification done: blockchain kept"
 )
 
 func Test_Verify_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
@@ -20,7 +25,7 @@ func Test_Verify_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 1) }
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	neighborMock := new(network2.NeighborMock)
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
 		blockResponse1 := protocol.NewRewardedBlockResponse([32]byte{}, 0)
@@ -42,8 +47,13 @@ func Test_Verify_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	blockchain.Verify(watchMock.Now().UnixNano())
 
 	// Assert
-	isReplaced := blockchain.IsReplaced()
-	test.Assert(t, isReplaced, "blockchain is not replaced whereas it should be")
+	var isReplaced bool
+	for _, call := range logger.DebugCalls() {
+		if call.Msg == blockchainReplacedMessage {
+			isReplaced = true
+		}
+	}
+	test.Assert(t, isReplaced, "blockchain is kept whereas it should be replaced")
 }
 
 func Test_Verify_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) {
@@ -52,7 +62,7 @@ func Test_Verify_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 2) }
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	neighborMock := new(network2.NeighborMock)
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
@@ -115,8 +125,14 @@ func Test_Verify_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 			blockchain.Verify(watchMock.Now().UnixNano())
 
 			// Assert
-			if blockchain.IsReplaced() {
-				t.Errorf("blockchain is replaced whereas it should not")
+			var isKept bool
+			for _, call := range logger.DebugCalls() {
+				if call.Msg == blockchainKeptMessage {
+					isKept = true
+				}
+			}
+			if !isKept {
+				t.Errorf("blockchain is replaced whereas it should be kept")
 			}
 		})
 	}
@@ -128,7 +144,7 @@ func Test_Verify_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 1) }
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	neighborMock := new(network2.NeighborMock)
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
 		blockResponse1 := protocol.NewRewardedBlockResponse([32]byte{}, 1)
@@ -150,8 +166,13 @@ func Test_Verify_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	blockchain.Verify(watchMock.Now().UnixNano())
 
 	// Assert
-	isReplaced := blockchain.IsReplaced()
-	test.Assert(t, !isReplaced, "blockchain is replaced whereas it should not")
+	var isKept bool
+	for _, call := range logger.DebugCalls() {
+		if call.Msg == blockchainKeptMessage {
+			isKept = true
+		}
+	}
+	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
 }
 
 func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
@@ -160,7 +181,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 1) }
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	neighborMock := new(network2.NeighborMock)
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
 		wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
@@ -198,8 +219,13 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	blockchain.Verify(watchMock.Now().UnixNano())
 
 	// Assert
-	isReplaced := blockchain.IsReplaced()
-	test.Assert(t, !isReplaced, "blockchain is replaced whereas it should not")
+	var isKept bool
+	for _, call := range logger.DebugCalls() {
+		if call.Msg == blockchainKeptMessage {
+			isKept = true
+		}
+	}
+	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
 }
 
 func Test_Verify_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
@@ -208,7 +234,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 2) }
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	neighborMock := new(network2.NeighborMock)
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
 		wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
@@ -249,6 +275,11 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	blockchain.Verify(watchMock.Now().UnixNano())
 
 	// Assert
-	isReplaced := blockchain.IsReplaced()
-	test.Assert(t, !isReplaced, "blockchain is replaced whereas it should not")
+	var isKept bool
+	for _, call := range logger.DebugCalls() {
+		if call.Msg == blockchainKeptMessage {
+			isKept = true
+		}
+	}
+	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
 }

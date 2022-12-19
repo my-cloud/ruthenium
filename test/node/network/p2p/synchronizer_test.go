@@ -3,10 +3,10 @@ package p2p
 import (
 	"fmt"
 	gp2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/clock"
+	"github.com/my-cloud/ruthenium/test/log"
 	"testing"
 	"time"
 )
@@ -20,7 +20,7 @@ func Test_Synchronize_OneNeighbor_NeighborAdded(t *testing.T) {
 	client.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (p2p.Client, error) { return client, nil }
 	configurationPath := "../../../"
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	synchronizer, _ := p2p.NewSynchronizer(0, watchMock, clientFactoryMock, configurationPath, logger)
 
 	// Act

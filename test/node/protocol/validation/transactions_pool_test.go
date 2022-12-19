@@ -3,13 +3,13 @@ package validation
 import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/encryption"
-	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/clock"
+	"github.com/my-cloud/ruthenium/test/log"
 	protocol2 "github.com/my-cloud/ruthenium/test/node/protocol"
 	"testing"
 	"time"
@@ -25,7 +25,7 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	var now int64 = 2
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now+2, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
@@ -58,7 +58,7 @@ func Test_AddTransaction_TransactionTimestampIsOlderThan2Blocks_TransactionNotAd
 	var now int64 = 3
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now-3, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
@@ -92,7 +92,7 @@ func Test_AddTransaction_TransactionIsAlreadyInTheBlockchain_TransactionNotAdded
 	var now int64 = 2
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	invalidTransaction := server.NewTransaction("A", validatorWalletAddress, validatorWallet.PublicKey(), now, 1)
 	_ = invalidTransaction.Sign(validatorWallet.PrivateKey())
 	invalidTransactionRequest := invalidTransaction.GetRequest()
@@ -130,7 +130,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	var now int64 = 1
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	var blockResponses []*network.BlockResponse
 	blockResponses = append(blockResponses, protocol2.NewGenesisBlockResponse(validatorWalletAddress))
 	blockchainMock := new(protocol2.BlockchainMock)
@@ -166,7 +166,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	var now int64 = 1
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	var blockResponses []*network.BlockResponse
 	blockResponses = append(blockResponses, protocol2.NewGenesisBlockResponse(validatorWalletAddress))
 	blockchainMock := new(protocol2.BlockchainMock)
@@ -201,7 +201,7 @@ func Test_Validate_BlockchainIsEmpty_GenesisTransactionValidated(t *testing.T) {
 	var now int64 = 1
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	blockchainMock := new(protocol2.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.IsEmptyFunc = func() bool { return true }
@@ -261,7 +261,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	var now int64 = 1
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	blockchainMock := new(protocol2.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.IsEmptyFunc = func() bool { return false }
@@ -295,7 +295,7 @@ func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidate
 	var now int64 = 3
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	blockchainMock := new(protocol2.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.IsEmptyFunc = func() bool { return false }
@@ -332,7 +332,7 @@ func Test_Validate_TransactionIsAlreadyInTheBlockchain_TransactionNotValidated(t
 	var now int64 = 2
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	blockchainMock := new(protocol2.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.IsEmptyFunc = func() bool { return false }
@@ -371,7 +371,7 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	var now int64 = 1
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	validationTimer := time.Nanosecond
-	logger := console.NewLogger(console.Fatal)
+	logger := log.NewLoggerMock()
 	blockchainMock := new(protocol2.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.IsEmptyFunc = func() bool { return false }
