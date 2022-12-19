@@ -18,8 +18,9 @@ import (
 )
 
 const (
-	validationIntervalInSeconds     = 60
-	verificationsCountPerValidation = 6
+	synchronizationIntervalInSeconds = 10
+	validationIntervalInSeconds      = 60
+	verificationsCountPerValidation  = 6
 )
 
 func main() {
@@ -49,6 +50,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create synchronizer: %w", err).Error())
 	}
+	synchronizationEngine := clock.NewEngine(synchronizer.Synchronize, watch, time.Second*synchronizationIntervalInSeconds, 1, 0, logger)
 	blockchain := verification.NewBlockchain(registry, validationTimer, synchronizer, logger)
 	pool := validation.NewTransactionsPool(blockchain, registry, wallet.Address(), settings.GenesisAmount, validationTimer, watch, logger)
 	validationEngine := clock.NewEngine(pool.Validate, watch, validationTimer, 1, 0, logger)
@@ -58,7 +60,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
 	}
-	host := p2p.NewHost(server, blockchain, pool, validationEngine, verificationEngine, synchronizer, watch, logger)
+	host := p2p.NewHost(server, synchronizer, blockchain, pool, synchronizationEngine, validationEngine, verificationEngine, watch, logger)
 	err = host.Run()
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to run host: %w", err).Error())

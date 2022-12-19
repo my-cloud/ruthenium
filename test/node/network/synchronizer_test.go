@@ -25,10 +25,9 @@ func Test_Synchronize_OneNeighbor_NeighborAdded(t *testing.T) {
 	synchronizer, _ := p2p.NewSynchronizer(0, timeMock, clientFactoryMock, configurationPath, logger)
 
 	// Act
-	synchronizer.Synchronize()
+	synchronizer.Synchronize(0)
 
 	// Assert
-	synchronizer.Wait()
 	neighbors := synchronizer.Neighbors()
 	expectedNeighborsCount := 1
 	test.Assert(t, len(neighbors) == expectedNeighborsCount, fmt.Sprintf("Wrong neighbors count. Expected: %d - Actual: %d", expectedNeighborsCount, len(neighbors)))

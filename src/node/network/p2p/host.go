@@ -8,7 +8,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
-	"time"
 )
 
 const (
@@ -20,27 +19,29 @@ const (
 )
 
 type Host struct {
-	server             Server
-	blockchain         protocol.Blockchain
-	pool               protocol.TransactionsPool
-	validationEngine   clock.Engine
-	verificationEngine clock.Engine
-	synchronizer       *Synchronizer
-	time               clock.Time
-	logger             *log.Logger
+	server                Server
+	synchronizer          network.Synchronizer
+	blockchain            protocol.Blockchain
+	pool                  protocol.TransactionsPool
+	synchronizationEngine clock.Engine
+	validationEngine      clock.Engine
+	verificationEngine    clock.Engine
+	time                  clock.Time
+	logger                *log.Logger
 }
 
 func NewHost(
 	server Server,
+	synchronizer network.Synchronizer,
 	blockchain protocol.Blockchain,
 	pool protocol.TransactionsPool,
+	synchronizationEngine clock.Engine,
 	validationEngine clock.Engine,
 	verificationEngine clock.Engine,
-	synchronizer *Synchronizer,
 	time clock.Time,
 	logger *log.Logger,
 ) *Host {
-	return &Host{server, blockchain, pool, validationEngine, verificationEngine, synchronizer, time, logger}
+	return &Host{server, synchronizer, blockchain, pool, synchronizationEngine, validationEngine, verificationEngine, time, logger}
 }
 
 func (host *Host) GetBlocks() (res gp2p.Data) {
@@ -88,19 +89,18 @@ func (host *Host) Amount(request *network.AmountRequest) (res gp2p.Data) {
 }
 
 func (host *Host) Run() error {
-	go host.startBlockchain()
+	host.startBlockchain()
 	host.server.SetHandle("dialog", host.handle)
 	return host.startServer()
 }
 
 func (host *Host) startBlockchain() {
-	host.logger.Info("updating the blockchain...")
-	host.synchronizer.StartSynchronization()
-	host.synchronizer.Wait()
-	host.blockchain.Verify(time.Now().UnixNano())
-	host.logger.Info("the blockchain is now up to date")
+	host.synchronizationEngine.Do()
+	host.synchronizationEngine.Wait()
+	host.synchronizationEngine.Start()
 	host.validationEngine.Start()
 	host.verificationEngine.Start()
+	host.logger.Info("validation started")
 }
 
 func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err error) {

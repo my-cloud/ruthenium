@@ -27,6 +27,9 @@ var _ clock.Engine = &EngineMock{}
 // 			StopFunc: func()  {
 // 				panic("mock out the Stop method")
 // 			},
+// 			WaitFunc: func()  {
+// 				panic("mock out the Wait method")
+// 			},
 // 		}
 //
 // 		// use mockedEngine in code that requires Engine
@@ -43,6 +46,9 @@ type EngineMock struct {
 	// StopFunc mocks the Stop method.
 	StopFunc func()
 
+	// WaitFunc mocks the Wait method.
+	WaitFunc func()
+
 	// calls tracks calls to the methods.
 	calls struct {
 		// Do holds details about calls to the Do method.
@@ -54,10 +60,14 @@ type EngineMock struct {
 		// Stop holds details about calls to the Stop method.
 		Stop []struct {
 		}
+		// Wait holds details about calls to the Wait method.
+		Wait []struct {
+		}
 	}
 	lockDo    sync.RWMutex
 	lockStart sync.RWMutex
 	lockStop  sync.RWMutex
+	lockWait  sync.RWMutex
 }
 
 // Do calls DoFunc.
@@ -135,5 +145,31 @@ func (mock *EngineMock) StopCalls() []struct {
 	mock.lockStop.RLock()
 	calls = mock.calls.Stop
 	mock.lockStop.RUnlock()
+	return calls
+}
+
+// Wait calls WaitFunc.
+func (mock *EngineMock) Wait() {
+	if mock.WaitFunc == nil {
+		panic("EngineMock.WaitFunc: method is nil but Engine.Wait was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockWait.Lock()
+	mock.calls.Wait = append(mock.calls.Wait, callInfo)
+	mock.lockWait.Unlock()
+	mock.WaitFunc()
+}
+
+// WaitCalls gets all the calls that were made to Wait.
+// Check the length with:
+//     len(mockedEngine.WaitCalls())
+func (mock *EngineMock) WaitCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockWait.RLock()
+	calls = mock.calls.Wait
+	mock.lockWait.RUnlock()
 	return calls
 }

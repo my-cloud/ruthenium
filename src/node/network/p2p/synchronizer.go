@@ -12,13 +12,11 @@ import (
 	"net/http"
 	"os"
 	"sync"
-	"time"
 )
 
 const (
-	DefaultPort                      = 8106
-	synchronizationIntervalInSeconds = 10
-	maxOutboundsCount                = 8
+	DefaultPort       = 8106
+	maxOutboundsCount = 8
 )
 
 type Synchronizer struct {
@@ -101,16 +99,7 @@ func readSeedsIps(configurationPath string, logger *log.Logger) ([]string, error
 	return seedsIps, nil
 }
 
-func (synchronizer *Synchronizer) Wait() {
-	synchronizer.waitGroup.Wait()
-}
-
-func (synchronizer *Synchronizer) StartSynchronization() {
-	synchronizer.Synchronize()
-	_ = time.AfterFunc(time.Second*synchronizationIntervalInSeconds, synchronizer.StartSynchronization)
-}
-
-func (synchronizer *Synchronizer) Synchronize() {
+func (synchronizer *Synchronizer) Synchronize(int64) {
 	synchronizer.neighborsTargetsMutex.Lock()
 	var neighborsTargets map[string]*Target
 	if len(synchronizer.neighborsTargets) == 0 {
@@ -120,54 +109,50 @@ func (synchronizer *Synchronizer) Synchronize() {
 	}
 	synchronizer.neighborsTargets = map[string]*Target{}
 	synchronizer.neighborsTargetsMutex.Unlock()
-	synchronizer.waitGroup.Add(1)
-	go func(neighborsTargets map[string]*Target) {
-		defer synchronizer.waitGroup.Done()
-		var neighbors []network.Neighbor
-		var targetRequests []network.TargetRequest
-		hostTargetRequest := network.TargetRequest{
-			Ip:   &synchronizer.hostIp,
-			Port: &synchronizer.hostPort,
-		}
-		targetRequests = append(targetRequests, hostTargetRequest)
-		synchronizer.neighborsMutex.RLock()
-		for _, target := range neighborsTargets {
-			targetIp := target.Ip()
-			targetPort := target.Port()
-			if targetIp != synchronizer.hostIp || targetPort != synchronizer.hostPort {
-				var neighbor network.Neighbor
-				neighbor, err := NewNeighbor(target, synchronizer.clientFactory, synchronizer.logger)
-				if err == nil {
-					neighbors = append(neighbors, neighbor)
-					targetRequest := network.TargetRequest{
-						Ip:   &targetIp,
-						Port: &targetPort,
-					}
-					targetRequests = append(targetRequests, targetRequest)
+	var neighbors []network.Neighbor
+	var targetRequests []network.TargetRequest
+	hostTargetRequest := network.TargetRequest{
+		Ip:   &synchronizer.hostIp,
+		Port: &synchronizer.hostPort,
+	}
+	targetRequests = append(targetRequests, hostTargetRequest)
+	synchronizer.neighborsMutex.RLock()
+	for _, target := range neighborsTargets {
+		targetIp := target.Ip()
+		targetPort := target.Port()
+		if targetIp != synchronizer.hostIp || targetPort != synchronizer.hostPort {
+			var neighbor network.Neighbor
+			neighbor, err := NewNeighbor(target, synchronizer.clientFactory, synchronizer.logger)
+			if err == nil {
+				neighbors = append(neighbors, neighbor)
+				targetRequest := network.TargetRequest{
+					Ip:   &targetIp,
+					Port: &targetPort,
 				}
+				targetRequests = append(targetRequests, targetRequest)
 			}
 		}
-		synchronizer.neighborsMutex.RUnlock()
-		rand.Seed(synchronizer.time.Now().UnixNano())
-		rand.Shuffle(len(neighbors), func(i, j int) { neighbors[i], neighbors[j] = neighbors[j], neighbors[i] })
-		outboundsCount := int(math.Min(float64(len(neighbors)), maxOutboundsCount))
-		synchronizer.neighborsMutex.Lock()
-		synchronizer.neighbors = neighbors[:outboundsCount]
-		synchronizer.neighborsMutex.Unlock()
-		for _, neighbor := range neighbors[:outboundsCount] {
-			var neighborTargetRequests []network.TargetRequest
-			for _, targetRequest := range targetRequests {
-				neighborIp := neighbor.Ip()
-				neighborPort := neighbor.Port()
-				if neighborIp != *targetRequest.Ip || neighborPort != *targetRequest.Port {
-					neighborTargetRequests = append(neighborTargetRequests, targetRequest)
-				}
+	}
+	synchronizer.neighborsMutex.RUnlock()
+	rand.Seed(synchronizer.time.Now().UnixNano())
+	rand.Shuffle(len(neighbors), func(i, j int) { neighbors[i], neighbors[j] = neighbors[j], neighbors[i] })
+	outboundsCount := int(math.Min(float64(len(neighbors)), maxOutboundsCount))
+	synchronizer.neighborsMutex.Lock()
+	synchronizer.neighbors = neighbors[:outboundsCount]
+	synchronizer.neighborsMutex.Unlock()
+	for _, neighbor := range neighbors[:outboundsCount] {
+		var neighborTargetRequests []network.TargetRequest
+		for _, targetRequest := range targetRequests {
+			neighborIp := neighbor.Ip()
+			neighborPort := neighbor.Port()
+			if neighborIp != *targetRequest.Ip || neighborPort != *targetRequest.Port {
+				neighborTargetRequests = append(neighborTargetRequests, targetRequest)
 			}
-			go func(neighbor network.Neighbor) {
-				_ = neighbor.SendTargets(neighborTargetRequests)
-			}(neighbor)
 		}
-	}(neighborsTargets)
+		go func(neighbor network.Neighbor) {
+			_ = neighbor.SendTargets(neighborTargetRequests)
+		}(neighbor)
+	}
 }
 
 func (synchronizer *Synchronizer) AddTargets(targetRequests []network.TargetRequest) {

@@ -18,7 +18,10 @@ var _ network.Synchronizer = &SynchronizerMock{}
 //
 // 		// make and configure a mocked Synchronizer
 // 		mockedSynchronizer := &SynchronizerMock{
-// 			NeighborsFunc: func() []network.Neighbor {
+// 			AddTargetsFunc: func(requests []TargetRequest)  {
+// 				panic("mock out the AddTargets method")
+// 			},
+// 			NeighborsFunc: func() []Neighbor {
 // 				panic("mock out the Neighbors method")
 // 			},
 // 		}
@@ -28,16 +31,56 @@ var _ network.Synchronizer = &SynchronizerMock{}
 //
 // 	}
 type SynchronizerMock struct {
+	// AddTargetsFunc mocks the AddTargets method.
+	AddTargetsFunc func(requests []network.TargetRequest)
+
 	// NeighborsFunc mocks the Neighbors method.
 	NeighborsFunc func() []network.Neighbor
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// AddTargets holds details about calls to the AddTargets method.
+		AddTargets []struct {
+			// Requests is the requests argument value.
+			Requests []network.TargetRequest
+		}
 		// Neighbors holds details about calls to the Neighbors method.
 		Neighbors []struct {
 		}
 	}
-	lockNeighbors sync.RWMutex
+	lockAddTargets sync.RWMutex
+	lockNeighbors  sync.RWMutex
+}
+
+// AddTargets calls AddTargetsFunc.
+func (mock *SynchronizerMock) AddTargets(requests []network.TargetRequest) {
+	if mock.AddTargetsFunc == nil {
+		panic("SynchronizerMock.AddTargetsFunc: method is nil but Synchronizer.AddTargets was just called")
+	}
+	callInfo := struct {
+		Requests []network.TargetRequest
+	}{
+		Requests: requests,
+	}
+	mock.lockAddTargets.Lock()
+	mock.calls.AddTargets = append(mock.calls.AddTargets, callInfo)
+	mock.lockAddTargets.Unlock()
+	mock.AddTargetsFunc(requests)
+}
+
+// AddTargetsCalls gets all the calls that were made to AddTargets.
+// Check the length with:
+//     len(mockedSynchronizer.AddTargetsCalls())
+func (mock *SynchronizerMock) AddTargetsCalls() []struct {
+	Requests []network.TargetRequest
+} {
+	var calls []struct {
+		Requests []network.TargetRequest
+	}
+	mock.lockAddTargets.RLock()
+	calls = mock.calls.AddTargets
+	mock.lockAddTargets.RUnlock()
+	return calls
 }
 
 // Neighbors calls NeighborsFunc.
