@@ -6,8 +6,8 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/ui/server/transactions"
 	"github.com/my-cloud/ruthenium/test"
-	"github.com/my-cloud/ruthenium/test/log"
-	network2 "github.com/my-cloud/ruthenium/test/node/network"
+	"github.com/my-cloud/ruthenium/test/log/logtest"
+	"github.com/my-cloud/ruthenium/test/node/network/networktest"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,8 +15,8 @@ import (
 
 func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
-	neighborMock := new(network2.NeighborMock)
-	logger := log.NewLoggerMock()
+	neighborMock := new(networktest.NeighborMock)
+	logger := logtest.NewLoggerMock()
 	handler := transactions.NewHandler(neighborMock, logger)
 	recorder := httptest.NewRecorder()
 	invalidHttpMethods := []string{http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
@@ -38,9 +38,9 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 
 func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	// Arrange
-	neighborMock := new(network2.NeighborMock)
+	neighborMock := new(networktest.NeighborMock)
 	neighborMock.GetTransactionsFunc = func() ([]network.TransactionResponse, error) { return nil, errors.New("") }
-	logger := log.NewLoggerMock()
+	logger := logtest.NewLoggerMock()
 	handler := transactions.NewHandler(neighborMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest("GET", "/transactions", nil)
@@ -57,9 +57,9 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 
 func Test_ServeHTTP_ValidRequest_NeighborMethodCalled(t *testing.T) {
 	// Arrange
-	neighborMock := new(network2.NeighborMock)
+	neighborMock := new(networktest.NeighborMock)
 	neighborMock.GetTransactionsFunc = func() ([]network.TransactionResponse, error) { return nil, nil }
-	logger := log.NewLoggerMock()
+	logger := logtest.NewLoggerMock()
 	handler := transactions.NewHandler(neighborMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest("GET", "/transactions", nil)

@@ -1,4 +1,4 @@
-package protocol
+package protocoltest
 
 import (
 	"github.com/my-cloud/ruthenium/src/node/network"
