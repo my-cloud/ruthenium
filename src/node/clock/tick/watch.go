@@ -1,4 +1,4 @@
-package node
+package tick
 
 import "time"
 

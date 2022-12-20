@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/clock/node"
 	"github.com/my-cloud/ruthenium/src/config"
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/log/console"
+	"github.com/my-cloud/ruthenium/src/node/clock/tick"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/net"
@@ -44,17 +44,18 @@ func main() {
 	}
 	registry := poh.NewRegistry()
 	validationTimer := validationIntervalInSeconds * time.Second
-	watch := node.NewWatch()
+	watch := tick.NewWatch()
 	clientFactory := gp2p.NewClientFactory(net.NewIpFinder())
 	synchronizer, err := p2p.NewSynchronizer(uint16(*port), watch, clientFactory, *configurationPath, logger)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create synchronizer: %w", err).Error())
 	}
-	synchronizationEngine := node.NewEngine(synchronizer.Synchronize, watch, time.Second*synchronizationIntervalInSeconds, 1, 0, logger)
+	synchronizationTimer := time.Second * synchronizationIntervalInSeconds
+	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, synchronizationTimer, 1, 0, logger)
 	blockchain := verification.NewBlockchain(registry, validationTimer, synchronizer, logger)
 	pool := validation.NewTransactionsPool(blockchain, registry, wallet.Address(), settings.GenesisAmount, validationTimer, watch, logger)
-	validationEngine := node.NewEngine(pool.Validate, watch, validationTimer, 1, 0, logger)
-	verificationEngine := node.NewEngine(blockchain.Verify, watch, validationTimer, verificationsCountPerValidation, 1, logger)
+	validationEngine := tick.NewEngine(pool.Validate, watch, validationTimer, 1, 0, logger)
+	verificationEngine := tick.NewEngine(blockchain.Verify, watch, validationTimer, verificationsCountPerValidation, 1, logger)
 	serverFactory := gp2p.NewServerFactory()
 	server, err := serverFactory.CreateServer(int(*port))
 	if err != nil {

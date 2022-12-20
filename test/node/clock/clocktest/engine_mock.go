@@ -4,7 +4,7 @@
 package clocktest
 
 import (
-	"github.com/my-cloud/ruthenium/src/clock"
+	"github.com/my-cloud/ruthenium/src/node/clock"
 	"sync"
 )
 

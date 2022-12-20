@@ -1,8 +1,8 @@
-package node
+package tick
 
 import (
-	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/clock"
 	"sync"
 	"time"
 )

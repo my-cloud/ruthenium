@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	gp2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/clock"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 )
