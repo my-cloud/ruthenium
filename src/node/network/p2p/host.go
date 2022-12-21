@@ -44,50 +44,6 @@ func NewHost(
 	return &Host{server, synchronizer, blockchain, pool, synchronizationEngine, validationEngine, verificationEngine, watch, logger}
 }
 
-func (host *Host) GetBlocks() (res gp2p.Data) {
-	blockResponses := host.blockchain.Blocks()
-	err := res.SetGob(blockResponses)
-	if err != nil {
-		host.logger.Error(fmt.Errorf("failed to get blocks: %w", err).Error())
-	}
-	return
-}
-
-func (host *Host) PostTargets(request []network.TargetRequest) {
-	host.synchronizer.AddTargets(request)
-}
-
-func (host *Host) GetTransactions() (res gp2p.Data) {
-	transactionResponses := host.pool.Transactions()
-	if err := res.SetGob(transactionResponses); err != nil {
-		host.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
-	}
-	return
-}
-
-func (host *Host) AddTransactions(request *network.TransactionRequest) {
-	if request.IsInvalid() {
-		host.logger.Error("field(s) are missing in transaction request")
-		return
-	}
-	neighbors := host.synchronizer.Neighbors()
-	host.pool.AddTransaction(request, neighbors)
-}
-
-func (host *Host) Amount(request *network.AmountRequest) (res gp2p.Data) {
-	if request.IsInvalid() {
-		host.logger.Error("field(s) are missing in amount request")
-		return
-	}
-	blockchainAddress := *request.Address
-	amount := host.blockchain.Copy().CalculateTotalAmount(host.watch.Now().UnixNano(), blockchainAddress)
-	amountResponse := &network.AmountResponse{Amount: amount}
-	if err := res.SetGob(amountResponse); err != nil {
-		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
-	}
-	return
-}
-
 func (host *Host) Run() error {
 	host.startBlockchain()
 	host.server.SetHandle("dialog", host.handle)
@@ -112,9 +68,9 @@ func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err e
 	if err = req.GetGob(&requestString); err == nil {
 		switch requestString {
 		case GetBlocksRequest:
-			res = host.GetBlocks()
+			res = host.getBlocks()
 		case GetTransactionsRequest:
-			res = host.GetTransactions()
+			res = host.getTransactions()
 		case MineRequest:
 			host.validationEngine.Do()
 		case StartMiningRequest:
@@ -125,11 +81,11 @@ func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err e
 			unknownRequest = true
 		}
 	} else if err = req.GetGob(&transactionRequest); err == nil {
-		host.AddTransactions(&transactionRequest)
+		host.addTransactions(&transactionRequest)
 	} else if err = req.GetGob(&amountRequest); err == nil {
-		res = host.Amount(&amountRequest)
+		res = host.amount(&amountRequest)
 	} else if err = req.GetGob(&targetsRequest); err == nil {
-		host.PostTargets(targetsRequest)
+		host.postTargets(targetsRequest)
 	} else {
 		unknownRequest = true
 	}
@@ -138,6 +94,50 @@ func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err e
 		host.logger.Error("unknown request")
 	}
 	return
+}
+
+func (host *Host) getBlocks() (res gp2p.Data) {
+	blockResponses := host.blockchain.Blocks()
+	err := res.SetGob(blockResponses)
+	if err != nil {
+		host.logger.Error(fmt.Errorf("failed to get blocks: %w", err).Error())
+	}
+	return
+}
+
+func (host *Host) addTransactions(request *network.TransactionRequest) {
+	if request.IsInvalid() {
+		host.logger.Error("field(s) are missing in transaction request")
+		return
+	}
+	neighbors := host.synchronizer.Neighbors()
+	go host.pool.AddTransaction(request, neighbors)
+}
+
+func (host *Host) amount(request *network.AmountRequest) (res gp2p.Data) {
+	if request.IsInvalid() {
+		host.logger.Error("field(s) are missing in amount request")
+		return
+	}
+	blockchainAddress := *request.Address
+	amount := host.blockchain.Copy().CalculateTotalAmount(host.watch.Now().UnixNano(), blockchainAddress)
+	amountResponse := &network.AmountResponse{Amount: amount}
+	if err := res.SetGob(amountResponse); err != nil {
+		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
+	}
+	return
+}
+
+func (host *Host) getTransactions() (res gp2p.Data) {
+	transactionResponses := host.pool.Transactions()
+	if err := res.SetGob(transactionResponses); err != nil {
+		host.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
+	}
+	return
+}
+
+func (host *Host) postTargets(request []network.TargetRequest) {
+	go host.synchronizer.AddTargets(request)
 }
 
 func (host *Host) startServer() error {

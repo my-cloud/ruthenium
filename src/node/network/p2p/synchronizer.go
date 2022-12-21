@@ -116,18 +116,14 @@ func (synchronizer *Synchronizer) Synchronize(int64) {
 }
 
 func (synchronizer *Synchronizer) AddTargets(targetRequests []network.TargetRequest) {
-	synchronizer.waitGroup.Add(1)
-	go func() {
-		defer synchronizer.waitGroup.Done()
-		synchronizer.neighborsTargetsMutex.Lock()
-		defer synchronizer.neighborsTargetsMutex.Unlock()
-		for _, targetRequest := range targetRequests {
-			target := NewTarget(*targetRequest.Ip, *targetRequest.Port)
-			if _, ok := synchronizer.neighborsTargets[target.Value()]; !ok {
-				synchronizer.neighborsTargets[target.Value()] = target
-			}
+	synchronizer.neighborsTargetsMutex.Lock()
+	defer synchronizer.neighborsTargetsMutex.Unlock()
+	for _, targetRequest := range targetRequests {
+		target := NewTarget(*targetRequest.Ip, *targetRequest.Port)
+		if _, ok := synchronizer.neighborsTargets[target.Value()]; !ok {
+			synchronizer.neighborsTargets[target.Value()] = target
 		}
-	}()
+	}
 }
 
 func (synchronizer *Synchronizer) Neighbors() []network.Neighbor {

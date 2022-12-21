@@ -95,26 +95,6 @@ func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (transaction *Transaction) Timestamp() int64 {
-	return transaction.timestamp
-}
-
-func (transaction *Transaction) SenderAddress() string {
-	return transaction.senderAddress
-}
-
-func (transaction *Transaction) RecipientAddress() string {
-	return transaction.recipientAddress
-}
-
-func (transaction *Transaction) Value() uint64 {
-	return transaction.value
-}
-
-func (transaction *Transaction) Fee() uint64 {
-	return transaction.fee
-}
-
 func (transaction *Transaction) GetResponse() *network.TransactionResponse {
 	var encodedPublicKey string
 	if transaction.senderPublicKey != nil {
@@ -156,4 +136,24 @@ func (transaction *Transaction) VerifySignature() error {
 
 func (transaction *Transaction) IsReward() bool {
 	return transaction.SenderAddress() == rewardSenderAddress
+}
+
+func (transaction *Transaction) RecipientAddress() string {
+	return transaction.recipientAddress
+}
+
+func (transaction *Transaction) SenderAddress() string {
+	return transaction.senderAddress
+}
+
+func (transaction *Transaction) Timestamp() int64 {
+	return transaction.timestamp
+}
+
+func (transaction *Transaction) Value() uint64 {
+	return transaction.value
+}
+
+func (transaction *Transaction) Fee() uint64 {
+	return transaction.fee
 }
