@@ -5,5 +5,6 @@
 .vscode/**
 #Microsoft VS
 .vs/**
-#visualfc LiteIDE
-src.debug.exe
+
+##Build
+*.exe
