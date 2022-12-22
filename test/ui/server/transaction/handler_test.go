@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/log/logtest"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
@@ -119,6 +120,60 @@ func Test_ServeHTTP_InvalidTransactionValue_BadRequest(t *testing.T) {
 		"A",
 		test.PublicKey,
 		"InvalidTransactionValue",
+	)
+	b, _ := json.Marshal(transactionRequest)
+	body := bytes.NewReader(b)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest("POST", "/transaction", body)
+
+	// Act
+	handler.ServeHTTP(recorder, request)
+
+	// Assert
+	isNeighborMethodCalled := len(neighborMock.AddTransactionCalls()) != 0
+	test.Assert(t, !isNeighborMethodCalled, "Neighbor method is called whereas it should not.")
+	expectedStatusCode := 400
+	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
+}
+
+func Test_ServeHTTP_TransactionValueIsTooBig_BadRequest(t *testing.T) {
+	// Arrange
+	neighborMock := new(networktest.NeighborMock)
+	logger := logtest.NewLoggerMock()
+	handler := transaction.NewHandler(neighborMock, 1, logger)
+	transactionRequest := newTransactionRequest(
+		test.PrivateKey,
+		test.Address,
+		"A",
+		test.PublicKey,
+		"1234567890123.1",
+	)
+	b, _ := json.Marshal(transactionRequest)
+	body := bytes.NewReader(b)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest("POST", "/transaction", body)
+
+	// Act
+	handler.ServeHTTP(recorder, request)
+
+	// Assert
+	isNeighborMethodCalled := len(neighborMock.AddTransactionCalls()) != 0
+	test.Assert(t, !isNeighborMethodCalled, "Neighbor method is called whereas it should not.")
+	expectedStatusCode := 400
+	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
+}
+
+func Test_ServeHTTP_TransactionValueIsTooSmall_BadRequest(t *testing.T) {
+	// Arrange
+	neighborMock := new(networktest.NeighborMock)
+	logger := logtest.NewLoggerMock()
+	handler := transaction.NewHandler(neighborMock, 1, logger)
+	transactionRequest := newTransactionRequest(
+		test.PrivateKey,
+		test.Address,
+		"A",
+		test.PublicKey,
+		"0.000000009",
 	)
 	b, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(b)

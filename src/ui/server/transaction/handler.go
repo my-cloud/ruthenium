@@ -3,14 +3,15 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/encryption"
-	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/network"
-	"github.com/my-cloud/ruthenium/src/ui/server"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/my-cloud/ruthenium/src/encryption"
+	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/ui/server"
 )
 
 type Handler struct {
@@ -87,7 +88,7 @@ func atomsToParticles(atoms string, particlesInOneAtom uint64) (particles uint64
 		err = fmt.Errorf("transaction value is too big")
 		return
 	}
-	if i > -1 {
+	if i >= 0 {
 		unitsString := atoms[:i]
 		var units uint64
 		units, err = parseUint64(unitsString)
@@ -96,6 +97,10 @@ func atomsToParticles(atoms string, particlesInOneAtom uint64) (particles uint64
 		}
 		decimalsString := atoms[i+1:]
 		trailingZerosCount := len(strconv.Itoa(int(particlesInOneAtom))) - 1 - len(decimalsString)
+		if trailingZerosCount < 0 {
+			err = fmt.Errorf("transaction value is too small")
+			return
+		}
 		trailedDecimalsString := fmt.Sprintf("%s%s", decimalsString, strings.Repeat("0", trailingZerosCount))
 		var decimals uint64
 		decimals, err = parseUint64(trailedDecimalsString)
