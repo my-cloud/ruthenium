@@ -3,6 +3,7 @@ package p2p
 import (
 	"context"
 	"fmt"
+
 	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
@@ -51,9 +52,16 @@ func (host *Host) Run() error {
 }
 
 func (host *Host) startBlockchain() {
+	host.logger.Info("updating the blockchain...")
 	host.synchronizationEngine.Do()
 	host.synchronizationEngine.Wait()
+	host.logger.Info("neighbors are synchronized")
 	host.synchronizationEngine.Start()
+	host.verificationEngine.Do()
+	host.verificationEngine.Wait()
+	host.logger.Info("the blockchain is now up to date")
+	host.validationEngine.Do()
+	host.validationEngine.Wait()
 	host.validationEngine.Start()
 	host.verificationEngine.Start()
 }

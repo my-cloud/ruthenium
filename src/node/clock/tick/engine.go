@@ -1,10 +1,11 @@
 package tick
 
 import (
-	"github.com/my-cloud/ruthenium/src/log"
-	"github.com/my-cloud/ruthenium/src/node/clock"
 	"sync"
 	"time"
+
+	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/clock"
 )
 
 type Engine struct {
@@ -67,12 +68,12 @@ func (engine *Engine) Start() {
 	parsedStartDate := startTime.Truncate(engine.timer).Add(engine.timer)
 	deadline := parsedStartDate.Sub(startTime)
 	engine.ticker.Reset(deadline)
-	<-engine.ticker.C
-	engine.ticker.Reset(engine.timer)
 	go func() {
+		<-engine.ticker.C
+		engine.ticker.Reset(engine.timer)
 		for {
 			for i := 0; i < engine.occurrences; i++ {
-				if i >= engine.skippedOccurrences {
+				if i < engine.occurrences-engine.skippedOccurrences {
 					if !engine.started {
 						engine.ticker.Stop()
 						return
