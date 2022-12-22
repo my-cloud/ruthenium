@@ -23,20 +23,3 @@ func Test_Do(t *testing.T) {
 	// Assert
 	test.Assert(t, calls == 1, fmt.Sprintf("The function is called %d times whereas it should be called once.", calls))
 }
-
-func Test_Start(t *testing.T) {
-	// Arrange
-	watchMock := new(clocktest.WatchMock)
-	watchMock.NowFunc = func() time.Time { return time.Now() }
-	var calls int
-	timer := time.Nanosecond
-	engine := tick.NewEngine(func(int64) { calls++ }, watchMock, timer, 1, 0)
-
-	// Act
-	go engine.Start()
-
-	// Assert
-	time.Sleep(timer)
-	engine.Stop()
-	test.Assert(t, calls == 1, fmt.Sprintf("The function is called %d times whereas it should be called once.", calls))
-}
