@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
+
 	"github.com/my-cloud/ruthenium/src/config"
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/environment"
@@ -14,7 +16,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/protocol/poh"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
-	"time"
 )
 
 const (
@@ -51,11 +52,11 @@ func main() {
 		logger.Fatal(fmt.Errorf("failed to create synchronizer: %w", err).Error())
 	}
 	synchronizationTimer := time.Second * synchronizationIntervalInSeconds
-	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, synchronizationTimer, 1, 0, logger)
+	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, synchronizationTimer, 1, 0)
 	blockchain := verification.NewBlockchain(registry, validationTimer, synchronizer, logger)
 	pool := validation.NewTransactionsPool(blockchain, registry, wallet.Address(), settings.GenesisAmount, validationTimer, watch, logger)
-	validationEngine := tick.NewEngine(pool.Validate, watch, validationTimer, 1, 0, logger)
-	verificationEngine := tick.NewEngine(blockchain.Verify, watch, validationTimer, verificationsCountPerValidation, 1, logger)
+	validationEngine := tick.NewEngine(pool.Validate, watch, validationTimer, 1, 0)
+	verificationEngine := tick.NewEngine(blockchain.Verify, watch, validationTimer, verificationsCountPerValidation, 1)
 	serverFactory := gp2p.NewServerFactory()
 	server, err := serverFactory.CreateServer(int(*port))
 	if err != nil {
