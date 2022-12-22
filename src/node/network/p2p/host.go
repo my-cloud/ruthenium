@@ -3,6 +3,7 @@ package p2p
 import (
 	"context"
 	"fmt"
+
 	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
@@ -51,11 +52,15 @@ func (host *Host) Run() error {
 }
 
 func (host *Host) startBlockchain() {
+	host.logger.Info("updating the blockchain...")
 	host.synchronizationEngine.Do()
-	host.synchronizationEngine.Wait()
-	host.synchronizationEngine.Start()
-	host.validationEngine.Start()
-	host.verificationEngine.Start()
+	host.logger.Info("neighbors are synchronized")
+	go host.synchronizationEngine.Start()
+	host.verificationEngine.Do()
+	host.logger.Info("the blockchain is now up to date")
+	host.validationEngine.Do()
+	go host.validationEngine.Start()
+	go host.verificationEngine.Start()
 }
 
 func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err error) {
@@ -72,11 +77,11 @@ func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err e
 		case GetTransactionsRequest:
 			res = host.getTransactions()
 		case MineRequest:
-			host.validationEngine.Do()
+			go host.validationEngine.Do()
 		case StartMiningRequest:
-			host.validationEngine.Start()
+			go host.validationEngine.Start()
 		case StopMiningRequest:
-			host.validationEngine.Stop()
+			go host.validationEngine.Stop()
 		default:
 			unknownRequest = true
 		}
