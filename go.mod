@@ -3,7 +3,7 @@ module github.com/my-cloud/ruthenium
 go 1.17
 
 require (
-	github.com/btcsuite/btcd v0.23.0
+	github.com/btcsuite/btcd v0.23.2
 	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/ethereum/go-ethereum v1.10.23
 	github.com/leprosus/golang-p2p v1.3.11
