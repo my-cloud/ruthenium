@@ -44,7 +44,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 
   |Code|Description|
     |---|---|
-  |200|Transaction added|
+  |201|Transaction added|
   |400|Bad request|
   |500|Internal server error|
 </details>
