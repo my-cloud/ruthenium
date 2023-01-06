@@ -34,6 +34,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			return
 		}
 		writer.Header().Add("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusCreated)
 		server.NewIoWriter(writer, handler.logger).Write(string(marshaledWallet[:]))
 	default:
 		handler.logger.Error("invalid HTTP method")

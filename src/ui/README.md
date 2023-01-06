@@ -122,14 +122,14 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 ![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
 ![Wallet](https://img.shields.io/badge//wallet-dimgray?style=flat-square)
 
-*Description:* Create a new wallet instance with the provided program arguments.
+*Description:* Create a new wallet instance with the arguments provided at UI server program launch.
 * **parameters:** *none*
 * **request body:** *none*
 * **responses:**
 
   |Code|Description|
     |---|---|
-  |200|[Wallet response](#wallet-response)|
+  |201|[Wallet response](#wallet-response)|
   |500|Internal server error|
 </details>
 <details>
