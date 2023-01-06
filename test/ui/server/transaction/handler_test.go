@@ -242,7 +242,7 @@ func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	// Assert
 	isNeighborMethodCalled := len(neighborMock.AddTransactionCalls()) == 1
 	test.Assert(t, isNeighborMethodCalled, "Neighbor method is not called whereas it should be.")
-	expectedStatusCode := 200
+	expectedStatusCode := 201
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 }
 
