@@ -74,6 +74,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		writer.WriteHeader(http.StatusCreated)
 		jsonWriter.Write("success")
 	default:
 		handler.logger.Error("invalid HTTP method")
