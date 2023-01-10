@@ -66,7 +66,7 @@ func Test_ServeHTTP_InvalidTransaction_BadRequest(t *testing.T) {
 	neighborMock := new(networktest.NeighborMock)
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, 1, logger)
-	transactionRequest := newTransactionRequest("", "", "", "", "")
+	transactionRequest := newTransactionRequest("", "", "", "")
 	b, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(b)
 	recorder := httptest.NewRecorder()
@@ -91,7 +91,6 @@ func Test_ServeHTTP_InvalidPrivateKey_BadRequest(t *testing.T) {
 		"InvalidPrivateKey",
 		test.Address,
 		"A",
-		test.PublicKey,
 		"1",
 	)
 	b, _ := json.Marshal(transactionRequest)
@@ -118,7 +117,6 @@ func Test_ServeHTTP_InvalidTransactionValue_BadRequest(t *testing.T) {
 		test.PrivateKey,
 		test.Address,
 		"A",
-		test.PublicKey,
 		"InvalidTransactionValue",
 	)
 	b, _ := json.Marshal(transactionRequest)
@@ -145,7 +143,6 @@ func Test_ServeHTTP_TransactionValueIsTooBig_BadRequest(t *testing.T) {
 		test.PrivateKey,
 		test.Address,
 		"A",
-		test.PublicKey,
 		"1234567890123.1",
 	)
 	b, _ := json.Marshal(transactionRequest)
@@ -172,7 +169,6 @@ func Test_ServeHTTP_TransactionValueIsTooSmall_BadRequest(t *testing.T) {
 		test.PrivateKey,
 		test.Address,
 		"A",
-		test.PublicKey,
 		"0.000000009",
 	)
 	b, _ := json.Marshal(transactionRequest)
@@ -200,7 +196,6 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 		test.PrivateKey,
 		test.Address,
 		"A",
-		test.PublicKey,
 		"1",
 	)
 	b, _ := json.Marshal(transactionRequest)
@@ -228,7 +223,6 @@ func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 		test.PrivateKey,
 		test.Address,
 		"A",
-		test.PublicKey,
 		"1",
 	)
 	b, _ := json.Marshal(transactionRequest)
@@ -246,12 +240,11 @@ func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 }
 
-func newTransactionRequest(senderPrivateKey, senderAddress, recipientAddress, senderPublicKey, value string) *server.TransactionRequest {
+func newTransactionRequest(senderPrivateKey, senderAddress, recipientAddress, value string) *server.TransactionRequest {
 	return &server.TransactionRequest{
 		SenderPrivateKey: &senderPrivateKey,
 		SenderAddress:    &senderAddress,
 		RecipientAddress: &recipientAddress,
-		SenderPublicKey:  &senderPublicKey,
 		Value:            &value,
 	}
 }
