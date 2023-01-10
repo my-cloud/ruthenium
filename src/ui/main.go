@@ -33,7 +33,7 @@ func main() {
 	port := flag.Uint64("port", environment.NewVariable("PORT").GetUint64Value(defaultPort), "The TCP port number of the UI server")
 	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue(""), "The node host IP address")
 	hostPort := flag.Uint64("host-port", environment.NewVariable("HOST_PORT").GetUint64Value(defaultHostPort), "The TCP port number of the host node")
-	templatesPath := flag.String("templates-path", environment.NewVariable("TEMPLATES_PATH").GetStringValue("src/ui/templates"), "The UI templates path")
+	templatesPath := flag.String("templates-path", environment.NewVariable("TEMPLATES_PATH").GetStringValue("templates"), "The UI templates path")
 	configurationPath := flag.String("configuration-path", environment.NewVariable("CONFIGURATION_PATH").GetStringValue("config"), "The configuration files path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level")
 
