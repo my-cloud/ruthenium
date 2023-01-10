@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	GetBlocksRequest       = "GET BLOCKS REQUEST"
-	GetTransactionsRequest = "GET TRANSACTIONS REQUEST"
-	StartMiningRequest     = "START MINING REQUEST"
-	StopMiningRequest      = "STOP MINING REQUEST"
+	GetBlocks       = "GET BLOCKS"
+	GetTransactions = "GET TRANSACTIONS"
+	StartValidation = "START VALIDATION"
+	StopValidation  = "STOP VALIDATION"
 )
 
 type Host struct {
@@ -71,13 +71,13 @@ func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err e
 	res = gp2p.Data{}
 	if err = req.GetGob(&requestString); err == nil {
 		switch requestString {
-		case GetBlocksRequest:
+		case GetBlocks:
 			res = host.getBlocks()
-		case GetTransactionsRequest:
+		case GetTransactions:
 			res = host.getTransactions()
-		case StartMiningRequest:
+		case StartValidation:
 			go host.validationEngine.Start()
-		case StopMiningRequest:
+		case StopValidation:
 			go host.validationEngine.Stop()
 		default:
 			unknownRequest = true

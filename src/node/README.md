@@ -30,7 +30,7 @@ This version supports [Gobs][1] only.
 <summary><b>Get blocks</b></summary>
 
 *Description*: Get all the blocks of the blockchain for the current timestamp.
-  * **request value:** `GET BLOCKS REQUEST`  
+  * **request value:** `GET BLOCKS`  
   * **response value:** Array of [block responses](#block-response)
 </details>
 
@@ -55,7 +55,7 @@ This version supports [Gobs][1] only.
 <summary><b>Get transactions</b></summary>
 
 *Description:* Get all the transactions of the current transactions pool.
-* **request value:** `GET TRANSACTIONS REQUEST`  
+* **request value:** `GET TRANSACTIONS`  
 * **response value:** Array of [transaction responses](#transaction-response)
 </details>
 
@@ -64,14 +64,14 @@ This version supports [Gobs][1] only.
 <summary><b>Start validation</b></summary>
 
 *Description:* Start validating one block per minute.
-* **request value:** `START MINING REQUEST`  
+* **request value:** `START VALIDATION`  
 * **response value:** *none*
 </details>
 <details>
 <summary><b>Stop validation</b></summary>
 
 *Description:* Stop validating one block per minute.
-* **request value:** `STOP MINING REQUEST`  
+* **request value:** `STOP VALIDATION`  
 * **response value:** *none*
 </details>
 
