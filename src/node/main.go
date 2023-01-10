@@ -22,6 +22,7 @@ const (
 	synchronizationIntervalInSeconds = 10
 	validationIntervalInSeconds      = 60
 	verificationsCountPerValidation  = 6
+	defaultPort                      = 8106
 )
 
 func main() {
@@ -29,7 +30,7 @@ func main() {
 	derivationPath := flag.String("derivation-path", environment.NewVariable("DERIVATION_PATH").GetStringValue("m/44'/60'/0'/0/0"), "The derivation path (unused if the mnemonic is omitted)")
 	password := flag.String("password", environment.NewVariable("PASSWORD").GetStringValue(""), "The mnemonic password (unused if the mnemonic is omitted)")
 	privateKey := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)")
-	port := flag.Uint64("port", environment.NewVariable("PORT").GetUint64Value(p2p.DefaultPort), "The TCP port number of the host node")
+	port := flag.Uint64("port", environment.NewVariable("PORT").GetUint64Value(defaultPort), "The TCP port number of the host node")
 	configurationPath := flag.String("configuration-path", environment.NewVariable("CONFIGURATION_PATH").GetStringValue("config"), "The configuration files path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level")
 

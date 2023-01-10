@@ -21,7 +21,10 @@ import (
 	"strconv"
 )
 
-const defaultPort = 8080
+const (
+	defaultPort     = 8080
+	defaultHostPort = 8106
+)
 
 func main() {
 	mnemonic := flag.String("mnemonic", environment.NewVariable("MNEMONIC").GetStringValue(""), "The mnemonic (required if the private key is not provided)")
@@ -30,7 +33,7 @@ func main() {
 	privateKey := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)")
 	port := flag.Uint64("port", environment.NewVariable("PORT").GetUint64Value(defaultPort), "The TCP port number of the UI server")
 	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue(""), "The node host IP address")
-	hostPort := flag.Uint64("host-port", environment.NewVariable("HOST_PORT").GetUint64Value(p2p.DefaultPort), "The TCP port number of the host node")
+	hostPort := flag.Uint64("host-port", environment.NewVariable("HOST_PORT").GetUint64Value(defaultHostPort), "The TCP port number of the host node")
 	templatesPath := flag.String("templates-path", environment.NewVariable("TEMPLATES_PATH").GetStringValue("src/ui/templates"), "The UI templates path")
 	configurationPath := flag.String("configuration-path", environment.NewVariable("CONFIGURATION_PATH").GetStringValue("config"), "The configuration files path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level")
