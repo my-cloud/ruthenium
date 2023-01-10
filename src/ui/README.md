@@ -198,7 +198,6 @@ TransactionRequest {
   SenderPrivateKey string
   SenderAddress    string
   RecipientAddress string
-  SenderPublicKey  string
   Value            string
 }
 ```
@@ -210,7 +209,6 @@ The transaction data structure for request
 The sender wallet private key
 The sender wallet address
 The recipient wallet address
-The sender wallet public key
 The value
 
 ```
@@ -222,7 +220,6 @@ The value
   "SenderPrivateKey": 0x48913790c2bebc48417491f96a7e07ec94c76ccd0fe1562dc1749479d9715afd
   "SenderAddress":    0x9C69443c3Ec0D660e257934ffc1754EB9aD039CB
   "RecipientAddress": 0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
-  "SenderPublicKey":  0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782
   "Value":            100000000
 }
 ```
