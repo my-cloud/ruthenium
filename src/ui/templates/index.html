@@ -60,8 +60,7 @@
                     type: 'GET',
                     data: data,
                     success: function (response) {
-                        let amount = response['amount'];
-                        $('#wallet_amount').text(amount);
+                        $('#wallet_amount').text(response);
                     },
                     error: function (error) {
                         console.error(error)

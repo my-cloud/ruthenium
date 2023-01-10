@@ -133,51 +133,12 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 
   |Code|Description|
     |---|---|
-  |200|[Amount response](#amount-response)|
+  |200|64 bits floating-point number amount|
   |400|Bad request|
   |500|Internal server error|
 </details>
 
 ### Schemas
-
-#### Amount response
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-AmountResponse {
-  Amount float64
-}
-```
-</td>
-<td>
-
-```
-The amount data structure for response
-The amount
-
-```
-</td>
-<td>
-
-```
-{
-  "Amount": 100000000
-}
-```
-</td>
-</tr>
-</table>
 
 #### Transaction request
 <table>

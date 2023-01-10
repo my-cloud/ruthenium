@@ -39,10 +39,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var marshaledAmount []byte
-		marshaledAmount, err = json.Marshal(&wallet.AmountResponse{
-			Amount: float64(amountResponse.Amount) / float64(handler.particlesCount),
-		})
+		marshaledAmount, err := json.Marshal(float64(amountResponse.Amount) / float64(handler.particlesCount))
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to marshal amountResponse: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
