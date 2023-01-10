@@ -74,13 +74,6 @@ This version supports [Gobs][1] only.
 * **request value:** `STOP MINING REQUEST`  
 * **response value:** *none*
 </details>
-<details>
-<summary><b>Validate</b></summary>
-
-*Description:* Validate the next block.
-* **request value:** `MINE REQUEST`
-* **response value:** *none*
-</details>
 
 ### Wallet
 <details>

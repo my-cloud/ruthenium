@@ -98,22 +98,6 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
   |200|Validation stopped|
   |500|Internal server error|
 </details>
-<details>
-<summary><b>Validate</b></summary>
-
-![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
-![Mine start](https://img.shields.io/badge//mine-dimgray?style=flat-square)
-
-*Description:* Validate the next block.
-* **parameters:** *none*
-* **request body:** *none*
-* **responses:**
-
-  |Code|Description|
-    |---|---|
-  |200|The next block will be validated|
-  |500|Internal server error|
-</details>
 
 ### Wallet
 <details>
