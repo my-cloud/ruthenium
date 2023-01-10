@@ -69,11 +69,6 @@ func (neighbor *Neighbor) GetAmount(request network.AmountRequest) (amountRespon
 	return
 }
 
-func (neighbor *Neighbor) Mine() (err error) {
-	_, err = neighbor.sendRequest(MineRequest)
-	return
-}
-
 func (neighbor *Neighbor) StartMining() (err error) {
 	_, err = neighbor.sendRequest(StartMiningRequest)
 	return
