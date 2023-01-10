@@ -6,16 +6,17 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
-	"io/ioutil"
+	"io"
 	"math"
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 )
 
 const (
-	DefaultPort       = 8106
 	maxOutboundsCount = 8
 )
 
@@ -46,14 +47,9 @@ func NewSynchronizer(hostPort uint16, watch clock.Watch, clientFactory ClientFac
 	synchronizer.clientFactory = clientFactory
 	var waitGroup sync.WaitGroup
 	synchronizer.waitGroup = &waitGroup
-	seedsIps, err := readSeedsIps(configurationPath, logger)
+	err = synchronizer.readSeedsTargets(configurationPath, logger)
 	if err != nil {
 		return nil, err
-	}
-	synchronizer.seedsTargets = map[string]*Target{}
-	for _, seedIp := range seedsIps {
-		seedTarget := NewTarget(seedIp, DefaultPort)
-		synchronizer.seedsTargets[seedTarget.Value()] = seedTarget
 	}
 	synchronizer.neighborsTargets = map[string]*Target{}
 	return synchronizer, nil
@@ -141,7 +137,7 @@ func findPublicIp(logger log.Logger) (ip string, err error) {
 		}
 	}()
 	var body []byte
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
@@ -149,21 +145,38 @@ func findPublicIp(logger log.Logger) (ip string, err error) {
 	return
 }
 
-func readSeedsIps(configurationPath string, logger log.Logger) ([]string, error) {
+func (synchronizer *Synchronizer) readSeedsTargets(configurationPath string, logger log.Logger) error {
 	jsonFile, err := os.Open(configurationPath + "/seeds.json")
 	if err != nil {
-		return nil, fmt.Errorf("unable to open seeds IPs configuration file: %w", err)
+		return fmt.Errorf("unable to open seeds IPs configuration file: %w", err)
 	}
-	byteValue, err := ioutil.ReadAll(jsonFile)
+	byteValue, err := io.ReadAll(jsonFile)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read seeds IPs configuration file: %w", err)
+		return fmt.Errorf("unable to read seeds IPs configuration file: %w", err)
 	}
 	if err = jsonFile.Close(); err != nil {
 		logger.Error(fmt.Errorf("unable to close seeds IPs configuration file: %w", err).Error())
 	}
-	var seedsIps []string
-	if err = json.Unmarshal(byteValue, &seedsIps); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal seeds IPs: %w", err)
+	var seedsStringTargets []string
+	if err = json.Unmarshal(byteValue, &seedsStringTargets); err != nil {
+		return fmt.Errorf("unable to unmarshal seeds IPs: %w", err)
 	}
-	return seedsIps, nil
+	synchronizer.seedsTargets = map[string]*Target{}
+	for _, seedStringTarget := range seedsStringTargets {
+		separator := ":"
+		separatorIndex := strings.Index(seedStringTarget, separator)
+		if separatorIndex == -1 {
+			return fmt.Errorf("seed target format is invalid (should be of the form 89.82.76.241:8106")
+		}
+		seedIp := seedStringTarget[:separatorIndex]
+		seedPortString := seedStringTarget[separatorIndex+1:]
+		var seedPort uint64
+		seedPort, err = strconv.ParseUint(seedPortString, 10, 16)
+		if err != nil {
+			return err
+		}
+		seedTarget := NewTarget(seedIp, uint16(seedPort))
+		synchronizer.seedsTargets[seedTarget.Value()] = seedTarget
+	}
+	return nil
 }
