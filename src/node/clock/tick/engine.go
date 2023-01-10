@@ -31,18 +31,17 @@ func (engine *Engine) Do() {
 	if engine.started || engine.requested {
 		return
 	}
-	startTime := engine.watch.Now()
-	parsedStartDate := startTime.Truncate(engine.timer).Add(engine.timer)
-	deadline := parsedStartDate.Sub(startTime)
+	now := engine.watch.Now()
+	startTime := now.Truncate(engine.timer).Add(engine.timer)
+	deadline := startTime.Sub(now)
 	engine.ticker.Reset(deadline)
 	engine.requested = true
 	<-engine.ticker.C
-	now := engine.watch.Now().Round(engine.timer)
-	engine.function(now.UnixNano())
+	engine.function(startTime.UnixNano())
 	engine.requested = false
 	if engine.started {
-		newParsedStartDate := now.Add(engine.timer)
-		newDeadline := newParsedStartDate.Sub(now)
+		newParsedStartDate := startTime.Add(engine.timer)
+		newDeadline := newParsedStartDate.Sub(startTime)
 		engine.ticker.Reset(newDeadline)
 	} else {
 		engine.ticker.Stop()
@@ -54,9 +53,9 @@ func (engine *Engine) Start() {
 		return
 	}
 	engine.started = true
-	startTime := engine.watch.Now()
-	parsedStartDate := startTime.Truncate(engine.timer).Add(engine.timer)
-	deadline := parsedStartDate.Sub(startTime)
+	initialTime := engine.watch.Now()
+	startTime := initialTime.Truncate(engine.timer).Add(engine.timer)
+	deadline := startTime.Sub(initialTime)
 	engine.ticker.Reset(deadline)
 	<-engine.ticker.C
 	engine.ticker.Reset(engine.timer)
