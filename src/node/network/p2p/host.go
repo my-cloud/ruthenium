@@ -14,7 +14,6 @@ import (
 const (
 	GetBlocksRequest       = "GET BLOCKS REQUEST"
 	GetTransactionsRequest = "GET TRANSACTIONS REQUEST"
-	MineRequest            = "MINE REQUEST"
 	StartMiningRequest     = "START MINING REQUEST"
 	StopMiningRequest      = "STOP MINING REQUEST"
 )
@@ -76,8 +75,6 @@ func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err e
 			res = host.getBlocks()
 		case GetTransactionsRequest:
 			res = host.getTransactions()
-		case MineRequest:
-			go host.validationEngine.Do()
 		case StartMiningRequest:
 			go host.validationEngine.Start()
 		case StopMiningRequest:

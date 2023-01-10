@@ -56,7 +56,6 @@ func main() {
 	http.Handle("/transaction", transaction.NewHandler(host, particlesCount, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/wallet/amount", amount.NewHandler(host, particlesCount, logger))
-	http.Handle("/mine", validation.NewHandler(host, logger))
 	http.Handle("/mine/start", start.NewHandler(host, logger))
 	http.Handle("/mine/stop", stop.NewHandler(host, logger))
 	logger.Info("user interface server is running...")
