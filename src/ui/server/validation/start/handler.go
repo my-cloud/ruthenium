@@ -19,9 +19,9 @@ func NewHandler(host network.Neighbor, logger log.Logger) *Handler {
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		err := handler.host.StartMining()
+		err := handler.host.StartValidation()
 		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to start mining: %w", err).Error())
+			handler.logger.Error(fmt.Errorf("failed to start validation: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 		}
 	default:

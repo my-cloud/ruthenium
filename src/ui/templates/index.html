@@ -81,9 +81,9 @@
                 })
             }
 
-            function start_mining() {
+            function start_validation() {
                 $.ajax({
-                    url: '/mine/start',
+                    url: '/validation/start',
                     type: 'POST',
                     error: function (error) {
                         console.error(error)
@@ -91,9 +91,9 @@
                 })
             }
 
-            function stop_mining() {
+            function stop_validation() {
                 $.ajax({
-                    url: '/mine/stop',
+                    url: '/validation/stop',
                     type: 'POST',
                     error: function (error) {
                         console.error(error)
@@ -101,12 +101,12 @@
                 })
             }
 
-            $('#start_mining').click(function () {
-                start_mining();
+            $('#start_validation').click(function () {
+                start_validation();
             });
 
-            $('#stop_mining').click(function () {
-                stop_mining();
+            $('#stop_validation').click(function () {
+                stop_validation();
             });
 
             setInterval(refresh_amount, 1000)
@@ -118,8 +118,8 @@
 <div>
     <h1>Wallet</h1>
     <div id="wallet_amount">0</div>
-    <button id="start_mining">Start Mining</button>
-    <button id="stop_mining">Stop Mining</button>
+    <button id="start_validation">Start Validation</button>
+    <button id="stop_validation">Stop Validation</button>
     <table>
         <tr>
             <td><label for="public_key">Public Key:</label></td>

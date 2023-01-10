@@ -14,49 +14,46 @@ var _ network.Neighbor = &NeighborMock{}
 
 // NeighborMock is a mock implementation of Neighbor.
 //
-// 	func TestSomethingThatUsesNeighbor(t *testing.T) {
+//	func TestSomethingThatUsesNeighbor(t *testing.T) {
 //
-// 		// make and configure a mocked Neighbor
-// 		mockedNeighbor := &NeighborMock{
-// 			AddTransactionFunc: func(request TransactionRequest) error {
-// 				panic("mock out the AddTransaction method")
-// 			},
-// 			GetAmountFunc: func(request AmountRequest) (*AmountResponse, error) {
-// 				panic("mock out the GetAmount method")
-// 			},
-// 			GetBlocksFunc: func() ([]*BlockResponse, error) {
-// 				panic("mock out the GetBlocks method")
-// 			},
-// 			GetTransactionsFunc: func() ([]TransactionResponse, error) {
-// 				panic("mock out the GetTransactions method")
-// 			},
-// 			IpFunc: func() string {
-// 				panic("mock out the Ip method")
-// 			},
-// 			MineFunc: func() error {
-// 				panic("mock out the Mine method")
-// 			},
-// 			PortFunc: func() uint16 {
-// 				panic("mock out the Port method")
-// 			},
-// 			SendTargetsFunc: func(request []TargetRequest) error {
-// 				panic("mock out the SendTargets method")
-// 			},
-// 			StartMiningFunc: func() error {
-// 				panic("mock out the StartMining method")
-// 			},
-// 			StopMiningFunc: func() error {
-// 				panic("mock out the StopMining method")
-// 			},
-// 			TargetFunc: func() string {
-// 				panic("mock out the Target method")
-// 			},
-// 		}
+//		// make and configure a mocked Neighbor
+//		mockedNeighbor := &NeighborMock{
+//			AddTransactionFunc: func(request TransactionRequest) error {
+//				panic("mock out the AddTransaction method")
+//			},
+//			GetAmountFunc: func(request AmountRequest) (*AmountResponse, error) {
+//				panic("mock out the GetAmount method")
+//			},
+//			GetBlocksFunc: func() ([]*BlockResponse, error) {
+//				panic("mock out the GetBlocks method")
+//			},
+//			GetTransactionsFunc: func() ([]TransactionResponse, error) {
+//				panic("mock out the GetTransactions method")
+//			},
+//			IpFunc: func() string {
+//				panic("mock out the Ip method")
+//			},
+//			PortFunc: func() uint16 {
+//				panic("mock out the Port method")
+//			},
+//			SendTargetsFunc: func(request []TargetRequest) error {
+//				panic("mock out the SendTargets method")
+//			},
+//			StartValidationFunc: func() error {
+//				panic("mock out the StartValidation method")
+//			},
+//			StopValidationFunc: func() error {
+//				panic("mock out the StopValidation method")
+//			},
+//			TargetFunc: func() string {
+//				panic("mock out the Target method")
+//			},
+//		}
 //
-// 		// use mockedNeighbor in code that requires Neighbor
-// 		// and then make assertions.
+//		// use mockedNeighbor in code that requires Neighbor
+//		// and then make assertions.
 //
-// 	}
+//	}
 type NeighborMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
 	AddTransactionFunc func(request network.TransactionRequest) error
@@ -73,20 +70,17 @@ type NeighborMock struct {
 	// IpFunc mocks the Ip method.
 	IpFunc func() string
 
-	// MineFunc mocks the Mine method.
-	MineFunc func() error
-
 	// PortFunc mocks the Port method.
 	PortFunc func() uint16
 
 	// SendTargetsFunc mocks the SendTargets method.
 	SendTargetsFunc func(request []network.TargetRequest) error
 
-	// StartMiningFunc mocks the StartMining method.
-	StartMiningFunc func() error
+	// StartValidationFunc mocks the StartValidation method.
+	StartValidationFunc func() error
 
-	// StopMiningFunc mocks the StopMining method.
-	StopMiningFunc func() error
+	// StopValidationFunc mocks the StopValidation method.
+	StopValidationFunc func() error
 
 	// TargetFunc mocks the Target method.
 	TargetFunc func() string
@@ -112,9 +106,6 @@ type NeighborMock struct {
 		// Ip holds details about calls to the Ip method.
 		Ip []struct {
 		}
-		// Mine holds details about calls to the Mine method.
-		Mine []struct {
-		}
 		// Port holds details about calls to the Port method.
 		Port []struct {
 		}
@@ -123,11 +114,11 @@ type NeighborMock struct {
 			// Request is the request argument value.
 			Request []network.TargetRequest
 		}
-		// StartMining holds details about calls to the StartMining method.
-		StartMining []struct {
+		// StartValidation holds details about calls to the StartValidation method.
+		StartValidation []struct {
 		}
-		// StopMining holds details about calls to the StopMining method.
-		StopMining []struct {
+		// StopValidation holds details about calls to the StopValidation method.
+		StopValidation []struct {
 		}
 		// Target holds details about calls to the Target method.
 		Target []struct {
@@ -138,11 +129,10 @@ type NeighborMock struct {
 	lockGetBlocks       sync.RWMutex
 	lockGetTransactions sync.RWMutex
 	lockIp              sync.RWMutex
-	lockMine            sync.RWMutex
 	lockPort            sync.RWMutex
 	lockSendTargets     sync.RWMutex
-	lockStartMining     sync.RWMutex
-	lockStopMining      sync.RWMutex
+	lockStartValidation sync.RWMutex
+	lockStopValidation  sync.RWMutex
 	lockTarget          sync.RWMutex
 }
 
@@ -164,7 +154,8 @@ func (mock *NeighborMock) AddTransaction(request network.TransactionRequest) err
 
 // AddTransactionCalls gets all the calls that were made to AddTransaction.
 // Check the length with:
-//     len(mockedNeighbor.AddTransactionCalls())
+//
+//	len(mockedNeighbor.AddTransactionCalls())
 func (mock *NeighborMock) AddTransactionCalls() []struct {
 	Request network.TransactionRequest
 } {
@@ -195,7 +186,8 @@ func (mock *NeighborMock) GetAmount(request network.AmountRequest) (*network.Amo
 
 // GetAmountCalls gets all the calls that were made to GetAmount.
 // Check the length with:
-//     len(mockedNeighbor.GetAmountCalls())
+//
+//	len(mockedNeighbor.GetAmountCalls())
 func (mock *NeighborMock) GetAmountCalls() []struct {
 	Request network.AmountRequest
 } {
@@ -223,7 +215,8 @@ func (mock *NeighborMock) GetBlocks() ([]*network.BlockResponse, error) {
 
 // GetBlocksCalls gets all the calls that were made to GetBlocks.
 // Check the length with:
-//     len(mockedNeighbor.GetBlocksCalls())
+//
+//	len(mockedNeighbor.GetBlocksCalls())
 func (mock *NeighborMock) GetBlocksCalls() []struct {
 } {
 	var calls []struct {
@@ -249,7 +242,8 @@ func (mock *NeighborMock) GetTransactions() ([]network.TransactionResponse, erro
 
 // GetTransactionsCalls gets all the calls that were made to GetTransactions.
 // Check the length with:
-//     len(mockedNeighbor.GetTransactionsCalls())
+//
+//	len(mockedNeighbor.GetTransactionsCalls())
 func (mock *NeighborMock) GetTransactionsCalls() []struct {
 } {
 	var calls []struct {
@@ -275,7 +269,8 @@ func (mock *NeighborMock) Ip() string {
 
 // IpCalls gets all the calls that were made to Ip.
 // Check the length with:
-//     len(mockedNeighbor.IpCalls())
+//
+//	len(mockedNeighbor.IpCalls())
 func (mock *NeighborMock) IpCalls() []struct {
 } {
 	var calls []struct {
@@ -283,32 +278,6 @@ func (mock *NeighborMock) IpCalls() []struct {
 	mock.lockIp.RLock()
 	calls = mock.calls.Ip
 	mock.lockIp.RUnlock()
-	return calls
-}
-
-// Mine calls MineFunc.
-func (mock *NeighborMock) Mine() error {
-	if mock.MineFunc == nil {
-		panic("NeighborMock.MineFunc: method is nil but Neighbor.Mine was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockMine.Lock()
-	mock.calls.Mine = append(mock.calls.Mine, callInfo)
-	mock.lockMine.Unlock()
-	return mock.MineFunc()
-}
-
-// MineCalls gets all the calls that were made to Mine.
-// Check the length with:
-//     len(mockedNeighbor.MineCalls())
-func (mock *NeighborMock) MineCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockMine.RLock()
-	calls = mock.calls.Mine
-	mock.lockMine.RUnlock()
 	return calls
 }
 
@@ -327,7 +296,8 @@ func (mock *NeighborMock) Port() uint16 {
 
 // PortCalls gets all the calls that were made to Port.
 // Check the length with:
-//     len(mockedNeighbor.PortCalls())
+//
+//	len(mockedNeighbor.PortCalls())
 func (mock *NeighborMock) PortCalls() []struct {
 } {
 	var calls []struct {
@@ -356,7 +326,8 @@ func (mock *NeighborMock) SendTargets(request []network.TargetRequest) error {
 
 // SendTargetsCalls gets all the calls that were made to SendTargets.
 // Check the length with:
-//     len(mockedNeighbor.SendTargetsCalls())
+//
+//	len(mockedNeighbor.SendTargetsCalls())
 func (mock *NeighborMock) SendTargetsCalls() []struct {
 	Request []network.TargetRequest
 } {
@@ -369,55 +340,57 @@ func (mock *NeighborMock) SendTargetsCalls() []struct {
 	return calls
 }
 
-// StartMining calls StartMiningFunc.
-func (mock *NeighborMock) StartMining() error {
-	if mock.StartMiningFunc == nil {
-		panic("NeighborMock.StartMiningFunc: method is nil but Neighbor.StartMining was just called")
+// StartValidation calls StartValidationFunc.
+func (mock *NeighborMock) StartValidation() error {
+	if mock.StartValidationFunc == nil {
+		panic("NeighborMock.StartValidationFunc: method is nil but Neighbor.StartValidation was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockStartMining.Lock()
-	mock.calls.StartMining = append(mock.calls.StartMining, callInfo)
-	mock.lockStartMining.Unlock()
-	return mock.StartMiningFunc()
+	mock.lockStartValidation.Lock()
+	mock.calls.StartValidation = append(mock.calls.StartValidation, callInfo)
+	mock.lockStartValidation.Unlock()
+	return mock.StartValidationFunc()
 }
 
-// StartMiningCalls gets all the calls that were made to StartMining.
+// StartValidationCalls gets all the calls that were made to StartValidation.
 // Check the length with:
-//     len(mockedNeighbor.StartMiningCalls())
-func (mock *NeighborMock) StartMiningCalls() []struct {
+//
+//	len(mockedNeighbor.StartValidationCalls())
+func (mock *NeighborMock) StartValidationCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockStartMining.RLock()
-	calls = mock.calls.StartMining
-	mock.lockStartMining.RUnlock()
+	mock.lockStartValidation.RLock()
+	calls = mock.calls.StartValidation
+	mock.lockStartValidation.RUnlock()
 	return calls
 }
 
-// StopMining calls StopMiningFunc.
-func (mock *NeighborMock) StopMining() error {
-	if mock.StopMiningFunc == nil {
-		panic("NeighborMock.StopMiningFunc: method is nil but Neighbor.StopMining was just called")
+// StopValidation calls StopValidationFunc.
+func (mock *NeighborMock) StopValidation() error {
+	if mock.StopValidationFunc == nil {
+		panic("NeighborMock.StopValidationFunc: method is nil but Neighbor.StopValidation was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockStopMining.Lock()
-	mock.calls.StopMining = append(mock.calls.StopMining, callInfo)
-	mock.lockStopMining.Unlock()
-	return mock.StopMiningFunc()
+	mock.lockStopValidation.Lock()
+	mock.calls.StopValidation = append(mock.calls.StopValidation, callInfo)
+	mock.lockStopValidation.Unlock()
+	return mock.StopValidationFunc()
 }
 
-// StopMiningCalls gets all the calls that were made to StopMining.
+// StopValidationCalls gets all the calls that were made to StopValidation.
 // Check the length with:
-//     len(mockedNeighbor.StopMiningCalls())
-func (mock *NeighborMock) StopMiningCalls() []struct {
+//
+//	len(mockedNeighbor.StopValidationCalls())
+func (mock *NeighborMock) StopValidationCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockStopMining.RLock()
-	calls = mock.calls.StopMining
-	mock.lockStopMining.RUnlock()
+	mock.lockStopValidation.RLock()
+	calls = mock.calls.StopValidation
+	mock.lockStopValidation.RUnlock()
 	return calls
 }
 
@@ -436,7 +409,8 @@ func (mock *NeighborMock) Target() string {
 
 // TargetCalls gets all the calls that were made to Target.
 // Check the length with:
-//     len(mockedNeighbor.TargetCalls())
+//
+//	len(mockedNeighbor.TargetCalls())
 func (mock *NeighborMock) TargetCalls() []struct {
 } {
 	var calls []struct {
