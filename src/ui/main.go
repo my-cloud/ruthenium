@@ -12,7 +12,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server/index"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
 	"github.com/my-cloud/ruthenium/src/ui/server/transactions"
-	"github.com/my-cloud/ruthenium/src/ui/server/validation"
 	"github.com/my-cloud/ruthenium/src/ui/server/validation/start"
 	"github.com/my-cloud/ruthenium/src/ui/server/validation/stop"
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet"
