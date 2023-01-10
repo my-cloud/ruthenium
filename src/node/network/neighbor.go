@@ -9,7 +9,6 @@ type Neighbor interface {
 	AddTransaction(request TransactionRequest) (err error)
 	GetTransactions() (transactionResponses []TransactionResponse, err error)
 	GetAmount(request AmountRequest) (amountResponse *AmountResponse, err error)
-	Mine() (err error)
 	StartMining() (err error)
 	StopMining() error
 }

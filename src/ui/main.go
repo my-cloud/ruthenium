@@ -12,7 +12,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server/index"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
 	"github.com/my-cloud/ruthenium/src/ui/server/transactions"
-	"github.com/my-cloud/ruthenium/src/ui/server/validation"
 	"github.com/my-cloud/ruthenium/src/ui/server/validation/start"
 	"github.com/my-cloud/ruthenium/src/ui/server/validation/stop"
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet"
@@ -56,7 +55,6 @@ func main() {
 	http.Handle("/transaction", transaction.NewHandler(host, particlesCount, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/wallet/amount", amount.NewHandler(host, particlesCount, logger))
-	http.Handle("/mine", validation.NewHandler(host, logger))
 	http.Handle("/mine/start", start.NewHandler(host, logger))
 	http.Handle("/mine/stop", stop.NewHandler(host, logger))
 	logger.Info("user interface server is running...")
