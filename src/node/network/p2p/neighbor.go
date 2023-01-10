@@ -32,7 +32,7 @@ func (neighbor *Neighbor) Target() string {
 }
 
 func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, err error) {
-	res, err := neighbor.sendRequest(GetBlocksRequest)
+	res, err := neighbor.sendRequest(GetBlocks)
 	if err == nil {
 		err = res.GetGob(&blockResponses)
 	}
@@ -50,7 +50,7 @@ func (neighbor *Neighbor) AddTransaction(request network.TransactionRequest) (er
 }
 
 func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.TransactionResponse, err error) {
-	res, err := neighbor.sendRequest(GetTransactionsRequest)
+	res, err := neighbor.sendRequest(GetTransactions)
 	if err != nil {
 		return
 	}
@@ -69,13 +69,13 @@ func (neighbor *Neighbor) GetAmount(request network.AmountRequest) (amountRespon
 	return
 }
 
-func (neighbor *Neighbor) StartMining() (err error) {
-	_, err = neighbor.sendRequest(StartMiningRequest)
+func (neighbor *Neighbor) StartValidation() (err error) {
+	_, err = neighbor.sendRequest(StartValidation)
 	return
 }
 
-func (neighbor *Neighbor) StopMining() (err error) {
-	_, err = neighbor.sendRequest(StopMiningRequest)
+func (neighbor *Neighbor) StopValidation() (err error) {
+	_, err = neighbor.sendRequest(StopValidation)
 	return
 }
 

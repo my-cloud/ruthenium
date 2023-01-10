@@ -55,8 +55,8 @@ func main() {
 	http.Handle("/transaction", transaction.NewHandler(host, particlesCount, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/wallet/amount", amount.NewHandler(host, particlesCount, logger))
-	http.Handle("/mine/start", start.NewHandler(host, logger))
-	http.Handle("/mine/stop", stop.NewHandler(host, logger))
+	http.Handle("/validation/start", start.NewHandler(host, logger))
+	http.Handle("/validation/stop", stop.NewHandler(host, logger))
 	logger.Info("user interface server is running...")
 	logger.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(int(*port)), nil).Error())
 }
