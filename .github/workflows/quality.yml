@@ -7,17 +7,15 @@ on:
     branches: [ "main", "releases?/**" ]
 
 jobs:
-  test:
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-    - name: Setup
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.17
-    - name: Test
-      run: go test -v ./...
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+      - uses: golangci/golangci-lint-action@v3
   scan:
     runs-on: ubuntu-latest
     steps:
@@ -28,7 +26,7 @@ jobs:
       with:
         go-version: 1.17
     - name: Test
-      run: go test -coverpkg=./... ./... -coverprofile=coverage.out -json > report.json
+      run: go test -v -coverpkg=./... ./... -coverprofile=coverage.out -json > report.json
     - name: SonarCloud Scan
       uses: SonarSource/sonarcloud-github-action@master
       env:
