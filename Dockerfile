@@ -10,7 +10,7 @@ RUN CGO_ENABLED=0 go build -o ui src/ui/main.go
 
 FROM gcr.io/distroless/static-debian11
 WORKDIR /app
+COPY ./templates /app/templates
 COPY --from=builder /app/config /app/config
-COPY --from=builder /app/src/ui/templates /app/templates
 COPY --from=builder /app/node /app
 COPY --from=builder /app/ui /app

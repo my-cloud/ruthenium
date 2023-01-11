@@ -21,7 +21,7 @@ go run src/ui/main.go -host-ip=0.0.0.0 -private-key=0x48913790c2bebc48417491f96a
 -port: The TCP port number for the UI server (default: 8080)
 -host-ip: The node host IP address
 -host-port: The TCP port number of the host node (default: 8106)
--templates-path: The UI templates path (default: "src/ui/templates")
+-templates-path: The UI templates path (default: "templates")
 -log-level: The log level (default: "info")  
 ```
 
