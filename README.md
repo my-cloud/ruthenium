@@ -48,11 +48,11 @@ There are two ways to use the Ruthenium blockchain. You can either use your own 
 * Option B (using docker image):
   * Run the [node](src/node/README.md):
     ```
-    sudo docker run -p 8106:8106 -ti ghcr.io/my-cloud/ruthenium:latest \app\node -host-ip=<your external IP address> -private-key=<private key>
+    sudo docker run -p 8106:8106 -ti ghcr.io/my-cloud/ruthenium:latest \app\node -private-key=<private key>
     ```
   * Run the [UI server](src/ui/README.md):
     ```
-    sudo docker run -p 8080:8080 -ti ghcr.io/my-cloud/ruthenium:latest \app\ui -private-key=<private key>
+    sudo docker run -p 8080:8080 -ti ghcr.io/my-cloud/ruthenium:latest \app\ui -host-ip=<your external IP address> -private-key=<private key>
     ```
 * Using a web browser, go to:
   * http://localhost:8080
