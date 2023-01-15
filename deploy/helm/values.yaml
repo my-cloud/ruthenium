@@ -1,0 +1,78 @@
+AppVersion: 0.0.0-develop
+global:
+  registries: []
+  domain: my-cloud.me
+  autoReload: "true"
+  image:
+    pullPolicy: "Always"
+
+url:
+  prefix: 
+  domainOverride:
+  server-alias: [] # "<alias 1>,<alias 2>"
+
+app:
+  type: statefulset  # Values are: deployment, statefulset, job, cronjob
+  replicas: 1
+  containers:
+  - name: node
+    image:
+      name: ghcr.io/my-cloud/ruthenium:latest
+      #tagOverride: 1-30-0
+      #pullPolicy: "IfNotPresent"
+    #autoReload: "true"
+    targetPort: "8106"
+    annotations:
+    health:
+      liveness:
+        path: /health/liveness
+        initialDelaySeconds: 120
+        periodSeconds: 5
+      readiness:
+        path: /health/readiness
+        initialDelaySeconds: 30
+        periodSeconds: 1
+    resources:
+      requests:
+        memory: "128Mi"
+      limits:
+        memory: "512Mi"
+    storage:
+      data: /data
+    secret:
+    env:
+      PRIVATE_KEY: ""
+  - name: ui
+    image:
+      name: ghcr.io/my-cloud/ruthenium
+      tagOverride: latest
+      #pullPolicy: "IfNotPresent"
+    #autoReload: "true"
+    targetPort: "8080"
+    annotations:
+    health:
+      liveness:
+        path: /health/liveness
+        initialDelaySeconds: 120
+        periodSeconds: 5
+      readiness:
+        path: /health/readiness
+        initialDelaySeconds: 30
+        periodSeconds: 1
+    resources:
+      requests:
+        memory: "128Mi"
+      limits:
+        memory: "512Mi"
+    storage:
+      data: /data
+    secret:
+    env:
+      HOST_IP: "127.0.0.1"
+      PRIVATE_KEY: ""
+
+  storage:
+    data:
+      accessModes: [ "RWX" ]
+      storageClass: memory
+      size: 128M

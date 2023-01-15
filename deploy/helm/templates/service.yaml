@@ -1,0 +1,18 @@
+{{ if not ( eq .Values.app.type "job" ) }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Chart.Name }}
+    group: {{ .Chart.Name }}
+spec:
+  selector:
+    app: {{ .Chart.Name }}
+    group: {{ .Chart.Name }}
+  ports:
+  - name: http
+    port: 80
+    targetPort: {{ .Values.app.targetPort }}
+{{ end }}

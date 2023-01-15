@@ -1,0 +1,117 @@
+{{ if eq .Values.app.type "statefulset" }}
+---
+{{- $chartName := .Chart.Name -}}
+{{- $appVersion := .Values.AppVersion | default .Chart.AppVersion -}}
+{{- $targetPort := .Values.app.targetPort -}}
+{{- $global := .Values.global }}
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    reloader.stakater.com/auto: {{ .Values.app.AutoReload | default .Values.global.autoReload | quote }}
+    role: {{ $chartName }}
+    {{ if .Values.app.annotations -}}
+    {{ .Values.app.annotations | nindent 4 -}}
+    {{- end }}
+  labels:
+    group: {{ $chartName }}
+    app: {{ $chartName }}
+    version: "{{ $appVersion }}"
+  name: {{ $chartName }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ $chartName }} # has to match .spec.template.metadata.labels
+  serviceName: {{ $chartName }}
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+  replicas: {{ .Values.app.replicas }}
+  template:
+    metadata:
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+      labels:
+        group: {{ $chartName }}
+        app: {{ $chartName }}
+        version: "{{ $appVersion }}"
+    spec:
+      serviceAccountName: {{ $chartName }}
+      imagePullSecrets: {{- range $global.registries }}
+      - name: {{ .name }}
+      {{- end }}
+      containers:
+      {{- range $container := .Values.app.containers }}
+      - env: {{- range $key, $value := $container.env }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+        {{- end }}
+        {{- range $secretName, $rawValue := $container.secret }}
+        {{- range $envName, $secretKey := $rawValue }}
+          - name: {{ $envName }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ $secretName }}
+                key: {{ $secretKey }}
+        {{- end }}
+        {{- end }}
+
+        image: {{ $container.image.name }}:{{ $container.image.tagOverride | default $appVersion }}
+        imagePullPolicy: {{ $container.image.pullPolicy | default $global.image.pullPolicy }}
+        name: {{ $chartName }}-{{ $container.name }}
+        resources:
+          requests:
+            memory: {{ $container.resources.requests.memory }}
+          limits:
+            memory: {{ $container.resources.limits.memory }}
+        ports:
+        {{- range $container.targetPorts }}
+        - name: {{ .name }}
+            containerPort: {{ .port }}
+            protocol: TCP
+        {{- end }}
+          - name: http
+            containerPort: {{ $targetPort }}
+            protocol: TCP
+        {{ if $container.health }}
+        livenessProbe:
+          initialDelaySeconds: {{ $container.health.liveness.initialDelaySeconds }}
+          periodSeconds: {{ $container.health.liveness.periodSeconds }}
+          timeoutSeconds: {{ $container.health.liveness.timeoutSeconds }}
+          httpGet:
+            path: {{ $container.health.liveness.path }}
+            port: {{ $targetPort }}
+        readinessProbe:
+          initialDelaySeconds: {{ $container.health.readiness.initialDelaySeconds }}
+          periodSeconds: {{ $container.health.readiness.periodSeconds }}
+          timeoutSeconds: {{ $container.health.readiness.timeoutSeconds }}
+          httpGet:
+            path: {{ $container.health.readiness.path }}
+            port: {{ $targetPort }}
+        {{ end }}
+        volumeMounts:
+          {{ range $storageName, $mountPath := $container.storage }}
+          - name: {{ $chartName }}-{{ $storageName }}
+            mountPath: {{ $mountPath }}
+          {{- end }}
+      {{- end }}
+      securityContext:
+          fsGroup: 1000
+      restartPolicy: Always
+  volumeClaimTemplates:
+  {{ range $storageName, $storage := .Values.app.storage }}
+  - metadata:
+      name: {{ $chartName }}-{{$storageName}}
+    spec:
+      accessModes:
+      {{- range $storage.accessModes }}
+      - {{ . }}
+      {{- end }}
+      storageClassName: {{ $storage.storageClass | quote }}
+      resources:
+        requests:
+          storage: {{ $storage.size | quote }}
+  {{end}}  
+{{ end }}
