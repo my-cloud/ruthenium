@@ -18,19 +18,14 @@ const (
 )
 
 type Blockchain struct {
-	blocks         []*Block
-	blockResponses []*network.BlockResponse
-	mutex          sync.RWMutex
-
-	registry protocol.Registry
-
+	blocks          []*Block
+	blockResponses  []*network.BlockResponse
+	mutex           sync.RWMutex
+	registry        protocol.Registry
 	validationTimer time.Duration
-
-	synchronizer network.Synchronizer
-
-	lambda float64
-
-	logger log.Logger
+	synchronizer    network.Synchronizer
+	lambda          float64
+	logger          log.Logger
 }
 
 func NewBlockchain(registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
@@ -43,10 +38,10 @@ func newBlockchain(blockResponses []*network.BlockResponse, registry protocol.Re
 	blockchain.registry = registry
 	blockchain.validationTimer = validationTimer
 	blockchain.synchronizer = synchronizer
-	blockchain.logger = logger
 	const hoursADay = 24
 	halfLife := halfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
 	blockchain.lambda = math.Log(2) / halfLife
+	blockchain.logger = logger
 	return blockchain
 }
 

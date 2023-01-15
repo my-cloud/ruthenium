@@ -11,10 +11,7 @@ import (
 	"time"
 )
 
-const (
-	clientConnectionTimeoutInSeconds = 10
-	neighborFindingTimeoutSecond     = 5
-)
+const neighborFindingTimeoutSecond = 5
 
 type ClientFactory struct {
 	ipFinder network.IpFinder
@@ -44,10 +41,6 @@ func (factory *ClientFactory) CreateClient(ip string, port uint16, target string
 	if err != nil {
 		return nil, err
 	}
-	settings := gp2p.NewClientSettings()
-	settings.SetRetry(1, time.Nanosecond)
-	settings.SetConnTimeout(clientConnectionTimeoutInSeconds * time.Second)
-	client.SetSettings(settings)
 	client.SetLogger(factory.logger)
 	return client, err
 }

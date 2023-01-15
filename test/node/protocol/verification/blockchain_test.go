@@ -203,7 +203,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 		}
 		var registeredAddresses []string
 		registeredAddresses = append(registeredAddresses, address)
-		blockResponse2 := protocoltest.NewBlockResponse(block2Timestamp, hash, transactions, registeredAddresses)
+		blockResponse2 := verification.NewBlockResponse(block2Timestamp, hash, transactions, registeredAddresses)
 		return []*network.BlockResponse{blockResponse1, blockResponse2}, nil
 	}
 	neighborMock.TargetFunc = func() string {
@@ -259,7 +259,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 		}
 		var registeredAddresses []string
 		registeredAddresses = append(registeredAddresses, address)
-		blockResponse3 := protocoltest.NewBlockResponse(block3Timestamp, hash2, transactions, registeredAddresses)
+		blockResponse3 := verification.NewBlockResponse(block3Timestamp, hash2, transactions, registeredAddresses)
 		return []*network.BlockResponse{blockResponse1, blockResponse2, blockResponse3}, nil
 	}
 	neighborMock.TargetFunc = func() string {

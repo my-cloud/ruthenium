@@ -6,6 +6,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
+	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/log/logtest"
@@ -99,7 +100,7 @@ func Test_AddTransaction_TransactionIsAlreadyInTheBlockchain_TransactionNotAdded
 	blockResponses = append(blockResponses, protocoltest.NewGenesisBlockResponse(validatorWalletAddress))
 	var transactionResponses []*network.TransactionResponse
 	transactionResponses = append(transactionResponses, transaction.GetResponse())
-	blockResponses = append(blockResponses, protocoltest.NewBlockResponse(now-1, [32]byte{}, transactionResponses, nil))
+	blockResponses = append(blockResponses, verification.NewBlockResponse(now-1, [32]byte{}, transactionResponses, nil))
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
@@ -308,7 +309,7 @@ func Test_Validate_TransactionIsAlreadyInTheBlockchain_TransactionNotValidated(t
 	transaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	var transactionResponses []*network.TransactionResponse
 	transactionResponses = append(transactionResponses, transaction.GetResponse())
-	blockResponses = append(blockResponses, protocoltest.NewBlockResponse(now-1, [32]byte{}, transactionResponses, nil))
+	blockResponses = append(blockResponses, verification.NewBlockResponse(now-1, [32]byte{}, transactionResponses, nil))
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 
 	// Act

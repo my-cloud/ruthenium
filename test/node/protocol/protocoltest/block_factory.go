@@ -33,12 +33,3 @@ func NewEmptyBlockResponse(timestamp int64) *network.BlockResponse {
 		RegisteredAddresses: nil,
 	}
 }
-
-func NewBlockResponse(timestamp int64, hash [32]byte, transactionResponses []*network.TransactionResponse, registeredAddresses []string) *network.BlockResponse {
-	return &network.BlockResponse{
-		Timestamp:           timestamp,
-		PreviousHash:        hash,
-		Transactions:        transactionResponses,
-		RegisteredAddresses: registeredAddresses,
-	}
-}
