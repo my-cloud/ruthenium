@@ -22,7 +22,8 @@ go run src/ui/main.go -host-ip=0.0.0.0 -private-key=0x48913790c2bebc48417491f96a
 -host-ip: The node host IP address
 -host-port: The TCP port number of the host node (default: 8106)
 -templates-path: The UI templates path (default: "templates")
--log-level: The log level (default: "info")  
+-log-level: The log level (default: "info")
+-delay-startup: The delay prior to start up the server. Valid unit times: ms, s, m (default: 0s)
 ```
 
 Using a web browser, go to `http://localhost:8080` (If needed, replace `localhost` by the UI server IP address and `8080` by the TCP port number for the UI server)
