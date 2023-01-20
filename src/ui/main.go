@@ -3,6 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/my-cloud/ruthenium/src/config"
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/log/console"
@@ -16,8 +20,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server/validation/stop"
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet"
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/amount"
-	"net/http"
-	"strconv"
 )
 
 const (
@@ -36,8 +38,10 @@ func main() {
 	templatesPath := flag.String("templates-path", environment.NewVariable("TEMPLATES_PATH").GetStringValue("templates"), "The UI templates path")
 	configurationPath := flag.String("configuration-path", environment.NewVariable("CONFIGURATION_PATH").GetStringValue("config"), "The configuration files path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level")
+	delayStartup := flag.Duration("delay-startup", environment.NewVariable("DELAY_STARTUP").GetDurationValue(0), "The delay prior to start up the server. Valid unit times: ms, s, m")
 
 	flag.Parse()
+	time.Sleep(*delayStartup)
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
 	target := p2p.NewTarget(*hostIp, uint16(*hostPort))
 	clientFactory := gp2p.NewClientFactory(net.NewIpFinder())
