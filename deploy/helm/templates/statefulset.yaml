@@ -2,7 +2,6 @@
 ---
 {{- $chartName := .Chart.Name -}}
 {{- $appVersion := .Values.AppVersion | default .Chart.AppVersion -}}
-{{- $targetPort := .Values.app.targetPort -}}
 {{- $global := .Values.global }}
 
 apiVersion: apps/v1
@@ -11,7 +10,7 @@ metadata:
   annotations:
     reloader.stakater.com/auto: {{ .Values.app.AutoReload | default .Values.global.autoReload | quote }}
     role: {{ $chartName }}
-    {{ if .Values.app.annotations -}}
+    {{- if .Values.app.annotations -}}
     {{ .Values.app.annotations | nindent 4 -}}
     {{- end }}
   labels:
@@ -57,42 +56,47 @@ spec:
                 key: {{ $secretKey }}
         {{- end }}
         {{- end }}
-
         image: {{ $container.image.name }}:{{ $container.image.tagOverride | default $appVersion }}
         imagePullPolicy: {{ $container.image.pullPolicy | default $global.image.pullPolicy }}
         name: {{ $chartName }}-{{ $container.name }}
+        command: {{ $container.command }}
+        args: {{ $container.args }}
         resources:
           requests:
             memory: {{ $container.resources.requests.memory }}
           limits:
             memory: {{ $container.resources.limits.memory }}
         ports:
-        {{- range $container.targetPorts }}
-        - name: {{ .name }}
-            containerPort: {{ .port }}
-            protocol: TCP
+        {{- range $container.service }}
+          - name: {{ $container.name }}
+            containerPort: {{ .targetPort }}
+            protocol: {{ .protocol }}
         {{- end }}
-          - name: http
-            containerPort: {{ $targetPort }}
-            protocol: TCP
-        {{ if $container.health }}
-        livenessProbe:
-          initialDelaySeconds: {{ $container.health.liveness.initialDelaySeconds }}
-          periodSeconds: {{ $container.health.liveness.periodSeconds }}
-          timeoutSeconds: {{ $container.health.liveness.timeoutSeconds }}
-          httpGet:
-            path: {{ $container.health.liveness.path }}
-            port: {{ $targetPort }}
-        readinessProbe:
-          initialDelaySeconds: {{ $container.health.readiness.initialDelaySeconds }}
-          periodSeconds: {{ $container.health.readiness.periodSeconds }}
-          timeoutSeconds: {{ $container.health.readiness.timeoutSeconds }}
-          httpGet:
-            path: {{ $container.health.readiness.path }}
-            port: {{ $targetPort }}
-        {{ end }}
+        {{- if $container.health }}
+        {{- range $probe := list "liveness" "readiness" }}
+        {{$probe}}Probe:
+          {{- $probePath := (index $container.health $probe) }}
+          initialDelaySeconds: {{ $probePath.initialDelaySeconds }}
+          periodSeconds: {{ $probePath.periodSeconds }}
+          timeoutSeconds: {{ $probePath.timeoutSeconds }}
+          {{ $container.health.type |default "httpGet" }}:
+          {{- with (first $container.service) }}
+            port: {{ .targetPort }}
+          {{- end }}
+          {{- if eq $container.health.type "httpGet" }}
+            path: {{ $probePath.path }}
+            {{- if $probePath.httpHeaders }}
+            httpHeaders:
+              {{- range $headerName, $header := $probePath.httpHeaders }}
+            - name: {{ $headerName }}
+              value: {{ $header }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
         volumeMounts:
-          {{ range $storageName, $mountPath := $container.storage }}
+          {{- range $storageName, $mountPath := $container.storage }}
           - name: {{ $chartName }}-{{ $storageName }}
             mountPath: {{ $mountPath }}
           {{- end }}
@@ -101,7 +105,7 @@ spec:
           fsGroup: 1000
       restartPolicy: Always
   volumeClaimTemplates:
-  {{ range $storageName, $storage := .Values.app.storage }}
+  {{- range $storageName, $storage := .Values.app.storage }}
   - metadata:
       name: {{ $chartName }}-{{$storageName}}
     spec:

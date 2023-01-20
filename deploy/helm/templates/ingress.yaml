@@ -1,7 +1,8 @@
 {{ if not ( eq .Values.app.type "job" ) }}
 ---
 {{- $chartName := .Chart.Name -}}
-apiVersion: networking.k8s.io/v1beta1
+{{- $app := .Values.app -}}
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ $chartName }}
@@ -14,21 +15,22 @@ metadata:
       proxy_set_header X-Forwarded-Port 443;
 spec:
   rules:
-    - host: {{ .Values.url.prefix }}.{{ .Values.url.domainOverride | default .Values.global.domain }}
-      http:
-        paths:
-          - path: /
-            backend:
-              serviceName: {{ $chartName }}
-              servicePort: 80
-  {{- range .Values.url.serverAlias }}
-  - host: {{ . }}
+  {{- range .Values.url.domains }}
+  {{- $domain := . }}
+  {{- range $containerName, $container := $app.containers }}
+  {{- range $container.service }}
+  - host: {{ $domain }}
     http:
       paths:
       - path: /
+        pathType: Prefix
         backend:
-          serviceName: {{ $chartName }}
-          servicePort: 80
+          service:
+            name: {{ $chartName }}
+            port:
+              number: {{ .port }}
+  {{- end }}
+  {{- end }}
   {{- end }}
 
 {{ end }}

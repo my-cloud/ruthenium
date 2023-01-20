@@ -1,64 +1,75 @@
 AppVersion: 0.0.0-develop
 global:
   registries: []
-  domain: my-cloud.me
   autoReload: "true"
   image:
     pullPolicy: "Always"
 
 url:
-  prefix: 
-  domainOverride:
-  server-alias: [] # "<alias 1>,<alias 2>"
+  domains: [ruthenium.my-cloud.me]
 
 app:
-  type: statefulset  # Values are: deployment, statefulset, job, cronjob
+  type: statefulset
   replicas: 1
+  volumes:
+  - name: shared-data
+    emptyDir: {}
   containers:
   - name: node
     image:
-      name: ghcr.io/my-cloud/ruthenium:latest
-      #tagOverride: 1-30-0
+      name: ghcr.io/my-cloud/ruthenium
+      tagOverride: latest
       #pullPolicy: "IfNotPresent"
     #autoReload: "true"
-    targetPort: "8106"
+    command: [/app/node]
+    args: []
+    service:
+    - protocol: TCP
+      port: "8106"
+      targetPort: "8106"
     annotations:
     health:
-      liveness:
-        path: /health/liveness
-        initialDelaySeconds: 120
-        periodSeconds: 5
-      readiness:
-        path: /health/readiness
-        initialDelaySeconds: 30
-        periodSeconds: 1
+      # type: grpc   # can be either: grpc httpGet tcpSocket
+      # liveness:
+      #   initialDelaySeconds: 40
+      #   periodSeconds: 5
+      # readiness:
+      #   initialDelaySeconds: 30
+      #   periodSeconds: 1
     resources:
       requests:
         memory: "128Mi"
       limits:
         memory: "512Mi"
     storage:
-      data: /data
+      data: /tmp
     secret:
     env:
       PRIVATE_KEY: ""
+
   - name: ui
     image:
       name: ghcr.io/my-cloud/ruthenium
       tagOverride: latest
       #pullPolicy: "IfNotPresent"
     #autoReload: "true"
-    targetPort: "8080"
+    command: [/bin/bash]
+    args: [ "-c", "'sleep 3; /app/ui'"]
+    service:
+    - protocol: TCP
+      port: "80"
+      targetPort: "8080"
     annotations:
     health:
-      liveness:
-        path: /health/liveness
-        initialDelaySeconds: 120
-        periodSeconds: 5
-      readiness:
-        path: /health/readiness
-        initialDelaySeconds: 30
-        periodSeconds: 1
+      # type: grpc  # can be either: grpc httpGet tcpSocket
+      # liveness:
+      #   path: /health/liveness
+      #   initialDelaySeconds: 120
+      #   periodSeconds: 5
+      # readiness:
+      #   path: /health/readiness
+      #   initialDelaySeconds: 30
+      #   periodSeconds: 1
     resources:
       requests:
         memory: "128Mi"
@@ -73,6 +84,6 @@ app:
 
   storage:
     data:
-      accessModes: [ "RWX" ]
-      storageClass: memory
+      accessModes: [ "ReadWriteMany" ]
+      storageClass: kube-data
       size: 128M

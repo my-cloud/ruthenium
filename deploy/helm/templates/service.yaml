@@ -1,4 +1,4 @@
-{{ if not ( eq .Values.app.type "job" ) }}
+{{- if not ( eq .Values.app.type "job" ) }}
 ---
 kind: Service
 apiVersion: v1
@@ -8,11 +8,17 @@ metadata:
     app: {{ .Chart.Name }}
     group: {{ .Chart.Name }}
 spec:
+  type: LoadBalancer
   selector:
     app: {{ .Chart.Name }}
     group: {{ .Chart.Name }}
   ports:
-  - name: http
-    port: 80
-    targetPort: {{ .Values.app.targetPort }}
-{{ end }}
+{{- range $containerName, $container := .Values.app.containers }}
+{{- range $container.service }}
+  - name: {{ $container.name }}-{{ .port }}
+    port: {{ .port }}
+    protocol: {{ .protocol }}
+    targetPort: {{ .targetPort }}
+{{- end }}
+{{- end }}
+{{- end }}
