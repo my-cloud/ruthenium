@@ -77,7 +77,7 @@ func (blockchain *Blockchain) LastBlocks(startingBlockHash *[32]byte) []*network
 	defer blockchain.mutex.RUnlock()
 	for i := len(blockchain.blockResponses); i > 0; i-- {
 		currentBlockPreviousHash := &blockchain.blockResponses[i-1].PreviousHash
-		if bytes.Compare(currentBlockPreviousHash[:], startingBlockHash[:]) == 0 {
+		if bytes.Equal(currentBlockPreviousHash[:], startingBlockHash[:]) {
 			return blockchain.blockResponses[i-2:]
 		}
 	}
