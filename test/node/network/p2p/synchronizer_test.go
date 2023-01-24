@@ -19,6 +19,7 @@ func Test_Synchronize_OneSeed_NeighborAdded(t *testing.T) {
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	client := new(p2ptest.ClientMock)
 	client.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
+	client.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (p2p.Client, error) { return client, nil }
 	configurationPath := "../../../config"
 	logger := logtest.NewLoggerMock()
