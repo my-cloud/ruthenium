@@ -54,6 +54,14 @@ func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, 
 	return
 }
 
+func (neighbor *Neighbor) GetLastBlocks(lastBlocksRequest network.LastBlocksRequest) (blockResponses []*network.BlockResponse, err error) {
+	res, err := neighbor.sendRequest(lastBlocksRequest)
+	if err == nil {
+		err = res.GetGob(&blockResponses)
+	}
+	return
+}
+
 func (neighbor *Neighbor) SendTargets(request []network.TargetRequest) (err error) {
 	_, err = neighbor.sendRequest(request)
 	return

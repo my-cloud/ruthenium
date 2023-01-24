@@ -65,6 +65,7 @@ func (host *Host) startBlockchain() {
 func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err error) {
 	var unknownRequest bool
 	var requestString string
+	var lastBlocksRequest network.LastBlocksRequest
 	var transactionRequest network.TransactionRequest
 	var amountRequest network.AmountRequest
 	var targetsRequest []network.TargetRequest
@@ -82,6 +83,8 @@ func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err e
 		default:
 			unknownRequest = true
 		}
+	} else if err = req.GetGob(&lastBlocksRequest); err == nil {
+		res = host.getLastBlocks(&lastBlocksRequest)
 	} else if err = req.GetGob(&transactionRequest); err == nil {
 		host.addTransactions(&transactionRequest)
 	} else if err = req.GetGob(&amountRequest); err == nil {
@@ -94,6 +97,15 @@ func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err e
 
 	if unknownRequest {
 		host.logger.Error("unknown request")
+	}
+	return
+}
+
+func (host *Host) getLastBlocks(request *network.LastBlocksRequest) (res gp2p.Data) {
+	blockResponses := host.blockchain.LastBlocks(request.StartingBlockHash)
+	err := res.SetGob(blockResponses)
+	if err != nil {
+		host.logger.Error(fmt.Errorf("failed to get blocks: %w", err).Error())
 	}
 	return
 }

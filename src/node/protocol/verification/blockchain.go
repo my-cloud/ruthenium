@@ -1,6 +1,7 @@
 package verification
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
@@ -48,6 +49,8 @@ func newBlockchain(blockResponses []*network.BlockResponse, registry protocol.Re
 func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.TransactionResponse, registeredAddresses []string) {
 	var previousHash [32]byte
 	var err error
+	blockchain.mutex.Lock()
+	defer blockchain.mutex.Unlock()
 	if !blockchain.IsEmpty() {
 		previousHash, err = blockchain.blocks[len(blockchain.blocks)-1].Hash()
 		if err != nil {
@@ -61,8 +64,6 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 		blockchain.logger.Error(fmt.Errorf("unable to instantiate block: %w", err).Error())
 		return
 	}
-	blockchain.mutex.Lock()
-	defer blockchain.mutex.Unlock()
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
 	blockchain.blocks = append(blockchain.blocks, block)
 }
@@ -71,13 +72,25 @@ func (blockchain *Blockchain) IsEmpty() bool {
 	return blockchain.blocks == nil
 }
 
+func (blockchain *Blockchain) LastBlocks(startingBlockHash *[32]byte) []*network.BlockResponse {
+	blockchain.mutex.RLock()
+	defer blockchain.mutex.RUnlock()
+	for i := len(blockchain.blockResponses); i > 0; i-- {
+		currentBlockPreviousHash := &blockchain.blockResponses[i-1].PreviousHash
+		if bytes.Compare(currentBlockPreviousHash[:], startingBlockHash[:]) == 0 {
+			return blockchain.blockResponses[i-2:]
+		}
+	}
+	return nil
+}
+
 func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
 	return blockchain.blockResponses
 }
 
-func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResponse, hostBlocks []*Block, timestamp int64) (validBlocks []*Block, err error) {
+func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResponse, hostBlocks []*Block, oldHostBlocks []*network.BlockResponse, timestamp int64) (validBlocks []*Block, err error) {
 	if len(neighborBlocks) < 2 || len(neighborBlocks) < len(hostBlocks) {
 		return nil, errors.New("neighbor's blockchain is too short")
 	}
@@ -138,7 +151,7 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResp
 	}
 	validBlocks = append(validBlocks, previousBlock)
 	neighborBlockchain := newBlockchain(
-		neighborBlocks,
+		append(oldHostBlocks, neighborBlocks...),
 		blockchain.registry,
 		blockchain.validationTimer,
 		blockchain.synchronizer,
@@ -259,27 +272,51 @@ func (blockchain *Blockchain) Verify(timestamp int64) {
 	blocksByTarget := make(map[string][]*Block)
 	var selectedTargets []string
 	hostBlocks := blockchain.blocks
-	for _, neighbor := range neighbors {
-		neighborBlocks, err := neighbor.GetBlocks()
-		if err == nil {
-			target := neighbor.Target()
-			blockResponsesByTarget[target] = neighborBlocks
-			var validBlocks []*Block
-			validBlocks, err = blockchain.getValidBlocks(neighborBlocks, hostBlocks, timestamp)
-			if err != nil || validBlocks == nil {
-				blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
-			} else {
-				blocksByTarget[target] = validBlocks
-				selectedTargets = append(selectedTargets, target)
-			}
-		}
-	}
-
+	hostBlockResponses := blockchain.blockResponses
+	var lastHostBlocks []*Block
+	var oldHostBlocks []*network.BlockResponse
 	if len(hostBlocks) > 2 {
 		hostTarget := "host"
-		blockResponsesByTarget[hostTarget] = blockchain.blockResponses
+		blockResponsesByTarget[hostTarget] = hostBlockResponses
 		blocksByTarget[hostTarget] = hostBlocks
 		selectedTargets = append(selectedTargets, hostTarget)
+		lastHostBlocks = hostBlocks[len(hostBlocks)-3:]
+		oldHostBlocks = hostBlockResponses[:len(hostBlocks)-3]
+	}
+	for _, neighbor := range neighbors {
+		var err error
+		var neighborBlocks []*network.BlockResponse
+		if len(hostBlocks) > 2 {
+			startingBlockHash := hostBlocks[len(hostBlocks)-2].PreviousHash()
+			lastBlocksRequest := network.LastBlocksRequest{StartingBlockHash: &startingBlockHash}
+			neighborBlocks, err = neighbor.GetLastBlocks(lastBlocksRequest)
+			if err == nil {
+				target := neighbor.Target()
+				var validBlocks []*Block
+				validBlocks, err = blockchain.getValidBlocks(neighborBlocks, lastHostBlocks, oldHostBlocks, timestamp)
+				if err != nil || validBlocks == nil {
+					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
+				} else {
+					blocksByTarget[target] = append(hostBlocks[:len(hostBlocks)-3], validBlocks...)
+					blockResponsesByTarget[target] = append(hostBlockResponses[:len(hostBlockResponses)-3], neighborBlocks...)
+					selectedTargets = append(selectedTargets, target)
+				}
+			}
+		} else {
+			neighborBlocks, err = neighbor.GetBlocks()
+			if err == nil {
+				target := neighbor.Target()
+				var validBlocks []*Block
+				validBlocks, err = blockchain.getValidBlocks(neighborBlocks, hostBlocks, oldHostBlocks, timestamp)
+				if err != nil || validBlocks == nil {
+					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
+				} else {
+					blocksByTarget[target] = validBlocks
+					blockResponsesByTarget[target] = neighborBlocks
+					selectedTargets = append(selectedTargets, target)
+				}
+			}
+		}
 	}
 
 	var selectedBlocksResponse []*network.BlockResponse

@@ -15,22 +15,28 @@ var _ p2p.Client = &ClientMock{}
 
 // ClientMock is a mock implementation of Client.
 //
-// 	func TestSomethingThatUsesClient(t *testing.T) {
+//	func TestSomethingThatUsesClient(t *testing.T) {
 //
-// 		// make and configure a mocked Client
-// 		mockedClient := &ClientMock{
-// 			SendFunc: func(topic string, req p2p.Data) (p2p.Data, error) {
-// 				panic("mock out the Send method")
-// 			},
-// 		}
+//		// make and configure a mocked Client
+//		mockedClient := &ClientMock{
+//			SendFunc: func(topic string, req gp2p.Data) (gp2p.Data, error) {
+//				panic("mock out the Send method")
+//			},
+//			SetSettingsFunc: func(stg *gp2p.ClientSettings)  {
+//				panic("mock out the SetSettings method")
+//			},
+//		}
 //
-// 		// use mockedClient in code that requires Client
-// 		// and then make assertions.
+//		// use mockedClient in code that requires Client
+//		// and then make assertions.
 //
-// 	}
+//	}
 type ClientMock struct {
 	// SendFunc mocks the Send method.
 	SendFunc func(topic string, req gp2p.Data) (gp2p.Data, error)
+
+	// SetSettingsFunc mocks the SetSettings method.
+	SetSettingsFunc func(stg *gp2p.ClientSettings)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -41,8 +47,14 @@ type ClientMock struct {
 			// Req is the req argument value.
 			Req gp2p.Data
 		}
+		// SetSettings holds details about calls to the SetSettings method.
+		SetSettings []struct {
+			// Stg is the stg argument value.
+			Stg *gp2p.ClientSettings
+		}
 	}
-	lockSend sync.RWMutex
+	lockSend        sync.RWMutex
+	lockSetSettings sync.RWMutex
 }
 
 // Send calls SendFunc.
@@ -65,7 +77,8 @@ func (mock *ClientMock) Send(topic string, req gp2p.Data) (gp2p.Data, error) {
 
 // SendCalls gets all the calls that were made to Send.
 // Check the length with:
-//     len(mockedClient.SendCalls())
+//
+//	len(mockedClient.SendCalls())
 func (mock *ClientMock) SendCalls() []struct {
 	Topic string
 	Req   gp2p.Data
@@ -77,5 +90,37 @@ func (mock *ClientMock) SendCalls() []struct {
 	mock.lockSend.RLock()
 	calls = mock.calls.Send
 	mock.lockSend.RUnlock()
+	return calls
+}
+
+// SetSettings calls SetSettingsFunc.
+func (mock *ClientMock) SetSettings(stg *gp2p.ClientSettings) {
+	if mock.SetSettingsFunc == nil {
+		panic("ClientMock.SetSettingsFunc: method is nil but Client.SetSettings was just called")
+	}
+	callInfo := struct {
+		Stg *gp2p.ClientSettings
+	}{
+		Stg: stg,
+	}
+	mock.lockSetSettings.Lock()
+	mock.calls.SetSettings = append(mock.calls.SetSettings, callInfo)
+	mock.lockSetSettings.Unlock()
+	mock.SetSettingsFunc(stg)
+}
+
+// SetSettingsCalls gets all the calls that were made to SetSettings.
+// Check the length with:
+//
+//	len(mockedClient.SetSettingsCalls())
+func (mock *ClientMock) SetSettingsCalls() []struct {
+	Stg *gp2p.ClientSettings
+} {
+	var calls []struct {
+		Stg *gp2p.ClientSettings
+	}
+	mock.lockSetSettings.RLock()
+	calls = mock.calls.SetSettings
+	mock.lockSetSettings.RUnlock()
 	return calls
 }
