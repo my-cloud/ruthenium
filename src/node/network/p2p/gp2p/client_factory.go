@@ -11,10 +11,7 @@ import (
 	"time"
 )
 
-const (
-	clientConnectionTimeoutInSeconds = 10
-	neighborFindingTimeoutSecond     = 5
-)
+const clientConnectionTimeoutInSeconds = 10
 
 type ClientFactory struct {
 	ipFinder network.IpFinder
@@ -25,7 +22,7 @@ func NewClientFactory(ipFinder network.IpFinder) *ClientFactory {
 	return &ClientFactory{ipFinder, console.NewLogger(console.Fatal)}
 }
 
-func (factory *ClientFactory) CreateClient(ip string, port uint16, target string) (p2p.Client, error) {
+func (factory *ClientFactory) CreateClient(ip string, port uint16) (p2p.Client, error) {
 	lookedUpIps, err := factory.ipFinder.LookupIP(ip)
 	if err != nil {
 		return nil, fmt.Errorf("DNS discovery failed on addresse %s: %w", ip, err)
@@ -33,10 +30,6 @@ func (factory *ClientFactory) CreateClient(ip string, port uint16, target string
 	ipsCount := len(lookedUpIps)
 	if ipsCount != 1 {
 		return nil, fmt.Errorf("DNS discovery did not find a single address (%d addresses found) for the given IP %s", ipsCount, ip)
-	}
-	_, err = factory.ipFinder.DialTimeout("tcp", target, neighborFindingTimeoutSecond*time.Second)
-	if err != nil {
-		return nil, err
 	}
 	tcp := gp2p.NewTCP(ip, strconv.Itoa(int(port)))
 	var client *gp2p.Client
