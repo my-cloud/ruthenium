@@ -14,22 +14,22 @@ var _ p2p.ClientFactory = &ClientFactoryMock{}
 
 // ClientFactoryMock is a mock implementation of ClientFactory.
 //
-// 	func TestSomethingThatUsesClientFactory(t *testing.T) {
+//	func TestSomethingThatUsesClientFactory(t *testing.T) {
 //
-// 		// make and configure a mocked ClientFactory
-// 		mockedClientFactory := &ClientFactoryMock{
-// 			CreateClientFunc: func(ip string, port uint16, target string) (Client, error) {
-// 				panic("mock out the CreateClient method")
-// 			},
-// 		}
+//		// make and configure a mocked ClientFactory
+//		mockedClientFactory := &ClientFactoryMock{
+//			CreateClientFunc: func(ip string, port uint16) (Client, error) {
+//				panic("mock out the CreateClient method")
+//			},
+//		}
 //
-// 		// use mockedClientFactory in code that requires ClientFactory
-// 		// and then make assertions.
+//		// use mockedClientFactory in code that requires ClientFactory
+//		// and then make assertions.
 //
-// 	}
+//	}
 type ClientFactoryMock struct {
 	// CreateClientFunc mocks the CreateClient method.
-	CreateClientFunc func(ip string, port uint16, target string) (p2p.Client, error)
+	CreateClientFunc func(ip string, port uint16) (p2p.Client, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -39,45 +39,40 @@ type ClientFactoryMock struct {
 			IP string
 			// Port is the port argument value.
 			Port uint16
-			// Target is the target argument value.
-			Target string
 		}
 	}
 	lockCreateClient sync.RWMutex
 }
 
 // CreateClient calls CreateClientFunc.
-func (mock *ClientFactoryMock) CreateClient(ip string, port uint16, target string) (p2p.Client, error) {
+func (mock *ClientFactoryMock) CreateClient(ip string, port uint16) (p2p.Client, error) {
 	if mock.CreateClientFunc == nil {
 		panic("ClientFactoryMock.CreateClientFunc: method is nil but ClientFactory.CreateClient was just called")
 	}
 	callInfo := struct {
-		IP     string
-		Port   uint16
-		Target string
+		IP   string
+		Port uint16
 	}{
-		IP:     ip,
-		Port:   port,
-		Target: target,
+		IP:   ip,
+		Port: port,
 	}
 	mock.lockCreateClient.Lock()
 	mock.calls.CreateClient = append(mock.calls.CreateClient, callInfo)
 	mock.lockCreateClient.Unlock()
-	return mock.CreateClientFunc(ip, port, target)
+	return mock.CreateClientFunc(ip, port)
 }
 
 // CreateClientCalls gets all the calls that were made to CreateClient.
 // Check the length with:
-//     len(mockedClientFactory.CreateClientCalls())
+//
+//	len(mockedClientFactory.CreateClientCalls())
 func (mock *ClientFactoryMock) CreateClientCalls() []struct {
-	IP     string
-	Port   uint16
-	Target string
+	IP   string
+	Port uint16
 } {
 	var calls []struct {
-		IP     string
-		Port   uint16
-		Target string
+		IP   string
+		Port uint16
 	}
 	mock.lockCreateClient.RLock()
 	calls = mock.calls.CreateClient
