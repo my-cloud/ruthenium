@@ -319,9 +319,9 @@ func (blockchain *Blockchain) Verify(timestamp int64) {
 		}
 	}
 
-	var selectedBlocksResponse []*network.BlockResponse
+	var selectedBlockResponses []*network.BlockResponse
 	var selectedBlocks []*Block
-	var isReplaced bool
+	var isDifferent bool
 	if selectedTargets != nil {
 		// Keep blockchains with consensus for the previous hash (prevent forks)
 		blockchain.sortByBlocksLength(selectedTargets, blocksByTarget)
@@ -358,7 +358,7 @@ func (blockchain *Blockchain) Verify(timestamp int64) {
 			delete(blockResponsesByTarget, rejectedTarget)
 			removeTarget(selectedTargets, rejectedTarget)
 		}
-		// Select the oldest reward recipient's blockchain
+		// Select the blockchain of the oldest reward recipient
 		var maxRewardRecipientAddressAge uint64
 		for target, blocks := range blocksByTarget {
 			var rewardRecipientAddressAge uint64
@@ -385,13 +385,13 @@ func (blockchain *Blockchain) Verify(timestamp int64) {
 			}
 			if rewardRecipientAddressAge > maxRewardRecipientAddressAge {
 				maxRewardRecipientAddressAge = rewardRecipientAddressAge
-				selectedBlocksResponse = blockResponsesByTarget[target]
+				selectedBlockResponses = blockResponsesByTarget[target]
 				selectedBlocks = blocks
 			}
 		}
-		// Check if blockchain is replaced
+		// Check if blockchain is different to know if it should be updated
 		if len(hostBlocks) < 2 && selectedBlocks != nil || len(hostBlocks) < len(selectedBlocks) {
-			isReplaced = true
+			isDifferent = true
 		} else if len(selectedBlocks) >= 2 {
 			lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()
 			if newBlockHashError != nil {
@@ -400,21 +400,17 @@ func (blockchain *Blockchain) Verify(timestamp int64) {
 				lastOldBlockHash, oldBlockHashError := hostBlocks[len(hostBlocks)-1].Hash()
 				if oldBlockHashError != nil {
 					blockchain.logger.Error("failed to calculate old block hash")
-					isReplaced = true
+					isDifferent = true
 				} else {
-					isReplaced = lastOldBlockHash != lastNewBlockHash
+					isDifferent = lastOldBlockHash != lastNewBlockHash
 				}
 			}
 		}
 	}
-	blockchain.mutex.Lock()
-	defer blockchain.mutex.Unlock()
-	var hostBlockchainHasChanged bool
-	if !blockchain.IsEmpty() {
-		hostBlockchainHasChanged = hostBlocks[len(hostBlocks)-1].PreviousHash() != blockchain.blocks[len(blockchain.blocks)-1].PreviousHash()
-	}
-	if isReplaced && !hostBlockchainHasChanged {
-		blockchain.blockResponses = selectedBlocksResponse
+	if isDifferent {
+		blockchain.mutex.Lock()
+		defer blockchain.mutex.Unlock()
+		blockchain.blockResponses = selectedBlockResponses
 		blockchain.blocks = selectedBlocks
 		blockchain.logger.Debug("verification done: blockchain replaced")
 	} else {
