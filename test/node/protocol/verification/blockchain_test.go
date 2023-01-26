@@ -19,6 +19,34 @@ const (
 	blockchainKeptMessage     = "verification done: blockchain kept"
 )
 
+func Test_AddBlock_ValidParameters_NoErrorLogged(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+
+	// Act
+	blockchain.AddBlock(0, nil, nil)
+
+	// Assert
+	test.Assert(t, len(logger.ErrorCalls()) == 0, "logger has been called whereas it should not")
+}
+
+func Test_GetLastBlocks_ValidParameters_NoErrorLogged(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+
+	// Act
+	blockchain.AddBlock(0, nil, nil)
+
+	// Assert
+	test.Assert(t, len(logger.ErrorCalls()) == 0, "logger has been called whereas it should not")
+}
+
 func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
