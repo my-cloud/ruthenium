@@ -19,7 +19,7 @@ type Neighbor struct {
 }
 
 func NewNeighbor(target *Target, clientFactory ClientFactory) (*Neighbor, error) {
-	client, err := clientFactory.CreateClient(target.Ip(), target.Port(), target.Value())
+	client, err := clientFactory.CreateClient(target.Ip(), target.Port())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client reaching %s: %w", target.Value(), err)
 	}

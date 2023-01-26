@@ -20,7 +20,7 @@ func Test_Synchronize_OneSeed_NeighborAdded(t *testing.T) {
 	client := new(p2ptest.ClientMock)
 	client.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	client.SetSettingsFunc = func(*gp2p.ClientSettings) {}
-	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (p2p.Client, error) { return client, nil }
+	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return client, nil }
 	configurationPath := "../../../config"
 	logger := logtest.NewLoggerMock()
 	synchronizer, _ := p2p.NewSynchronizer(0, watchMock, clientFactoryMock, configurationPath, logger)
@@ -41,7 +41,7 @@ func Test_Synchronize_NoConfigurationFolder_ReturnsError(t *testing.T) {
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	client := new(p2ptest.ClientMock)
 	client.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
-	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (p2p.Client, error) { return client, nil }
+	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return client, nil }
 	configurationPath := ""
 	logger := logtest.NewLoggerMock()
 
@@ -59,7 +59,7 @@ func Test_Synchronize_EmptyConfigurationFile_ReturnsError(t *testing.T) {
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	client := new(p2ptest.ClientMock)
 	client.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
-	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (p2p.Client, error) { return client, nil }
+	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return client, nil }
 	configurationPath := "../../../config/emptyconfigfile"
 	logger := logtest.NewLoggerMock()
 
@@ -77,7 +77,7 @@ func Test_Synchronize_WrongSeedFormat_ReturnsError(t *testing.T) {
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	client := new(p2ptest.ClientMock)
 	client.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
-	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (p2p.Client, error) { return client, nil }
+	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return client, nil }
 	configurationPath := "../../../config/wrongseedformat"
 	logger := logtest.NewLoggerMock()
 
@@ -95,7 +95,7 @@ func Test_Synchronize_WrongSeedPortFormat_ReturnsError(t *testing.T) {
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	client := new(p2ptest.ClientMock)
 	client.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
-	clientFactoryMock.CreateClientFunc = func(string, uint16, string) (p2p.Client, error) { return client, nil }
+	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return client, nil }
 	configurationPath := "../../../config/wrongseedportformat"
 	logger := logtest.NewLoggerMock()
 
