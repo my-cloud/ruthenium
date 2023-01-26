@@ -37,8 +37,8 @@ var _ protocol.Blockchain = &BlockchainMock{}
 //			LastBlocksFunc: func(startingBlockHash *[32]byte) []*network.BlockResponse {
 //				panic("mock out the LastBlocks method")
 //			},
-//			VerifyFunc: func(timestamp int64)  {
-//				panic("mock out the Verify method")
+//			UpdateFunc: func(timestamp int64)  {
+//				panic("mock out the Update method")
 //			},
 //		}
 //
@@ -65,8 +65,8 @@ type BlockchainMock struct {
 	// LastBlocksFunc mocks the LastBlocks method.
 	LastBlocksFunc func(startingBlockHash *[32]byte) []*network.BlockResponse
 
-	// VerifyFunc mocks the Verify method.
-	VerifyFunc func(timestamp int64)
+	// UpdateFunc mocks the Update method.
+	UpdateFunc func(timestamp int64)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -100,8 +100,8 @@ type BlockchainMock struct {
 			// StartingBlockHash is the startingBlockHash argument value.
 			StartingBlockHash *[32]byte
 		}
-		// Verify holds details about calls to the Verify method.
-		Verify []struct {
+		// Update holds details about calls to the Update method.
+		Update []struct {
 			// Timestamp is the timestamp argument value.
 			Timestamp int64
 		}
@@ -112,7 +112,7 @@ type BlockchainMock struct {
 	lockCopy                 sync.RWMutex
 	lockIsEmpty              sync.RWMutex
 	lockLastBlocks           sync.RWMutex
-	lockVerify               sync.RWMutex
+	lockUpdate               sync.RWMutex
 }
 
 // AddBlock calls AddBlockFunc.
@@ -304,34 +304,34 @@ func (mock *BlockchainMock) LastBlocksCalls() []struct {
 	return calls
 }
 
-// Verify calls VerifyFunc.
-func (mock *BlockchainMock) Verify(timestamp int64) {
-	if mock.VerifyFunc == nil {
-		panic("BlockchainMock.VerifyFunc: method is nil but Blockchain.Verify was just called")
+// Update calls UpdateFunc.
+func (mock *BlockchainMock) Update(timestamp int64) {
+	if mock.UpdateFunc == nil {
+		panic("BlockchainMock.UpdateFunc: method is nil but Blockchain.Update was just called")
 	}
 	callInfo := struct {
 		Timestamp int64
 	}{
 		Timestamp: timestamp,
 	}
-	mock.lockVerify.Lock()
-	mock.calls.Verify = append(mock.calls.Verify, callInfo)
-	mock.lockVerify.Unlock()
-	mock.VerifyFunc(timestamp)
+	mock.lockUpdate.Lock()
+	mock.calls.Update = append(mock.calls.Update, callInfo)
+	mock.lockUpdate.Unlock()
+	mock.UpdateFunc(timestamp)
 }
 
-// VerifyCalls gets all the calls that were made to Verify.
+// UpdateCalls gets all the calls that were made to Update.
 // Check the length with:
 //
-//	len(mockedBlockchain.VerifyCalls())
-func (mock *BlockchainMock) VerifyCalls() []struct {
+//	len(mockedBlockchain.UpdateCalls())
+func (mock *BlockchainMock) UpdateCalls() []struct {
 	Timestamp int64
 } {
 	var calls []struct {
 		Timestamp int64
 	}
-	mock.lockVerify.RLock()
-	calls = mock.calls.Verify
-	mock.lockVerify.RUnlock()
+	mock.lockUpdate.RLock()
+	calls = mock.calls.Update
+	mock.lockUpdate.RUnlock()
 	return calls
 }

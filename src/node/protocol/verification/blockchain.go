@@ -68,6 +68,67 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 	blockchain.blocks = append(blockchain.blocks, block)
 }
 
+func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
+	blockchain.mutex.RLock()
+	defer blockchain.mutex.RUnlock()
+	return blockchain.blockResponses
+}
+
+func (blockchain *Blockchain) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64 {
+	blockchain.mutex.RLock()
+	defer blockchain.mutex.RUnlock()
+	var totalAmount uint64
+	var lastTimestamp int64
+	for _, block := range blockchain.blockResponses {
+		for _, registeredAddress := range block.RegisteredAddresses {
+			if blockchainAddress == registeredAddress {
+				if totalAmount > 0 {
+					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp, totalAmount)
+					totalAmount += calculateIncome(totalAmount)
+					lastTimestamp = block.Timestamp
+				}
+				break
+			}
+		}
+		for _, transaction := range block.Transactions {
+			value := transaction.Value
+			if blockchainAddress == transaction.RecipientAddress {
+				if totalAmount > 0 {
+					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp, totalAmount)
+				}
+				totalAmount += value
+				lastTimestamp = block.Timestamp
+			} else if blockchainAddress == transaction.SenderAddress {
+				if totalAmount > 0 {
+					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp, totalAmount)
+				}
+				if totalAmount < value+transaction.Fee {
+					blockchain.logger.Error(fmt.Sprintf("historical transaction have not been properly validated: wallet amount=%d, transaction value=%d", totalAmount, value))
+					totalAmount = 0
+				} else {
+					totalAmount -= value + transaction.Fee
+				}
+				lastTimestamp = block.Timestamp
+			}
+		}
+	}
+	return blockchain.decay(lastTimestamp, currentTimestamp, totalAmount)
+}
+
+func (blockchain *Blockchain) Copy() protocol.Blockchain {
+	blockchainCopy := new(Blockchain)
+	blockchainCopy.registry = blockchain.registry
+	blockchainCopy.validationTimer = blockchain.validationTimer
+	blockchainCopy.synchronizer = blockchain.synchronizer
+	blockchainCopy.logger = blockchain.logger
+	blockchainCopy.lambda = blockchain.lambda
+	blockchain.mutex.RLock()
+	defer blockchain.mutex.RUnlock()
+	blockchainCopy.blocks = blockchain.blocks
+	blockchainCopy.blockResponses = blockchain.blockResponses
+	return blockchainCopy
+}
+
 func (blockchain *Blockchain) IsEmpty() bool {
 	return blockchain.blocks == nil
 }
@@ -84,13 +145,185 @@ func (blockchain *Blockchain) LastBlocks(startingBlockHash *[32]byte) []*network
 	return nil
 }
 
-func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
-	blockchain.mutex.RLock()
-	defer blockchain.mutex.RUnlock()
-	return blockchain.blockResponses
+func (blockchain *Blockchain) Update(timestamp int64) {
+	// Verify neighbor blockchains
+	neighbors := blockchain.synchronizer.Neighbors()
+	blockResponsesByTarget := make(map[string][]*network.BlockResponse)
+	blocksByTarget := make(map[string][]*Block)
+	var selectedTargets []string
+	hostBlocks := blockchain.blocks
+	hostBlockResponses := blockchain.blockResponses
+	var lastHostBlocks []*Block
+	var oldHostBlocks []*network.BlockResponse
+	if len(hostBlocks) > 2 {
+		hostTarget := "host"
+		blockResponsesByTarget[hostTarget] = hostBlockResponses
+		blocksByTarget[hostTarget] = hostBlocks
+		selectedTargets = append(selectedTargets, hostTarget)
+		lastHostBlocks = hostBlocks[len(hostBlocks)-3:]
+		oldHostBlocks = hostBlockResponses[:len(hostBlocks)-3]
+	}
+	for _, neighbor := range neighbors {
+		var err error
+		var neighborBlocks []*network.BlockResponse
+		if len(hostBlocks) > 2 {
+			startingBlockHash := hostBlocks[len(hostBlocks)-2].PreviousHash()
+			lastBlocksRequest := network.LastBlocksRequest{StartingBlockHash: &startingBlockHash}
+			neighborBlocks, err = neighbor.GetLastBlocks(lastBlocksRequest)
+			if err == nil {
+				target := neighbor.Target()
+				var validBlocks []*Block
+				validBlocks, err = blockchain.verify(neighborBlocks, lastHostBlocks, oldHostBlocks, timestamp)
+				if err != nil || validBlocks == nil {
+					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
+				} else {
+					blocksByTarget[target] = append(hostBlocks[:len(hostBlocks)-3], validBlocks...)
+					blockResponsesByTarget[target] = append(hostBlockResponses[:len(hostBlockResponses)-3], neighborBlocks...)
+					selectedTargets = append(selectedTargets, target)
+				}
+			}
+		} else {
+			neighborBlocks, err = neighbor.GetBlocks()
+			if err == nil {
+				target := neighbor.Target()
+				var validBlocks []*Block
+				validBlocks, err = blockchain.verify(neighborBlocks, hostBlocks, oldHostBlocks, timestamp)
+				if err != nil || validBlocks == nil {
+					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
+				} else {
+					blocksByTarget[target] = validBlocks
+					blockResponsesByTarget[target] = neighborBlocks
+					selectedTargets = append(selectedTargets, target)
+				}
+			}
+		}
+	}
+
+	var selectedBlockResponses []*network.BlockResponse
+	var selectedBlocks []*Block
+	var isDifferent bool
+	if selectedTargets != nil {
+		// Keep blockchains with consensus for the previous hash (prevent forks)
+		blockchain.sortByBlocksLength(selectedTargets, blocksByTarget)
+		halfNeighborsCount := len(blocksByTarget) / 2
+		minLength := len(blocksByTarget[selectedTargets[len(selectedTargets)-1]])
+		var rejectedTargets []string
+		for target, blocks := range blocksByTarget {
+			var samePreviousHashCount int
+			for _, otherBlocks := range blocksByTarget {
+				if blocks[minLength-1].PreviousHash() == otherBlocks[minLength-1].PreviousHash() {
+					samePreviousHashCount++
+				}
+			}
+			if samePreviousHashCount <= halfNeighborsCount {
+				// The previous hash of the blockchain used to compare is shared by at least 51% neighbors, reject other neighbors
+				rejectedTargets = append(rejectedTargets, target)
+			}
+		}
+		for _, rejectedTarget := range rejectedTargets {
+			delete(blocksByTarget, rejectedTarget)
+			delete(blockResponsesByTarget, rejectedTarget)
+			removeTarget(selectedTargets, rejectedTarget)
+		}
+		// Keep the longest blockchains
+		maxLength := len(blocksByTarget[selectedTargets[0]])
+		rejectedTargets = nil
+		for target, blocks := range blocksByTarget {
+			if len(blocks) < maxLength {
+				rejectedTargets = append(rejectedTargets, target)
+			}
+		}
+		for _, rejectedTarget := range rejectedTargets {
+			delete(blocksByTarget, rejectedTarget)
+			delete(blockResponsesByTarget, rejectedTarget)
+			removeTarget(selectedTargets, rejectedTarget)
+		}
+		// Select the blockchain of the oldest reward recipient
+		var maxRewardRecipientAddressAge uint64
+		for target, blocks := range blocksByTarget {
+			var rewardRecipientAddressAge uint64
+			var lastBlockRewardRecipientAddress string
+			for _, transaction := range blocks[len(blocks)-1].transactions {
+				if transaction.IsReward() {
+					lastBlockRewardRecipientAddress = transaction.RecipientAddress()
+				}
+			}
+			var isAgeCalculated bool
+			for i := len(blocks) - 2; i >= 0; i-- {
+				for _, transaction := range blocks[i].transactions {
+					if transaction.IsReward() {
+						if transaction.RecipientAddress() == lastBlockRewardRecipientAddress {
+							isAgeCalculated = true
+						}
+						rewardRecipientAddressAge++
+						break
+					}
+				}
+				if isAgeCalculated {
+					break
+				}
+			}
+			if rewardRecipientAddressAge > maxRewardRecipientAddressAge {
+				maxRewardRecipientAddressAge = rewardRecipientAddressAge
+				selectedBlockResponses = blockResponsesByTarget[target]
+				selectedBlocks = blocks
+			}
+		}
+		// Check if blockchain is different to know if it should be updated
+		if len(hostBlocks) < 2 && selectedBlocks != nil || len(hostBlocks) < len(selectedBlocks) {
+			isDifferent = true
+		} else if len(selectedBlocks) >= 2 {
+			lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()
+			if newBlockHashError != nil {
+				blockchain.logger.Error("failed to calculate new block hash")
+			} else {
+				lastOldBlockHash, oldBlockHashError := hostBlocks[len(hostBlocks)-1].Hash()
+				if oldBlockHashError != nil {
+					blockchain.logger.Error("failed to calculate old block hash")
+					isDifferent = true
+				} else {
+					isDifferent = lastOldBlockHash != lastNewBlockHash
+				}
+			}
+		}
+	}
+	if isDifferent {
+		blockchain.mutex.Lock()
+		defer blockchain.mutex.Unlock()
+		blockchain.blockResponses = selectedBlockResponses
+		blockchain.blocks = selectedBlocks
+		blockchain.logger.Debug("verification done: blockchain replaced")
+	} else {
+		blockchain.logger.Debug("verification done: blockchain kept")
+	}
 }
 
-func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResponse, hostBlocks []*Block, oldHostBlocks []*network.BlockResponse, timestamp int64) (validBlocks []*Block, err error) {
+func calculateIncome(amount uint64) uint64 {
+	return uint64(math.Round(math.Pow(float64(amount), incomeExponent)))
+}
+
+func (blockchain *Blockchain) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
+	elapsedTimestamp := newTimestamp - lastTimestamp
+	return uint64(math.Floor(float64(amount) * math.Exp(-blockchain.lambda*float64(elapsedTimestamp))))
+}
+
+func removeTarget(targets []string, removedTarget string) []string {
+	for i := 0; i < len(targets); i++ {
+		if targets[i] == removedTarget {
+			targets = append(targets[:i], targets[i+1:]...)
+			return targets
+		}
+	}
+	return targets
+}
+
+func (blockchain *Blockchain) sortByBlocksLength(selectedTargets []string, blocksByTarget map[string][]*Block) {
+	sort.Slice(selectedTargets, func(i, j int) bool {
+		return len(blocksByTarget[selectedTargets[i]]) > len(blocksByTarget[selectedTargets[j]])
+	})
+}
+
+func (blockchain *Blockchain) verify(neighborBlocks []*network.BlockResponse, hostBlocks []*Block, oldHostBlocks []*network.BlockResponse, timestamp int64) (validBlocks []*Block, err error) {
 	if len(neighborBlocks) < 2 || len(neighborBlocks) < len(hostBlocks) {
 		return nil, errors.New("neighbor's blockchain is too short")
 	}
@@ -249,237 +482,4 @@ func (blockchain *Blockchain) getValidBlocks(neighborBlocks []*network.BlockResp
 		previousBlock = currentBlock
 	}
 	return validBlocks, nil
-}
-
-func (blockchain *Blockchain) Copy() protocol.Blockchain {
-	blockchainCopy := new(Blockchain)
-	blockchainCopy.registry = blockchain.registry
-	blockchainCopy.validationTimer = blockchain.validationTimer
-	blockchainCopy.synchronizer = blockchain.synchronizer
-	blockchainCopy.logger = blockchain.logger
-	blockchainCopy.lambda = blockchain.lambda
-	blockchain.mutex.RLock()
-	defer blockchain.mutex.RUnlock()
-	blockchainCopy.blocks = blockchain.blocks
-	blockchainCopy.blockResponses = blockchain.blockResponses
-	return blockchainCopy
-}
-
-func (blockchain *Blockchain) Verify(timestamp int64) {
-	// Select valid blocks
-	neighbors := blockchain.synchronizer.Neighbors()
-	blockResponsesByTarget := make(map[string][]*network.BlockResponse)
-	blocksByTarget := make(map[string][]*Block)
-	var selectedTargets []string
-	hostBlocks := blockchain.blocks
-	hostBlockResponses := blockchain.blockResponses
-	var lastHostBlocks []*Block
-	var oldHostBlocks []*network.BlockResponse
-	if len(hostBlocks) > 2 {
-		hostTarget := "host"
-		blockResponsesByTarget[hostTarget] = hostBlockResponses
-		blocksByTarget[hostTarget] = hostBlocks
-		selectedTargets = append(selectedTargets, hostTarget)
-		lastHostBlocks = hostBlocks[len(hostBlocks)-3:]
-		oldHostBlocks = hostBlockResponses[:len(hostBlocks)-3]
-	}
-	for _, neighbor := range neighbors {
-		var err error
-		var neighborBlocks []*network.BlockResponse
-		if len(hostBlocks) > 2 {
-			startingBlockHash := hostBlocks[len(hostBlocks)-2].PreviousHash()
-			lastBlocksRequest := network.LastBlocksRequest{StartingBlockHash: &startingBlockHash}
-			neighborBlocks, err = neighbor.GetLastBlocks(lastBlocksRequest)
-			if err == nil {
-				target := neighbor.Target()
-				var validBlocks []*Block
-				validBlocks, err = blockchain.getValidBlocks(neighborBlocks, lastHostBlocks, oldHostBlocks, timestamp)
-				if err != nil || validBlocks == nil {
-					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
-				} else {
-					blocksByTarget[target] = append(hostBlocks[:len(hostBlocks)-3], validBlocks...)
-					blockResponsesByTarget[target] = append(hostBlockResponses[:len(hostBlockResponses)-3], neighborBlocks...)
-					selectedTargets = append(selectedTargets, target)
-				}
-			}
-		} else {
-			neighborBlocks, err = neighbor.GetBlocks()
-			if err == nil {
-				target := neighbor.Target()
-				var validBlocks []*Block
-				validBlocks, err = blockchain.getValidBlocks(neighborBlocks, hostBlocks, oldHostBlocks, timestamp)
-				if err != nil || validBlocks == nil {
-					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
-				} else {
-					blocksByTarget[target] = validBlocks
-					blockResponsesByTarget[target] = neighborBlocks
-					selectedTargets = append(selectedTargets, target)
-				}
-			}
-		}
-	}
-
-	var selectedBlockResponses []*network.BlockResponse
-	var selectedBlocks []*Block
-	var isDifferent bool
-	if selectedTargets != nil {
-		// Keep blockchains with consensus for the previous hash (prevent forks)
-		blockchain.sortByBlocksLength(selectedTargets, blocksByTarget)
-		halfNeighborsCount := len(blocksByTarget) / 2
-		minLength := len(blocksByTarget[selectedTargets[len(selectedTargets)-1]])
-		var rejectedTargets []string
-		for target, blocks := range blocksByTarget {
-			var samePreviousHashCount int
-			for _, otherBlocks := range blocksByTarget {
-				if blocks[minLength-1].PreviousHash() == otherBlocks[minLength-1].PreviousHash() {
-					samePreviousHashCount++
-				}
-			}
-			if samePreviousHashCount <= halfNeighborsCount {
-				// The previous hash of the blockchain used to compare is shared by at least 51% neighbors, reject other neighbors
-				rejectedTargets = append(rejectedTargets, target)
-			}
-		}
-		for _, rejectedTarget := range rejectedTargets {
-			delete(blocksByTarget, rejectedTarget)
-			delete(blockResponsesByTarget, rejectedTarget)
-			removeTarget(selectedTargets, rejectedTarget)
-		}
-		// Keep the longest blockchains
-		maxLength := len(blocksByTarget[selectedTargets[0]])
-		rejectedTargets = nil
-		for target, blocks := range blocksByTarget {
-			if len(blocks) < maxLength {
-				rejectedTargets = append(rejectedTargets, target)
-			}
-		}
-		for _, rejectedTarget := range rejectedTargets {
-			delete(blocksByTarget, rejectedTarget)
-			delete(blockResponsesByTarget, rejectedTarget)
-			removeTarget(selectedTargets, rejectedTarget)
-		}
-		// Select the blockchain of the oldest reward recipient
-		var maxRewardRecipientAddressAge uint64
-		for target, blocks := range blocksByTarget {
-			var rewardRecipientAddressAge uint64
-			var lastBlockRewardRecipientAddress string
-			for _, transaction := range blocks[len(blocks)-1].transactions {
-				if transaction.IsReward() {
-					lastBlockRewardRecipientAddress = transaction.RecipientAddress()
-				}
-			}
-			var isAgeCalculated bool
-			for i := len(blocks) - 2; i >= 0; i-- {
-				for _, transaction := range blocks[i].transactions {
-					if transaction.IsReward() {
-						if transaction.RecipientAddress() == lastBlockRewardRecipientAddress {
-							isAgeCalculated = true
-						}
-						rewardRecipientAddressAge++
-						break
-					}
-				}
-				if isAgeCalculated {
-					break
-				}
-			}
-			if rewardRecipientAddressAge > maxRewardRecipientAddressAge {
-				maxRewardRecipientAddressAge = rewardRecipientAddressAge
-				selectedBlockResponses = blockResponsesByTarget[target]
-				selectedBlocks = blocks
-			}
-		}
-		// Check if blockchain is different to know if it should be updated
-		if len(hostBlocks) < 2 && selectedBlocks != nil || len(hostBlocks) < len(selectedBlocks) {
-			isDifferent = true
-		} else if len(selectedBlocks) >= 2 {
-			lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()
-			if newBlockHashError != nil {
-				blockchain.logger.Error("failed to calculate new block hash")
-			} else {
-				lastOldBlockHash, oldBlockHashError := hostBlocks[len(hostBlocks)-1].Hash()
-				if oldBlockHashError != nil {
-					blockchain.logger.Error("failed to calculate old block hash")
-					isDifferent = true
-				} else {
-					isDifferent = lastOldBlockHash != lastNewBlockHash
-				}
-			}
-		}
-	}
-	if isDifferent {
-		blockchain.mutex.Lock()
-		defer blockchain.mutex.Unlock()
-		blockchain.blockResponses = selectedBlockResponses
-		blockchain.blocks = selectedBlocks
-		blockchain.logger.Debug("verification done: blockchain replaced")
-	} else {
-		blockchain.logger.Debug("verification done: blockchain kept")
-	}
-}
-
-func (blockchain *Blockchain) sortByBlocksLength(selectedTargets []string, blocksByTarget map[string][]*Block) {
-	sort.Slice(selectedTargets, func(i, j int) bool {
-		return len(blocksByTarget[selectedTargets[i]]) > len(blocksByTarget[selectedTargets[j]])
-	})
-}
-
-func removeTarget(targets []string, removedTarget string) []string {
-	for i := 0; i < len(targets); i++ {
-		if targets[i] == removedTarget {
-			targets = append(targets[:i], targets[i+1:]...)
-			return targets
-		}
-	}
-	return targets
-}
-
-func (blockchain *Blockchain) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64 {
-	blockchain.mutex.RLock()
-	defer blockchain.mutex.RUnlock()
-	var totalAmount uint64
-	var lastTimestamp int64
-	for _, block := range blockchain.blockResponses {
-		for _, registeredAddress := range block.RegisteredAddresses {
-			if blockchainAddress == registeredAddress {
-				if totalAmount > 0 {
-					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp, totalAmount)
-					totalAmount += calculateIncome(totalAmount)
-					lastTimestamp = block.Timestamp
-				}
-				break
-			}
-		}
-		for _, transaction := range block.Transactions {
-			value := transaction.Value
-			if blockchainAddress == transaction.RecipientAddress {
-				if totalAmount > 0 {
-					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp, totalAmount)
-				}
-				totalAmount += value
-				lastTimestamp = block.Timestamp
-			} else if blockchainAddress == transaction.SenderAddress {
-				if totalAmount > 0 {
-					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp, totalAmount)
-				}
-				if totalAmount < value+transaction.Fee {
-					blockchain.logger.Error(fmt.Sprintf("historical transaction have not been properly validated: wallet amount=%d, transaction value=%d", totalAmount, value))
-					totalAmount = 0
-				} else {
-					totalAmount -= value + transaction.Fee
-				}
-				lastTimestamp = block.Timestamp
-			}
-		}
-	}
-	return blockchain.decay(lastTimestamp, currentTimestamp, totalAmount)
-}
-
-func calculateIncome(amount uint64) uint64 {
-	return uint64(math.Round(math.Pow(float64(amount), incomeExponent)))
-}
-
-func (blockchain *Blockchain) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
-	elapsedTimestamp := newTimestamp - lastTimestamp
-	return uint64(math.Floor(float64(amount) * math.Exp(-blockchain.lambda*float64(elapsedTimestamp))))
 }

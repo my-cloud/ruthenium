@@ -20,7 +20,7 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	serverMock.SetHandleFunc = func(topic string, handler gp2p.Handler) {}
 	synchronizerMock := new(networktest.SynchronizerMock)
 	blockchainMock := new(protocoltest.BlockchainMock)
-	blockchainMock.VerifyFunc = func(int64) {}
+	blockchainMock.UpdateFunc = func(int64) {}
 	transactionsPoolMock := new(protocoltest.TransactionsPoolMock)
 	engineMock := new(clocktest.EngineMock)
 	engineMock.StartFunc = func() {}

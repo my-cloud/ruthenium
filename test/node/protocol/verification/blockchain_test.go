@@ -19,7 +19,7 @@ const (
 	blockchainKeptMessage     = "verification done: blockchain kept"
 )
 
-func Test_Verify_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
+func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
@@ -44,7 +44,7 @@ func Test_Verify_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
 
 	// Act
-	blockchain.Verify(watchMock.Now().UnixNano())
+	blockchain.Update(watchMock.Now().UnixNano())
 
 	// Assert
 	var isReplaced bool
@@ -56,7 +56,7 @@ func Test_Verify_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	test.Assert(t, isReplaced, "blockchain is kept whereas it should be replaced")
 }
 
-func Test_Verify_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) {
+func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
@@ -122,7 +122,7 @@ func Test_Verify_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 			}
 
 			// Act
-			blockchain.Verify(watchMock.Now().UnixNano())
+			blockchain.Update(watchMock.Now().UnixNano())
 
 			// Assert
 			var isKept bool
@@ -138,7 +138,7 @@ func Test_Verify_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	}
 }
 
-func Test_Verify_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing.T) {
+func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
@@ -163,7 +163,7 @@ func Test_Verify_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
 
 	// Act
-	blockchain.Verify(watchMock.Now().UnixNano())
+	blockchain.Update(watchMock.Now().UnixNano())
 
 	// Assert
 	var isKept bool
@@ -175,7 +175,7 @@ func Test_Verify_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
 }
 
-func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
+func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
@@ -216,7 +216,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
 
 	// Act
-	blockchain.Verify(watchMock.Now().UnixNano())
+	blockchain.Update(watchMock.Now().UnixNano())
 
 	// Assert
 	var isKept bool
@@ -228,7 +228,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
 }
 
-func Test_Verify_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
+func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
@@ -272,7 +272,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
 
 	// Act
-	blockchain.Verify(watchMock.Now().UnixNano())
+	blockchain.Update(watchMock.Now().UnixNano())
 
 	// Assert
 	var isKept bool
