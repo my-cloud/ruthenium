@@ -7,7 +7,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
-	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"math"
 	"sort"
 	"sync"
@@ -30,9 +29,9 @@ type Blockchain struct {
 	logger          log.Logger
 }
 
-func NewBlockchain(genesisAmount uint64, initialTimestamp int64, registry protocol.Registry, validatorAddress string, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+func NewBlockchain(genesisTransaction *network.TransactionResponse, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
 	blockchain := newBlockchain(nil, registry, validationTimer, synchronizer, logger)
-	blockchain.addGenesisBlock(initialTimestamp, genesisAmount, validatorAddress)
+	blockchain.addGenesisBlock(genesisTransaction)
 	return blockchain
 }
 
@@ -297,10 +296,9 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	}
 }
 
-func (blockchain *Blockchain) addGenesisBlock(timestamp int64, genesisAmount uint64, validatorAddress string) {
-	genesisTransaction := validation.NewRewardTransaction(validatorAddress, timestamp, genesisAmount)
+func (blockchain *Blockchain) addGenesisBlock(genesisTransaction *network.TransactionResponse) {
 	transactions := []*network.TransactionResponse{genesisTransaction}
-	blockResponse := NewBlockResponse(timestamp, [32]byte{}, transactions, nil)
+	blockResponse := NewBlockResponse(genesisTransaction.Timestamp, [32]byte{}, transactions, nil)
 	block, err := NewBlockFromResponse(blockResponse)
 	if err != nil {
 		blockchain.logger.Error(fmt.Errorf("unable to instantiate block: %w", err).Error())
