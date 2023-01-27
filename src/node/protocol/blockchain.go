@@ -9,7 +9,6 @@ type Blockchain interface {
 	Blocks() []*network.BlockResponse
 	CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64
 	Copy() Blockchain
-	IsEmpty() bool
 	LastBlocks(startingBlockHash *[32]byte) []*network.BlockResponse
 	Update(timestamp int64)
 }

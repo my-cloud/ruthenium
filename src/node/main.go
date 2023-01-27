@@ -54,8 +54,10 @@ func main() {
 	}
 	synchronizationTimer := time.Second * synchronizationIntervalInSeconds
 	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, synchronizationTimer, 1, 0)
-	blockchain := verification.NewBlockchain(registry, validationTimer, synchronizer, logger)
-	pool := validation.NewTransactionsPool(blockchain, registry, wallet.Address(), settings.GenesisAmount, validationTimer, watch, logger)
+	now := watch.Now()
+	initialTimestamp := now.Truncate(validationTimer).Add(-validationTimer).UnixNano()
+	blockchain := verification.NewBlockchain(settings.GenesisAmount, initialTimestamp, registry, wallet.Address(), validationTimer, synchronizer, logger)
+	pool := validation.NewTransactionsPool(blockchain, registry, wallet.Address(), validationTimer, watch, logger)
 	validationEngine := tick.NewEngine(pool.Validate, watch, validationTimer, 1, 0)
 	verificationEngine := tick.NewEngine(blockchain.Update, watch, validationTimer, verificationsCountPerValidation, 1)
 	serverFactory := gp2p.NewServerFactory()

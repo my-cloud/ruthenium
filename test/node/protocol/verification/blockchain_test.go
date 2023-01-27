@@ -24,7 +24,7 @@ func Test_AddBlock_ValidParameters_NoErrorLogged(t *testing.T) {
 	registry := new(protocoltest.RegistryMock)
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
-	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(0, 0, registry, "", 1, synchronizer, logger)
 
 	// Act
 	blockchain.AddBlock(0, nil, nil)
@@ -38,7 +38,7 @@ func Test_GetLastBlocks_ValidParameters_NoErrorLogged(t *testing.T) {
 	registry := new(protocoltest.RegistryMock)
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
-	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(0, 0, registry, "", 1, synchronizer, logger)
 
 	// Act
 	blockchain.AddBlock(0, nil, nil)
@@ -69,7 +69,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(0, 0, registry, "", 1, synchronizer, logger)
 
 	// Act
 	blockchain.Update(watchMock.Now().UnixNano())
@@ -99,7 +99,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(0, 0, registry, "", 1, synchronizer, logger)
 
 	type args struct {
 		firstBlockTimestamp  int64
@@ -188,7 +188,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(0, 0, registry, "", 1, synchronizer, logger)
 
 	// Act
 	blockchain.Update(watchMock.Now().UnixNano())
@@ -241,7 +241,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(0, 0, registry, "", 1, synchronizer, logger)
 
 	// Act
 	blockchain.Update(watchMock.Now().UnixNano())
@@ -297,7 +297,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(0, 0, registry, "", 1, synchronizer, logger)
 
 	// Act
 	blockchain.Update(watchMock.Now().UnixNano())

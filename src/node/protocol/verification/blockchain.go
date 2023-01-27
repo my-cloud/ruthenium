@@ -7,6 +7,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
+	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"math"
 	"sort"
 	"sync"
@@ -21,16 +22,18 @@ const (
 type Blockchain struct {
 	blocks          []*Block
 	blockResponses  []*network.BlockResponse
+	lambda          float64
 	mutex           sync.RWMutex
 	registry        protocol.Registry
-	validationTimer time.Duration
 	synchronizer    network.Synchronizer
-	lambda          float64
+	validationTimer time.Duration
 	logger          log.Logger
 }
 
-func NewBlockchain(registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
-	return newBlockchain(nil, registry, validationTimer, synchronizer, logger)
+func NewBlockchain(genesisAmount uint64, initialTimestamp int64, registry protocol.Registry, validatorAddress string, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+	blockchain := newBlockchain(nil, registry, validationTimer, synchronizer, logger)
+	blockchain.addGenesisBlock(initialTimestamp, genesisAmount, validatorAddress)
+	return blockchain
 }
 
 func newBlockchain(blockResponses []*network.BlockResponse, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
@@ -51,7 +54,7 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 	var err error
 	blockchain.mutex.Lock()
 	defer blockchain.mutex.Unlock()
-	if !blockchain.IsEmpty() {
+	if !blockchain.isEmpty() {
 		previousHash, err = blockchain.blocks[len(blockchain.blocks)-1].Hash()
 		if err != nil {
 			blockchain.logger.Error(fmt.Errorf("unable to calculate last block hash: %w", err).Error())
@@ -127,10 +130,6 @@ func (blockchain *Blockchain) Copy() protocol.Blockchain {
 	blockchainCopy.blocks = blockchain.blocks
 	blockchainCopy.blockResponses = blockchain.blockResponses
 	return blockchainCopy
-}
-
-func (blockchain *Blockchain) IsEmpty() bool {
-	return blockchain.blocks == nil
 }
 
 func (blockchain *Blockchain) LastBlocks(startingBlockHash *[32]byte) []*network.BlockResponse {
@@ -298,6 +297,19 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	}
 }
 
+func (blockchain *Blockchain) addGenesisBlock(timestamp int64, genesisAmount uint64, validatorAddress string) {
+	genesisTransaction := validation.NewRewardTransaction(validatorAddress, timestamp, genesisAmount)
+	transactions := []*network.TransactionResponse{genesisTransaction}
+	blockResponse := NewBlockResponse(timestamp, [32]byte{}, transactions, nil)
+	block, err := NewBlockFromResponse(blockResponse)
+	if err != nil {
+		blockchain.logger.Error(fmt.Errorf("unable to instantiate block: %w", err).Error())
+		return
+	}
+	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
+	blockchain.blocks = append(blockchain.blocks, block)
+}
+
 func calculateIncome(amount uint64) uint64 {
 	return uint64(math.Round(math.Pow(float64(amount), incomeExponent)))
 }
@@ -305,6 +317,10 @@ func calculateIncome(amount uint64) uint64 {
 func (blockchain *Blockchain) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
 	elapsedTimestamp := newTimestamp - lastTimestamp
 	return uint64(math.Floor(float64(amount) * math.Exp(-blockchain.lambda*float64(elapsedTimestamp))))
+}
+
+func (blockchain *Blockchain) isEmpty() bool {
+	return blockchain.blocks == nil
 }
 
 func removeTarget(targets []string, removedTarget string) []string {

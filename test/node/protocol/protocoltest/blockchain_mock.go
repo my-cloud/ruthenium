@@ -31,9 +31,6 @@ var _ protocol.Blockchain = &BlockchainMock{}
 //			CopyFunc: func() Blockchain {
 //				panic("mock out the Copy method")
 //			},
-//			IsEmptyFunc: func() bool {
-//				panic("mock out the IsEmpty method")
-//			},
 //			LastBlocksFunc: func(startingBlockHash *[32]byte) []*network.BlockResponse {
 //				panic("mock out the LastBlocks method")
 //			},
@@ -58,9 +55,6 @@ type BlockchainMock struct {
 
 	// CopyFunc mocks the Copy method.
 	CopyFunc func() protocol.Blockchain
-
-	// IsEmptyFunc mocks the IsEmpty method.
-	IsEmptyFunc func() bool
 
 	// LastBlocksFunc mocks the LastBlocks method.
 	LastBlocksFunc func(startingBlockHash *[32]byte) []*network.BlockResponse
@@ -92,9 +86,6 @@ type BlockchainMock struct {
 		// Copy holds details about calls to the Copy method.
 		Copy []struct {
 		}
-		// IsEmpty holds details about calls to the IsEmpty method.
-		IsEmpty []struct {
-		}
 		// LastBlocks holds details about calls to the LastBlocks method.
 		LastBlocks []struct {
 			// StartingBlockHash is the startingBlockHash argument value.
@@ -110,7 +101,6 @@ type BlockchainMock struct {
 	lockBlocks               sync.RWMutex
 	lockCalculateTotalAmount sync.RWMutex
 	lockCopy                 sync.RWMutex
-	lockIsEmpty              sync.RWMutex
 	lockLastBlocks           sync.RWMutex
 	lockUpdate               sync.RWMutex
 }
@@ -242,33 +232,6 @@ func (mock *BlockchainMock) CopyCalls() []struct {
 	mock.lockCopy.RLock()
 	calls = mock.calls.Copy
 	mock.lockCopy.RUnlock()
-	return calls
-}
-
-// IsEmpty calls IsEmptyFunc.
-func (mock *BlockchainMock) IsEmpty() bool {
-	if mock.IsEmptyFunc == nil {
-		panic("BlockchainMock.IsEmptyFunc: method is nil but Blockchain.IsEmpty was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockIsEmpty.Lock()
-	mock.calls.IsEmpty = append(mock.calls.IsEmpty, callInfo)
-	mock.lockIsEmpty.Unlock()
-	return mock.IsEmptyFunc()
-}
-
-// IsEmptyCalls gets all the calls that were made to IsEmpty.
-// Check the length with:
-//
-//	len(mockedBlockchain.IsEmptyCalls())
-func (mock *BlockchainMock) IsEmptyCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockIsEmpty.RLock()
-	calls = mock.calls.IsEmpty
-	mock.lockIsEmpty.RUnlock()
 	return calls
 }
 
