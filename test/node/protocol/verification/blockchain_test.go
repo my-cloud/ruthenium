@@ -33,7 +33,7 @@ func Test_AddBlock_ValidParameters_NoErrorLogged(t *testing.T) {
 	test.Assert(t, len(logger.ErrorCalls()) == 0, "logger has been called whereas it should not")
 }
 
-func Test_GetLastBlocks_ValidParameters_NoErrorLogged(t *testing.T) {
+func Test_Blocks_ValidParameters_NoErrorLogged(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	logger := logtest.NewLoggerMock()
@@ -41,10 +41,26 @@ func Test_GetLastBlocks_ValidParameters_NoErrorLogged(t *testing.T) {
 	blockchain := verification.NewBlockchain(0, 0, registry, "", 1, synchronizer, logger)
 
 	// Act
-	blockchain.AddBlock(0, nil, nil)
+	blocks := blockchain.Blocks()
 
 	// Assert
-	test.Assert(t, len(logger.ErrorCalls()) == 0, "logger has been called whereas it should not")
+	test.Assert(t, len(blocks) == 1, "blocks don't contain a single block")
+}
+
+func Test_CalculateTotalAmount_InitialValidator_ReturnsGenesisAmount(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	var genesisAmount uint64 = 10
+	validatorAddress := ""
+	blockchain := verification.NewBlockchain(genesisAmount, 0, registry, validatorAddress, 1, synchronizer, logger)
+
+	// Act
+	amount := blockchain.CalculateTotalAmount(1, validatorAddress)
+
+	// Assert
+	test.Assert(t, amount == genesisAmount, "calculated amount should be the genesis amount")
 }
 
 func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
