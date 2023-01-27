@@ -28,7 +28,7 @@ func Test_AddBlock_ValidParameters_NoErrorLogged(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
 	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
-	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(genesisTransaction, 0, registry, 1, synchronizer, logger)
 
 	// Act
 	blockchain.AddBlock(0, nil, nil)
@@ -43,7 +43,7 @@ func Test_Blocks_ValidParameters_NoErrorLogged(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
 	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
-	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(genesisTransaction, 0, registry, 1, synchronizer, logger)
 
 	// Act
 	blocks := blockchain.Blocks()
@@ -58,7 +58,7 @@ func Test_CalculateTotalAmount_InitialValidator_ReturnsGenesisAmount(t *testing.
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
 	genesisTransaction := validation.NewRewardTransaction("", 0, 10)
-	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(genesisTransaction, 0, registry, 1, synchronizer, logger)
 
 	// Act
 	amount := blockchain.CalculateTotalAmount(1, genesisTransaction.RecipientAddress)
@@ -90,7 +90,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 		return []network.Neighbor{neighborMock}
 	}
 	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
-	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(genesisTransaction, 0, registry, 1, synchronizer, logger)
 
 	// Act
 	blockchain.Update(watchMock.Now().UnixNano())
@@ -121,7 +121,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 		return []network.Neighbor{neighborMock}
 	}
 	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
-	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(genesisTransaction, 0, registry, 1, synchronizer, logger)
 
 	type args struct {
 		firstBlockTimestamp  int64
@@ -214,7 +214,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 		return []network.Neighbor{neighborMock}
 	}
 	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
-	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(genesisTransaction, 0, registry, 1, synchronizer, logger)
 
 	// Act
 	blockchain.Update(watchMock.Now().UnixNano())
@@ -234,7 +234,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
 }
 
-func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
+func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
@@ -244,7 +244,8 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	neighborMock := new(networktest.NeighborMock)
 	wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	address := wallet.Address()
-	serverTransaction := server.NewTransaction("A", address, wallet.PublicKey(), 3, 1)
+	var invalidTransactionFee uint64 = 0
+	serverTransaction := server.NewTransaction("A", address, wallet.PublicKey(), 3, 1, invalidTransactionFee)
 	_ = serverTransaction.Sign(wallet.PrivateKey())
 	transactionRequest := serverTransaction.GetRequest()
 	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
@@ -271,7 +272,66 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 		return []network.Neighbor{neighborMock}
 	}
 	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
-	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
+	var minimalTransactionFee uint64 = 1
+	blockchain := verification.NewBlockchain(genesisTransaction, minimalTransactionFee, registry, 1, synchronizer, logger)
+
+	// Act
+	blockchain.Update(watchMock.Now().UnixNano())
+
+	// Assert
+	var isKept bool
+	var isExplicitMessageLogged bool
+	for _, call := range logger.DebugCalls() {
+		expectedMessage := fmt.Sprintf("a neighbor block transaction fee is too low, fee: %d, minimal fee: %d", invalidTransactionFee, minimalTransactionFee)
+		if call.Msg == blockchainKeptMessage {
+			isKept = true
+		} else if strings.Contains(call.Msg, expectedMessage) {
+			isExplicitMessageLogged = true
+		}
+	}
+	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
+	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
+}
+
+func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
+	watchMock := new(clocktest.WatchMock)
+	watchMock.NowFunc = func() time.Time { return time.Unix(0, 1) }
+	logger := logtest.NewLoggerMock()
+	neighborMock := new(networktest.NeighborMock)
+	wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
+	address := wallet.Address()
+	var transactionFee uint64 = 0
+	serverTransaction := server.NewTransaction("A", address, wallet.PublicKey(), 3, 1, transactionFee)
+	_ = serverTransaction.Sign(wallet.PrivateKey())
+	transactionRequest := serverTransaction.GetRequest()
+	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
+	transactionResponse := transaction.GetResponse()
+	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
+		blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
+		block1, _ := verification.NewBlockFromResponse(blockResponse1)
+		hash, _ := block1.Hash()
+		var block2Timestamp int64 = 1
+		transactions := []*network.TransactionResponse{
+			transactionResponse,
+			validation.NewRewardTransaction(address, block2Timestamp, 0),
+		}
+		var registeredAddresses []string
+		registeredAddresses = append(registeredAddresses, address)
+		blockResponse2 := verification.NewBlockResponse(block2Timestamp, hash, transactions, registeredAddresses)
+		return []*network.BlockResponse{blockResponse1, blockResponse2}, nil
+	}
+	neighborMock.TargetFunc = func() string {
+		return "neighbor"
+	}
+	synchronizer := new(networktest.SynchronizerMock)
+	synchronizer.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
+	}
+	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
+	blockchain := verification.NewBlockchain(genesisTransaction, transactionFee, registry, 1, synchronizer, logger)
 
 	// Act
 	blockchain.Update(watchMock.Now().UnixNano())
@@ -301,7 +361,8 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	neighborMock := new(networktest.NeighborMock)
 	wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	address := wallet.Address()
-	serverTransaction := server.NewTransaction("A", address, wallet.PublicKey(), 0, 1)
+	var transactionFee uint64 = 0
+	serverTransaction := server.NewTransaction("A", address, wallet.PublicKey(), 0, 1, transactionFee)
 	_ = serverTransaction.Sign(wallet.PrivateKey())
 	transactionRequest := serverTransaction.GetRequest()
 	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
@@ -328,7 +389,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 		return []network.Neighbor{neighborMock}
 	}
 	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
-	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
+	blockchain := verification.NewBlockchain(genesisTransaction, transactionFee, registry, 1, synchronizer, logger)
 
 	// Act
 	blockchain.Update(watchMock.Now().UnixNano())

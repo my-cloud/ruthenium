@@ -19,25 +19,27 @@ const (
 )
 
 type Blockchain struct {
-	blocks          []*Block
-	blockResponses  []*network.BlockResponse
-	lambda          float64
-	mutex           sync.RWMutex
-	registry        protocol.Registry
-	synchronizer    network.Synchronizer
-	validationTimer time.Duration
-	logger          log.Logger
+	blocks                []*Block
+	blockResponses        []*network.BlockResponse
+	lambda                float64
+	minimalTransactionFee uint64
+	mutex                 sync.RWMutex
+	registry              protocol.Registry
+	synchronizer          network.Synchronizer
+	validationTimer       time.Duration
+	logger                log.Logger
 }
 
-func NewBlockchain(genesisTransaction *network.TransactionResponse, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
-	blockchain := newBlockchain(nil, registry, validationTimer, synchronizer, logger)
+func NewBlockchain(genesisTransaction *network.TransactionResponse, minimalTransactionFee uint64, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+	blockchain := newBlockchain(nil, minimalTransactionFee, registry, validationTimer, synchronizer, logger)
 	blockchain.addGenesisBlock(genesisTransaction)
 	return blockchain
 }
 
-func newBlockchain(blockResponses []*network.BlockResponse, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+func newBlockchain(blockResponses []*network.BlockResponse, minimalTransactionFee uint64, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blockResponses = blockResponses
+	blockchain.minimalTransactionFee = minimalTransactionFee
 	blockchain.registry = registry
 	blockchain.validationTimer = validationTimer
 	blockchain.synchronizer = synchronizer
@@ -399,6 +401,7 @@ func (blockchain *Blockchain) verify(neighborBlocks []*network.BlockResponse, ho
 	validBlocks = append(validBlocks, previousBlock)
 	neighborBlockchain := newBlockchain(
 		append(oldHostBlocks, neighborBlocks...),
+		blockchain.minimalTransactionFee,
 		blockchain.registry,
 		blockchain.validationTimer,
 		blockchain.synchronizer,
@@ -469,6 +472,9 @@ func (blockchain *Blockchain) verify(neighborBlocks []*network.BlockResponse, ho
 						return nil, fmt.Errorf("neighbor transaction is invalid: %w", err)
 					}
 					fee := transaction.Fee()
+					if fee < blockchain.minimalTransactionFee {
+						return nil, fmt.Errorf("a neighbor block transaction fee is too low, fee: %d, minimal fee: %d", fee, blockchain.minimalTransactionFee)
+					}
 					totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + fee
 					totalTransactionsFees += fee
 					if currentBlockTimestamp+blockchain.validationTimer.Nanoseconds() < transaction.Timestamp() {

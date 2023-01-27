@@ -7,8 +7,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 )
 
-const transactionFee = 1000
-
 type Transaction struct {
 	recipientAddress string
 	senderAddress    string
@@ -19,14 +17,14 @@ type Transaction struct {
 	fee              uint64
 }
 
-func NewTransaction(recipientAddress string, senderAddress string, senderPublicKey *encryption.PublicKey, timestamp int64, value uint64) *Transaction {
+func NewTransaction(recipientAddress string, senderAddress string, senderPublicKey *encryption.PublicKey, timestamp int64, value uint64, fee uint64) *Transaction {
 	return &Transaction{
 		recipientAddress: recipientAddress,
 		senderAddress:    senderAddress,
 		senderPublicKey:  senderPublicKey,
 		timestamp:        timestamp,
 		value:            value,
-		fee:              transactionFee,
+		fee:              fee,
 	}
 }
 
