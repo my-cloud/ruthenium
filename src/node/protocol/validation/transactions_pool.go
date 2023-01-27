@@ -74,18 +74,16 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			continue
 		}
 		if len(blocks) > 1 {
-			if transaction.Timestamp < blocks[len(blocks)-2].Timestamp {
+			if transaction.Timestamp < blocks[len(blocks)-1].Timestamp {
 				pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too old, transaction: %v", transaction))
 				rejectedTransactions = append(rejectedTransactions, transaction)
 				continue
 			}
-			for j := len(blocks) - 2; j < len(blocks); j++ {
-				for _, validatedTransaction := range blocks[j].Transactions {
-					if pool.transactions[i].Equals(validatedTransaction) {
-						pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction is already in the blockchain, transaction: %v", transaction))
-						rejectedTransactions = append(rejectedTransactions, transaction)
-						continue
-					}
+			for _, validatedTransaction := range blocks[len(blocks)-1].Transactions {
+				if pool.transactions[i].Equals(validatedTransaction) {
+					pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction is already in the blockchain, transaction: %v", transaction))
+					rejectedTransactions = append(rejectedTransactions, transaction)
+					continue
 				}
 			}
 		}
@@ -170,17 +168,15 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 			err = fmt.Errorf("the transaction timestamp is too far in the future: %v, now: %v", time.Unix(0, timestamp), time.Unix(0, nextBlockTimestamp))
 			return
 		}
-		previousBlockTimestamp := blocks[len(blocks)-2].Timestamp
-		if timestamp < previousBlockTimestamp {
-			err = fmt.Errorf("the transaction timestamp is too old: %v, previous block timestamp: %v", time.Unix(0, timestamp), time.Unix(0, previousBlockTimestamp))
+		currentBlockTimestamp := blocks[len(blocks)-1].Timestamp
+		if timestamp < currentBlockTimestamp {
+			err = fmt.Errorf("the transaction timestamp is too old: %v, current block timestamp: %v", time.Unix(0, timestamp), time.Unix(0, currentBlockTimestamp))
 			return
 		}
-		for i := len(blocks) - 2; i < len(blocks); i++ {
-			for _, validatedTransaction := range blocks[i].Transactions {
-				if transaction.Equals(validatedTransaction) {
-					err = errors.New("the transaction is already in the blockchain")
-					return
-				}
+		for _, validatedTransaction := range blocks[len(blocks)-1].Transactions {
+			if transaction.Equals(validatedTransaction) {
+				err = errors.New("the transaction is already in the blockchain")
+				return
 			}
 		}
 	}

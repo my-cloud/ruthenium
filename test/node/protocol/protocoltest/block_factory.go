@@ -11,7 +11,7 @@ func NewGenesisBlockResponse(validatorWalletAddress string) *network.BlockRespon
 		Timestamp:           0,
 		PreviousHash:        [32]byte{},
 		Transactions:        []*network.TransactionResponse{genesisTransaction},
-		RegisteredAddresses: nil,
+		RegisteredAddresses: []string{validatorWalletAddress},
 	}
 }
 
