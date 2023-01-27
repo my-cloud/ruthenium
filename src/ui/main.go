@@ -52,7 +52,7 @@ func main() {
 	particlesCount := settings.ParticlesCount
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
 	http.Handle("/wallet", wallet.NewHandler(*mnemonic, *derivationPath, *password, *privateKey, logger))
-	http.Handle("/transaction", transaction.NewHandler(host, particlesCount, logger))
+	http.Handle("/transaction", transaction.NewHandler(host, particlesCount, settings.TransactionFee, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/wallet/amount", amount.NewHandler(host, particlesCount, logger))
 	http.Handle("/validation/start", start.NewHandler(host, logger))

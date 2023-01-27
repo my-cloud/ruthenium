@@ -8,10 +8,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 )
 
-const (
-	transactionFee      = 1000
-	rewardSenderAddress = "REWARD SENDER ADDRESS"
-)
+const rewardSenderAddress = "REWARD SENDER ADDRESS"
 
 type Transaction struct {
 	recipientAddress string
@@ -29,7 +26,7 @@ func NewRewardTransaction(recipientAddress string, timestamp int64, value uint64
 		SenderAddress:    rewardSenderAddress,
 		Timestamp:        timestamp,
 		Value:            value,
-		Fee:              transactionFee,
+		Fee:              0,
 	}
 }
 

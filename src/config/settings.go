@@ -10,6 +10,7 @@ import (
 type Settings struct {
 	ParticlesCount uint64
 	GenesisAmount  uint64
+	TransactionFee uint64
 }
 
 func NewSettings(configurationPath string) (*Settings, error) {

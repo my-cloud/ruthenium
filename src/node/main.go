@@ -23,6 +23,7 @@ const (
 	validationIntervalInSeconds      = 60
 	verificationsCountPerValidation  = 6
 	defaultPort                      = 8106
+	minimalTransactionFee            = 1000
 )
 
 func main() {
@@ -57,8 +58,8 @@ func main() {
 	now := watch.Now()
 	initialTimestamp := now.Truncate(validationTimer).Add(validationTimer).UnixNano()
 	genesisTransaction := validation.NewRewardTransaction(wallet.Address(), initialTimestamp, settings.GenesisAmount)
-	blockchain := verification.NewBlockchain(genesisTransaction, registry, validationTimer, synchronizer, logger)
-	pool := validation.NewTransactionsPool(blockchain, registry, wallet.Address(), validationTimer, watch, logger)
+	blockchain := verification.NewBlockchain(genesisTransaction, minimalTransactionFee, registry, validationTimer, synchronizer, logger)
+	pool := validation.NewTransactionsPool(blockchain, minimalTransactionFee, registry, wallet.Address(), validationTimer, watch, logger)
 	validationEngine := tick.NewEngine(pool.Validate, watch, validationTimer, 1, 0)
 	verificationEngine := tick.NewEngine(blockchain.Update, watch, validationTimer, verificationsCountPerValidation, 1)
 	serverFactory := gp2p.NewServerFactory()
