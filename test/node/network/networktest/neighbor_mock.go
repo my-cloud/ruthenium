@@ -27,6 +27,9 @@ var _ network.Neighbor = &NeighborMock{}
 //			GetBlocksFunc: func() ([]*BlockResponse, error) {
 //				panic("mock out the GetBlocks method")
 //			},
+//			GetLastBlocksFunc: func(lastBlocksRequest LastBlocksRequest) ([]*BlockResponse, error) {
+//				panic("mock out the GetLastBlocks method")
+//			},
 //			GetTransactionsFunc: func() ([]TransactionResponse, error) {
 //				panic("mock out the GetTransactions method")
 //			},
@@ -64,6 +67,9 @@ type NeighborMock struct {
 	// GetBlocksFunc mocks the GetBlocks method.
 	GetBlocksFunc func() ([]*network.BlockResponse, error)
 
+	// GetLastBlocksFunc mocks the GetLastBlocks method.
+	GetLastBlocksFunc func(lastBlocksRequest network.LastBlocksRequest) ([]*network.BlockResponse, error)
+
 	// GetTransactionsFunc mocks the GetTransactions method.
 	GetTransactionsFunc func() ([]network.TransactionResponse, error)
 
@@ -100,6 +106,11 @@ type NeighborMock struct {
 		// GetBlocks holds details about calls to the GetBlocks method.
 		GetBlocks []struct {
 		}
+		// GetLastBlocks holds details about calls to the GetLastBlocks method.
+		GetLastBlocks []struct {
+			// LastBlocksRequest is the lastBlocksRequest argument value.
+			LastBlocksRequest network.LastBlocksRequest
+		}
 		// GetTransactions holds details about calls to the GetTransactions method.
 		GetTransactions []struct {
 		}
@@ -127,6 +138,7 @@ type NeighborMock struct {
 	lockAddTransaction  sync.RWMutex
 	lockGetAmount       sync.RWMutex
 	lockGetBlocks       sync.RWMutex
+	lockGetLastBlocks   sync.RWMutex
 	lockGetTransactions sync.RWMutex
 	lockIp              sync.RWMutex
 	lockPort            sync.RWMutex
@@ -224,6 +236,38 @@ func (mock *NeighborMock) GetBlocksCalls() []struct {
 	mock.lockGetBlocks.RLock()
 	calls = mock.calls.GetBlocks
 	mock.lockGetBlocks.RUnlock()
+	return calls
+}
+
+// GetLastBlocks calls GetLastBlocksFunc.
+func (mock *NeighborMock) GetLastBlocks(lastBlocksRequest network.LastBlocksRequest) ([]*network.BlockResponse, error) {
+	if mock.GetLastBlocksFunc == nil {
+		panic("NeighborMock.GetLastBlocksFunc: method is nil but Neighbor.GetLastBlocks was just called")
+	}
+	callInfo := struct {
+		LastBlocksRequest network.LastBlocksRequest
+	}{
+		LastBlocksRequest: lastBlocksRequest,
+	}
+	mock.lockGetLastBlocks.Lock()
+	mock.calls.GetLastBlocks = append(mock.calls.GetLastBlocks, callInfo)
+	mock.lockGetLastBlocks.Unlock()
+	return mock.GetLastBlocksFunc(lastBlocksRequest)
+}
+
+// GetLastBlocksCalls gets all the calls that were made to GetLastBlocks.
+// Check the length with:
+//
+//	len(mockedNeighbor.GetLastBlocksCalls())
+func (mock *NeighborMock) GetLastBlocksCalls() []struct {
+	LastBlocksRequest network.LastBlocksRequest
+} {
+	var calls []struct {
+		LastBlocksRequest network.LastBlocksRequest
+	}
+	mock.lockGetLastBlocks.RLock()
+	calls = mock.calls.GetLastBlocks
+	mock.lockGetLastBlocks.RUnlock()
 	return calls
 }
 

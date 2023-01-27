@@ -3,6 +3,7 @@ package verification
 import (
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/test"
@@ -19,7 +20,52 @@ const (
 	blockchainKeptMessage     = "verification done: blockchain kept"
 )
 
-func Test_Verify_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
+func Test_AddBlock_ValidParameters_NoErrorLogged(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
+	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
+
+	// Act
+	blockchain.AddBlock(0, nil, nil)
+
+	// Assert
+	test.Assert(t, len(logger.ErrorCalls()) == 0, "logger has been called whereas it should not")
+}
+
+func Test_Blocks_ValidParameters_NoErrorLogged(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
+	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
+
+	// Act
+	blocks := blockchain.Blocks()
+
+	// Assert
+	test.Assert(t, len(blocks) == 1, "blocks don't contain a single block")
+}
+
+func Test_CalculateTotalAmount_InitialValidator_ReturnsGenesisAmount(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	genesisTransaction := validation.NewRewardTransaction("", 0, 10)
+	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
+
+	// Act
+	amount := blockchain.CalculateTotalAmount(1, genesisTransaction.RecipientAddress)
+
+	// Assert
+	test.Assert(t, amount == genesisTransaction.Value, "calculated amount should be the genesis amount")
+}
+
+func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
@@ -41,10 +87,11 @@ func Test_Verify_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
+	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
 
 	// Act
-	blockchain.Verify(watchMock.Now().UnixNano())
+	blockchain.Update(watchMock.Now().UnixNano())
 
 	// Assert
 	var isReplaced bool
@@ -56,7 +103,7 @@ func Test_Verify_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	test.Assert(t, isReplaced, "blockchain is kept whereas it should be replaced")
 }
 
-func Test_Verify_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) {
+func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
@@ -71,7 +118,8 @@ func Test_Verify_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
+	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
 
 	type args struct {
 		firstBlockTimestamp  int64
@@ -122,7 +170,7 @@ func Test_Verify_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 			}
 
 			// Act
-			blockchain.Verify(watchMock.Now().UnixNano())
+			blockchain.Update(watchMock.Now().UnixNano())
 
 			// Assert
 			var isKept bool
@@ -138,7 +186,7 @@ func Test_Verify_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	}
 }
 
-func Test_Verify_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing.T) {
+func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
@@ -160,10 +208,11 @@ func Test_Verify_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
+	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
 
 	// Act
-	blockchain.Verify(watchMock.Now().UnixNano())
+	blockchain.Update(watchMock.Now().UnixNano())
 
 	// Assert
 	var isKept bool
@@ -175,7 +224,7 @@ func Test_Verify_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
 }
 
-func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
+func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
@@ -203,7 +252,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 		}
 		var registeredAddresses []string
 		registeredAddresses = append(registeredAddresses, address)
-		blockResponse2 := protocoltest.NewBlockResponse(block2Timestamp, hash, transactions, registeredAddresses)
+		blockResponse2 := verification.NewBlockResponse(block2Timestamp, hash, transactions, registeredAddresses)
 		return []*network.BlockResponse{blockResponse1, blockResponse2}, nil
 	}
 	neighborMock.TargetFunc = func() string {
@@ -213,10 +262,11 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
+	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
 
 	// Act
-	blockchain.Verify(watchMock.Now().UnixNano())
+	blockchain.Update(watchMock.Now().UnixNano())
 
 	// Assert
 	var isKept bool
@@ -228,7 +278,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
 }
 
-func Test_Verify_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
+func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
@@ -259,7 +309,7 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 		}
 		var registeredAddresses []string
 		registeredAddresses = append(registeredAddresses, address)
-		blockResponse3 := protocoltest.NewBlockResponse(block3Timestamp, hash2, transactions, registeredAddresses)
+		blockResponse3 := verification.NewBlockResponse(block3Timestamp, hash2, transactions, registeredAddresses)
 		return []*network.BlockResponse{blockResponse1, blockResponse2, blockResponse3}, nil
 	}
 	neighborMock.TargetFunc = func() string {
@@ -269,10 +319,11 @@ func Test_Verify_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	blockchain := verification.NewBlockchain(registry, 1, synchronizer, logger)
+	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
+	blockchain := verification.NewBlockchain(genesisTransaction, registry, 1, synchronizer, logger)
 
 	// Act
-	blockchain.Verify(watchMock.Now().UnixNano())
+	blockchain.Update(watchMock.Now().UnixNano())
 
 	// Assert
 	var isKept bool

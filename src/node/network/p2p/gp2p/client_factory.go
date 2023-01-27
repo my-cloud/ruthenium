@@ -8,10 +8,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"strconv"
-	"time"
 )
-
-const clientConnectionTimeoutInSeconds = 10
 
 type ClientFactory struct {
 	ipFinder network.IpFinder
@@ -37,10 +34,6 @@ func (factory *ClientFactory) CreateClient(ip string, port uint16) (p2p.Client, 
 	if err != nil {
 		return nil, err
 	}
-	settings := gp2p.NewClientSettings()
-	settings.SetRetry(1, time.Nanosecond)
-	settings.SetConnTimeout(clientConnectionTimeoutInSeconds * time.Second)
-	client.SetSettings(settings)
 	client.SetLogger(factory.logger)
 	return client, err
 }

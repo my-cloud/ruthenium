@@ -20,7 +20,6 @@ type TransactionsPool struct {
 	blockchain       protocol.Blockchain
 	registry         protocol.Registry
 	validatorAddress string
-	genesisAmount    uint64
 
 	validationTimer time.Duration
 	watch           clock.Watch
@@ -28,12 +27,11 @@ type TransactionsPool struct {
 	logger log.Logger
 }
 
-func NewTransactionsPool(blockchain protocol.Blockchain, registry protocol.Registry, validatorAddress string, genesisAmount uint64, validationTimer time.Duration, watch clock.Watch, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain protocol.Blockchain, registry protocol.Registry, validatorAddress string, validationTimer time.Duration, watch clock.Watch, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blockchain = blockchain
 	pool.registry = registry
 	pool.validatorAddress = validatorAddress
-	pool.genesisAmount = genesisAmount
 	pool.validationTimer = validationTimer
 	pool.watch = watch
 	pool.logger = logger
@@ -61,17 +59,8 @@ func (pool *TransactionsPool) Transactions() []*network.TransactionResponse {
 
 func (pool *TransactionsPool) Validate(timestamp int64) {
 	currentBlockchain := pool.blockchain.Copy()
-	if currentBlockchain.IsEmpty() {
-		genesisTransaction := NewRewardTransaction(pool.validatorAddress, timestamp, pool.genesisAmount)
-		transactions := []*network.TransactionResponse{genesisTransaction}
-		pool.blockchain.AddBlock(timestamp, transactions, nil)
-		pool.logger.Debug("genesis block added")
-		return
-	}
-
 	blocks := currentBlockchain.Blocks()
 	lastBlock := blocks[len(blocks)-1]
-
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 	totalTransactionsValueBySenderAddress := make(map[string]uint64)

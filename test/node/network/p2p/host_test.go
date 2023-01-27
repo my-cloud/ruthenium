@@ -20,7 +20,7 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	serverMock.SetHandleFunc = func(topic string, handler gp2p.Handler) {}
 	synchronizerMock := new(networktest.SynchronizerMock)
 	blockchainMock := new(protocoltest.BlockchainMock)
-	blockchainMock.VerifyFunc = func(int64) {}
+	blockchainMock.UpdateFunc = func(int64) {}
 	transactionsPoolMock := new(protocoltest.TransactionsPoolMock)
 	engineMock := new(clocktest.EngineMock)
 	engineMock.StartFunc = func() {}
@@ -28,10 +28,6 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	engineMock.WaitFunc = func() {}
 	watchMock := new(clocktest.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Now() }
-	client := new(p2ptest.ClientMock)
-	client.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
-	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return client, nil }
 	logger := logtest.NewLoggerMock()
 	host := p2p.NewHost(serverMock, synchronizerMock, blockchainMock, transactionsPoolMock, engineMock, engineMock, engineMock, watchMock, logger)
 
