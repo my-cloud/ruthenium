@@ -31,7 +31,7 @@ var _ protocol.Blockchain = &BlockchainMock{}
 //			CopyFunc: func() Blockchain {
 //				panic("mock out the Copy method")
 //			},
-//			LastBlocksFunc: func(startingBlockHash *[32]byte) []*network.BlockResponse {
+//			LastBlocksFunc: func(startingBlockHash [32]byte) []*network.BlockResponse {
 //				panic("mock out the LastBlocks method")
 //			},
 //			UpdateFunc: func(timestamp int64)  {
@@ -57,7 +57,7 @@ type BlockchainMock struct {
 	CopyFunc func() protocol.Blockchain
 
 	// LastBlocksFunc mocks the LastBlocks method.
-	LastBlocksFunc func(startingBlockHash *[32]byte) []*network.BlockResponse
+	LastBlocksFunc func(startingBlockHash [32]byte) []*network.BlockResponse
 
 	// UpdateFunc mocks the Update method.
 	UpdateFunc func(timestamp int64)
@@ -89,7 +89,7 @@ type BlockchainMock struct {
 		// LastBlocks holds details about calls to the LastBlocks method.
 		LastBlocks []struct {
 			// StartingBlockHash is the startingBlockHash argument value.
-			StartingBlockHash *[32]byte
+			StartingBlockHash [32]byte
 		}
 		// Update holds details about calls to the Update method.
 		Update []struct {
@@ -236,12 +236,12 @@ func (mock *BlockchainMock) CopyCalls() []struct {
 }
 
 // LastBlocks calls LastBlocksFunc.
-func (mock *BlockchainMock) LastBlocks(startingBlockHash *[32]byte) []*network.BlockResponse {
+func (mock *BlockchainMock) LastBlocks(startingBlockHash [32]byte) []*network.BlockResponse {
 	if mock.LastBlocksFunc == nil {
 		panic("BlockchainMock.LastBlocksFunc: method is nil but Blockchain.LastBlocks was just called")
 	}
 	callInfo := struct {
-		StartingBlockHash *[32]byte
+		StartingBlockHash [32]byte
 	}{
 		StartingBlockHash: startingBlockHash,
 	}
@@ -256,10 +256,10 @@ func (mock *BlockchainMock) LastBlocks(startingBlockHash *[32]byte) []*network.B
 //
 //	len(mockedBlockchain.LastBlocksCalls())
 func (mock *BlockchainMock) LastBlocksCalls() []struct {
-	StartingBlockHash *[32]byte
+	StartingBlockHash [32]byte
 } {
 	var calls []struct {
-		StartingBlockHash *[32]byte
+		StartingBlockHash [32]byte
 	}
 	mock.lockLastBlocks.RLock()
 	calls = mock.calls.LastBlocks

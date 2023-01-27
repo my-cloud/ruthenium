@@ -132,7 +132,7 @@ func (blockchain *Blockchain) Copy() protocol.Blockchain {
 	return blockchainCopy
 }
 
-func (blockchain *Blockchain) LastBlocks(startingBlockHash *[32]byte) []*network.BlockResponse {
+func (blockchain *Blockchain) LastBlocks(startingBlockHash [32]byte) []*network.BlockResponse {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
 	for i := len(blockchain.blockResponses); i > 0; i-- {

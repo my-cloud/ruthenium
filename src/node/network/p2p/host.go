@@ -102,7 +102,7 @@ func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err e
 }
 
 func (host *Host) getLastBlocks(request *network.LastBlocksRequest) (res gp2p.Data) {
-	blockResponses := host.blockchain.LastBlocks(request.StartingBlockHash)
+	blockResponses := host.blockchain.LastBlocks(*request.StartingBlockHash)
 	err := res.SetGob(blockResponses)
 	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to get blocks: %w", err).Error())
