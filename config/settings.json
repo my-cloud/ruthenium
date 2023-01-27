@@ -1,5 +1,4 @@
 {
   "particlesCount": 100000000,
-  "genesisAmount": 10000000000000,
-  "transactionFee": 1000
+  "genesisAmount": 10000000000000
 }
