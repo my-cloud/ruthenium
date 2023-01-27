@@ -178,7 +178,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 			var isKept bool
 			var isExplicitMessageLogged bool
 			for _, call := range logger.DebugCalls() {
-				expectedMessage := fmt.Sprintf("neighbor block timestamp is invalid")
+				expectedMessage := "neighbor block timestamp is invalid"
 				if call.Msg == blockchainKeptMessage {
 					isKept = true
 				} else if strings.Contains(call.Msg, expectedMessage) {
@@ -223,7 +223,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	var isKept bool
 	var isExplicitMessageLogged bool
 	for _, call := range logger.DebugCalls() {
-		expectedMessage := fmt.Sprintf("neighbor block timestamp is in the future")
+		expectedMessage := "neighbor block timestamp is in the future"
 		if call.Msg == blockchainKeptMessage {
 			isKept = true
 		} else if strings.Contains(call.Msg, expectedMessage) {
