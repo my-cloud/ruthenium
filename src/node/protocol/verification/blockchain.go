@@ -83,6 +83,9 @@ func (blockchain *Blockchain) CalculateTotalAmount(currentTimestamp int64, block
 	var totalAmount uint64
 	var lastTimestamp int64
 	for _, block := range blockchain.blockResponses {
+		if block.Timestamp > currentTimestamp {
+			break
+		}
 		for _, registeredAddress := range block.RegisteredAddresses {
 			if blockchainAddress == registeredAddress {
 				if totalAmount > 0 {
@@ -447,7 +450,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlock *B
 		return errors.New("neighbor block reward exceeds the consented one")
 	}
 	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
-		amount := neighborBlockchain.CalculateTotalAmount(currentBlockTimestamp, senderAddress)
+		amount := neighborBlockchain.CalculateTotalAmount(previousBlockTimestamp, senderAddress)
 		if totalTransactionsValue > amount {
 			return errors.New("neighbor block total transactions value exceeds its sender wallet amount")
 		}
