@@ -9,22 +9,25 @@ import (
 )
 
 type Block struct {
-	timestamp           int64
-	previousHash        [32]byte
-	transactions        []*validation.Transaction
-	registeredAddresses []string
+	timestamp                  int64
+	previousHash               [32]byte
+	transactions               []*validation.Transaction
+	addedRegisteredAddresses   []string
+	removedRegisteredAddresses []string
+	registeredAddresses        []string
 }
 
-func NewBlockResponse(timestamp int64, previousHash [32]byte, transactions []*network.TransactionResponse, registeredAddresses []string) *network.BlockResponse {
+func NewBlockResponse(timestamp int64, previousHash [32]byte, transactions []*network.TransactionResponse, addedRegisteredAddresses []string, removedRegisteredAddresses []string) *network.BlockResponse {
 	return &network.BlockResponse{
-		Timestamp:           timestamp,
-		PreviousHash:        previousHash,
-		Transactions:        transactions,
-		RegisteredAddresses: registeredAddresses,
+		Timestamp:                  timestamp,
+		PreviousHash:               previousHash,
+		Transactions:               transactions,
+		AddedRegisteredAddresses:   addedRegisteredAddresses,
+		RemovedRegisteredAddresses: removedRegisteredAddresses,
 	}
 }
 
-func NewBlockFromResponse(block *network.BlockResponse) (*Block, error) {
+func NewBlockFromResponse(block *network.BlockResponse, lastRegisteredAddresses []string) (*Block, error) {
 	var transactions []*validation.Transaction
 	for _, transactionResponse := range block.Transactions {
 		transaction, err := validation.NewTransactionFromResponse(transactionResponse)
@@ -33,12 +36,37 @@ func NewBlockFromResponse(block *network.BlockResponse) (*Block, error) {
 		}
 		transactions = append(transactions, transaction)
 	}
+	cleanedAddresses := lastRegisteredAddresses
+	for _, address := range block.RemovedRegisteredAddresses {
+		removeAddress(cleanedAddresses, address)
+	}
+	registeredAddresses := append(cleanedAddresses, block.AddedRegisteredAddresses...)
 	return &Block{
 		block.Timestamp,
 		block.PreviousHash,
 		transactions,
-		block.RegisteredAddresses,
+		block.AddedRegisteredAddresses,
+		block.RemovedRegisteredAddresses,
+		registeredAddresses,
 	}, nil
+}
+
+func (block *Block) AddedRegisteredAddresses() []string {
+	return block.addedRegisteredAddresses
+}
+
+func (block *Block) GetResponse() *network.BlockResponse {
+	var transactions []*network.TransactionResponse
+	for _, transaction := range block.transactions {
+		transactions = append(transactions, transaction.GetResponse())
+	}
+	return &network.BlockResponse{
+		Timestamp:                  block.timestamp,
+		PreviousHash:               block.previousHash,
+		Transactions:               transactions,
+		AddedRegisteredAddresses:   block.registeredAddresses,
+		RemovedRegisteredAddresses: block.registeredAddresses,
+	}
 }
 
 func (block *Block) Hash() (hash [32]byte, err error) {
@@ -49,33 +77,6 @@ func (block *Block) Hash() (hash [32]byte, err error) {
 	}
 	hash = sha256.Sum256(marshaledBlock)
 	return
-}
-
-func (block *Block) Timestamp() int64 {
-	return block.timestamp
-}
-
-func (block *Block) PreviousHash() [32]byte {
-	return block.previousHash
-}
-
-func (block *Block) Transactions() []*validation.Transaction {
-	return block.transactions
-}
-
-func (block *Block) RegisteredAddresses() []string {
-	return block.registeredAddresses
-}
-
-func (block *Block) ValidatorAddress() string {
-	var validatorAddress string
-	for i := len(block.transactions) - 1; i >= 0; i-- {
-		if block.transactions[i].IsReward() {
-			validatorAddress = block.transactions[i].RecipientAddress()
-			break
-		}
-	}
-	return validatorAddress
 }
 
 func (block *Block) MarshalJSON() ([]byte, error) {
@@ -92,15 +93,33 @@ func (block *Block) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (block *Block) GetResponse() *network.BlockResponse {
-	var transactions []*network.TransactionResponse
-	for _, transaction := range block.transactions {
-		transactions = append(transactions, transaction.GetResponse())
+func (block *Block) PreviousHash() [32]byte {
+	return block.previousHash
+}
+
+func (block *Block) RegisteredAddresses() []string {
+	return block.registeredAddresses
+}
+
+func (block *Block) RemovedRegisteredAddresses() []string {
+	return block.removedRegisteredAddresses
+}
+
+func (block *Block) Timestamp() int64 {
+	return block.timestamp
+}
+
+func (block *Block) Transactions() []*validation.Transaction {
+	return block.transactions
+}
+
+func (block *Block) ValidatorAddress() string {
+	var validatorAddress string
+	for i := len(block.transactions) - 1; i >= 0; i-- {
+		if block.transactions[i].IsReward() {
+			validatorAddress = block.transactions[i].RecipientAddress()
+			break
+		}
 	}
-	return &network.BlockResponse{
-		Timestamp:           block.timestamp,
-		PreviousHash:        block.previousHash,
-		Transactions:        transactions,
-		RegisteredAddresses: block.registeredAddresses,
-	}
+	return validatorAddress
 }
