@@ -16,11 +16,11 @@ There are two ways to use the Ruthenium blockchain. You can either use your own 
 ### Prerequisites
 * Option A (using sources):
   * You need to have [![Go](https://img.shields.io/github/go-mod/go-version/my-cloud/ruthenium?logo=go)](https://go.dev/dl/) installed.
+  * If you are using Windows, you need to have [tdm-gcc](https://jmeubank.github.io/tdm-gcc/) installed.
 * Option B (using docker image):
   * You need to have [![Docker](https://img.shields.io/badge/docker-grey?logo=docker)](https://www.docker.com/) installed.
 * Your firewall port 8106 must be open (please read "Program arguments" section of the [node](src/node/README.md#program-arguments) and [UI server](src/ui/README.md#program-arguments) documentation if you want to use another port than 8106).
 * To get an income or validate blocks ou need to be registered in the [Proof of Humanity](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#proof-of-humanity) registry.
-* If you are using Windows, you need to have [tdm-gcc](https://jmeubank.github.io/tdm-gcc/) installed.
 
 ### Installation
 * Option A (using sources):
