@@ -172,12 +172,12 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			lastBlocksRequest := network.LastBlocksRequest{StartingBlockNonce: &startingBlockNonce}
 			lastBlocks, err := neighbor.GetLastBlocks(lastBlocksRequest)
 			if err == nil {
-				var validBlocks []*Block
-				validBlocks, err = blockchain.verify(lastBlocks, lastHostBlocks, oldHostBlockResponses, timestamp)
-				if err != nil || validBlocks == nil {
+				var verifiedBlocks []*Block
+				verifiedBlocks, err = blockchain.verify(lastBlocks, lastHostBlocks, oldHostBlockResponses, timestamp)
+				if err != nil || verifiedBlocks == nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 				} else {
-					blocksByTarget[target] = append(oldHostBlocks, validBlocks...)
+					blocksByTarget[target] = append(oldHostBlocks, verifiedBlocks...)
 					blockResponsesByTarget[target] = append(oldHostBlockResponses, lastBlocks...)
 					selectedTargets = append(selectedTargets, target)
 				}
@@ -185,12 +185,12 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		} else {
 			neighborBlocks, err := neighbor.GetBlocks()
 			if err == nil {
-				var validBlocks []*Block
-				validBlocks, err = blockchain.verify(neighborBlocks, hostBlocks, nil, timestamp)
-				if err != nil || validBlocks == nil {
+				var verifiedBlocks []*Block
+				verifiedBlocks, err = blockchain.verify(neighborBlocks, hostBlocks, nil, timestamp)
+				if err != nil || verifiedBlocks == nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 				} else {
-					blocksByTarget[target] = validBlocks
+					blocksByTarget[target] = verifiedBlocks
 					blockResponsesByTarget[target] = neighborBlocks
 					selectedTargets = append(selectedTargets, target)
 				}
@@ -346,7 +346,7 @@ func (blockchain *Blockchain) verify(neighborLastBlockResponses []*network.Block
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate first neighbor block: %w", err)
 	}
-	validBlocks := []*Block{previousBlock}
+	verifiedBlocks := []*Block{previousBlock}
 	neighborBlockchain := newBlockchain(
 		append(oldHostBlockResponses, neighborLastBlockResponses...),
 		blockchain.minimalTransactionFee,
@@ -390,10 +390,10 @@ func (blockchain *Blockchain) verify(neighborLastBlockResponses []*network.Block
 				return nil, err
 			}
 		}
-		validBlocks = append(validBlocks, neighborBlock)
+		verifiedBlocks = append(verifiedBlocks, neighborBlock)
 		previousBlock = neighborBlock
 	}
-	return validBlocks, nil
+	return verifiedBlocks, nil
 }
 
 func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlock *Block, timestamp int64, neighborBlockchain *Blockchain) error {
