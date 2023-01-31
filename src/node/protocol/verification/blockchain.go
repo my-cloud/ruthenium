@@ -337,26 +337,147 @@ func (blockchain *Blockchain) sortByBlocksLength(selectedTargets []string, block
 	})
 }
 
-func (blockchain *Blockchain) verify(neighborLastBlockResponses []*network.BlockResponse, lastHostBlocks []*Block, oldHostBlockResponses []*network.BlockResponse, timestamp int64) (validBlocks []*Block, err error) {
+func (blockchain *Blockchain) verify(neighborLastBlockResponses []*network.BlockResponse, lastHostBlocks []*Block, oldHostBlockResponses []*network.BlockResponse, timestamp int64) ([]*Block, error) {
+	err := blockchain.verifyFirstBlock(neighborLastBlockResponses, lastHostBlocks)
+	if err != nil {
+		return nil, err
+	}
+	previousBlock, err := NewBlockFromResponse(neighborLastBlockResponses[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed to instantiate first neighbor block: %w", err)
+	}
+	validBlocks := []*Block{previousBlock}
+	neighborBlockchain := newBlockchain(
+		append(oldHostBlockResponses, neighborLastBlockResponses...),
+		blockchain.minimalTransactionFee,
+		blockchain.registry,
+		blockchain.validationTimer,
+		blockchain.synchronizer,
+		blockchain.logger,
+	)
+	for i := 1; i < len(neighborLastBlockResponses); i++ {
+		neighborBlock, err := NewBlockFromResponse(neighborLastBlockResponses[i])
+		if err != nil {
+			return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
+		}
+		previousBlockHash, err := previousBlock.Hash()
+		if err != nil {
+			return nil, fmt.Errorf("failed to calculate previous neighbor block hash: %w", err)
+		}
+		isPreviousHashValid := neighborBlock.PreviousHash() == previousBlockHash
+		if !isPreviousHashValid {
+			return nil, errors.New("a previous neighbor block hash is invalid")
+		}
+		var isNewBlock bool
+		if i >= len(lastHostBlocks) {
+			isNewBlock = true
+		} else if len(lastHostBlocks) > 2 {
+			currentBlockHash, err := neighborBlock.Hash()
+			if err != nil {
+				return nil, fmt.Errorf("failed to calculate neighbor block hash: %w", err)
+			}
+			hostBlockHash, err := lastHostBlocks[i].Hash()
+			if err != nil {
+				return nil, fmt.Errorf("failed to calculate host block hash: %w", err)
+			}
+			if currentBlockHash != hostBlockHash {
+				isNewBlock = true
+			}
+		}
+		if isNewBlock {
+			err := blockchain.verifyBlock(neighborBlock, previousBlock, timestamp, neighborBlockchain)
+			if err != nil {
+				return nil, err
+			}
+		}
+		validBlocks = append(validBlocks, neighborBlock)
+		previousBlock = neighborBlock
+	}
+	return validBlocks, nil
+}
+
+func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlock *Block, timestamp int64, neighborBlockchain *Blockchain) error {
+	var rewarded bool
+	totalTransactionsValueBySenderAddress := make(map[string]uint64)
+	currentBlockTimestamp := neighborBlock.Timestamp()
+	previousBlockTimestamp := previousBlock.Timestamp()
+	expectedBlockTimestamp := previousBlockTimestamp + blockchain.validationTimer.Nanoseconds()
+	if currentBlockTimestamp != expectedBlockTimestamp {
+		blockDate := time.Unix(0, currentBlockTimestamp)
+		expectedDate := time.Unix(0, expectedBlockTimestamp)
+		return fmt.Errorf("neighbor block timestamp is invalid: block date is %v, expected is %v", blockDate, expectedDate)
+	}
+	if currentBlockTimestamp > timestamp {
+		blockDate := time.Unix(0, currentBlockTimestamp)
+		nowDate := time.Unix(0, timestamp)
+		return fmt.Errorf("neighbor block timestamp is in the future: block date is %v, now is %v", blockDate, nowDate)
+	}
+	var reward uint64
+	var totalTransactionsFees uint64
+	for _, transaction := range neighborBlock.Transactions() {
+		if transaction.IsReward() {
+			// Check that there is only one reward by block
+			if rewarded {
+				return errors.New("multiple rewards attempt for the same neighbor block")
+			}
+			rewarded = true
+			reward = transaction.Value()
+		} else {
+			if err := transaction.VerifySignature(); err != nil {
+				return fmt.Errorf("neighbor transaction is invalid: %w", err)
+			}
+			fee := transaction.Fee()
+			if fee < blockchain.minimalTransactionFee {
+				return fmt.Errorf("a neighbor block transaction fee is too low, fee: %d, minimal fee: %d", fee, blockchain.minimalTransactionFee)
+			}
+			totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + fee
+			totalTransactionsFees += fee
+			if currentBlockTimestamp+blockchain.validationTimer.Nanoseconds() < transaction.Timestamp() {
+				return fmt.Errorf("a neighbor block transaction timestamp is too far in the future, transaction: %v", transaction.GetResponse())
+			}
+			if transaction.Timestamp() < previousBlock.Timestamp() {
+				return fmt.Errorf("a neighbor block transaction timestamp is too old, transaction: %v", transaction.GetResponse())
+			}
+		}
+	}
+	if !rewarded {
+		return errors.New("neighbor block has not been rewarded")
+	}
+	if reward > totalTransactionsFees {
+		return errors.New("neighbor block reward exceeds the consented one")
+	}
+	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
+		amount := neighborBlockchain.CalculateTotalAmount(currentBlockTimestamp, senderAddress)
+		if totalTransactionsValue > amount {
+			return errors.New("neighbor block total transactions value exceeds its sender wallet amount")
+		}
+	}
+	return nil
+}
+
+func (blockchain *Blockchain) verifyFirstBlock(neighborLastBlockResponses []*network.BlockResponse, lastHostBlocks []*Block) error {
 	if len(neighborLastBlockResponses) < 2 || len(neighborLastBlockResponses) < len(lastHostBlocks) {
-		return nil, errors.New("neighbor's blockchain is too short")
+		return errors.New("neighbor's blockchain is too short")
 	}
 	if lastHostBlocks[0].PreviousHash() != neighborLastBlockResponses[0].PreviousHash {
-		return nil, errors.New("neighbor's blockchain is is a fork")
+		return errors.New("neighbor's blockchain is is a fork")
 	}
 	lastNeighborBlock, err := NewBlockFromResponse(neighborLastBlockResponses[len(neighborLastBlockResponses)-1])
 	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
+		return fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 	}
 	validatorAddress := lastNeighborBlock.ValidatorAddress()
 	isValidatorRegistered, err := blockchain.registry.IsRegistered(validatorAddress)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get validator proof of humanity: %w", err)
+		return fmt.Errorf("failed to get validator proof of humanity: %w", err)
 	}
 	if !isValidatorRegistered {
-		return nil, fmt.Errorf("validator address is not registered in Proof of Humanity registry")
+		return fmt.Errorf("validator address is not registered in Proof of Humanity registry")
 	}
+	return blockchain.verifyRegisteredAddresses(neighborLastBlockResponses, lastNeighborBlock)
+}
 
+func (blockchain *Blockchain) verifyRegisteredAddresses(neighborLastBlockResponses []*network.BlockResponse, lastNeighborBlock *Block) error {
 	penultimateBlock := neighborLastBlockResponses[len(neighborLastBlockResponses)-2]
 	registeredAddresses := penultimateBlock.RegisteredAddresses
 	registeredAddressesMap := make(map[string]bool)
@@ -367,9 +488,9 @@ func (blockchain *Blockchain) verify(neighborLastBlockResponses []*network.Block
 		if !transaction.IsReward() && transaction.Value() > 0 {
 			if _, isRegistered := registeredAddressesMap[transaction.SenderAddress()]; !isRegistered {
 				var isPohValid bool
-				isPohValid, err = blockchain.registry.IsRegistered(transaction.SenderAddress())
+				isPohValid, err := blockchain.registry.IsRegistered(transaction.SenderAddress())
 				if err != nil {
-					return nil, fmt.Errorf("failed to get proof of humanity: %w", err)
+					return fmt.Errorf("failed to get proof of humanity: %w", err)
 				} else if isPohValid {
 					registeredAddressesMap[transaction.SenderAddress()] = true
 				}
@@ -378,129 +499,22 @@ func (blockchain *Blockchain) verify(neighborLastBlockResponses []*network.Block
 	}
 	if len(registeredAddressesMap) != len(lastNeighborBlock.RegisteredAddresses()) {
 		if len(registeredAddressesMap) > len(lastNeighborBlock.RegisteredAddresses()) {
-			return nil, fmt.Errorf("a registered address is missing in the neighbor block")
+			return fmt.Errorf("a registered address is missing in the neighbor block")
 		} else if len(registeredAddressesMap) < len(lastNeighborBlock.RegisteredAddresses()) {
-			return nil, fmt.Errorf("a registered address is one too many in the neighbor block")
+			return fmt.Errorf("a registered address is one too many in the neighbor block")
 		}
 	}
 	for _, address := range lastNeighborBlock.RegisteredAddresses() {
 		var isPohValid bool
-		isPohValid, err = blockchain.registry.IsRegistered(address)
+		isPohValid, err := blockchain.registry.IsRegistered(address)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get proof of humanity: %w", err)
+			return fmt.Errorf("failed to get proof of humanity: %w", err)
 		} else if !isPohValid {
-			return nil, fmt.Errorf("an address is not registered in Proof of Humanity registry")
+			return fmt.Errorf("an address is not registered in Proof of Humanity registry")
 		}
 		if _, isRegistered := registeredAddressesMap[address]; !isRegistered {
-			return nil, fmt.Errorf("a registered address is is wrong in the neighbor block")
+			return fmt.Errorf("a registered address is is wrong in the neighbor block")
 		}
 	}
-	previousBlock, err := NewBlockFromResponse(neighborLastBlockResponses[0])
-	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate first neighbor block: %w", err)
-	}
-	validBlocks = append(validBlocks, previousBlock)
-	neighborBlockchain := newBlockchain(
-		append(oldHostBlockResponses, neighborLastBlockResponses...),
-		blockchain.minimalTransactionFee,
-		blockchain.registry,
-		blockchain.validationTimer,
-		blockchain.synchronizer,
-		blockchain.logger,
-	)
-	for i := 1; i < len(neighborLastBlockResponses); i++ {
-		var currentBlock *Block
-		currentBlock, err = NewBlockFromResponse(neighborLastBlockResponses[i])
-		if err != nil {
-			return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
-		}
-		var previousBlockHash [32]byte
-		previousBlockHash, err = previousBlock.Hash()
-		if err != nil {
-			return nil, fmt.Errorf("failed to calculate previous neighbor block hash: %w", err)
-		}
-		isPreviousHashValid := currentBlock.PreviousHash() == previousBlockHash
-		if !isPreviousHashValid {
-			return nil, errors.New("a previous neighbor block hash is invalid")
-		}
-		var isNewBlock bool
-		if i >= len(lastHostBlocks) {
-			isNewBlock = true
-		} else if len(lastHostBlocks) > 2 {
-			var hostBlockHash [32]byte
-			var currentBlockHash [32]byte
-			currentBlockHash, err = currentBlock.Hash()
-			if err != nil {
-				return nil, fmt.Errorf("failed to calculate neighbor block hash: %w", err)
-			}
-			hostBlockHash, err = lastHostBlocks[i].Hash()
-			if err != nil {
-				blockchain.logger.Error(fmt.Errorf("failed to calculate host block hash: %w", err).Error())
-			}
-			if currentBlockHash != hostBlockHash {
-				isNewBlock = true
-			}
-		}
-
-		if isNewBlock {
-			var rewarded bool
-			totalTransactionsValueBySenderAddress := make(map[string]uint64)
-			currentBlockTimestamp := currentBlock.Timestamp()
-			previousBlockTimestamp := previousBlock.Timestamp()
-			expectedBlockTimestamp := previousBlockTimestamp + blockchain.validationTimer.Nanoseconds()
-			if currentBlockTimestamp != expectedBlockTimestamp {
-				blockDate := time.Unix(0, currentBlockTimestamp)
-				expectedDate := time.Unix(0, expectedBlockTimestamp)
-				return nil, fmt.Errorf("neighbor block timestamp is invalid: block date is %v, expected is %v", blockDate, expectedDate)
-			}
-			if currentBlockTimestamp > timestamp {
-				blockDate := time.Unix(0, currentBlockTimestamp)
-				nowDate := time.Unix(0, timestamp)
-				return nil, fmt.Errorf("neighbor block timestamp is in the future: block date is %v, now is %v", blockDate, nowDate)
-			}
-			var reward uint64
-			var totalTransactionsFees uint64
-			for _, transaction := range currentBlock.Transactions() {
-				if transaction.IsReward() {
-					// Check that there is only one reward by block
-					if rewarded {
-						return nil, errors.New("multiple rewards attempt for the same neighbor block")
-					}
-					rewarded = true
-					reward = transaction.Value()
-				} else {
-					if err = transaction.VerifySignature(); err != nil {
-						return nil, fmt.Errorf("neighbor transaction is invalid: %w", err)
-					}
-					fee := transaction.Fee()
-					if fee < blockchain.minimalTransactionFee {
-						return nil, fmt.Errorf("a neighbor block transaction fee is too low, fee: %d, minimal fee: %d", fee, blockchain.minimalTransactionFee)
-					}
-					totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + fee
-					totalTransactionsFees += fee
-					if currentBlockTimestamp+blockchain.validationTimer.Nanoseconds() < transaction.Timestamp() {
-						return nil, fmt.Errorf("a neighbor block transaction timestamp is too far in the future, transaction: %v", transaction.GetResponse())
-					}
-					if i > 0 && transaction.Timestamp() < neighborLastBlockResponses[i-1].Timestamp {
-						return nil, fmt.Errorf("a neighbor block transaction timestamp is too old, transaction: %v", transaction.GetResponse())
-					}
-				}
-			}
-			if !rewarded {
-				return nil, errors.New("neighbor block has not been rewarded")
-			}
-			if reward > totalTransactionsFees {
-				return nil, errors.New("neighbor block reward exceeds the consented one")
-			}
-			for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
-				amount := neighborBlockchain.CalculateTotalAmount(currentBlockTimestamp, senderAddress)
-				if totalTransactionsValue > amount {
-					return nil, errors.New("neighbor block total transactions value exceeds its sender wallet amount")
-				}
-			}
-		}
-		validBlocks = append(validBlocks, currentBlock)
-		previousBlock = currentBlock
-	}
-	return validBlocks, nil
+	return nil
 }
