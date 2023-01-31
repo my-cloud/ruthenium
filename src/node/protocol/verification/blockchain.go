@@ -49,26 +49,48 @@ func newBlockchain(blockResponses []*network.BlockResponse, minimalTransactionFe
 	return blockchain
 }
 
-func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.TransactionResponse, registeredAddresses []string) {
+func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.TransactionResponse, newAddresses []string) error {
 	var previousHash [32]byte
 	var err error
 	blockchain.mutex.Lock()
 	defer blockchain.mutex.Unlock()
+	var lastRegisteredAddresses []string
 	if !blockchain.isEmpty() {
-		previousHash, err = blockchain.blocks[len(blockchain.blocks)-1].Hash()
+		previousBlock := blockchain.blocks[len(blockchain.blocks)-1]
+		previousHash, err = previousBlock.Hash()
 		if err != nil {
-			blockchain.logger.Error(fmt.Errorf("unable to calculate last block hash: %w", err).Error())
-			return
+			return fmt.Errorf("unable to calculate last block hash: %w", err)
+		}
+		lastRegisteredAddresses = previousBlock.RegisteredAddresses()
+	}
+	registeredAddressesMap := make(map[string]bool)
+	for _, address := range append(lastRegisteredAddresses, newAddresses...) {
+		if _, ok := registeredAddressesMap[address]; !ok {
+			registeredAddressesMap[address] = false
 		}
 	}
-	blockResponse := NewBlockResponse(timestamp, previousHash, transactions, registeredAddresses)
-	block, err := NewBlockFromResponse(blockResponse)
+	var addedRegisteredAddresses []string
+	var removedRegisteredAddresses []string
+	for address := range registeredAddressesMap {
+		isPohValid, err := blockchain.registry.IsRegistered(address)
+		if err != nil {
+			return fmt.Errorf("failed to get proof of humanity: %w", err)
+		}
+		if isPohValid {
+			addedRegisteredAddresses = append(addedRegisteredAddresses, address)
+		} else {
+			removedRegisteredAddresses = append(removedRegisteredAddresses, address)
+		}
+	}
+
+	blockResponse := NewBlockResponse(timestamp, previousHash, transactions, addedRegisteredAddresses, removedRegisteredAddresses)
+	block, err := NewBlockFromResponse(blockResponse, lastRegisteredAddresses)
 	if err != nil {
-		blockchain.logger.Error(fmt.Errorf("unable to instantiate block: %w", err).Error())
-		return
+		return fmt.Errorf("unable to instantiate block: %w", err)
 	}
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
 	blockchain.blocks = append(blockchain.blocks, block)
+	return nil
 }
 
 func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
@@ -80,13 +102,18 @@ func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
 func (blockchain *Blockchain) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64 {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
+	var registeredAddresses []string
 	var totalAmount uint64
 	var lastTimestamp int64
 	for _, block := range blockchain.blockResponses {
 		if block.Timestamp > currentTimestamp {
 			break
 		}
-		for _, registeredAddress := range block.RegisteredAddresses {
+		for _, address := range block.RemovedRegisteredAddresses {
+			registeredAddresses = removeAddress(registeredAddresses, address)
+		}
+		registeredAddresses = append(registeredAddresses, block.AddedRegisteredAddresses...)
+		for _, registeredAddress := range registeredAddresses {
 			if blockchainAddress == registeredAddress {
 				if totalAmount > 0 {
 					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp, totalAmount)
@@ -151,15 +178,16 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	var selectedTargets []string
 	hostBlocks := blockchain.blocks
 	hostBlockResponses := blockchain.blockResponses
-	var oldHostBlockResponses []*network.BlockResponse
-	var oldHostBlocks []*Block
-	var lastHostBlocks []*Block
 	if len(hostBlocks) > 2 {
 		hostTarget := "host"
 		blockResponsesByTarget[hostTarget] = hostBlockResponses
 		blocksByTarget[hostTarget] = hostBlocks
 		selectedTargets = append(selectedTargets, hostTarget)
 	}
+	var oldHostBlockResponses []*network.BlockResponse
+	var oldHostBlocks []*Block
+	var lastHostBlocks []*Block
+	var lastRegisteredAddresses []string
 	if len(hostBlocks) > 4 {
 		oldHostBlockResponses = make([]*network.BlockResponse, len(hostBlockResponses)-3)
 		oldHostBlocks = make([]*Block, len(hostBlocks)-3)
@@ -167,34 +195,35 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		copy(oldHostBlockResponses, hostBlockResponses[:len(hostBlockResponses)-3])
 		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-3])
 		copy(lastHostBlocks, hostBlocks[len(hostBlocks)-3:])
+		lastRegisteredAddresses = oldHostBlocks[len(oldHostBlocks)-1].RegisteredAddresses()
 	}
 	for _, neighbor := range neighbors {
 		target := neighbor.Target()
 		if len(hostBlocks) > 4 {
 			startingBlockNonce := len(hostBlocks) - 3
 			lastBlocksRequest := network.LastBlocksRequest{StartingBlockNonce: &startingBlockNonce}
-			lastBlocks, err := neighbor.GetLastBlocks(lastBlocksRequest)
+			lastNeighborBlockResponses, err := neighbor.GetLastBlocks(lastBlocksRequest)
 			if err == nil {
 				var verifiedBlocks []*Block
-				verifiedBlocks, err = blockchain.verify(lastBlocks, lastHostBlocks, oldHostBlockResponses, timestamp)
+				verifiedBlocks, err = blockchain.verify(lastHostBlocks, lastNeighborBlockResponses, lastRegisteredAddresses, oldHostBlockResponses, timestamp)
 				if err != nil || verifiedBlocks == nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 				} else {
 					blocksByTarget[target] = append(oldHostBlocks, verifiedBlocks...)
-					blockResponsesByTarget[target] = append(oldHostBlockResponses, lastBlocks...)
+					blockResponsesByTarget[target] = append(oldHostBlockResponses, lastNeighborBlockResponses...)
 					selectedTargets = append(selectedTargets, target)
 				}
 			}
 		} else {
-			neighborBlocks, err := neighbor.GetBlocks()
+			neighborBlockResponses, err := neighbor.GetBlocks()
 			if err == nil {
 				var verifiedBlocks []*Block
-				verifiedBlocks, err = blockchain.verify(neighborBlocks, hostBlocks, nil, timestamp)
+				verifiedBlocks, err = blockchain.verify(hostBlocks, neighborBlockResponses, nil, nil, timestamp)
 				if err != nil || verifiedBlocks == nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 				} else {
 					blocksByTarget[target] = verifiedBlocks
-					blockResponsesByTarget[target] = neighborBlocks
+					blockResponsesByTarget[target] = neighborBlockResponses
 					selectedTargets = append(selectedTargets, target)
 				}
 			}
@@ -301,8 +330,8 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 
 func (blockchain *Blockchain) addGenesisBlock(genesisTransaction *network.TransactionResponse) {
 	transactions := []*network.TransactionResponse{genesisTransaction}
-	blockResponse := NewBlockResponse(genesisTransaction.Timestamp, [32]byte{}, transactions, nil)
-	block, err := NewBlockFromResponse(blockResponse)
+	blockResponse := NewBlockResponse(genesisTransaction.Timestamp, [32]byte{}, transactions, nil, nil)
+	block, err := NewBlockFromResponse(blockResponse, nil)
 	if err != nil {
 		blockchain.logger.Error(fmt.Errorf("unable to instantiate block: %w", err).Error())
 		return
@@ -324,6 +353,16 @@ func (blockchain *Blockchain) isEmpty() bool {
 	return blockchain.blocks == nil
 }
 
+func removeAddress(addresses []string, removedAddress string) []string {
+	for i := 0; i < len(addresses); i++ {
+		if addresses[i] == removedAddress {
+			addresses = append(addresses[:i], addresses[i+1:]...)
+			return addresses
+		}
+	}
+	return addresses
+}
+
 func removeTarget(targets []string, removedTarget string) []string {
 	for i := 0; i < len(targets); i++ {
 		if targets[i] == removedTarget {
@@ -340,26 +379,26 @@ func (blockchain *Blockchain) sortByBlocksLength(selectedTargets []string, block
 	})
 }
 
-func (blockchain *Blockchain) verify(neighborLastBlockResponses []*network.BlockResponse, lastHostBlocks []*Block, oldHostBlockResponses []*network.BlockResponse, timestamp int64) ([]*Block, error) {
-	err := blockchain.verifyFirstBlock(neighborLastBlockResponses, lastHostBlocks)
+func (blockchain *Blockchain) verify(lastHostBlocks []*Block, lastNeighborBlockResponses []*network.BlockResponse, lastRegisteredAddresses []string, oldHostBlockResponses []*network.BlockResponse, timestamp int64) ([]*Block, error) {
+	err := blockchain.verifyLastBlock(lastHostBlocks, lastNeighborBlockResponses)
 	if err != nil {
 		return nil, err
 	}
-	previousBlock, err := NewBlockFromResponse(neighborLastBlockResponses[0])
+	previousBlock, err := NewBlockFromResponse(lastNeighborBlockResponses[0], lastRegisteredAddresses)
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate first neighbor block: %w", err)
 	}
 	verifiedBlocks := []*Block{previousBlock}
 	neighborBlockchain := newBlockchain(
-		append(oldHostBlockResponses, neighborLastBlockResponses...),
+		append(oldHostBlockResponses, lastNeighborBlockResponses...),
 		blockchain.minimalTransactionFee,
 		blockchain.registry,
 		blockchain.validationTimer,
 		blockchain.synchronizer,
 		blockchain.logger,
 	)
-	for i := 1; i < len(neighborLastBlockResponses); i++ {
-		neighborBlock, err := NewBlockFromResponse(neighborLastBlockResponses[i])
+	for i := 1; i < len(lastNeighborBlockResponses); i++ {
+		neighborBlock, err := NewBlockFromResponse(lastNeighborBlockResponses[i], previousBlock.RegisteredAddresses())
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 		}
@@ -458,14 +497,14 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlock *B
 	return nil
 }
 
-func (blockchain *Blockchain) verifyFirstBlock(neighborLastBlockResponses []*network.BlockResponse, lastHostBlocks []*Block) error {
-	if len(neighborLastBlockResponses) < 2 || len(neighborLastBlockResponses) < len(lastHostBlocks) {
+func (blockchain *Blockchain) verifyLastBlock(lastHostBlocks []*Block, lastNeighborBlockResponses []*network.BlockResponse) error {
+	if len(lastNeighborBlockResponses) < 2 || len(lastNeighborBlockResponses) < len(lastHostBlocks) {
 		return errors.New("neighbor's blockchain is too short")
 	}
-	if lastHostBlocks[0].PreviousHash() != neighborLastBlockResponses[0].PreviousHash {
+	if lastHostBlocks[0].PreviousHash() != lastNeighborBlockResponses[0].PreviousHash {
 		return errors.New("neighbor's blockchain is is a fork")
 	}
-	lastNeighborBlock, err := NewBlockFromResponse(neighborLastBlockResponses[len(neighborLastBlockResponses)-1])
+	lastNeighborBlock, err := NewBlockFromResponse(lastNeighborBlockResponses[len(lastNeighborBlockResponses)-1], lastHostBlocks[0].RegisteredAddresses())
 	if err != nil {
 		return fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 	}
@@ -477,46 +516,48 @@ func (blockchain *Blockchain) verifyFirstBlock(neighborLastBlockResponses []*net
 	if !isValidatorRegistered {
 		return fmt.Errorf("validator address is not registered in Proof of Humanity registry")
 	}
-	return blockchain.verifyRegisteredAddresses(neighborLastBlockResponses, lastNeighborBlock)
+	return blockchain.verifyRegisteredAddresses(lastNeighborBlock)
 }
 
-func (blockchain *Blockchain) verifyRegisteredAddresses(neighborLastBlockResponses []*network.BlockResponse, lastNeighborBlock *Block) error {
-	penultimateBlock := neighborLastBlockResponses[len(neighborLastBlockResponses)-2]
-	registeredAddresses := penultimateBlock.RegisteredAddresses
+func (blockchain *Blockchain) verifyRegisteredAddresses(lastNeighborBlock *Block) error {
+	addedRegisteredAddresses := lastNeighborBlock.AddedRegisteredAddresses()
 	registeredAddressesMap := make(map[string]bool)
-	for _, address := range registeredAddresses {
+	for _, address := range addedRegisteredAddresses {
 		registeredAddressesMap[address] = true
+	}
+	removedRegisteredAddresses := lastNeighborBlock.RemovedRegisteredAddresses()
+	for _, address := range removedRegisteredAddresses {
+		registeredAddressesMap[address] = false
 	}
 	for _, transaction := range lastNeighborBlock.Transactions() {
 		if !transaction.IsReward() && transaction.Value() > 0 {
-			if _, isRegistered := registeredAddressesMap[transaction.SenderAddress()]; !isRegistered {
-				var isPohValid bool
-				isPohValid, err := blockchain.registry.IsRegistered(transaction.SenderAddress())
-				if err != nil {
-					return fmt.Errorf("failed to get proof of humanity: %w", err)
-				} else if isPohValid {
-					registeredAddressesMap[transaction.SenderAddress()] = true
+			senderAddress := transaction.SenderAddress()
+			isPohValid, err := blockchain.registry.IsRegistered(senderAddress)
+			if err != nil {
+				return fmt.Errorf("failed to get proof of humanity: %w", err)
+			} else if isPohValid {
+				if isRegistered, ok := registeredAddressesMap[senderAddress]; !isRegistered || !ok {
+					return fmt.Errorf("a registered address is missing in the neighbor block")
+				} else {
+					delete(registeredAddressesMap, senderAddress)
+				}
+			} else {
+				if isRegistered, ok := registeredAddressesMap[senderAddress]; isRegistered || !ok {
+					return fmt.Errorf("a registered address is one too many in the neighbor block")
+				} else {
+					delete(registeredAddressesMap, senderAddress)
 				}
 			}
 		}
 	}
-	if len(registeredAddressesMap) != len(lastNeighborBlock.RegisteredAddresses()) {
-		if len(registeredAddressesMap) > len(lastNeighborBlock.RegisteredAddresses()) {
-			return fmt.Errorf("a registered address is missing in the neighbor block")
-		} else if len(registeredAddressesMap) < len(lastNeighborBlock.RegisteredAddresses()) {
-			return fmt.Errorf("a registered address is one too many in the neighbor block")
-		}
-	}
-	for _, address := range lastNeighborBlock.RegisteredAddresses() {
-		var isPohValid bool
+	for address, isRegistered := range registeredAddressesMap {
 		isPohValid, err := blockchain.registry.IsRegistered(address)
 		if err != nil {
 			return fmt.Errorf("failed to get proof of humanity: %w", err)
-		} else if !isPohValid {
-			return fmt.Errorf("an address is not registered in Proof of Humanity registry")
-		}
-		if _, isRegistered := registeredAddressesMap[address]; !isRegistered {
-			return fmt.Errorf("a registered address is is wrong in the neighbor block")
+		} else if !isPohValid && isRegistered {
+			return fmt.Errorf("a registered address has wrongly be added in the neighbor block")
+		} else if isPohValid && !isRegistered {
+			return fmt.Errorf("a registered address has wrongly be removed in the neighbor block")
 		}
 	}
 	return nil
