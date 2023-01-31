@@ -19,7 +19,7 @@ var _ protocol.Blockchain = &BlockchainMock{}
 //
 //		// make and configure a mocked Blockchain
 //		mockedBlockchain := &BlockchainMock{
-//			AddBlockFunc: func(timestamp int64, transactions []*network.TransactionResponse, registeredAddresses []string)  {
+//			AddBlockFunc: func(timestamp int64, transactions []*network.TransactionResponse, newRegisteredAddresses []string) error {
 //				panic("mock out the AddBlock method")
 //			},
 //			BlocksFunc: func() []*network.BlockResponse {
@@ -42,7 +42,7 @@ var _ protocol.Blockchain = &BlockchainMock{}
 //	}
 type BlockchainMock struct {
 	// AddBlockFunc mocks the AddBlock method.
-	AddBlockFunc func(timestamp int64, transactions []*network.TransactionResponse, registeredAddresses []string)
+	AddBlockFunc func(timestamp int64, transactions []*network.TransactionResponse, newRegisteredAddresses []string) error
 
 	// BlocksFunc mocks the Blocks method.
 	BlocksFunc func() []*network.BlockResponse
@@ -64,8 +64,8 @@ type BlockchainMock struct {
 			Timestamp int64
 			// Transactions is the transactions argument value.
 			Transactions []*network.TransactionResponse
-			// RegisteredAddresses is the registeredAddresses argument value.
-			RegisteredAddresses []string
+			// NewRegisteredAddresses is the newRegisteredAddresses argument value.
+			NewRegisteredAddresses []string
 		}
 		// Blocks holds details about calls to the Blocks method.
 		Blocks []struct {
@@ -94,23 +94,23 @@ type BlockchainMock struct {
 }
 
 // AddBlock calls AddBlockFunc.
-func (mock *BlockchainMock) AddBlock(timestamp int64, transactions []*network.TransactionResponse, registeredAddresses []string) {
+func (mock *BlockchainMock) AddBlock(timestamp int64, transactions []*network.TransactionResponse, newRegisteredAddresses []string) error {
 	if mock.AddBlockFunc == nil {
 		panic("BlockchainMock.AddBlockFunc: method is nil but Blockchain.AddBlock was just called")
 	}
 	callInfo := struct {
-		Timestamp           int64
-		Transactions        []*network.TransactionResponse
-		RegisteredAddresses []string
+		Timestamp              int64
+		Transactions           []*network.TransactionResponse
+		NewRegisteredAddresses []string
 	}{
-		Timestamp:           timestamp,
-		Transactions:        transactions,
-		RegisteredAddresses: registeredAddresses,
+		Timestamp:              timestamp,
+		Transactions:           transactions,
+		NewRegisteredAddresses: newRegisteredAddresses,
 	}
 	mock.lockAddBlock.Lock()
 	mock.calls.AddBlock = append(mock.calls.AddBlock, callInfo)
 	mock.lockAddBlock.Unlock()
-	mock.AddBlockFunc(timestamp, transactions, registeredAddresses)
+	return mock.AddBlockFunc(timestamp, transactions, newRegisteredAddresses)
 }
 
 // AddBlockCalls gets all the calls that were made to AddBlock.
@@ -118,14 +118,14 @@ func (mock *BlockchainMock) AddBlock(timestamp int64, transactions []*network.Tr
 //
 //	len(mockedBlockchain.AddBlockCalls())
 func (mock *BlockchainMock) AddBlockCalls() []struct {
-	Timestamp           int64
-	Transactions        []*network.TransactionResponse
-	RegisteredAddresses []string
+	Timestamp              int64
+	Transactions           []*network.TransactionResponse
+	NewRegisteredAddresses []string
 } {
 	var calls []struct {
-		Timestamp           int64
-		Transactions        []*network.TransactionResponse
-		RegisteredAddresses []string
+		Timestamp              int64
+		Transactions           []*network.TransactionResponse
+		NewRegisteredAddresses []string
 	}
 	mock.lockAddBlock.RLock()
 	calls = mock.calls.AddBlock
