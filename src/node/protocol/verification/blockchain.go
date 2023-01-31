@@ -481,7 +481,7 @@ func (blockchain *Blockchain) verify(neighborLastBlockResponses []*network.Block
 					if currentBlockTimestamp+blockchain.validationTimer.Nanoseconds() < transaction.Timestamp() {
 						return nil, fmt.Errorf("a neighbor block transaction timestamp is too far in the future, transaction: %v", transaction.GetResponse())
 					}
-					if i > 0 && transaction.Timestamp() < neighborLastBlockResponses[i].Timestamp {
+					if i > 0 && transaction.Timestamp() < neighborLastBlockResponses[i-1].Timestamp {
 						return nil, fmt.Errorf("a neighbor block transaction timestamp is too old, transaction: %v", transaction.GetResponse())
 					}
 				}

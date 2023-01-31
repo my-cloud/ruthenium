@@ -367,15 +367,18 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 		blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
 		block1, _ := verification.NewBlockFromResponse(blockResponse1)
 		hash1, _ := block1.Hash()
-		var block2Timestamp int64 = 1
+		blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, 1)
+		block2, _ := verification.NewBlockFromResponse(blockResponse2)
+		hash2, _ := block2.Hash()
+		var block3Timestamp int64 = 2
 		transactions := []*network.TransactionResponse{
 			transactionResponse,
-			validation.NewRewardTransaction(address, block2Timestamp, 0),
+			validation.NewRewardTransaction(address, block3Timestamp, 0),
 		}
 		var registeredAddresses []string
 		registeredAddresses = append(registeredAddresses, address)
-		blockResponse2 := verification.NewBlockResponse(block2Timestamp, hash1, transactions, registeredAddresses)
-		return []*network.BlockResponse{blockResponse1, blockResponse2}, nil
+		blockResponse3 := verification.NewBlockResponse(block3Timestamp, hash2, transactions, registeredAddresses)
+		return []*network.BlockResponse{blockResponse1, blockResponse2, blockResponse3}, nil
 	}
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
@@ -388,7 +391,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	blockchain := verification.NewBlockchain(genesisTransaction, transactionFee, registry, 1, synchronizer, logger)
 
 	// Act
-	blockchain.Update(1)
+	blockchain.Update(2)
 
 	// Assert
 	var isKept bool
