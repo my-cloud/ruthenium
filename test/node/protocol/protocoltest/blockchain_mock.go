@@ -31,11 +31,8 @@ var _ protocol.Blockchain = &BlockchainMock{}
 //			CopyFunc: func() Blockchain {
 //				panic("mock out the Copy method")
 //			},
-//			LastBlocksFunc: func(startingBlockHash [32]byte) []*network.BlockResponse {
+//			LastBlocksFunc: func(startingBlockNonce int) []*network.BlockResponse {
 //				panic("mock out the LastBlocks method")
-//			},
-//			UpdateFunc: func(timestamp int64)  {
-//				panic("mock out the Update method")
 //			},
 //		}
 //
@@ -57,10 +54,7 @@ type BlockchainMock struct {
 	CopyFunc func() protocol.Blockchain
 
 	// LastBlocksFunc mocks the LastBlocks method.
-	LastBlocksFunc func(startingBlockHash [32]byte) []*network.BlockResponse
-
-	// UpdateFunc mocks the Update method.
-	UpdateFunc func(timestamp int64)
+	LastBlocksFunc func(startingBlockNonce int) []*network.BlockResponse
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -88,13 +82,8 @@ type BlockchainMock struct {
 		}
 		// LastBlocks holds details about calls to the LastBlocks method.
 		LastBlocks []struct {
-			// StartingBlockHash is the startingBlockHash argument value.
-			StartingBlockHash [32]byte
-		}
-		// Update holds details about calls to the Update method.
-		Update []struct {
-			// Timestamp is the timestamp argument value.
-			Timestamp int64
+			// StartingBlockNonce is the startingBlockNonce argument value.
+			StartingBlockNonce int
 		}
 	}
 	lockAddBlock             sync.RWMutex
@@ -102,7 +91,6 @@ type BlockchainMock struct {
 	lockCalculateTotalAmount sync.RWMutex
 	lockCopy                 sync.RWMutex
 	lockLastBlocks           sync.RWMutex
-	lockUpdate               sync.RWMutex
 }
 
 // AddBlock calls AddBlockFunc.
@@ -236,19 +224,19 @@ func (mock *BlockchainMock) CopyCalls() []struct {
 }
 
 // LastBlocks calls LastBlocksFunc.
-func (mock *BlockchainMock) LastBlocks(startingBlockHash [32]byte) []*network.BlockResponse {
+func (mock *BlockchainMock) LastBlocks(startingBlockNonce int) []*network.BlockResponse {
 	if mock.LastBlocksFunc == nil {
 		panic("BlockchainMock.LastBlocksFunc: method is nil but Blockchain.LastBlocks was just called")
 	}
 	callInfo := struct {
-		StartingBlockHash [32]byte
+		StartingBlockNonce int
 	}{
-		StartingBlockHash: startingBlockHash,
+		StartingBlockNonce: startingBlockNonce,
 	}
 	mock.lockLastBlocks.Lock()
 	mock.calls.LastBlocks = append(mock.calls.LastBlocks, callInfo)
 	mock.lockLastBlocks.Unlock()
-	return mock.LastBlocksFunc(startingBlockHash)
+	return mock.LastBlocksFunc(startingBlockNonce)
 }
 
 // LastBlocksCalls gets all the calls that were made to LastBlocks.
@@ -256,45 +244,13 @@ func (mock *BlockchainMock) LastBlocks(startingBlockHash [32]byte) []*network.Bl
 //
 //	len(mockedBlockchain.LastBlocksCalls())
 func (mock *BlockchainMock) LastBlocksCalls() []struct {
-	StartingBlockHash [32]byte
+	StartingBlockNonce int
 } {
 	var calls []struct {
-		StartingBlockHash [32]byte
+		StartingBlockNonce int
 	}
 	mock.lockLastBlocks.RLock()
 	calls = mock.calls.LastBlocks
 	mock.lockLastBlocks.RUnlock()
-	return calls
-}
-
-// Update calls UpdateFunc.
-func (mock *BlockchainMock) Update(timestamp int64) {
-	if mock.UpdateFunc == nil {
-		panic("BlockchainMock.UpdateFunc: method is nil but Blockchain.Update was just called")
-	}
-	callInfo := struct {
-		Timestamp int64
-	}{
-		Timestamp: timestamp,
-	}
-	mock.lockUpdate.Lock()
-	mock.calls.Update = append(mock.calls.Update, callInfo)
-	mock.lockUpdate.Unlock()
-	mock.UpdateFunc(timestamp)
-}
-
-// UpdateCalls gets all the calls that were made to Update.
-// Check the length with:
-//
-//	len(mockedBlockchain.UpdateCalls())
-func (mock *BlockchainMock) UpdateCalls() []struct {
-	Timestamp int64
-} {
-	var calls []struct {
-		Timestamp int64
-	}
-	mock.lockUpdate.RLock()
-	calls = mock.calls.Update
-	mock.lockUpdate.RUnlock()
 	return calls
 }

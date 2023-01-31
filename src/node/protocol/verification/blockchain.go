@@ -1,7 +1,6 @@
 package verification
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
@@ -133,16 +132,10 @@ func (blockchain *Blockchain) Copy() protocol.Blockchain {
 	return blockchainCopy
 }
 
-func (blockchain *Blockchain) LastBlocks(startingBlockHash [32]byte) []*network.BlockResponse {
+func (blockchain *Blockchain) LastBlocks(startingBlockNonce int) []*network.BlockResponse {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
-	for i := len(blockchain.blockResponses); i > 0; i-- {
-		currentBlockPreviousHash := &blockchain.blockResponses[i-1].PreviousHash
-		if bytes.Equal(currentBlockPreviousHash[:], startingBlockHash[:]) {
-			return blockchain.blockResponses[i-2:]
-		}
-	}
-	return nil
+	return blockchain.blockResponses[startingBlockNonce:]
 }
 
 func (blockchain *Blockchain) Update(timestamp int64) {
@@ -153,41 +146,59 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	var selectedTargets []string
 	hostBlocks := blockchain.blocks
 	hostBlockResponses := blockchain.blockResponses
-	var lastHostBlocks []*Block
-	var oldHostBlocks []*network.BlockResponse
+	//var lastHostBlocks []*Block
+	//var oldHostBlocks []*network.BlockResponse
 	if len(hostBlocks) > 2 {
 		hostTarget := "host"
 		blockResponsesByTarget[hostTarget] = hostBlockResponses
 		blocksByTarget[hostTarget] = hostBlocks
 		selectedTargets = append(selectedTargets, hostTarget)
-		lastHostBlocks = hostBlocks[len(hostBlocks)-3:]
-		oldHostBlocks = hostBlockResponses[:len(hostBlocks)-3]
+		//lastHostBlocks = hostBlocks[len(hostBlocks)-3:]
+		//oldHostBlocks = hostBlockResponses[:len(hostBlocks)-3]
 	}
 	for _, neighbor := range neighbors {
-		var err error
-		var neighborBlocks []*network.BlockResponse
-		if len(hostBlocks) > 2 {
-			startingBlockHash := hostBlocks[len(hostBlocks)-2].PreviousHash()
-			lastBlocksRequest := network.LastBlocksRequest{StartingBlockHash: &startingBlockHash}
-			neighborBlocks, err = neighbor.GetLastBlocks(lastBlocksRequest)
-			if err == nil {
+		if len(hostBlocks) > 5 {
+			startingBlockNonce := len(hostBlocks) - 3
+			lastBlocksRequest := network.LastBlocksRequest{StartingBlockNonce: &startingBlockNonce}
+			lastBlocks, err := neighbor.GetLastBlocks(lastBlocksRequest)
+			if lastBlocks == nil {
+				blockchain.logger.Error("error")
+			}
+			if err != nil {
+				blockchain.logger.Error("error")
+			}
+			if /*hostBlocks[len(hostBlocks) - 3].PreviousHash() == lastBlocks[0].PreviousHash &&*/ err == nil {
 				target := neighbor.Target()
 				var validBlocks []*Block
-				validBlocks, err = blockchain.verify(neighborBlocks, lastHostBlocks, oldHostBlocks, timestamp)
+				var neighborBlocks []*network.BlockResponse
+				for i := 0; i < len(hostBlockResponses)-3; i++ {
+					neighborBlocks = append(neighborBlocks, hostBlockResponses[i])
+				}
+				for i := 0; i < len(lastBlocks); i++ {
+					neighborBlocks = append(neighborBlocks, lastBlocks[i])
+				}
+				validBlocks, err = blockchain.verify(neighborBlocks, hostBlocks, nil, timestamp)
 				if err != nil || validBlocks == nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 				} else {
-					blocksByTarget[target] = append(hostBlocks[:len(hostBlocks)-3], validBlocks...)
-					blockResponsesByTarget[target] = append(hostBlockResponses[:len(hostBlockResponses)-3], neighborBlocks...)
+					var blocks []*Block
+					for _, b := range neighborBlocks {
+						response, _ := NewBlockFromResponse(b)
+						blocks = append(blocks, response)
+					}
+					blocksByTarget[target] = blocks
+					blockResponsesByTarget[target] = neighborBlocks
 					selectedTargets = append(selectedTargets, target)
 				}
 			}
 		} else {
-			neighborBlocks, err = neighbor.GetBlocks()
-			if err == nil {
-				target := neighbor.Target()
+			neighborBlocks, err := neighbor.GetBlocks()
+			target := neighbor.Target()
+			if err != nil {
+				blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
+			} else {
 				var validBlocks []*Block
-				validBlocks, err = blockchain.verify(neighborBlocks, hostBlocks, oldHostBlocks, timestamp)
+				validBlocks, err = blockchain.verify(neighborBlocks, hostBlocks, nil, timestamp)
 				if err != nil || validBlocks == nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 				} else {
@@ -198,7 +209,6 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			}
 		}
 	}
-
 	var selectedBlockResponses []*network.BlockResponse
 	var selectedBlocks []*Block
 	var isDifferent bool
@@ -339,11 +349,11 @@ func (blockchain *Blockchain) sortByBlocksLength(selectedTargets []string, block
 	})
 }
 
-func (blockchain *Blockchain) verify(neighborBlocks []*network.BlockResponse, hostBlocks []*Block, oldHostBlocks []*network.BlockResponse, timestamp int64) (validBlocks []*Block, err error) {
-	if len(neighborBlocks) < 2 || len(neighborBlocks) < len(hostBlocks) {
+func (blockchain *Blockchain) verify(neighborLastBlockResponses []*network.BlockResponse, lastHostBlocks []*Block, oldHostBlockResponses []*network.BlockResponse, timestamp int64) (validBlocks []*Block, err error) {
+	if len(neighborLastBlockResponses) < 2 || len(neighborLastBlockResponses) < len(lastHostBlocks) {
 		return nil, errors.New("neighbor's blockchain is too short")
 	}
-	lastNeighborBlock, err := NewBlockFromResponse(neighborBlocks[len(neighborBlocks)-1])
+	lastNeighborBlock, err := NewBlockFromResponse(neighborLastBlockResponses[len(neighborLastBlockResponses)-1])
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 	}
@@ -356,7 +366,7 @@ func (blockchain *Blockchain) verify(neighborBlocks []*network.BlockResponse, ho
 		return nil, fmt.Errorf("validator address is not registered in Proof of Humanity registry")
 	}
 
-	penultimateBlock := neighborBlocks[len(neighborBlocks)-2]
+	penultimateBlock := neighborLastBlockResponses[len(neighborLastBlockResponses)-2]
 	registeredAddresses := penultimateBlock.RegisteredAddresses
 	registeredAddressesMap := make(map[string]bool)
 	for _, address := range registeredAddresses {
@@ -394,22 +404,22 @@ func (blockchain *Blockchain) verify(neighborBlocks []*network.BlockResponse, ho
 			return nil, fmt.Errorf("a registered address is is wrong in the neighbor block")
 		}
 	}
-	previousBlock, err := NewBlockFromResponse(neighborBlocks[0])
+	previousBlock, err := NewBlockFromResponse(neighborLastBlockResponses[0])
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate first neighbor block: %w", err)
 	}
 	validBlocks = append(validBlocks, previousBlock)
 	neighborBlockchain := newBlockchain(
-		append(oldHostBlocks, neighborBlocks...),
+		append(oldHostBlockResponses, neighborLastBlockResponses...),
 		blockchain.minimalTransactionFee,
 		blockchain.registry,
 		blockchain.validationTimer,
 		blockchain.synchronizer,
 		blockchain.logger,
 	)
-	for i := 1; i < len(neighborBlocks); i++ {
+	for i := 1; i < len(neighborLastBlockResponses); i++ {
 		var currentBlock *Block
-		currentBlock, err = NewBlockFromResponse(neighborBlocks[i])
+		currentBlock, err = NewBlockFromResponse(neighborLastBlockResponses[i])
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 		}
@@ -423,16 +433,16 @@ func (blockchain *Blockchain) verify(neighborBlocks []*network.BlockResponse, ho
 			return nil, errors.New("a previous neighbor block hash is invalid")
 		}
 		var isNewBlock bool
-		if i >= len(hostBlocks) {
+		if i >= len(lastHostBlocks) {
 			isNewBlock = true
-		} else if len(hostBlocks) > 2 {
+		} else if len(lastHostBlocks) > 2 {
 			var hostBlockHash [32]byte
 			var currentBlockHash [32]byte
 			currentBlockHash, err = currentBlock.Hash()
 			if err != nil {
 				return nil, fmt.Errorf("failed to calculate neighbor block hash: %w", err)
 			}
-			hostBlockHash, err = hostBlocks[i].Hash()
+			hostBlockHash, err = lastHostBlocks[i].Hash()
 			if err != nil {
 				blockchain.logger.Error(fmt.Errorf("failed to calculate host block hash: %w", err).Error())
 			}
@@ -480,7 +490,7 @@ func (blockchain *Blockchain) verify(neighborBlocks []*network.BlockResponse, ho
 					if currentBlockTimestamp+blockchain.validationTimer.Nanoseconds() < transaction.Timestamp() {
 						return nil, fmt.Errorf("a neighbor block transaction timestamp is too far in the future, transaction: %v", transaction.GetResponse())
 					}
-					if i > 0 && transaction.Timestamp() < neighborBlocks[i].Timestamp {
+					if i > 0 && transaction.Timestamp() < neighborLastBlockResponses[i].Timestamp {
 						return nil, fmt.Errorf("a neighbor block transaction timestamp is too old, transaction: %v", transaction.GetResponse())
 					}
 				}
