@@ -213,8 +213,8 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 					samePreviousHashCount++
 				}
 			}
-			if samePreviousHashCount <= halfNeighborsCount {
-				// The previous hash of the blockchain used to compare is shared by at least 51% neighbors, reject other neighbors
+			if samePreviousHashCount > halfNeighborsCount {
+				// The previous hash of the blockchain used to compare is shared by more than 50% neighbors, reject other neighbors
 				rejectedTargets = append(rejectedTargets, target)
 			}
 		}
