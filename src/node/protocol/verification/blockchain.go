@@ -135,8 +135,7 @@ func (blockchain *Blockchain) Copy() protocol.Blockchain {
 func (blockchain *Blockchain) LastBlocks(startingBlockNonce int) []*network.BlockResponse {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
-	var lastBlocks []*network.BlockResponse
-	lastBlocks = make([]*network.BlockResponse, len(blockchain.blockResponses)-startingBlockNonce)
+	lastBlocks := make([]*network.BlockResponse, len(blockchain.blockResponses)-startingBlockNonce)
 	copy(lastBlocks, blockchain.blockResponses[startingBlockNonce:])
 	return lastBlocks
 }
@@ -427,7 +426,7 @@ func (blockchain *Blockchain) verify(neighborLastBlockResponses []*network.Block
 		var isNewBlock bool
 		if i >= len(lastHostBlocks) {
 			isNewBlock = true
-		} else if oldHostBlockResponses != nil || len(lastHostBlocks) > 2 {
+		} else if len(lastHostBlocks) > 2 {
 			var hostBlockHash [32]byte
 			var currentBlockHash [32]byte
 			currentBlockHash, err = currentBlock.Hash()
