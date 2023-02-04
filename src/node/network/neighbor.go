@@ -1,8 +1,6 @@
 package network
 
 type Neighbor interface {
-	Ip() string
-	Port() uint16
 	Target() string
 	GetBlocks() (blockResponses []*BlockResponse, err error)
 	GetLastBlocks(lastBlocksRequest LastBlocksRequest) ([]*BlockResponse, error)

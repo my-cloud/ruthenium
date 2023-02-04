@@ -7,7 +7,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
-	"strconv"
 )
 
 type ClientFactory struct {
@@ -19,7 +18,7 @@ func NewClientFactory(ipFinder network.IpFinder) *ClientFactory {
 	return &ClientFactory{ipFinder, console.NewLogger(console.Fatal)}
 }
 
-func (factory *ClientFactory) CreateClient(ip string, port uint16) (p2p.Client, error) {
+func (factory *ClientFactory) CreateClient(ip string, port string) (p2p.Client, error) {
 	lookedUpIps, err := factory.ipFinder.LookupIP(ip)
 	if err != nil {
 		return nil, fmt.Errorf("DNS discovery failed on addresse %s: %w", ip, err)
@@ -28,7 +27,7 @@ func (factory *ClientFactory) CreateClient(ip string, port uint16) (p2p.Client, 
 	if ipsCount != 1 {
 		return nil, fmt.Errorf("DNS discovery did not find a single address (%d addresses found) for the given IP %s", ipsCount, ip)
 	}
-	tcp := gp2p.NewTCP(ip, strconv.Itoa(int(port)))
+	tcp := gp2p.NewTCP(ip, port)
 	var client *gp2p.Client
 	client, err = gp2p.NewClient(tcp)
 	if err != nil {

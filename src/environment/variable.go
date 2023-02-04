@@ -20,14 +20,14 @@ func (variable *Variable) GetStringValue(defaultValue string) string {
 	return defaultValue
 }
 
-func (variable *Variable) GetUint64Value(defaultValue uint64) uint64 {
+func (variable *Variable) GetIntValue(defaultValue int) int {
 	value, exists := os.LookupEnv(variable.key)
 	if !exists {
 		return defaultValue
 	}
-	parsedValue, err := strconv.ParseUint(value, 10, 64)
+	parsedValue, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
 		return defaultValue
 	}
-	return parsedValue
+	return int(parsedValue)
 }

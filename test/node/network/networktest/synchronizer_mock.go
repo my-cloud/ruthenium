@@ -14,25 +14,31 @@ var _ network.Synchronizer = &SynchronizerMock{}
 
 // SynchronizerMock is a mock implementation of Synchronizer.
 //
-// 	func TestSomethingThatUsesSynchronizer(t *testing.T) {
+//	func TestSomethingThatUsesSynchronizer(t *testing.T) {
 //
-// 		// make and configure a mocked Synchronizer
-// 		mockedSynchronizer := &SynchronizerMock{
-// 			AddTargetsFunc: func(requests []TargetRequest)  {
-// 				panic("mock out the AddTargets method")
-// 			},
-// 			NeighborsFunc: func() []Neighbor {
-// 				panic("mock out the Neighbors method")
-// 			},
-// 		}
+//		// make and configure a mocked Synchronizer
+//		mockedSynchronizer := &SynchronizerMock{
+//			AddTargetsFunc: func(requests []TargetRequest)  {
+//				panic("mock out the AddTargets method")
+//			},
+//			IncentiveFunc: func(target string)  {
+//				panic("mock out the Incentive method")
+//			},
+//			NeighborsFunc: func() []Neighbor {
+//				panic("mock out the Neighbors method")
+//			},
+//		}
 //
-// 		// use mockedSynchronizer in code that requires Synchronizer
-// 		// and then make assertions.
+//		// use mockedSynchronizer in code that requires Synchronizer
+//		// and then make assertions.
 //
-// 	}
+//	}
 type SynchronizerMock struct {
 	// AddTargetsFunc mocks the AddTargets method.
 	AddTargetsFunc func(requests []network.TargetRequest)
+
+	// IncentiveFunc mocks the Incentive method.
+	IncentiveFunc func(target string)
 
 	// NeighborsFunc mocks the Neighbors method.
 	NeighborsFunc func() []network.Neighbor
@@ -44,11 +50,17 @@ type SynchronizerMock struct {
 			// Requests is the requests argument value.
 			Requests []network.TargetRequest
 		}
+		// Incentive holds details about calls to the Incentive method.
+		Incentive []struct {
+			// Target is the target argument value.
+			Target string
+		}
 		// Neighbors holds details about calls to the Neighbors method.
 		Neighbors []struct {
 		}
 	}
 	lockAddTargets sync.RWMutex
+	lockIncentive  sync.RWMutex
 	lockNeighbors  sync.RWMutex
 }
 
@@ -70,7 +82,8 @@ func (mock *SynchronizerMock) AddTargets(requests []network.TargetRequest) {
 
 // AddTargetsCalls gets all the calls that were made to AddTargets.
 // Check the length with:
-//     len(mockedSynchronizer.AddTargetsCalls())
+//
+//	len(mockedSynchronizer.AddTargetsCalls())
 func (mock *SynchronizerMock) AddTargetsCalls() []struct {
 	Requests []network.TargetRequest
 } {
@@ -80,6 +93,38 @@ func (mock *SynchronizerMock) AddTargetsCalls() []struct {
 	mock.lockAddTargets.RLock()
 	calls = mock.calls.AddTargets
 	mock.lockAddTargets.RUnlock()
+	return calls
+}
+
+// Incentive calls IncentiveFunc.
+func (mock *SynchronizerMock) Incentive(target string) {
+	if mock.IncentiveFunc == nil {
+		panic("SynchronizerMock.IncentiveFunc: method is nil but Synchronizer.Incentive was just called")
+	}
+	callInfo := struct {
+		Target string
+	}{
+		Target: target,
+	}
+	mock.lockIncentive.Lock()
+	mock.calls.Incentive = append(mock.calls.Incentive, callInfo)
+	mock.lockIncentive.Unlock()
+	mock.IncentiveFunc(target)
+}
+
+// IncentiveCalls gets all the calls that were made to Incentive.
+// Check the length with:
+//
+//	len(mockedSynchronizer.IncentiveCalls())
+func (mock *SynchronizerMock) IncentiveCalls() []struct {
+	Target string
+} {
+	var calls []struct {
+		Target string
+	}
+	mock.lockIncentive.RLock()
+	calls = mock.calls.Incentive
+	mock.lockIncentive.RUnlock()
 	return calls
 }
 
@@ -98,7 +143,8 @@ func (mock *SynchronizerMock) Neighbors() []network.Neighbor {
 
 // NeighborsCalls gets all the calls that were made to Neighbors.
 // Check the length with:
-//     len(mockedSynchronizer.NeighborsCalls())
+//
+//	len(mockedSynchronizer.NeighborsCalls())
 func (mock *SynchronizerMock) NeighborsCalls() []struct {
 } {
 	var calls []struct {
