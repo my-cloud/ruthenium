@@ -60,7 +60,7 @@ func main() {
 	initialTimestamp := now.Truncate(validationTimer).Add(validationTimer).UnixNano()
 	genesisTransaction := validation.NewRewardTransaction(wallet.Address(), initialTimestamp, settings.GenesisAmount)
 	blockchain := verification.NewBlockchain(genesisTransaction, minimalTransactionFee, registry, validationTimer, synchronizer, logger)
-	pool := validation.NewTransactionsPool(blockchain, minimalTransactionFee, registry, wallet.Address(), validationTimer, watch, logger)
+	pool := validation.NewTransactionsPool(blockchain, minimalTransactionFee, registry, synchronizer, wallet.Address(), validationTimer, watch, logger)
 	validationEngine := tick.NewEngine(pool.Validate, watch, validationTimer, 1, 0)
 	verificationEngine := tick.NewEngine(blockchain.Update, watch, validationTimer, verificationsCountPerValidation, 1)
 	serverFactory := gp2p.NewServerFactory()

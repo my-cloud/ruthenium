@@ -117,6 +117,10 @@ func (synchronizer *Synchronizer) AddTargets(targetRequests []network.TargetRequ
 	}
 }
 
+func (synchronizer *Synchronizer) HostTarget() string {
+	return synchronizer.hostTarget
+}
+
 func (synchronizer *Synchronizer) Incentive(target string) {
 	synchronizer.scoresByNeighborMutex.Lock()
 	defer synchronizer.scoresByNeighborMutex.Unlock()

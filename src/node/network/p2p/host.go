@@ -124,8 +124,7 @@ func (host *Host) addTransactions(request *network.TransactionRequest) {
 		host.logger.Error("field(s) are missing in transaction request")
 		return
 	}
-	neighbors := host.synchronizer.Neighbors()
-	go host.pool.AddTransaction(request, neighbors)
+	go host.pool.AddTransaction(request, host.synchronizer.HostTarget())
 }
 
 func (host *Host) amount(request *network.AmountRequest) (res gp2p.Data) {

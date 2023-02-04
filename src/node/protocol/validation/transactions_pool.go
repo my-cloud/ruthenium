@@ -20,6 +20,7 @@ type TransactionsPool struct {
 	blockchain            protocol.Blockchain
 	minimalTransactionFee uint64
 	registry              protocol.Registry
+	synchronizer          network.Synchronizer
 	validatorAddress      string
 
 	validationTimer time.Duration
@@ -28,11 +29,12 @@ type TransactionsPool struct {
 	logger log.Logger
 }
 
-func NewTransactionsPool(blockchain protocol.Blockchain, minimalTransactionFee uint64, registry protocol.Registry, validatorAddress string, validationTimer time.Duration, watch clock.Watch, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain protocol.Blockchain, minimalTransactionFee uint64, registry protocol.Registry, synchronizer network.Synchronizer, validatorAddress string, validationTimer time.Duration, watch clock.Watch, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blockchain = blockchain
 	pool.minimalTransactionFee = minimalTransactionFee
 	pool.registry = registry
+	pool.synchronizer = synchronizer
 	pool.validatorAddress = validatorAddress
 	pool.validationTimer = validationTimer
 	pool.watch = watch
@@ -40,12 +42,14 @@ func NewTransactionsPool(blockchain protocol.Blockchain, minimalTransactionFee u
 	return pool
 }
 
-func (pool *TransactionsPool) AddTransaction(transactionRequest *network.TransactionRequest, neighbors []network.Neighbor) {
+func (pool *TransactionsPool) AddTransaction(transactionRequest *network.TransactionRequest, transactionBroadcasterTarget string) {
 	err := pool.addTransaction(transactionRequest)
 	if err != nil {
 		pool.logger.Debug(fmt.Errorf("failed to add transaction: %w", err).Error())
 		return
 	}
+	pool.synchronizer.Incentive(transactionBroadcasterTarget)
+	neighbors := pool.synchronizer.Neighbors()
 	for _, neighbor := range neighbors {
 		go func(neighbor network.Neighbor) {
 			_ = neighbor.AddTransaction(*transactionRequest)

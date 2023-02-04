@@ -21,6 +21,9 @@ var _ network.Synchronizer = &SynchronizerMock{}
 //			AddTargetsFunc: func(requests []TargetRequest)  {
 //				panic("mock out the AddTargets method")
 //			},
+//			HostTargetFunc: func() string {
+//				panic("mock out the HostTarget method")
+//			},
 //			IncentiveFunc: func(target string)  {
 //				panic("mock out the Incentive method")
 //			},
@@ -37,6 +40,9 @@ type SynchronizerMock struct {
 	// AddTargetsFunc mocks the AddTargets method.
 	AddTargetsFunc func(requests []network.TargetRequest)
 
+	// HostTargetFunc mocks the HostTarget method.
+	HostTargetFunc func() string
+
 	// IncentiveFunc mocks the Incentive method.
 	IncentiveFunc func(target string)
 
@@ -50,6 +56,9 @@ type SynchronizerMock struct {
 			// Requests is the requests argument value.
 			Requests []network.TargetRequest
 		}
+		// HostTarget holds details about calls to the HostTarget method.
+		HostTarget []struct {
+		}
 		// Incentive holds details about calls to the Incentive method.
 		Incentive []struct {
 			// Target is the target argument value.
@@ -60,6 +69,7 @@ type SynchronizerMock struct {
 		}
 	}
 	lockAddTargets sync.RWMutex
+	lockHostTarget sync.RWMutex
 	lockIncentive  sync.RWMutex
 	lockNeighbors  sync.RWMutex
 }
@@ -93,6 +103,33 @@ func (mock *SynchronizerMock) AddTargetsCalls() []struct {
 	mock.lockAddTargets.RLock()
 	calls = mock.calls.AddTargets
 	mock.lockAddTargets.RUnlock()
+	return calls
+}
+
+// HostTarget calls HostTargetFunc.
+func (mock *SynchronizerMock) HostTarget() string {
+	if mock.HostTargetFunc == nil {
+		panic("SynchronizerMock.HostTargetFunc: method is nil but Synchronizer.HostTarget was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockHostTarget.Lock()
+	mock.calls.HostTarget = append(mock.calls.HostTarget, callInfo)
+	mock.lockHostTarget.Unlock()
+	return mock.HostTargetFunc()
+}
+
+// HostTargetCalls gets all the calls that were made to HostTarget.
+// Check the length with:
+//
+//	len(mockedSynchronizer.HostTargetCalls())
+func (mock *SynchronizerMock) HostTargetCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockHostTarget.RLock()
+	calls = mock.calls.HostTarget
+	mock.lockHostTarget.RUnlock()
 	return calls
 }
 
