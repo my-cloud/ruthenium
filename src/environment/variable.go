@@ -25,9 +25,9 @@ func (variable *Variable) GetIntValue(defaultValue int) int {
 	if !exists {
 		return defaultValue
 	}
-	parsedValue, err := strconv.ParseInt(value, 10, 64)
+	parsedValue, err := strconv.Atoi(value)
 	if err != nil {
 		return defaultValue
 	}
-	return int(parsedValue)
+	return parsedValue
 }
