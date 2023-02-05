@@ -245,7 +245,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	address := wallet.Address()
 	var invalidTransactionFee uint64 = 0
-	serverTransaction := server.NewTransaction("A", address, wallet.PublicKey(), 3, 1, invalidTransactionFee)
+	serverTransaction := server.NewTransaction(invalidTransactionFee, "A", address, wallet.PublicKey(), 3, 1)
 	_ = serverTransaction.Sign(wallet.PrivateKey())
 	transactionRequest := serverTransaction.GetRequest()
 	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
@@ -300,7 +300,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	address := wallet.Address()
 	var transactionFee uint64 = 0
-	serverTransaction := server.NewTransaction("A", address, wallet.PublicKey(), 3, 1, transactionFee)
+	serverTransaction := server.NewTransaction(transactionFee, "A", address, wallet.PublicKey(), 3, 1)
 	_ = serverTransaction.Sign(wallet.PrivateKey())
 	transactionRequest := serverTransaction.GetRequest()
 	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
@@ -354,7 +354,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
 	address := wallet.Address()
 	var transactionFee uint64 = 0
-	serverTransaction := server.NewTransaction("A", address, wallet.PublicKey(), 0, 1, transactionFee)
+	serverTransaction := server.NewTransaction(transactionFee, "A", address, wallet.PublicKey(), 0, 1)
 	_ = serverTransaction.Sign(wallet.PrivateKey())
 	transactionRequest := serverTransaction.GetRequest()
 	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
