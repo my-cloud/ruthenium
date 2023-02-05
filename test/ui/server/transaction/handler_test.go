@@ -20,6 +20,7 @@ import (
 func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	neighborMock := new(networktest.NeighborMock)
+	neighborMock.TargetFunc = func() string { return "" }
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, 1, 0, logger)
 	recorder := httptest.NewRecorder()
@@ -189,6 +190,7 @@ func Test_ServeHTTP_TransactionValueIsTooSmall_BadRequest(t *testing.T) {
 func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	// Arrange
 	neighborMock := new(networktest.NeighborMock)
+	neighborMock.TargetFunc = func() string { return "" }
 	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return errors.New("") }
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, 1, 0, logger)
@@ -216,6 +218,7 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	// Arrange
 	neighborMock := new(networktest.NeighborMock)
+	neighborMock.TargetFunc = func() string { return "" }
 	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return nil }
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, 1, 0, logger)
