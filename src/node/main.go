@@ -70,15 +70,16 @@ func main() {
 	initialTimestamp := now.Truncate(validationTimer).Add(validationTimer).UnixNano()
 	genesisTransaction := validation.NewRewardTransaction(wallet.Address(), initialTimestamp, settings.GenesisAmount)
 	blockchain := verification.NewBlockchain(genesisTransaction, minimalTransactionFee, registry, validationTimer, synchronizer, logger)
-	pool := validation.NewTransactionsPool(blockchain, minimalTransactionFee, registry, synchronizer, wallet.Address(), validationTimer, logger)
-	validationEngine := tick.NewEngine(pool.Validate, watch, validationTimer, 1, 0)
+	transactionsPool := validation.NewTransactionsPool(blockchain, minimalTransactionFee, registry, synchronizer, wallet.Address(), validationTimer, logger)
+	validationEngine := tick.NewEngine(transactionsPool.Validate, watch, validationTimer, 1, 0)
 	verificationEngine := tick.NewEngine(blockchain.Update, watch, validationTimer, verificationsCountPerValidation, 1)
 	serverFactory := gp2p.NewServerFactory()
 	server, err := serverFactory.CreateServer(*port)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
 	}
-	host := p2p.NewHost(server, synchronizer, blockchain, pool, synchronizationEngine, validationEngine, verificationEngine, watch, logger)
+	handler := p2p.NewHandler(blockchain, synchronizer, transactionsPool, validationEngine, watch, logger)
+	host := p2p.NewHost(handler, server, synchronizationEngine, validationEngine, verificationEngine, logger)
 	err = host.Run()
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to run host: %w", err).Error())
