@@ -1,26 +1,34 @@
 package p2p
 
 import (
+	"fmt"
 	"net"
-	"strconv"
 )
 
 type Target struct {
 	ip    string
-	port  uint16
+	port  string
 	value string
 }
 
-func NewTarget(ip string, port uint16) *Target {
-	value := net.JoinHostPort(ip, strconv.Itoa(int(port)))
+func NewTarget(ip string, port string) *Target {
+	value := net.JoinHostPort(ip, port)
 	return &Target{ip, port, value}
+}
+
+func NewTargetFromValue(value string) (*Target, error) {
+	ip, port, err := net.SplitHostPort(value)
+	if err != nil {
+		return nil, fmt.Errorf("seed target format is invalid: %w", err)
+	}
+	return &Target{ip, port, value}, nil
 }
 
 func (target *Target) Ip() string {
 	return target.ip
 }
 
-func (target *Target) Port() uint16 {
+func (target *Target) Port() string {
 	return target.port
 }
 

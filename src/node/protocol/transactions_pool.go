@@ -5,6 +5,6 @@ import (
 )
 
 type TransactionsPool interface {
-	AddTransaction(transactionRequest *network.TransactionRequest, neighbors []network.Neighbor)
+	AddTransaction(transactionRequest *network.TransactionRequest, hostTarget string)
 	Transactions() []*network.TransactionResponse
 }

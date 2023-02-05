@@ -1,20 +1,40 @@
 package net
 
 import (
+	"fmt"
+	"github.com/my-cloud/ruthenium/src/log"
+	"io"
 	"net"
-	"time"
+	"net/http"
 )
 
-type IpFinder struct{}
+type IpFinder struct {
+	logger log.Logger
+}
 
-func NewIpFinder() *IpFinder {
-	return &IpFinder{}
+func NewIpFinder(logger log.Logger) *IpFinder {
+	return &IpFinder{logger}
 }
 
 func (finder *IpFinder) LookupIP(ip string) ([]net.IP, error) {
 	return net.LookupIP(ip)
 }
 
-func (finder *IpFinder) DialTimeout(network, address string, timeout time.Duration) (net.Conn, error) {
-	return net.DialTimeout(network, address, timeout)
+func (finder *IpFinder) FindHostPublicIp() (ip string, err error) {
+	resp, err := http.Get("https://ifconfig.me")
+	if err != nil {
+		return
+	}
+	defer func() {
+		if bodyCloseError := resp.Body.Close(); bodyCloseError != nil {
+			finder.logger.Error(fmt.Errorf("failed to close public IP request body: %w", bodyCloseError).Error())
+		}
+	}()
+	var body []byte
+	body, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	ip = string(body)
+	return
 }

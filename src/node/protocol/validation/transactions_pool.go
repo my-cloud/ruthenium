@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
+	"github.com/my-cloud/ruthenium/src/node/clock/tick"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"math/rand"
@@ -20,6 +21,7 @@ type TransactionsPool struct {
 	blockchain            protocol.Blockchain
 	minimalTransactionFee uint64
 	registry              protocol.Registry
+	synchronizer          network.Synchronizer
 	validatorAddress      string
 
 	validationTimer time.Duration
@@ -28,24 +30,30 @@ type TransactionsPool struct {
 	logger log.Logger
 }
 
-func NewTransactionsPool(blockchain protocol.Blockchain, minimalTransactionFee uint64, registry protocol.Registry, validatorAddress string, validationTimer time.Duration, watch clock.Watch, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain protocol.Blockchain, minimalTransactionFee uint64, registry protocol.Registry, synchronizer network.Synchronizer, validatorAddress string, validationTimer time.Duration, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blockchain = blockchain
 	pool.minimalTransactionFee = minimalTransactionFee
 	pool.registry = registry
+	pool.synchronizer = synchronizer
 	pool.validatorAddress = validatorAddress
 	pool.validationTimer = validationTimer
-	pool.watch = watch
+	pool.watch = tick.NewWatch()
 	pool.logger = logger
 	return pool
 }
 
-func (pool *TransactionsPool) AddTransaction(transactionRequest *network.TransactionRequest, neighbors []network.Neighbor) {
+func (pool *TransactionsPool) AddTransaction(transactionRequest *network.TransactionRequest, hostTarget string) {
 	err := pool.addTransaction(transactionRequest)
 	if err != nil {
 		pool.logger.Debug(fmt.Errorf("failed to add transaction: %w", err).Error())
 		return
 	}
+	if transactionRequest.TransactionBroadcasterTarget != nil {
+		pool.synchronizer.Incentive(*transactionRequest.TransactionBroadcasterTarget)
+	}
+	transactionRequest.TransactionBroadcasterTarget = &hostTarget
+	neighbors := pool.synchronizer.Neighbors()
 	for _, neighbor := range neighbors {
 		go func(neighbor network.Neighbor) {
 			_ = neighbor.AddTransaction(*transactionRequest)
