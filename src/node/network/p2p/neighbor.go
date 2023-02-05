@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"encoding/json"
 	"fmt"
 	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/node/network"
@@ -39,7 +40,8 @@ func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, 
 	neighbor.client.SetSettings(neighbor.settings)
 	res, err := neighbor.sendRequest(GetBlocks)
 	if err == nil {
-		err = res.GetGob(&blockResponses)
+		data := res.GetBytes()
+		err = json.Unmarshal(data, &blockResponses)
 	}
 	neighbor.settings.SetConnTimeout(commonConnectionTimeoutInSeconds * time.Second)
 	neighbor.client.SetSettings(neighbor.settings)
@@ -49,7 +51,8 @@ func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, 
 func (neighbor *Neighbor) GetLastBlocks(lastBlocksRequest network.LastBlocksRequest) (blockResponses []*network.BlockResponse, err error) {
 	res, err := neighbor.sendRequest(lastBlocksRequest)
 	if err == nil {
-		err = res.GetGob(&blockResponses)
+		data := res.GetBytes()
+		err = json.Unmarshal(data, &blockResponses)
 	}
 	return
 }
@@ -69,7 +72,8 @@ func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.Tran
 	if err != nil {
 		return
 	}
-	err = res.GetGob(&transactionResponses)
+	data := res.GetBytes()
+	err = json.Unmarshal(data, &transactionResponses)
 	if transactionResponses == nil {
 		return []network.TransactionResponse{}, err
 	}
@@ -79,7 +83,8 @@ func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.Tran
 func (neighbor *Neighbor) GetAmount(request network.AmountRequest) (amountResponse *network.AmountResponse, err error) {
 	res, err := neighbor.sendRequest(request)
 	if err == nil {
-		err = res.GetGob(&amountResponse)
+		data := res.GetBytes()
+		err = json.Unmarshal(data, &amountResponse)
 	}
 	return
 }
@@ -96,10 +101,11 @@ func (neighbor *Neighbor) StopValidation() (err error) {
 
 func (neighbor *Neighbor) sendRequest(request interface{}) (res gp2p.Data, err error) {
 	req := gp2p.Data{}
-	err = req.SetGob(request)
+	data, err := json.Marshal(request)
 	if err != nil {
 		return
 	}
+	req.SetBytes(data)
 	res, err = neighbor.client.Send("dialog", req)
 	return
 }
