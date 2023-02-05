@@ -35,11 +35,6 @@ func NewSynchronizer(clientFactory ClientFactory, hostIp string, hostPort string
 func (synchronizer *Synchronizer) AddTargets(targetRequests []network.TargetRequest) {
 	synchronizer.scoresByTargetMutex.Lock()
 	defer synchronizer.scoresByTargetMutex.Unlock()
-	// To receive the incentive, the targets sender target must be the first one
-	if len(targetRequests) > 1 {
-		senderTarget := targetRequests[0].Target
-		synchronizer.scoresByTarget[*senderTarget] += 1
-	}
 	for _, targetRequest := range targetRequests {
 		if _, ok := synchronizer.scoresByTarget[*targetRequest.Target]; !ok {
 			synchronizer.scoresByTarget[*targetRequest.Target] = 0
@@ -94,7 +89,7 @@ func (synchronizer *Synchronizer) Synchronize(int64) {
 			targetRequests = append(targetRequests, targetRequest)
 		}
 	}
-	outbounds := synchronizer.pickOutbounds(neighborsByScore, len(scoresByTarget))
+	outbounds := synchronizer.selectOutbounds(neighborsByScore, len(scoresByTarget))
 	synchronizer.neighborsMutex.Lock()
 	synchronizer.neighbors = outbounds
 	synchronizer.neighborsMutex.Unlock()
@@ -112,7 +107,7 @@ func (synchronizer *Synchronizer) Synchronize(int64) {
 	}
 }
 
-func (synchronizer *Synchronizer) pickOutbounds(neighborsByScore map[int][]network.Neighbor, targetsCount int) []network.Neighbor {
+func (synchronizer *Synchronizer) selectOutbounds(neighborsByScore map[int][]network.Neighbor, targetsCount int) []network.Neighbor {
 	var keys []int
 	for k := range neighborsByScore {
 		keys = append(keys, k)

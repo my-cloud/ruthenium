@@ -24,9 +24,8 @@ func Test_AddTargets_MoreThanOneTarget_IncentiveTargetsSender(t *testing.T) {
 	scoresBySeedTarget := map[string]int{}
 	synchronizer := p2p.NewSynchronizer(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
 	target1 := "0.0.0.0:1"
-	target2 := "0.0.0.0:2"
-	target3 := "0.0.0.0:0"
-	targetRequests := []network.TargetRequest{{Target: &target1}, {Target: &target2}, {Target: &target3}}
+	target2 := "0.0.0.0:0"
+	targetRequests := []network.TargetRequest{{Target: &target1}, {Target: &target2}}
 
 	// Act
 	synchronizer.AddTargets(targetRequests)
