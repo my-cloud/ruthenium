@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
+	"github.com/my-cloud/ruthenium/src/node/clock/tick"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"math/rand"
@@ -29,7 +30,7 @@ type TransactionsPool struct {
 	logger log.Logger
 }
 
-func NewTransactionsPool(blockchain protocol.Blockchain, minimalTransactionFee uint64, registry protocol.Registry, synchronizer network.Synchronizer, validatorAddress string, validationTimer time.Duration, watch clock.Watch, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain protocol.Blockchain, minimalTransactionFee uint64, registry protocol.Registry, synchronizer network.Synchronizer, validatorAddress string, validationTimer time.Duration, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blockchain = blockchain
 	pool.minimalTransactionFee = minimalTransactionFee
@@ -37,7 +38,7 @@ func NewTransactionsPool(blockchain protocol.Blockchain, minimalTransactionFee u
 	pool.synchronizer = synchronizer
 	pool.validatorAddress = validatorAddress
 	pool.validationTimer = validationTimer
-	pool.watch = watch
+	pool.watch = tick.NewWatch()
 	pool.logger = logger
 	return pool
 }
