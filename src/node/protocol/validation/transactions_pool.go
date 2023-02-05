@@ -48,7 +48,9 @@ func (pool *TransactionsPool) AddTransaction(transactionRequest *network.Transac
 		pool.logger.Debug(fmt.Errorf("failed to add transaction: %w", err).Error())
 		return
 	}
-	pool.synchronizer.Incentive(*transactionRequest.TransactionBroadcasterTarget)
+	if transactionRequest.TransactionBroadcasterTarget != nil {
+		pool.synchronizer.Incentive(*transactionRequest.TransactionBroadcasterTarget)
+	}
 	transactionRequest.TransactionBroadcasterTarget = &hostTarget
 	neighbors := pool.synchronizer.Neighbors()
 	for _, neighbor := range neighbors {

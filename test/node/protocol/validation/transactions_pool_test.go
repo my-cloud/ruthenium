@@ -210,8 +210,10 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	walletAAddress := walletA.Address()
 	registryMock := new(protocoltest.RegistryMock)
 	registryMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	neighborMock := new(networktest.NeighborMock)
+	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return nil }
 	synchronizerMock := new(networktest.SynchronizerMock)
-	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return nil }
+	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return []network.Neighbor{neighborMock} }
 	synchronizerMock.IncentiveFunc = func(string) {}
 	watchMock := new(clocktest.WatchMock)
 	var now int64 = 1
@@ -228,6 +230,8 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	transaction := server.NewTransaction(transactionFee, walletAAddress, validatorWalletAddress, validatorWallet.PublicKey(), now, amount)
 	_ = transaction.Sign(validatorWallet.PrivateKey())
 	transactionRequest := transaction.GetRequest()
+	broadcasterTarget := ""
+	transactionRequest.TransactionBroadcasterTarget = &broadcasterTarget
 	blockchainMock.CalculateTotalAmountFunc = func(int64, string) uint64 { return *transactionRequest.Value + *transactionRequest.Fee }
 	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, registryMock, synchronizerMock, validatorWalletAddress, validationTimer, watchMock, logger)
 
