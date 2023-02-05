@@ -196,10 +196,8 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-3])
 		copy(lastHostBlocks, hostBlocks[len(hostBlocks)-3:])
 		lastRegisteredAddresses = oldHostBlocks[len(oldHostBlocks)-1].RegisteredAddresses()
-	}
-	for _, neighbor := range neighbors {
-		target := neighbor.Target()
-		if len(hostBlocks) > 4 {
+		for _, neighbor := range neighbors {
+			target := neighbor.Target()
 			startingBlockNonce := len(hostBlocks) - 3
 			lastBlocksRequest := network.LastBlocksRequest{StartingBlockNonce: &startingBlockNonce}
 			lastNeighborBlockResponses, err := neighbor.GetLastBlocks(lastBlocksRequest)
@@ -214,7 +212,11 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 					selectedTargets = append(selectedTargets, target)
 				}
 			}
-		} else {
+		}
+	}
+	if len(selectedTargets) < 2 {
+		for _, neighbor := range neighbors {
+			target := neighbor.Target()
 			neighborBlockResponses, err := neighbor.GetBlocks()
 			if err == nil {
 				var verifiedBlocks []*Block
@@ -384,11 +386,11 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, lastNeighborBlockR
 	if err != nil {
 		return nil, err
 	}
-	previousBlock, err := NewBlockFromResponse(lastNeighborBlockResponses[0], lastRegisteredAddresses)
+	previousNeighborBlock, err := NewBlockFromResponse(lastNeighborBlockResponses[0], lastRegisteredAddresses)
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate first neighbor block: %w", err)
 	}
-	verifiedBlocks := []*Block{previousBlock}
+	verifiedBlocks := []*Block{previousNeighborBlock}
 	neighborBlockchain := newBlockchain(
 		append(oldHostBlockResponses, lastNeighborBlockResponses...),
 		blockchain.minimalTransactionFee,
@@ -398,23 +400,25 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, lastNeighborBlockR
 		blockchain.logger,
 	)
 	for i := 1; i < len(lastNeighborBlockResponses); i++ {
-		neighborBlock, err := NewBlockFromResponse(lastNeighborBlockResponses[i], previousBlock.RegisteredAddresses())
+		neighborBlock, err := NewBlockFromResponse(lastNeighborBlockResponses[i], previousNeighborBlock.RegisteredAddresses())
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate last neighbor block: %w", err)
 		}
-		previousBlockHash, err := previousBlock.Hash()
+		previousNeighborBlockHash, err := previousNeighborBlock.Hash()
 		if err != nil {
 			return nil, fmt.Errorf("failed to calculate previous neighbor block hash: %w", err)
 		}
-		isPreviousHashValid := neighborBlock.PreviousHash() == previousBlockHash
+		neighborBlockPreviousHash := neighborBlock.PreviousHash()
+		isPreviousHashValid := neighborBlockPreviousHash == previousNeighborBlockHash
 		if !isPreviousHashValid {
-			return nil, errors.New("a previous neighbor block hash is invalid")
+			blockNumber := len(oldHostBlockResponses) + i
+			return nil, fmt.Errorf("a previous neighbor block hash is invalid: block number: %d, block previous hash: %v, previous block hash: %v", blockNumber, neighborBlockPreviousHash, previousNeighborBlockHash)
 		}
 		var isNewBlock bool
 		if i >= len(lastHostBlocks) {
 			isNewBlock = true
 		} else if len(lastHostBlocks) > 2 {
-			currentBlockHash, err := neighborBlock.Hash()
+			neighborBlockHash, err := neighborBlock.Hash()
 			if err != nil {
 				return nil, fmt.Errorf("failed to calculate neighbor block hash: %w", err)
 			}
@@ -422,18 +426,18 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, lastNeighborBlockR
 			if err != nil {
 				return nil, fmt.Errorf("failed to calculate host block hash: %w", err)
 			}
-			if currentBlockHash != hostBlockHash {
+			if neighborBlockHash != hostBlockHash {
 				isNewBlock = true
 			}
 		}
 		if isNewBlock {
-			err := blockchain.verifyBlock(neighborBlock, previousBlock, timestamp, neighborBlockchain)
+			err := blockchain.verifyBlock(neighborBlock, previousNeighborBlock, timestamp, neighborBlockchain)
 			if err != nil {
 				return nil, err
 			}
 		}
 		verifiedBlocks = append(verifiedBlocks, neighborBlock)
-		previousBlock = neighborBlock
+		previousNeighborBlock = neighborBlock
 	}
 	return verifiedBlocks, nil
 }

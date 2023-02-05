@@ -17,7 +17,7 @@ func Test_GetBlocks_NoError_ClientCalled(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -39,7 +39,7 @@ func Test_GetBlocks_Error_ReturnsError(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, errors.New("") }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -62,7 +62,7 @@ func Test_GetLastBlocks_NoError_ClientCalled(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -84,7 +84,7 @@ func Test_GetLastBlocks_Error_ReturnsError(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, errors.New("") }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -107,7 +107,7 @@ func Test_SendTargets_NoError_ClientCalled(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -129,7 +129,7 @@ func Test_SendTargets_Error_ReturnsError(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, errors.New("") }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -152,7 +152,7 @@ func Test_AddTransaction_NoError_ClientCalled(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -174,7 +174,7 @@ func Test_AddTransaction_Error_ReturnsError(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, errors.New("") }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -197,7 +197,7 @@ func Test_GetTransactions_NoError_ClientCalled(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -219,7 +219,7 @@ func Test_GetTransactions_Error_ReturnsError(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, errors.New("") }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -242,7 +242,7 @@ func Test_GetAmount_NoError_ClientCalled(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -264,7 +264,7 @@ func Test_GetAmount_Error_ReturnsError(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, errors.New("") }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -287,7 +287,7 @@ func Test_StartValidation_NoError_ClientCalled(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -309,7 +309,7 @@ func Test_StartValidation_Error_ReturnsError(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, errors.New("") }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -332,7 +332,7 @@ func Test_StopValidation_NoError_ClientCalled(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
@@ -354,7 +354,7 @@ func Test_StopValidation_Error_ReturnsError(t *testing.T) {
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, errors.New("") }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
-	clientFactoryMock.CreateClientFunc = func(string, uint16) (p2p.Client, error) { return clientMock, nil }
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act

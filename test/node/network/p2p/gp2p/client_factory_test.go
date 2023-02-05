@@ -18,7 +18,7 @@ func Test_CreateClient_NoSuchHost_ReturnsNil(t *testing.T) {
 	clientFactory := gp2p.NewClientFactory(ipFinder)
 
 	// Act
-	client, _ := clientFactory.CreateClient("", 0)
+	client, _ := clientFactory.CreateClient("", "0")
 
 	// Assert
 	test.Assert(t, client == nil, "client is not nil whereas it should be")
@@ -33,7 +33,7 @@ func Test_CreateClient_NoIpAddress_ReturnsNil(t *testing.T) {
 	clientFactory := gp2p.NewClientFactory(ipFinder)
 
 	// Act
-	client, _ := clientFactory.CreateClient("", 0)
+	client, _ := clientFactory.CreateClient("", "0")
 
 	// Assert
 	test.Assert(t, client == nil, "client is not nil whereas it should be")
@@ -48,7 +48,7 @@ func Test_CreateClient_ValidIp_ReturnsClient(t *testing.T) {
 	clientFactory := gp2p.NewClientFactory(ipFinder)
 
 	// Act
-	client, _ := clientFactory.CreateClient("", 0)
+	client, _ := clientFactory.CreateClient("", "0")
 
 	// Assert
 	test.Assert(t, client != nil, "client is nil whereas it should not")

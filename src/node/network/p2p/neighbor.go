@@ -30,14 +30,6 @@ func NewNeighbor(target *Target, clientFactory ClientFactory) (*Neighbor, error)
 	return &Neighbor{target, client, settings}, nil
 }
 
-func (neighbor *Neighbor) Ip() string {
-	return neighbor.target.ip
-}
-
-func (neighbor *Neighbor) Port() uint16 {
-	return neighbor.target.port
-}
-
 func (neighbor *Neighbor) Target() string {
 	return neighbor.target.Value()
 }

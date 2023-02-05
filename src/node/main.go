@@ -1,8 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/my-cloud/ruthenium/src/config"
@@ -24,6 +28,7 @@ const (
 	verificationsCountPerValidation  = 6
 	defaultPort                      = 8106
 	minimalTransactionFee            = 1000
+	maxOutboundsCount                = 8
 )
 
 func main() {
@@ -31,7 +36,7 @@ func main() {
 	derivationPath := flag.String("derivation-path", environment.NewVariable("DERIVATION_PATH").GetStringValue("m/44'/60'/0'/0/0"), "The derivation path (unused if the mnemonic is omitted)")
 	password := flag.String("password", environment.NewVariable("PASSWORD").GetStringValue(""), "The mnemonic password (unused if the mnemonic is omitted)")
 	privateKey := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)")
-	port := flag.Uint64("port", environment.NewVariable("PORT").GetUint64Value(defaultPort), "The TCP port number of the host node")
+	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(defaultPort), "The TCP port number of the host node")
 	configurationPath := flag.String("configuration-path", environment.NewVariable("CONFIGURATION_PATH").GetStringValue("config"), "The configuration files path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level")
 
@@ -48,22 +53,28 @@ func main() {
 	registry := poh.NewRegistry()
 	validationTimer := validationIntervalInSeconds * time.Second
 	watch := tick.NewWatch()
-	clientFactory := gp2p.NewClientFactory(net.NewIpFinder())
-	synchronizer, err := p2p.NewSynchronizer(uint16(*port), watch, clientFactory, *configurationPath, logger)
+	ipFinder := net.NewIpFinder(logger)
+	clientFactory := gp2p.NewClientFactory(ipFinder)
+	hostIp, err := ipFinder.FindHostPublicIp()
 	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to create synchronizer: %w", err).Error())
+		logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
 	}
+	scoresBySeedTarget, err := readSeedsTargets(*configurationPath, logger)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("failed to read seeds targets: %w", err).Error())
+	}
+	synchronizer := p2p.NewSynchronizer(clientFactory, hostIp, strconv.Itoa(*port), maxOutboundsCount, scoresBySeedTarget, watch)
 	synchronizationTimer := time.Second * synchronizationIntervalInSeconds
 	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, synchronizationTimer, 1, 0)
 	now := watch.Now()
 	initialTimestamp := now.Truncate(validationTimer).Add(validationTimer).UnixNano()
 	genesisTransaction := validation.NewRewardTransaction(wallet.Address(), initialTimestamp, settings.GenesisAmount)
 	blockchain := verification.NewBlockchain(genesisTransaction, minimalTransactionFee, registry, validationTimer, synchronizer, logger)
-	pool := validation.NewTransactionsPool(blockchain, minimalTransactionFee, registry, wallet.Address(), validationTimer, watch, logger)
+	pool := validation.NewTransactionsPool(blockchain, minimalTransactionFee, registry, synchronizer, wallet.Address(), validationTimer, logger)
 	validationEngine := tick.NewEngine(pool.Validate, watch, validationTimer, 1, 0)
 	verificationEngine := tick.NewEngine(blockchain.Update, watch, validationTimer, verificationsCountPerValidation, 1)
 	serverFactory := gp2p.NewServerFactory()
-	server, err := serverFactory.CreateServer(int(*port))
+	server, err := serverFactory.CreateServer(*port)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
 	}
@@ -72,4 +83,27 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to run host: %w", err).Error())
 	}
+}
+
+func readSeedsTargets(configurationPath string, logger *console.Logger) (map[string]int, error) {
+	jsonFile, err := os.Open(configurationPath + "/seeds.json")
+	if err != nil {
+		return nil, fmt.Errorf("unable to open seeds IPs configuration file: %w", err)
+	}
+	byteValue, err := io.ReadAll(jsonFile)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read seeds IPs configuration file: %w", err)
+	}
+	if err = jsonFile.Close(); err != nil {
+		logger.Error(fmt.Errorf("unable to close seeds IPs configuration file: %w", err).Error())
+	}
+	var seedsStringTargets []string
+	if err = json.Unmarshal(byteValue, &seedsStringTargets); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal seeds IPs: %w", err)
+	}
+	scoresBySeedTarget := map[string]int{}
+	for _, seedStringTarget := range seedsStringTargets {
+		scoresBySeedTarget[seedStringTarget] = 0
+	}
+	return scoresBySeedTarget, nil
 }

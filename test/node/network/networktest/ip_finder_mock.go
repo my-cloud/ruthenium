@@ -7,7 +7,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"net"
 	"sync"
-	"time"
 )
 
 // Ensure, that IpFinderMock does implement IpFinder.
@@ -16,39 +15,33 @@ var _ network.IpFinder = &IpFinderMock{}
 
 // IpFinderMock is a mock implementation of IpFinder.
 //
-// 	func TestSomethingThatUsesIpFinder(t *testing.T) {
+//	func TestSomethingThatUsesIpFinder(t *testing.T) {
 //
-// 		// make and configure a mocked IpFinder
-// 		mockedIpFinder := &IpFinderMock{
-// 			DialTimeoutFunc: func(network string, address string, timeout time.Duration) (net.Conn, error) {
-// 				panic("mock out the DialTimeout method")
-// 			},
-// 			LookupIPFunc: func(ip string) ([]net.IP, error) {
-// 				panic("mock out the LookupIP method")
-// 			},
-// 		}
+//		// make and configure a mocked IpFinder
+//		mockedIpFinder := &IpFinderMock{
+//			FindHostPublicIpFunc: func() (string, error) {
+//				panic("mock out the FindHostPublicIp method")
+//			},
+//			LookupIPFunc: func(ip string) ([]net.IP, error) {
+//				panic("mock out the LookupIP method")
+//			},
+//		}
 //
-// 		// use mockedIpFinder in code that requires IpFinder
-// 		// and then make assertions.
+//		// use mockedIpFinder in code that requires IpFinder
+//		// and then make assertions.
 //
-// 	}
+//	}
 type IpFinderMock struct {
-	// DialTimeoutFunc mocks the DialTimeout method.
-	DialTimeoutFunc func(network string, address string, timeout time.Duration) (net.Conn, error)
+	// FindHostPublicIpFunc mocks the FindHostPublicIp method.
+	FindHostPublicIpFunc func() (string, error)
 
 	// LookupIPFunc mocks the LookupIP method.
 	LookupIPFunc func(ip string) ([]net.IP, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// DialTimeout holds details about calls to the DialTimeout method.
-		DialTimeout []struct {
-			// Network is the network argument value.
-			Network string
-			// Address is the address argument value.
-			Address string
-			// Timeout is the timeout argument value.
-			Timeout time.Duration
+		// FindHostPublicIp holds details about calls to the FindHostPublicIp method.
+		FindHostPublicIp []struct {
 		}
 		// LookupIP holds details about calls to the LookupIP method.
 		LookupIP []struct {
@@ -56,46 +49,34 @@ type IpFinderMock struct {
 			IP string
 		}
 	}
-	lockDialTimeout sync.RWMutex
-	lockLookupIP    sync.RWMutex
+	lockFindHostPublicIp sync.RWMutex
+	lockLookupIP         sync.RWMutex
 }
 
-// DialTimeout calls DialTimeoutFunc.
-func (mock *IpFinderMock) DialTimeout(network string, address string, timeout time.Duration) (net.Conn, error) {
-	if mock.DialTimeoutFunc == nil {
-		panic("IpFinderMock.DialTimeoutFunc: method is nil but IpFinder.DialTimeout was just called")
+// FindHostPublicIp calls FindHostPublicIpFunc.
+func (mock *IpFinderMock) FindHostPublicIp() (string, error) {
+	if mock.FindHostPublicIpFunc == nil {
+		panic("IpFinderMock.FindHostPublicIpFunc: method is nil but IpFinder.FindHostPublicIp was just called")
 	}
 	callInfo := struct {
-		Network string
-		Address string
-		Timeout time.Duration
-	}{
-		Network: network,
-		Address: address,
-		Timeout: timeout,
-	}
-	mock.lockDialTimeout.Lock()
-	mock.calls.DialTimeout = append(mock.calls.DialTimeout, callInfo)
-	mock.lockDialTimeout.Unlock()
-	return mock.DialTimeoutFunc(network, address, timeout)
+	}{}
+	mock.lockFindHostPublicIp.Lock()
+	mock.calls.FindHostPublicIp = append(mock.calls.FindHostPublicIp, callInfo)
+	mock.lockFindHostPublicIp.Unlock()
+	return mock.FindHostPublicIpFunc()
 }
 
-// DialTimeoutCalls gets all the calls that were made to DialTimeout.
+// FindHostPublicIpCalls gets all the calls that were made to FindHostPublicIp.
 // Check the length with:
-//     len(mockedIpFinder.DialTimeoutCalls())
-func (mock *IpFinderMock) DialTimeoutCalls() []struct {
-	Network string
-	Address string
-	Timeout time.Duration
+//
+//	len(mockedIpFinder.FindHostPublicIpCalls())
+func (mock *IpFinderMock) FindHostPublicIpCalls() []struct {
 } {
 	var calls []struct {
-		Network string
-		Address string
-		Timeout time.Duration
 	}
-	mock.lockDialTimeout.RLock()
-	calls = mock.calls.DialTimeout
-	mock.lockDialTimeout.RUnlock()
+	mock.lockFindHostPublicIp.RLock()
+	calls = mock.calls.FindHostPublicIp
+	mock.lockFindHostPublicIp.RUnlock()
 	return calls
 }
 
@@ -117,7 +98,8 @@ func (mock *IpFinderMock) LookupIP(ip string) ([]net.IP, error) {
 
 // LookupIPCalls gets all the calls that were made to LookupIP.
 // Check the length with:
-//     len(mockedIpFinder.LookupIPCalls())
+//
+//	len(mockedIpFinder.LookupIPCalls())
 func (mock *IpFinderMock) LookupIPCalls() []struct {
 	IP string
 } {

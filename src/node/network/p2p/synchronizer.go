@@ -1,107 +1,103 @@
 package p2p
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
-	"io"
-	"math"
 	"math/rand"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
+	"sort"
 	"sync"
-)
-
-const (
-	maxOutboundsCount = 8
+	"time"
 )
 
 type Synchronizer struct {
-	hostIp   string
-	hostPort uint16
-
-	watch         clock.Watch
-	clientFactory ClientFactory
-
-	neighbors             []network.Neighbor
-	neighborsMutex        sync.RWMutex
-	neighborsTargets      map[string]*Target
-	neighborsTargetsMutex sync.RWMutex
-	seedsTargets          map[string]*Target
-
-	waitGroup *sync.WaitGroup
+	clientFactory       ClientFactory
+	hostTarget          string
+	maxOutboundsCount   int
+	neighbors           []network.Neighbor
+	neighborsMutex      sync.RWMutex
+	scoresBySeedTarget  map[string]int
+	scoresByTarget      map[string]int
+	scoresByTargetMutex sync.RWMutex
+	watch               clock.Watch
 }
 
-func NewSynchronizer(hostPort uint16, watch clock.Watch, clientFactory ClientFactory, configurationPath string, logger log.Logger) (synchronizer *Synchronizer, err error) {
-	synchronizer = new(Synchronizer)
-	synchronizer.hostIp, err = findPublicIp(logger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find the public IP: %w", err)
-	}
-	synchronizer.hostPort = hostPort
-	synchronizer.watch = watch
+func NewSynchronizer(clientFactory ClientFactory, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTarget map[string]int, watch clock.Watch) *Synchronizer {
+	synchronizer := new(Synchronizer)
 	synchronizer.clientFactory = clientFactory
-	var waitGroup sync.WaitGroup
-	synchronizer.waitGroup = &waitGroup
-	err = synchronizer.readSeedsTargets(configurationPath, logger)
-	if err != nil {
-		return nil, err
+	synchronizer.hostTarget = NewTarget(hostIp, hostPort).Value()
+	synchronizer.maxOutboundsCount = maxOutboundsCount
+	synchronizer.scoresBySeedTarget = scoresBySeedTarget
+	synchronizer.scoresByTarget = map[string]int{}
+	synchronizer.watch = watch
+	return synchronizer
+}
+
+func (synchronizer *Synchronizer) AddTargets(targetRequests []network.TargetRequest) {
+	synchronizer.scoresByTargetMutex.Lock()
+	defer synchronizer.scoresByTargetMutex.Unlock()
+	for _, targetRequest := range targetRequests {
+		if _, ok := synchronizer.scoresByTarget[*targetRequest.Target]; !ok {
+			synchronizer.scoresByTarget[*targetRequest.Target] = 0
+		}
 	}
-	synchronizer.neighborsTargets = map[string]*Target{}
-	return synchronizer, nil
+}
+
+func (synchronizer *Synchronizer) HostTarget() string {
+	return synchronizer.hostTarget
+}
+
+func (synchronizer *Synchronizer) Incentive(target string) {
+	synchronizer.scoresByTargetMutex.Lock()
+	defer synchronizer.scoresByTargetMutex.Unlock()
+	synchronizer.scoresByTarget[target] += 1
+}
+
+func (synchronizer *Synchronizer) Neighbors() []network.Neighbor {
+	return synchronizer.neighbors
 }
 
 func (synchronizer *Synchronizer) Synchronize(int64) {
-	synchronizer.neighborsTargetsMutex.Lock()
-	var neighborsTargets map[string]*Target
-	if len(synchronizer.neighborsTargets) == 0 {
-		neighborsTargets = synchronizer.seedsTargets
+	synchronizer.scoresByTargetMutex.Lock()
+	var scoresByTarget map[string]int
+	if len(synchronizer.scoresByTarget) == 0 {
+		scoresByTarget = synchronizer.scoresBySeedTarget
 	} else {
-		neighborsTargets = synchronizer.neighborsTargets
+		scoresByTarget = synchronizer.scoresByTarget
 	}
-	synchronizer.neighborsTargets = map[string]*Target{}
-	synchronizer.neighborsTargetsMutex.Unlock()
-	var neighbors []network.Neighbor
+	synchronizer.scoresByTarget = map[string]int{}
+	synchronizer.scoresByTargetMutex.Unlock()
+	neighborsByScore := map[int][]network.Neighbor{}
 	var targetRequests []network.TargetRequest
 	hostTargetRequest := network.TargetRequest{
-		Ip:   &synchronizer.hostIp,
-		Port: &synchronizer.hostPort,
+		Target: &synchronizer.hostTarget,
 	}
 	targetRequests = append(targetRequests, hostTargetRequest)
-	synchronizer.neighborsMutex.RLock()
-	for _, target := range neighborsTargets {
-		targetIp := target.Ip()
-		targetPort := target.Port()
-		if targetIp != synchronizer.hostIp || targetPort != synchronizer.hostPort {
-			var neighbor network.Neighbor
-			neighbor, err := NewNeighbor(target, synchronizer.clientFactory)
-			if err == nil {
-				neighbors = append(neighbors, neighbor)
-				targetRequest := network.TargetRequest{
-					Ip:   &targetIp,
-					Port: &targetPort,
-				}
-				targetRequests = append(targetRequests, targetRequest)
+	for target, score := range scoresByTarget {
+		if target != synchronizer.hostTarget {
+			neighborTarget, err := NewTargetFromValue(target)
+			if err != nil {
+				continue
 			}
+			neighbor, err := NewNeighbor(neighborTarget, synchronizer.clientFactory)
+			if err != nil {
+				continue
+			}
+			neighborsByScore[score] = append(neighborsByScore[score], neighbor)
+			targetRequest := network.TargetRequest{
+				Target: &target,
+			}
+			targetRequests = append(targetRequests, targetRequest)
 		}
 	}
-	synchronizer.neighborsMutex.RUnlock()
-	rand.Seed(synchronizer.watch.Now().UnixNano())
-	rand.Shuffle(len(neighbors), func(i, j int) { neighbors[i], neighbors[j] = neighbors[j], neighbors[i] })
-	outboundsCount := int(math.Min(float64(len(neighbors)), maxOutboundsCount))
+	outbounds := synchronizer.selectOutbounds(neighborsByScore, len(scoresByTarget))
 	synchronizer.neighborsMutex.Lock()
-	synchronizer.neighbors = neighbors[:outboundsCount]
+	synchronizer.neighbors = outbounds
 	synchronizer.neighborsMutex.Unlock()
-	for _, neighbor := range neighbors[:outboundsCount] {
+	for _, neighbor := range outbounds {
 		var neighborTargetRequests []network.TargetRequest
 		for _, targetRequest := range targetRequests {
-			neighborIp := neighbor.Ip()
-			neighborPort := neighbor.Port()
-			if neighborIp != *targetRequest.Ip || neighborPort != *targetRequest.Port {
+			neighborTarget := neighbor.Target()
+			if neighborTarget != *targetRequest.Target {
 				neighborTargetRequests = append(neighborTargetRequests, targetRequest)
 			}
 		}
@@ -111,72 +107,33 @@ func (synchronizer *Synchronizer) Synchronize(int64) {
 	}
 }
 
-func (synchronizer *Synchronizer) AddTargets(targetRequests []network.TargetRequest) {
-	synchronizer.neighborsTargetsMutex.Lock()
-	defer synchronizer.neighborsTargetsMutex.Unlock()
-	for _, targetRequest := range targetRequests {
-		target := NewTarget(*targetRequest.Ip, *targetRequest.Port)
-		if _, ok := synchronizer.neighborsTargets[target.Value()]; !ok {
-			synchronizer.neighborsTargets[target.Value()] = target
-		}
+func (synchronizer *Synchronizer) selectOutbounds(neighborsByScore map[int][]network.Neighbor, targetsCount int) []network.Neighbor {
+	var keys []int
+	for k := range neighborsByScore {
+		keys = append(keys, k)
 	}
+	sort.Ints(keys)
+	outboundsCount := min(targetsCount, synchronizer.maxOutboundsCount)
+	var outbounds []network.Neighbor
+	for i := len(keys) - 1; i >= 0; i-- {
+		if len(outbounds)+len(neighborsByScore[keys[i]]) >= outboundsCount {
+			temp := neighborsByScore[keys[i]]
+			rand.Seed(time.Now().UnixNano())
+			rand.Shuffle(len(temp), func(i, j int) { temp[i], temp[j] = temp[j], temp[i] })
+			outbounds = append(outbounds, temp[:outboundsCount-len(outbounds)]...)
+			break
+		}
+		outbounds = append(outbounds, neighborsByScore[keys[i]]...)
+	}
+	return outbounds
 }
 
-func (synchronizer *Synchronizer) Neighbors() []network.Neighbor {
-	return synchronizer.neighbors
-}
-
-func findPublicIp(logger log.Logger) (ip string, err error) {
-	resp, err := http.Get("https://ifconfig.me")
-	if err != nil {
-		return
+func min(first, second int) int {
+	var result int
+	if first < second {
+		result = first
+	} else {
+		result = second
 	}
-	defer func() {
-		if bodyCloseError := resp.Body.Close(); bodyCloseError != nil {
-			logger.Error(fmt.Errorf("failed to close public IP request body: %w", bodyCloseError).Error())
-		}
-	}()
-	var body []byte
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-	ip = string(body)
-	return
-}
-
-func (synchronizer *Synchronizer) readSeedsTargets(configurationPath string, logger log.Logger) error {
-	jsonFile, err := os.Open(configurationPath + "/seeds.json")
-	if err != nil {
-		return fmt.Errorf("unable to open seeds IPs configuration file: %w", err)
-	}
-	byteValue, err := io.ReadAll(jsonFile)
-	if err != nil {
-		return fmt.Errorf("unable to read seeds IPs configuration file: %w", err)
-	}
-	if err = jsonFile.Close(); err != nil {
-		logger.Error(fmt.Errorf("unable to close seeds IPs configuration file: %w", err).Error())
-	}
-	var seedsStringTargets []string
-	if err = json.Unmarshal(byteValue, &seedsStringTargets); err != nil {
-		return fmt.Errorf("unable to unmarshal seeds IPs: %w", err)
-	}
-	synchronizer.seedsTargets = map[string]*Target{}
-	for _, seedStringTarget := range seedsStringTargets {
-		separator := ":"
-		separatorIndex := strings.Index(seedStringTarget, separator)
-		if separatorIndex == -1 {
-			return fmt.Errorf("seed target format is invalid (should be of the form 89.82.76.241:8106")
-		}
-		seedIp := seedStringTarget[:separatorIndex]
-		seedPortString := seedStringTarget[separatorIndex+1:]
-		var seedPort uint64
-		seedPort, err = strconv.ParseUint(seedPortString, 10, 16)
-		if err != nil {
-			return err
-		}
-		seedTarget := NewTarget(seedIp, uint16(seedPort))
-		synchronizer.seedsTargets[seedTarget.Value()] = seedTarget
-	}
-	return nil
+	return result
 }

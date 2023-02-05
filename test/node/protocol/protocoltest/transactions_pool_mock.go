@@ -15,25 +15,25 @@ var _ protocol.TransactionsPool = &TransactionsPoolMock{}
 
 // TransactionsPoolMock is a mock implementation of TransactionsPool.
 //
-// 	func TestSomethingThatUsesTransactionsPool(t *testing.T) {
+//	func TestSomethingThatUsesTransactionsPool(t *testing.T) {
 //
-// 		// make and configure a mocked TransactionsPool
-// 		mockedTransactionsPool := &TransactionsPoolMock{
-// 			AddTransactionFunc: func(transactionRequest *network.TransactionRequest, neighbors []network.Neighbor)  {
-// 				panic("mock out the AddTransaction method")
-// 			},
-// 			TransactionsFunc: func() []*network.TransactionResponse {
-// 				panic("mock out the Transactions method")
-// 			},
-// 		}
+//		// make and configure a mocked TransactionsPool
+//		mockedTransactionsPool := &TransactionsPoolMock{
+//			AddTransactionFunc: func(transactionRequest *network.TransactionRequest, hostTarget string)  {
+//				panic("mock out the AddTransaction method")
+//			},
+//			TransactionsFunc: func() []*network.TransactionResponse {
+//				panic("mock out the Transactions method")
+//			},
+//		}
 //
-// 		// use mockedTransactionsPool in code that requires TransactionsPool
-// 		// and then make assertions.
+//		// use mockedTransactionsPool in code that requires TransactionsPool
+//		// and then make assertions.
 //
-// 	}
+//	}
 type TransactionsPoolMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
-	AddTransactionFunc func(transactionRequest *network.TransactionRequest, neighbors []network.Neighbor)
+	AddTransactionFunc func(transactionRequest *network.TransactionRequest, hostTarget string)
 
 	// TransactionsFunc mocks the Transactions method.
 	TransactionsFunc func() []*network.TransactionResponse
@@ -44,8 +44,8 @@ type TransactionsPoolMock struct {
 		AddTransaction []struct {
 			// TransactionRequest is the transactionRequest argument value.
 			TransactionRequest *network.TransactionRequest
-			// Neighbors is the neighbors argument value.
-			Neighbors []network.Neighbor
+			// HostTarget is the hostTarget argument value.
+			HostTarget string
 		}
 		// Transactions holds details about calls to the Transactions method.
 		Transactions []struct {
@@ -56,33 +56,34 @@ type TransactionsPoolMock struct {
 }
 
 // AddTransaction calls AddTransactionFunc.
-func (mock *TransactionsPoolMock) AddTransaction(transactionRequest *network.TransactionRequest, neighbors []network.Neighbor) {
+func (mock *TransactionsPoolMock) AddTransaction(transactionRequest *network.TransactionRequest, hostTarget string) {
 	if mock.AddTransactionFunc == nil {
 		panic("TransactionsPoolMock.AddTransactionFunc: method is nil but TransactionsPool.AddTransaction was just called")
 	}
 	callInfo := struct {
 		TransactionRequest *network.TransactionRequest
-		Neighbors          []network.Neighbor
+		HostTarget         string
 	}{
 		TransactionRequest: transactionRequest,
-		Neighbors:          neighbors,
+		HostTarget:         hostTarget,
 	}
 	mock.lockAddTransaction.Lock()
 	mock.calls.AddTransaction = append(mock.calls.AddTransaction, callInfo)
 	mock.lockAddTransaction.Unlock()
-	mock.AddTransactionFunc(transactionRequest, neighbors)
+	mock.AddTransactionFunc(transactionRequest, hostTarget)
 }
 
 // AddTransactionCalls gets all the calls that were made to AddTransaction.
 // Check the length with:
-//     len(mockedTransactionsPool.AddTransactionCalls())
+//
+//	len(mockedTransactionsPool.AddTransactionCalls())
 func (mock *TransactionsPoolMock) AddTransactionCalls() []struct {
 	TransactionRequest *network.TransactionRequest
-	Neighbors          []network.Neighbor
+	HostTarget         string
 } {
 	var calls []struct {
 		TransactionRequest *network.TransactionRequest
-		Neighbors          []network.Neighbor
+		HostTarget         string
 	}
 	mock.lockAddTransaction.RLock()
 	calls = mock.calls.AddTransaction
@@ -105,7 +106,8 @@ func (mock *TransactionsPoolMock) Transactions() []*network.TransactionResponse 
 
 // TransactionsCalls gets all the calls that were made to Transactions.
 // Check the length with:
-//     len(mockedTransactionsPool.TransactionsCalls())
+//
+//	len(mockedTransactionsPool.TransactionsCalls())
 func (mock *TransactionsPoolMock) TransactionsCalls() []struct {
 } {
 	var calls []struct {
