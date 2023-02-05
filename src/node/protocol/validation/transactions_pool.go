@@ -42,13 +42,14 @@ func NewTransactionsPool(blockchain protocol.Blockchain, minimalTransactionFee u
 	return pool
 }
 
-func (pool *TransactionsPool) AddTransaction(transactionRequest *network.TransactionRequest, transactionBroadcasterTarget string) {
+func (pool *TransactionsPool) AddTransaction(transactionRequest *network.TransactionRequest, hostTarget string) {
 	err := pool.addTransaction(transactionRequest)
 	if err != nil {
 		pool.logger.Debug(fmt.Errorf("failed to add transaction: %w", err).Error())
 		return
 	}
-	pool.synchronizer.Incentive(transactionBroadcasterTarget)
+	pool.synchronizer.Incentive(*transactionRequest.TransactionBroadcasterTarget)
+	transactionRequest.TransactionBroadcasterTarget = &hostTarget
 	neighbors := pool.synchronizer.Neighbors()
 	for _, neighbor := range neighbors {
 		go func(neighbor network.Neighbor) {

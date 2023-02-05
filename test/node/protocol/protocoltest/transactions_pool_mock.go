@@ -19,7 +19,7 @@ var _ protocol.TransactionsPool = &TransactionsPoolMock{}
 //
 //		// make and configure a mocked TransactionsPool
 //		mockedTransactionsPool := &TransactionsPoolMock{
-//			AddTransactionFunc: func(transactionRequest *network.TransactionRequest, transactionBroadcasterTarget string)  {
+//			AddTransactionFunc: func(transactionRequest *network.TransactionRequest, hostTarget string)  {
 //				panic("mock out the AddTransaction method")
 //			},
 //			TransactionsFunc: func() []*network.TransactionResponse {
@@ -33,7 +33,7 @@ var _ protocol.TransactionsPool = &TransactionsPoolMock{}
 //	}
 type TransactionsPoolMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
-	AddTransactionFunc func(transactionRequest *network.TransactionRequest, transactionBroadcasterTarget string)
+	AddTransactionFunc func(transactionRequest *network.TransactionRequest, hostTarget string)
 
 	// TransactionsFunc mocks the Transactions method.
 	TransactionsFunc func() []*network.TransactionResponse
@@ -44,8 +44,8 @@ type TransactionsPoolMock struct {
 		AddTransaction []struct {
 			// TransactionRequest is the transactionRequest argument value.
 			TransactionRequest *network.TransactionRequest
-			// TransactionBroadcasterTarget is the transactionBroadcasterTarget argument value.
-			TransactionBroadcasterTarget string
+			// HostTarget is the hostTarget argument value.
+			HostTarget string
 		}
 		// Transactions holds details about calls to the Transactions method.
 		Transactions []struct {
@@ -56,21 +56,21 @@ type TransactionsPoolMock struct {
 }
 
 // AddTransaction calls AddTransactionFunc.
-func (mock *TransactionsPoolMock) AddTransaction(transactionRequest *network.TransactionRequest, transactionBroadcasterTarget string) {
+func (mock *TransactionsPoolMock) AddTransaction(transactionRequest *network.TransactionRequest, hostTarget string) {
 	if mock.AddTransactionFunc == nil {
 		panic("TransactionsPoolMock.AddTransactionFunc: method is nil but TransactionsPool.AddTransaction was just called")
 	}
 	callInfo := struct {
-		TransactionRequest           *network.TransactionRequest
-		TransactionBroadcasterTarget string
+		TransactionRequest *network.TransactionRequest
+		HostTarget         string
 	}{
-		TransactionRequest:           transactionRequest,
-		TransactionBroadcasterTarget: transactionBroadcasterTarget,
+		TransactionRequest: transactionRequest,
+		HostTarget:         hostTarget,
 	}
 	mock.lockAddTransaction.Lock()
 	mock.calls.AddTransaction = append(mock.calls.AddTransaction, callInfo)
 	mock.lockAddTransaction.Unlock()
-	mock.AddTransactionFunc(transactionRequest, transactionBroadcasterTarget)
+	mock.AddTransactionFunc(transactionRequest, hostTarget)
 }
 
 // AddTransactionCalls gets all the calls that were made to AddTransaction.
@@ -78,12 +78,12 @@ func (mock *TransactionsPoolMock) AddTransaction(transactionRequest *network.Tra
 //
 //	len(mockedTransactionsPool.AddTransactionCalls())
 func (mock *TransactionsPoolMock) AddTransactionCalls() []struct {
-	TransactionRequest           *network.TransactionRequest
-	TransactionBroadcasterTarget string
+	TransactionRequest *network.TransactionRequest
+	HostTarget         string
 } {
 	var calls []struct {
-		TransactionRequest           *network.TransactionRequest
-		TransactionBroadcasterTarget string
+		TransactionRequest *network.TransactionRequest
+		HostTarget         string
 	}
 	mock.lockAddTransaction.RLock()
 	calls = mock.calls.AddTransaction
