@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"os"
 	"strconv"
 	"time"
 
@@ -25,6 +28,7 @@ const (
 	verificationsCountPerValidation  = 6
 	defaultPort                      = 8106
 	minimalTransactionFee            = 1000
+	maxOutboundsCount                = 8
 )
 
 func main() {
@@ -49,11 +53,17 @@ func main() {
 	registry := poh.NewRegistry()
 	validationTimer := validationIntervalInSeconds * time.Second
 	watch := tick.NewWatch()
-	clientFactory := gp2p.NewClientFactory(net.NewIpFinder())
-	synchronizer, err := p2p.NewSynchronizer(strconv.Itoa(*port), watch, clientFactory, *configurationPath, logger)
+	ipFinder := net.NewIpFinder(logger)
+	clientFactory := gp2p.NewClientFactory(ipFinder)
+	hostIp, err := ipFinder.FindHostPublicIp()
 	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to create synchronizer: %w", err).Error())
+		logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
 	}
+	scoresBySeedTarget, err := readSeedsTargets(*configurationPath, logger)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("failed to read seeds targets: %w", err).Error())
+	}
+	synchronizer := p2p.NewSynchronizer(clientFactory, hostIp, strconv.Itoa(*port), maxOutboundsCount, scoresBySeedTarget, watch)
 	synchronizationTimer := time.Second * synchronizationIntervalInSeconds
 	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, synchronizationTimer, 1, 0)
 	now := watch.Now()
@@ -73,4 +83,27 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to run host: %w", err).Error())
 	}
+}
+
+func readSeedsTargets(configurationPath string, logger *console.Logger) (map[string]int, error) {
+	jsonFile, err := os.Open(configurationPath + "/seeds.json")
+	if err != nil {
+		return nil, fmt.Errorf("unable to open seeds IPs configuration file: %w", err)
+	}
+	byteValue, err := io.ReadAll(jsonFile)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read seeds IPs configuration file: %w", err)
+	}
+	if err = jsonFile.Close(); err != nil {
+		logger.Error(fmt.Errorf("unable to close seeds IPs configuration file: %w", err).Error())
+	}
+	var seedsStringTargets []string
+	if err = json.Unmarshal(byteValue, &seedsStringTargets); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal seeds IPs: %w", err)
+	}
+	scoresBySeedTarget := map[string]int{}
+	for _, seedStringTarget := range seedsStringTargets {
+		scoresBySeedTarget[seedStringTarget] = 0
+	}
+	return scoresBySeedTarget, nil
 }

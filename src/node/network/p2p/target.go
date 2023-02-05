@@ -3,7 +3,6 @@ package p2p
 import (
 	"fmt"
 	"net"
-	"strings"
 )
 
 type Target struct {
@@ -12,15 +11,16 @@ type Target struct {
 	value string
 }
 
-func NewTarget(target string) (*Target, error) {
-	separator := ":"
-	separatorIndex := strings.Index(target, separator)
-	if separatorIndex == -1 {
-		return nil, fmt.Errorf("seed target format is invalid (should be of the form 89.82.76.241:8106")
-	}
-	ip := target[:separatorIndex]
-	port := target[separatorIndex+1:]
+func NewTarget(ip string, port string) *Target {
 	value := net.JoinHostPort(ip, port)
+	return &Target{ip, port, value}
+}
+
+func NewTargetFromValue(value string) (*Target, error) {
+	ip, port, err := net.SplitHostPort(value)
+	if err != nil {
+		return nil, fmt.Errorf("seed target format is invalid: %w", err)
+	}
 	return &Target{ip, port, value}, nil
 }
 

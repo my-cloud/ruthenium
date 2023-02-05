@@ -1,78 +1,85 @@
 package p2p
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
-	"io"
-	"math"
 	"math/rand"
-	"net/http"
-	"os"
 	"sort"
 	"sync"
 	"time"
 )
 
-const (
-	maxOutboundsCount = 8
-)
-
 type Synchronizer struct {
-	hostTarget string
-
-	watch         clock.Watch
-	clientFactory ClientFactory
-
-	neighbors             []network.Neighbor
-	neighborsMutex        sync.RWMutex
-	scoresByNeighbor      map[string]int
-	scoresByNeighborMutex sync.RWMutex
-	scoresBySeed          map[string]int
-
-	waitGroup *sync.WaitGroup
+	clientFactory       ClientFactory
+	hostTarget          string
+	maxOutboundsCount   int
+	neighbors           []network.Neighbor
+	neighborsMutex      sync.RWMutex
+	scoresBySeedTarget  map[string]int
+	scoresByTarget      map[string]int
+	scoresByTargetMutex sync.RWMutex
+	watch               clock.Watch
 }
 
-func NewSynchronizer(hostPort string, watch clock.Watch, clientFactory ClientFactory, configurationPath string, logger log.Logger) (synchronizer *Synchronizer, err error) {
-	synchronizer = new(Synchronizer)
-	hostIp, err := findPublicIp(logger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find the public IP: %w", err)
-	}
-	synchronizer.hostTarget = fmt.Sprint(hostIp, ":", hostPort)
-	synchronizer.watch = watch
+func NewSynchronizer(clientFactory ClientFactory, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTarget map[string]int, watch clock.Watch) *Synchronizer {
+	synchronizer := new(Synchronizer)
 	synchronizer.clientFactory = clientFactory
-	var waitGroup sync.WaitGroup
-	synchronizer.waitGroup = &waitGroup
-	err = synchronizer.readSeedsTargets(configurationPath, logger)
-	if err != nil {
-		return nil, err
+	synchronizer.hostTarget = NewTarget(hostIp, hostPort).Value()
+	synchronizer.maxOutboundsCount = maxOutboundsCount
+	synchronizer.scoresBySeedTarget = scoresBySeedTarget
+	synchronizer.scoresByTarget = map[string]int{}
+	synchronizer.watch = watch
+	return synchronizer
+}
+
+func (synchronizer *Synchronizer) AddTargets(targetRequests []network.TargetRequest) {
+	synchronizer.scoresByTargetMutex.Lock()
+	defer synchronizer.scoresByTargetMutex.Unlock()
+	// To receive the incentive, the targets sender target must be the first one
+	if len(targetRequests) > 1 {
+		senderTarget := targetRequests[0].Target
+		synchronizer.scoresByTarget[*senderTarget] += 1
 	}
-	synchronizer.scoresByNeighbor = map[string]int{}
-	return synchronizer, nil
+	for _, targetRequest := range targetRequests {
+		if _, ok := synchronizer.scoresByTarget[*targetRequest.Target]; !ok {
+			synchronizer.scoresByTarget[*targetRequest.Target] = 0
+		}
+	}
+}
+
+func (synchronizer *Synchronizer) HostTarget() string {
+	return synchronizer.hostTarget
+}
+
+func (synchronizer *Synchronizer) Incentive(target string) {
+	synchronizer.scoresByTargetMutex.Lock()
+	defer synchronizer.scoresByTargetMutex.Unlock()
+	synchronizer.scoresByTarget[target] += 1
+}
+
+func (synchronizer *Synchronizer) Neighbors() []network.Neighbor {
+	return synchronizer.neighbors
 }
 
 func (synchronizer *Synchronizer) Synchronize(int64) {
-	synchronizer.scoresByNeighborMutex.Lock()
-	var scoresByNeighbor map[string]int
-	if len(synchronizer.scoresByNeighbor) == 0 {
-		scoresByNeighbor = synchronizer.scoresBySeed
+	synchronizer.scoresByTargetMutex.Lock()
+	var scoresByTarget map[string]int
+	if len(synchronizer.scoresByTarget) == 0 {
+		scoresByTarget = synchronizer.scoresBySeedTarget
 	} else {
-		scoresByNeighbor = synchronizer.scoresByNeighbor
+		scoresByTarget = synchronizer.scoresByTarget
 	}
-	synchronizer.scoresByNeighbor = map[string]int{}
-	synchronizer.scoresByNeighborMutex.Unlock()
+	synchronizer.scoresByTarget = map[string]int{}
+	synchronizer.scoresByTargetMutex.Unlock()
 	neighborsByScore := map[int][]network.Neighbor{}
 	var targetRequests []network.TargetRequest
 	hostTargetRequest := network.TargetRequest{
 		Target: &synchronizer.hostTarget,
 	}
 	targetRequests = append(targetRequests, hostTargetRequest)
-	for target, score := range scoresByNeighbor {
+	for target, score := range scoresByTarget {
 		if target != synchronizer.hostTarget {
-			neighborTarget, err := NewTarget(target)
+			neighborTarget, err := NewTargetFromValue(target)
 			if err != nil {
 				continue
 			}
@@ -87,7 +94,7 @@ func (synchronizer *Synchronizer) Synchronize(int64) {
 			targetRequests = append(targetRequests, targetRequest)
 		}
 	}
-	outbounds := pickOutbounds(neighborsByScore)
+	outbounds := synchronizer.pickOutbounds(neighborsByScore, len(scoresByTarget))
 	synchronizer.neighborsMutex.Lock()
 	synchronizer.neighbors = outbounds
 	synchronizer.neighborsMutex.Unlock()
@@ -105,58 +112,13 @@ func (synchronizer *Synchronizer) Synchronize(int64) {
 	}
 }
 
-func (synchronizer *Synchronizer) AddTargets(targetRequests []network.TargetRequest) {
-	synchronizer.scoresByNeighborMutex.Lock()
-	defer synchronizer.scoresByNeighborMutex.Unlock()
-	for _, targetRequest := range targetRequests {
-		if _, ok := synchronizer.scoresByNeighbor[*targetRequest.Target]; !ok {
-			synchronizer.scoresByNeighbor[*targetRequest.Target] = 0
-		}
-		senderTarget := targetRequests[0].Target
-		synchronizer.scoresByNeighbor[*senderTarget] += 1
-	}
-}
-
-func (synchronizer *Synchronizer) HostTarget() string {
-	return synchronizer.hostTarget
-}
-
-func (synchronizer *Synchronizer) Incentive(target string) {
-	synchronizer.scoresByNeighborMutex.Lock()
-	defer synchronizer.scoresByNeighborMutex.Unlock()
-	synchronizer.scoresByNeighbor[target] += 1
-}
-
-func (synchronizer *Synchronizer) Neighbors() []network.Neighbor {
-	return synchronizer.neighbors
-}
-
-func findPublicIp(logger log.Logger) (ip string, err error) {
-	resp, err := http.Get("https://ifconfig.me")
-	if err != nil {
-		return
-	}
-	defer func() {
-		if bodyCloseError := resp.Body.Close(); bodyCloseError != nil {
-			logger.Error(fmt.Errorf("failed to close public IP request body: %w", bodyCloseError).Error())
-		}
-	}()
-	var body []byte
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-	ip = string(body)
-	return
-}
-
-func pickOutbounds(neighborsByScore map[int][]network.Neighbor) []network.Neighbor {
-	keys := make([]int, len(neighborsByScore))
+func (synchronizer *Synchronizer) pickOutbounds(neighborsByScore map[int][]network.Neighbor, targetsCount int) []network.Neighbor {
+	var keys []int
 	for k := range neighborsByScore {
 		keys = append(keys, k)
 	}
 	sort.Ints(keys)
-	outboundsCount := int(math.Min(float64(len(neighborsByScore)), maxOutboundsCount))
+	outboundsCount := min(targetsCount, synchronizer.maxOutboundsCount)
 	var outbounds []network.Neighbor
 	for i := len(keys) - 1; i >= 0; i-- {
 		if len(outbounds)+len(neighborsByScore[keys[i]]) >= outboundsCount {
@@ -171,25 +133,12 @@ func pickOutbounds(neighborsByScore map[int][]network.Neighbor) []network.Neighb
 	return outbounds
 }
 
-func (synchronizer *Synchronizer) readSeedsTargets(configurationPath string, logger log.Logger) error {
-	jsonFile, err := os.Open(configurationPath + "/seeds.json")
-	if err != nil {
-		return fmt.Errorf("unable to open seeds IPs configuration file: %w", err)
+func min(first, second int) int {
+	var result int
+	if first < second {
+		result = first
+	} else {
+		result = second
 	}
-	byteValue, err := io.ReadAll(jsonFile)
-	if err != nil {
-		return fmt.Errorf("unable to read seeds IPs configuration file: %w", err)
-	}
-	if err = jsonFile.Close(); err != nil {
-		logger.Error(fmt.Errorf("unable to close seeds IPs configuration file: %w", err).Error())
-	}
-	var seedsStringTargets []string
-	if err = json.Unmarshal(byteValue, &seedsStringTargets); err != nil {
-		return fmt.Errorf("unable to unmarshal seeds IPs: %w", err)
-	}
-	synchronizer.scoresBySeed = map[string]int{}
-	for _, seedStringTarget := range seedsStringTargets {
-		synchronizer.scoresBySeed[seedStringTarget] = 0
-	}
-	return nil
+	return result
 }

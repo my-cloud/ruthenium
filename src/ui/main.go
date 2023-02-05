@@ -40,11 +40,9 @@ func main() {
 
 	flag.Parse()
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
-	target, err := p2p.NewTarget(fmt.Sprint(*hostIp, ":", *hostPort))
-	if err != nil {
-		logger.Fatal(fmt.Errorf("unable to instantiate host target: %w", err).Error())
-	}
-	clientFactory := gp2p.NewClientFactory(net.NewIpFinder())
+	target := p2p.NewTarget(*hostIp, strconv.Itoa(*hostPort))
+	ipFinder := net.NewIpFinder(logger)
+	clientFactory := gp2p.NewClientFactory(ipFinder)
 	host, err := p2p.NewNeighbor(target, clientFactory)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
