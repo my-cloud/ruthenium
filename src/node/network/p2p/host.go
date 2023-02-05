@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	gp2p "github.com/leprosus/golang-p2p"
@@ -70,7 +71,8 @@ func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err e
 	var amountRequest network.AmountRequest
 	var targetsRequest []network.TargetRequest
 	res = gp2p.Data{}
-	if err = req.GetGob(&requestString); err == nil {
+	data := req.GetBytes()
+	if err = json.Unmarshal(data, &requestString); err == nil {
 		switch requestString {
 		case GetBlocks:
 			res = host.getBlocks()
@@ -83,13 +85,13 @@ func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err e
 		default:
 			unknownRequest = true
 		}
-	} else if err = req.GetGob(&lastBlocksRequest); err == nil {
+	} else if err = json.Unmarshal(data, &lastBlocksRequest); err == nil {
 		res = host.getLastBlocks(&lastBlocksRequest)
-	} else if err = req.GetGob(&transactionRequest); err == nil {
+	} else if err = json.Unmarshal(data, &transactionRequest); err == nil {
 		host.addTransactions(&transactionRequest)
-	} else if err = req.GetGob(&amountRequest); err == nil {
+	} else if err = json.Unmarshal(data, &amountRequest); err == nil {
 		res = host.amount(&amountRequest)
-	} else if err = req.GetGob(&targetsRequest); err == nil {
+	} else if err = json.Unmarshal(data, &targetsRequest); err == nil {
 		host.postTargets(targetsRequest)
 	} else {
 		unknownRequest = true
@@ -102,20 +104,26 @@ func (host *Host) handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err e
 }
 
 func (host *Host) getLastBlocks(request *network.LastBlocksRequest) (res gp2p.Data) {
-	blockResponses := host.blockchain.LastBlocks(*request.StartingBlockNonce)
-	err := res.SetGob(blockResponses)
-	if err != nil {
-		host.logger.Error(fmt.Errorf("failed to get blocks: %w", err).Error())
+	if request.IsInvalid() {
+		host.logger.Error("field(s) are missing in last blocks request")
+		return
 	}
+	blockResponses := host.blockchain.LastBlocks(*request.StartingBlockNonce)
+	data, err := json.Marshal(blockResponses)
+	if err != nil {
+		host.logger.Error(fmt.Errorf("failed to get last blocks: %w", err).Error())
+	}
+	res.SetBytes(data)
 	return
 }
 
 func (host *Host) getBlocks() (res gp2p.Data) {
 	blockResponses := host.blockchain.Blocks()
-	err := res.SetGob(blockResponses)
+	data, err := json.Marshal(blockResponses)
 	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to get blocks: %w", err).Error())
 	}
+	res.SetBytes(data)
 	return
 }
 
@@ -135,22 +143,32 @@ func (host *Host) amount(request *network.AmountRequest) (res gp2p.Data) {
 	blockchainAddress := *request.Address
 	amount := host.blockchain.Copy().CalculateTotalAmount(host.watch.Now().UnixNano(), blockchainAddress)
 	amountResponse := &network.AmountResponse{Amount: amount}
-	if err := res.SetGob(amountResponse); err != nil {
+	data, err := json.Marshal(amountResponse)
+	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
 	}
+	res.SetBytes(data)
 	return
 }
 
 func (host *Host) getTransactions() (res gp2p.Data) {
 	transactionResponses := host.pool.Transactions()
-	if err := res.SetGob(transactionResponses); err != nil {
+	data, err := json.Marshal(transactionResponses)
+	if err != nil {
 		host.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
 	}
+	res.SetBytes(data)
 	return
 }
 
-func (host *Host) postTargets(request []network.TargetRequest) {
-	go host.synchronizer.AddTargets(request)
+func (host *Host) postTargets(requests []network.TargetRequest) {
+	for _, request := range requests {
+		if request.IsInvalid() {
+			host.logger.Error("field(s) are missing in target request")
+			return
+		}
+	}
+	go host.synchronizer.AddTargets(requests)
 }
 
 func (host *Host) startServer() error {
