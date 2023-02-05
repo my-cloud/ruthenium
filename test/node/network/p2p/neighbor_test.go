@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/node/network"
@@ -29,7 +30,8 @@ func Test_GetBlocks_NoError_ClientCalled(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(p2p.GetBlocks)
+	data, _ := json.Marshal(p2p.GetBlocks)
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 }
 
@@ -51,7 +53,8 @@ func Test_GetBlocks_Error_ReturnsError(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(p2p.GetBlocks)
+	data, _ := json.Marshal(p2p.GetBlocks)
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 	test.Assert(t, err != nil, "Error is nil whereas it should not.")
 }
@@ -74,7 +77,8 @@ func Test_GetLastBlocks_NoError_ClientCalled(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(network.LastBlocksRequest{})
+	data, _ := json.Marshal(network.LastBlocksRequest{})
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 }
 
@@ -96,7 +100,8 @@ func Test_GetLastBlocks_Error_ReturnsError(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(network.LastBlocksRequest{})
+	data, _ := json.Marshal(network.LastBlocksRequest{})
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 	test.Assert(t, err != nil, "Error is nil whereas it should not.")
 }
@@ -119,7 +124,8 @@ func Test_SendTargets_NoError_ClientCalled(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob([]network.TargetRequest{})
+	data, _ := json.Marshal([]network.TargetRequest{})
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 }
 
@@ -141,7 +147,8 @@ func Test_SendTargets_Error_ReturnsError(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob([]network.TargetRequest{})
+	data, _ := json.Marshal([]network.TargetRequest{})
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 	test.Assert(t, err != nil, "Error is nil whereas it should not.")
 }
@@ -164,7 +171,8 @@ func Test_AddTransaction_NoError_ClientCalled(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(network.TransactionRequest{})
+	data, _ := json.Marshal(network.TransactionRequest{})
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 }
 
@@ -186,7 +194,8 @@ func Test_AddTransaction_Error_ReturnsError(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(network.TransactionRequest{})
+	data, _ := json.Marshal(network.TransactionRequest{})
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 	test.Assert(t, err != nil, "Error is nil whereas it should not.")
 }
@@ -209,7 +218,8 @@ func Test_GetTransactions_NoError_ClientCalled(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(p2p.GetTransactions)
+	data, _ := json.Marshal(p2p.GetTransactions)
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 }
 
@@ -231,7 +241,8 @@ func Test_GetTransactions_Error_ReturnsError(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(p2p.GetTransactions)
+	data, _ := json.Marshal(p2p.GetTransactions)
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 	test.Assert(t, err != nil, "Error is nil whereas it should not.")
 }
@@ -254,7 +265,8 @@ func Test_GetAmount_NoError_ClientCalled(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(network.AmountRequest{})
+	data, _ := json.Marshal(network.AmountRequest{})
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 }
 
@@ -276,7 +288,8 @@ func Test_GetAmount_Error_ReturnsError(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(network.AmountRequest{})
+	data, _ := json.Marshal(network.AmountRequest{})
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 	test.Assert(t, err != nil, "Error is nil whereas it should not.")
 }
@@ -299,7 +312,8 @@ func Test_StartValidation_NoError_ClientCalled(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(p2p.StartValidation)
+	data, _ := json.Marshal(p2p.StartValidation)
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 }
 
@@ -321,7 +335,8 @@ func Test_StartValidation_Error_ReturnsError(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(p2p.StartValidation)
+	data, _ := json.Marshal(p2p.StartValidation)
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 	test.Assert(t, err != nil, "Error is nil whereas it should not.")
 }
@@ -344,7 +359,8 @@ func Test_StopValidation_NoError_ClientCalled(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(p2p.StopValidation)
+	data, _ := json.Marshal(p2p.StopValidation)
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 }
 
@@ -366,7 +382,8 @@ func Test_StopValidation_Error_ReturnsError(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	_ = expectedReq.SetGob(p2p.StopValidation)
+	data, _ := json.Marshal(p2p.StopValidation)
+	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 	test.Assert(t, err != nil, "Error is nil whereas it should not.")
 }
