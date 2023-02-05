@@ -23,7 +23,7 @@ go run src/node/main.go -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0
 ```
   
 ## API
-This version supports [Gobs][1] only.
+Each request value or response value shall be marshaled to bytes or un-marshaled from bytes. All fields are required.
 
 ### Blockchain
 <details>
