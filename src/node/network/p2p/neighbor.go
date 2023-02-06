@@ -1,30 +1,34 @@
 package p2p
 
 import (
+	"encoding/json"
 	"fmt"
 	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/node/network"
+	"time"
+)
+
+const (
+	initializationConnectionTimeoutInSeconds = 600
+	commonConnectionTimeoutInSeconds         = 5
 )
 
 type Neighbor struct {
-	target *Target
-	client Client
+	target   *Target
+	client   Client
+	settings *gp2p.ClientSettings
 }
 
 func NewNeighbor(target *Target, clientFactory ClientFactory) (*Neighbor, error) {
-	client, err := clientFactory.CreateClient(target.Ip(), target.Port(), target.Value())
+	client, err := clientFactory.CreateClient(target.Ip(), target.Port())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client reaching %s: %w", target.Value(), err)
 	}
-	return &Neighbor{target, client}, nil
-}
-
-func (neighbor *Neighbor) Ip() string {
-	return neighbor.target.ip
-}
-
-func (neighbor *Neighbor) Port() uint16 {
-	return neighbor.target.port
+	settings := gp2p.NewClientSettings()
+	settings.SetRetry(1, time.Nanosecond)
+	settings.SetConnTimeout(commonConnectionTimeoutInSeconds * time.Second)
+	client.SetSettings(settings)
+	return &Neighbor{target, client, settings}, nil
 }
 
 func (neighbor *Neighbor) Target() string {
@@ -32,9 +36,23 @@ func (neighbor *Neighbor) Target() string {
 }
 
 func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, err error) {
+	neighbor.settings.SetConnTimeout(initializationConnectionTimeoutInSeconds * time.Second)
+	neighbor.client.SetSettings(neighbor.settings)
 	res, err := neighbor.sendRequest(GetBlocks)
 	if err == nil {
-		err = res.GetGob(&blockResponses)
+		data := res.GetBytes()
+		err = json.Unmarshal(data, &blockResponses)
+	}
+	neighbor.settings.SetConnTimeout(commonConnectionTimeoutInSeconds * time.Second)
+	neighbor.client.SetSettings(neighbor.settings)
+	return
+}
+
+func (neighbor *Neighbor) GetLastBlocks(lastBlocksRequest network.LastBlocksRequest) (blockResponses []*network.BlockResponse, err error) {
+	res, err := neighbor.sendRequest(lastBlocksRequest)
+	if err == nil {
+		data := res.GetBytes()
+		err = json.Unmarshal(data, &blockResponses)
 	}
 	return
 }
@@ -54,7 +72,8 @@ func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.Tran
 	if err != nil {
 		return
 	}
-	err = res.GetGob(&transactionResponses)
+	data := res.GetBytes()
+	err = json.Unmarshal(data, &transactionResponses)
 	if transactionResponses == nil {
 		return []network.TransactionResponse{}, err
 	}
@@ -64,7 +83,8 @@ func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.Tran
 func (neighbor *Neighbor) GetAmount(request network.AmountRequest) (amountResponse *network.AmountResponse, err error) {
 	res, err := neighbor.sendRequest(request)
 	if err == nil {
-		err = res.GetGob(&amountResponse)
+		data := res.GetBytes()
+		err = json.Unmarshal(data, &amountResponse)
 	}
 	return
 }
@@ -81,10 +101,11 @@ func (neighbor *Neighbor) StopValidation() (err error) {
 
 func (neighbor *Neighbor) sendRequest(request interface{}) (res gp2p.Data, err error) {
 	req := gp2p.Data{}
-	err = req.SetGob(request)
+	data, err := json.Marshal(request)
 	if err != nil {
 		return
 	}
+	req.SetBytes(data)
 	res, err = neighbor.client.Send("dialog", req)
 	return
 }

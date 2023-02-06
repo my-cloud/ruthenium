@@ -17,11 +17,12 @@ import (
 type Handler struct {
 	host               network.Neighbor
 	particlesInOneAtom uint64
+	transactionFee     uint64
 	logger             log.Logger
 }
 
-func NewHandler(host network.Neighbor, particlesInOneAtom uint64, logger log.Logger) *Handler {
-	return &Handler{host, particlesInOneAtom, logger}
+func NewHandler(host network.Neighbor, particlesInOneAtom uint64, transactionFee uint64, logger log.Logger) *Handler {
+	return &Handler{host, particlesInOneAtom, transactionFee, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -59,7 +60,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			return
 		}
 		senderPublicKey := encryption.NewPublicKey(privateKey)
-		transaction := server.NewTransaction(*transactionRequest.RecipientAddress, *transactionRequest.SenderAddress, senderPublicKey, time.Now().UnixNano(), value)
+		transaction := server.NewTransaction(handler.transactionFee, *transactionRequest.RecipientAddress, *transactionRequest.SenderAddress, senderPublicKey, time.Now().UnixNano(), value)
 		err = transaction.Sign(privateKey)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to generate signature: %w", err).Error())
@@ -68,6 +69,8 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			return
 		}
 		blockchainTransactionRequest := transaction.GetRequest()
+		hostTarget := handler.host.Target()
+		blockchainTransactionRequest.TransactionBroadcasterTarget = &hostTarget
 		err = handler.host.AddTransaction(blockchainTransactionRequest)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to create transaction: %w", err).Error())

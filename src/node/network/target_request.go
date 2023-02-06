@@ -1,6 +1,9 @@
 package network
 
 type TargetRequest struct {
-	Ip   *string
-	Port *uint16
+	Target *string
+}
+
+func (targetRequest TargetRequest) IsInvalid() bool {
+	return targetRequest.Target == nil || len(*targetRequest.Target) == 0
 }

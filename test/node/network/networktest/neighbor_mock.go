@@ -27,14 +27,11 @@ var _ network.Neighbor = &NeighborMock{}
 //			GetBlocksFunc: func() ([]*BlockResponse, error) {
 //				panic("mock out the GetBlocks method")
 //			},
+//			GetLastBlocksFunc: func(lastBlocksRequest LastBlocksRequest) ([]*BlockResponse, error) {
+//				panic("mock out the GetLastBlocks method")
+//			},
 //			GetTransactionsFunc: func() ([]TransactionResponse, error) {
 //				panic("mock out the GetTransactions method")
-//			},
-//			IpFunc: func() string {
-//				panic("mock out the Ip method")
-//			},
-//			PortFunc: func() uint16 {
-//				panic("mock out the Port method")
 //			},
 //			SendTargetsFunc: func(request []TargetRequest) error {
 //				panic("mock out the SendTargets method")
@@ -64,14 +61,11 @@ type NeighborMock struct {
 	// GetBlocksFunc mocks the GetBlocks method.
 	GetBlocksFunc func() ([]*network.BlockResponse, error)
 
+	// GetLastBlocksFunc mocks the GetLastBlocks method.
+	GetLastBlocksFunc func(lastBlocksRequest network.LastBlocksRequest) ([]*network.BlockResponse, error)
+
 	// GetTransactionsFunc mocks the GetTransactions method.
 	GetTransactionsFunc func() ([]network.TransactionResponse, error)
-
-	// IpFunc mocks the Ip method.
-	IpFunc func() string
-
-	// PortFunc mocks the Port method.
-	PortFunc func() uint16
 
 	// SendTargetsFunc mocks the SendTargets method.
 	SendTargetsFunc func(request []network.TargetRequest) error
@@ -100,14 +94,13 @@ type NeighborMock struct {
 		// GetBlocks holds details about calls to the GetBlocks method.
 		GetBlocks []struct {
 		}
+		// GetLastBlocks holds details about calls to the GetLastBlocks method.
+		GetLastBlocks []struct {
+			// LastBlocksRequest is the lastBlocksRequest argument value.
+			LastBlocksRequest network.LastBlocksRequest
+		}
 		// GetTransactions holds details about calls to the GetTransactions method.
 		GetTransactions []struct {
-		}
-		// Ip holds details about calls to the Ip method.
-		Ip []struct {
-		}
-		// Port holds details about calls to the Port method.
-		Port []struct {
 		}
 		// SendTargets holds details about calls to the SendTargets method.
 		SendTargets []struct {
@@ -127,9 +120,8 @@ type NeighborMock struct {
 	lockAddTransaction  sync.RWMutex
 	lockGetAmount       sync.RWMutex
 	lockGetBlocks       sync.RWMutex
+	lockGetLastBlocks   sync.RWMutex
 	lockGetTransactions sync.RWMutex
-	lockIp              sync.RWMutex
-	lockPort            sync.RWMutex
 	lockSendTargets     sync.RWMutex
 	lockStartValidation sync.RWMutex
 	lockStopValidation  sync.RWMutex
@@ -227,6 +219,38 @@ func (mock *NeighborMock) GetBlocksCalls() []struct {
 	return calls
 }
 
+// GetLastBlocks calls GetLastBlocksFunc.
+func (mock *NeighborMock) GetLastBlocks(lastBlocksRequest network.LastBlocksRequest) ([]*network.BlockResponse, error) {
+	if mock.GetLastBlocksFunc == nil {
+		panic("NeighborMock.GetLastBlocksFunc: method is nil but Neighbor.GetLastBlocks was just called")
+	}
+	callInfo := struct {
+		LastBlocksRequest network.LastBlocksRequest
+	}{
+		LastBlocksRequest: lastBlocksRequest,
+	}
+	mock.lockGetLastBlocks.Lock()
+	mock.calls.GetLastBlocks = append(mock.calls.GetLastBlocks, callInfo)
+	mock.lockGetLastBlocks.Unlock()
+	return mock.GetLastBlocksFunc(lastBlocksRequest)
+}
+
+// GetLastBlocksCalls gets all the calls that were made to GetLastBlocks.
+// Check the length with:
+//
+//	len(mockedNeighbor.GetLastBlocksCalls())
+func (mock *NeighborMock) GetLastBlocksCalls() []struct {
+	LastBlocksRequest network.LastBlocksRequest
+} {
+	var calls []struct {
+		LastBlocksRequest network.LastBlocksRequest
+	}
+	mock.lockGetLastBlocks.RLock()
+	calls = mock.calls.GetLastBlocks
+	mock.lockGetLastBlocks.RUnlock()
+	return calls
+}
+
 // GetTransactions calls GetTransactionsFunc.
 func (mock *NeighborMock) GetTransactions() ([]network.TransactionResponse, error) {
 	if mock.GetTransactionsFunc == nil {
@@ -251,60 +275,6 @@ func (mock *NeighborMock) GetTransactionsCalls() []struct {
 	mock.lockGetTransactions.RLock()
 	calls = mock.calls.GetTransactions
 	mock.lockGetTransactions.RUnlock()
-	return calls
-}
-
-// Ip calls IpFunc.
-func (mock *NeighborMock) Ip() string {
-	if mock.IpFunc == nil {
-		panic("NeighborMock.IpFunc: method is nil but Neighbor.Ip was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockIp.Lock()
-	mock.calls.Ip = append(mock.calls.Ip, callInfo)
-	mock.lockIp.Unlock()
-	return mock.IpFunc()
-}
-
-// IpCalls gets all the calls that were made to Ip.
-// Check the length with:
-//
-//	len(mockedNeighbor.IpCalls())
-func (mock *NeighborMock) IpCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockIp.RLock()
-	calls = mock.calls.Ip
-	mock.lockIp.RUnlock()
-	return calls
-}
-
-// Port calls PortFunc.
-func (mock *NeighborMock) Port() uint16 {
-	if mock.PortFunc == nil {
-		panic("NeighborMock.PortFunc: method is nil but Neighbor.Port was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockPort.Lock()
-	mock.calls.Port = append(mock.calls.Port, callInfo)
-	mock.lockPort.Unlock()
-	return mock.PortFunc()
-}
-
-// PortCalls gets all the calls that were made to Port.
-// Check the length with:
-//
-//	len(mockedNeighbor.PortCalls())
-func (mock *NeighborMock) PortCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockPort.RLock()
-	calls = mock.calls.Port
-	mock.lockPort.RUnlock()
 	return calls
 }
 
