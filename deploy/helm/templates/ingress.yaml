@@ -19,7 +19,11 @@ spec:
   {{- $domain := . }}
   {{- range $containerName, $container := $app.containers }}
   {{- range $container.service }}
+  {{- if gt ( len $container | int) 1  }}
+  - host: {{ $container.name }}.{{ $domain }}
+  {{- else }}
   - host: {{ $domain }}
+  {{- end }}
     http:
       paths:
       - path: /

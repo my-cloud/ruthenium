@@ -53,8 +53,7 @@ app:
       tagOverride: latest
       #pullPolicy: "IfNotPresent"
     #autoReload: "true"
-    command: [/bin/bash]
-    args: [ "-c", "'sleep 3; /app/ui'"]
+    command: [/app/ui]
     service:
     - protocol: TCP
       port: "80"
