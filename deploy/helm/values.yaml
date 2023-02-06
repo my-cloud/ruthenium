@@ -6,7 +6,7 @@ global:
     pullPolicy: "Always"
 
 url:
-  domains: [ruthenium.my-cloud.me]
+  domains: [ruthenium.example.com]
 
 app:
   type: statefulset
@@ -60,7 +60,7 @@ app:
       targetPort: "8080"
     annotations:
     health:
-      # type: grpc  # can be either: grpc httpGet tcpSocket
+      # type: httpGet  # can be either: grpc httpGet tcpSocket
       # liveness:
       #   path: /health/liveness
       #   initialDelaySeconds: 120
