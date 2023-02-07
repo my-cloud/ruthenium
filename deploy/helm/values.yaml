@@ -8,6 +8,12 @@ global:
 url:
   domains: [ruthenium.example.com]
 
+secrets:
+- name: ruthenium
+  annotations: {}
+  data:
+    privateKey: 
+
 app:
   type: statefulset
   replicas: 1
@@ -44,8 +50,9 @@ app:
     storage:
       data: /tmp
     secret:
+      ruthenium:
+        PRIVATE_KEY: privateKey
     env:
-      PRIVATE_KEY: ""
 
   - name: ui
     image:
@@ -77,9 +84,10 @@ app:
     storage:
       data: /data
     secret:
+      ruthenium:
+        PRIVATE_KEY: privateKey
     env:
       HOST_IP: "127.0.0.1"
-      PRIVATE_KEY: ""
 
   storage:
     data:
