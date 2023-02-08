@@ -1,4 +1,4 @@
-(function () {
+$(function () {
     $.ajax({
         url: '/wallet',
         type: 'POST',
