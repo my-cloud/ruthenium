@@ -103,4 +103,5 @@ $(function () {
     });
 
     setInterval(refresh_amount, 1000)
+    setInterval(refresh_transactions, 1000)
 })
