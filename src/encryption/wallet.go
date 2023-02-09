@@ -6,14 +6,13 @@ import (
 )
 
 type Wallet struct {
-	privateKey       *PrivateKey // TODO remove
 	publicKey        *PublicKey
 	address          string
 	privateKeyString string
 }
 
 func NewEmptyWallet() *Wallet {
-	return &Wallet{nil, nil, "", ""}
+	return &Wallet{nil, "", ""}
 }
 
 func DecodeWallet(mnemonicString string, derivationPath string, password string, privateKeyString string) (*Wallet, error) {
@@ -34,7 +33,7 @@ func DecodeWallet(mnemonicString string, derivationPath string, password string,
 	}
 	publicKey = NewPublicKey(privateKey)
 	address = publicKey.Address()
-	return &Wallet{privateKey, publicKey, address, privateKeyString}, nil
+	return &Wallet{publicKey, address, privateKeyString}, nil
 }
 
 func (wallet *Wallet) MarshalJSON() ([]byte, error) {
@@ -53,16 +52,6 @@ func (wallet *Wallet) MarshalJSON() ([]byte, error) {
 
 func (wallet *Wallet) PrivateKeyString() string {
 	return wallet.privateKeyString
-}
-
-// TODO remove
-func (wallet *Wallet) PrivateKey() *PrivateKey {
-	return wallet.privateKey
-}
-
-// TODO remove
-func (wallet *Wallet) PublicKey() *PublicKey {
-	return wallet.publicKey
 }
 
 func (wallet *Wallet) Address() string {
