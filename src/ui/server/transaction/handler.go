@@ -16,13 +16,14 @@ import (
 
 type Handler struct {
 	host               network.Neighbor
+	hostWallet         *encryption.Wallet
 	particlesInOneAtom uint64
 	transactionFee     uint64
 	logger             log.Logger
 }
 
-func NewHandler(host network.Neighbor, particlesInOneAtom uint64, transactionFee uint64, logger log.Logger) *Handler {
-	return &Handler{host, particlesInOneAtom, transactionFee, logger}
+func NewHandler(host network.Neighbor, hostWallet *encryption.Wallet, particlesInOneAtom uint64, transactionFee uint64, logger log.Logger) *Handler {
+	return &Handler{host, hostWallet, particlesInOneAtom, transactionFee, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -45,13 +46,6 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write(errorMessage)
 			return
 		}
-		privateKey, err := encryption.DecodePrivateKey(*transactionRequest.SenderPrivateKey)
-		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to decode transaction private key: %w", err).Error())
-			writer.WriteHeader(http.StatusBadRequest)
-			jsonWriter.Write("invalid private key")
-			return
-		}
 		value, err := atomsToParticles(*transactionRequest.Value, handler.particlesInOneAtom)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to parse transaction value: %w", err).Error())
@@ -59,8 +53,15 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write("invalid transaction value")
 			return
 		}
+		privateKey, err := encryption.DecodePrivateKey(handler.hostWallet.PrivateKeyString())
+		if err != nil {
+			handler.logger.Error(fmt.Errorf("failed to decode transaction private key: %w", err).Error())
+			writer.WriteHeader(http.StatusBadRequest)
+			jsonWriter.Write("invalid private key")
+			return
+		}
 		senderPublicKey := encryption.NewPublicKey(privateKey)
-		transaction := server.NewTransaction(handler.transactionFee, *transactionRequest.RecipientAddress, *transactionRequest.SenderAddress, senderPublicKey, time.Now().UnixNano(), value)
+		transaction := server.NewTransaction(handler.transactionFee, *transactionRequest.RecipientAddress, handler.hostWallet.Address(), senderPublicKey, time.Now().UnixNano(), value)
 		err = transaction.Sign(privateKey)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to generate signature: %w", err).Error())

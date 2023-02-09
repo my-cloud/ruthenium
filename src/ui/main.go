@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/config"
+	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
@@ -52,9 +53,14 @@ func main() {
 		logger.Fatal(fmt.Errorf("unable to instantiate settings: %w", err).Error())
 	}
 	particlesCount := settings.ParticlesCount
+	hostWallet, err := encryption.DecodeWallet(*mnemonic, *derivationPath, *password, *privateKey)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("failed to create host wallet: %w", err).Error())
+		return
+	}
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
-	http.Handle("/wallet", wallet.NewHandler(*mnemonic, *derivationPath, *password, *privateKey, logger))
-	http.Handle("/transaction", transaction.NewHandler(host, particlesCount, transactionFee, logger))
+	http.Handle("/wallet", wallet.NewHandler(hostWallet, logger))
+	http.Handle("/transaction", transaction.NewHandler(host, hostWallet, particlesCount, transactionFee, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/wallet/amount", amount.NewHandler(host, particlesCount, logger))
 	http.Handle("/validation/start", start.NewHandler(host, logger))

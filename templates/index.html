@@ -8,10 +8,9 @@
         $(function () {
             $.ajax({
                 url: '/wallet',
-                type: 'POST',
+                type: 'GET',
                 success: function (response) {
                     $('#public_key').val(response['public_key']);
-                    $('#private_key').val(response['private_key']);
                     $('#sender_address').val(response['address']);
                     console.info(response);
                 },
@@ -27,8 +26,6 @@
                 }
 
                 let transaction_data = {
-                    'sender_private_key': $('#private_key').val(),
-                    'sender_address': $('#sender_address').val(),
                     'recipient_address': $('#recipient_address').val(),
                     'value': $('#send_amount').val(),
                 };
@@ -123,15 +120,11 @@
     <table>
         <tr>
             <td><label for="public_key">Public Key:</label></td>
-            <td><textarea id="public_key" rows="2" cols="80" name="public_key"></textarea></td>
-        </tr>
-        <tr>
-            <td><label for="private_key">Private Key:</label></td>
-            <td><textarea id="private_key" rows="1" cols="80" name="private_key"></textarea></td>
+            <td><textarea readonly id="public_key" rows="2" cols="80" name="public_key"></textarea></td>
         </tr>
         <tr>
             <td><label for="sender_address">Address:</label></td>
-            <td><textarea id="sender_address" rows="1" cols="80" name="sender_address"></textarea></td>
+            <td><textarea readonly id="sender_address" rows="1" cols="80" name="sender_address"></textarea></td>
         </tr>
     </table>
 </div>

@@ -9,32 +9,24 @@ import (
 )
 
 type Handler struct {
-	mnemonic       string
-	derivationPath string
-	password       string
-	privateKey     string
-	logger         log.Logger
+	hostWallet *encryption.Wallet
+	logger     log.Logger
 }
 
-func NewHandler(mnemonic string, derivationPath string, password string, privateKey string, logger log.Logger) *Handler {
-	return &Handler{mnemonic, derivationPath, password, privateKey, logger}
+func NewHandler(hostWallet *encryption.Wallet, logger log.Logger) *Handler {
+	return &Handler{hostWallet, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
-	case http.MethodPost:
-		wallet, err := encryption.DecodeWallet(handler.mnemonic, handler.derivationPath, handler.password, handler.privateKey)
+	case http.MethodGet:
+		marshaledWallet, err := handler.hostWallet.MarshalJSON()
 		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to create wallet: %w", err).Error())
-			return
-		}
-		marshaledWallet, err := wallet.MarshalJSON()
-		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to marshal wallet: %w", err).Error())
+			handler.logger.Error(fmt.Errorf("failed to marshal host wallet: %w", err).Error())
 			return
 		}
 		writer.Header().Add("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusCreated)
+		writer.WriteHeader(http.StatusOK)
 		server.NewIoWriter(writer, handler.logger).Write(string(marshaledWallet[:]))
 	default:
 		handler.logger.Error("invalid HTTP method")
