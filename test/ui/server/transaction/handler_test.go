@@ -23,7 +23,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	neighborMock := new(networktest.NeighborMock)
 	neighborMock.TargetFunc = func() string { return "" }
 	logger := logtest.NewLoggerMock()
-	handler := transaction.NewHandler(neighborMock, 1, 0, logger)
+	handler := transaction.NewHandler(neighborMock, logger)
 	recorder := httptest.NewRecorder()
 	invalidHttpMethods := []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
 	for _, method := range invalidHttpMethods {
@@ -46,7 +46,7 @@ func Test_ServeHTTP_UndecipherableTransaction_BadRequest(t *testing.T) {
 	// Arrange
 	neighborMock := new(networktest.NeighborMock)
 	logger := logtest.NewLoggerMock()
-	handler := transaction.NewHandler(neighborMock, 1, 0, logger)
+	handler := transaction.NewHandler(neighborMock, logger)
 	transactionRequest := ""
 	b, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(b)
@@ -68,7 +68,7 @@ func Test_ServeHTTP_InvalidTransaction_BadRequest(t *testing.T) {
 	neighborMock := new(networktest.NeighborMock)
 	neighborMock.TargetFunc = func() string { return "0.0.0.0:0" }
 	logger := logtest.NewLoggerMock()
-	handler := transaction.NewHandler(neighborMock, 1, 0, logger)
+	handler := transaction.NewHandler(neighborMock, logger)
 	transactionRequest := protocoltest.NewTransactionRequest(0, "", "", 0, 0)
 	b, _ := json.Marshal(&transactionRequest)
 	body := bytes.NewReader(b)
@@ -91,11 +91,10 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	neighborMock.TargetFunc = func() string { return "0.0.0.0:0" }
 	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return errors.New("") }
 	logger := logtest.NewLoggerMock()
-	var transactionFee uint64 = 0
-	handler := transaction.NewHandler(neighborMock, 1, transactionFee, logger)
+	handler := transaction.NewHandler(neighborMock, logger)
 	privateKey, _ := encryption.DecodePrivateKey(test.PrivateKey)
 	publicKey, _ := encryption.DecodePublicKey(test.PublicKey)
-	transactionRequest := protocoltest.NewSignedTransactionRequest(transactionFee, "RecipientAddress", "SenderAddress", privateKey, publicKey, 0, 0)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(0, "RecipientAddress", "SenderAddress", privateKey, publicKey, 0, 0)
 	b, _ := json.Marshal(&transactionRequest)
 	body := bytes.NewReader(b)
 	recorder := httptest.NewRecorder()
@@ -117,11 +116,10 @@ func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	neighborMock.TargetFunc = func() string { return "0.0.0.0:0" }
 	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return nil }
 	logger := logtest.NewLoggerMock()
-	var transactionFee uint64 = 0
-	handler := transaction.NewHandler(neighborMock, 1, transactionFee, logger)
+	handler := transaction.NewHandler(neighborMock, logger)
 	privateKey, _ := encryption.DecodePrivateKey(test.PrivateKey)
 	publicKey, _ := encryption.DecodePublicKey(test.PublicKey)
-	transactionRequest := protocoltest.NewSignedTransactionRequest(transactionFee, "RecipientAddress", "SenderAddress", privateKey, publicKey, 0, 0)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(0, "RecipientAddress", "SenderAddress", privateKey, publicKey, 0, 0)
 	b, _ := json.Marshal(&transactionRequest)
 	body := bytes.NewReader(b)
 	recorder := httptest.NewRecorder()

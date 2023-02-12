@@ -10,14 +10,12 @@ import (
 )
 
 type Handler struct {
-	host               network.Neighbor
-	particlesInOneAtom uint64
-	transactionFee     uint64
-	logger             log.Logger
+	host   network.Neighbor
+	logger log.Logger
 }
 
-func NewHandler(host network.Neighbor, particlesInOneAtom uint64, transactionFee uint64, logger log.Logger) *Handler {
-	return &Handler{host, particlesInOneAtom, transactionFee, logger}
+func NewHandler(host network.Neighbor, logger log.Logger) *Handler {
+	return &Handler{host, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {

@@ -23,7 +23,6 @@ import (
 const (
 	defaultPort     = 8080
 	defaultHostPort = 8106
-	transactionFee  = 1000
 )
 
 func main() {
@@ -49,7 +48,7 @@ func main() {
 	}
 	particlesCount := settings.ParticlesCount
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
-	http.Handle("/transaction", transaction.NewHandler(host, particlesCount, transactionFee, logger))
+	http.Handle("/transaction", transaction.NewHandler(host, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/validation/start", start.NewHandler(host, logger))
 	http.Handle("/validation/stop", stop.NewHandler(host, logger))
