@@ -69,7 +69,7 @@
         $.ajax({
             url: "/wallet/address",
             type: "GET",
-            data: {"public_key": publicKeyString},
+            data: {"publicKey": publicKeyString},
             success: function (response) {
                 $("#sender_address").val(response);
             },

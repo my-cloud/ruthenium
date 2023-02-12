@@ -6,9 +6,9 @@
 [![Doc](https://img.shields.io/badge/doc-wiki-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
 [![Doc](https://img.shields.io/badge/doc-whitepaper-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki/Whitepaper)
 
-The Ruthenium blockchain protocol.
+Golang implementation of the Ruthenium blockchain protocol.
 
-This README contains essential information for a quick start. You will find a detailed description of the project in the [wiki](https://github.com/my-cloud/ruthenium/wiki/Home). If you want to know what reasons led to create this blockchain, you can directly dive into the Ruthenium [whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
+You will find a detailed description of the project in the [wiki](https://github.com/my-cloud/ruthenium/wiki/Home). To understand the motivations behind the creation of this blockchain, you can peruse the comprehensive details outlined in the Ruthenium [whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
 
 ## Quickstart
 There are two ways to use the Ruthenium blockchain. You can either use your own build from [sources](https://github.com/my-cloud/ruthenium/releases) (Option A) or use a docker image provided in the [repository packages](https://github.com/my-cloud/ruthenium/pkgs/container/ruthenium) (Option B).
@@ -43,7 +43,7 @@ There are two ways to use the Ruthenium blockchain. You can either use your own 
     ```
   * At root level (ruthenium folder), run the [UI server](src/ui/README.md):
     ```
-    go run src/ui/main.go -host-ip=<your external IP address> -private-key=<private key>
+    go run src/ui/main.go -host-ip=<your external IP address>
     ```
 * Option B (using docker image):
   * Run the [node](src/node/README.md):

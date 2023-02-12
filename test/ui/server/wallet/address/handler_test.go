@@ -36,7 +36,7 @@ func Test_ServeHTTP_InvalidPublicKey_ReturnsBadRequest(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	handler := address.NewHandler(logger)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/wallet/address?public_key=invalidPublicKey", nil)
+	request := httptest.NewRequest(http.MethodGet, "/wallet/address?publicKey=invalidPublicKey", nil)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
@@ -51,7 +51,7 @@ func Test_ServeHTTP_ValidRequest_ReturnsAddress(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	handler := address.NewHandler(logger)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/wallet/address?public_key=%s", test.PublicKey), nil)
+	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/wallet/address?publicKey=%s", test.PublicKey), nil)
 
 	// Act
 	handler.ServeHTTP(recorder, request)

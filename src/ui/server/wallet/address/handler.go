@@ -20,7 +20,7 @@ func NewHandler(logger log.Logger) *Handler {
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		publicKeyString := req.URL.Query().Get("public_key")
+		publicKeyString := req.URL.Query().Get("publicKey")
 		publicKey, err := encryption.DecodePublicKey(publicKeyString)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to decode public key: %w", err).Error())
