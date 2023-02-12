@@ -4,117 +4,9 @@
     <meta charset="UTF-8">
     <title>Wallet</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <script>
-        $(function () {
-            $.ajax({
-                url: '/wallet',
-                type: 'POST',
-                success: function (response) {
-                    $('#public_key').val(response['public_key']);
-                    $('#private_key').val(response['private_key']);
-                    $('#sender_address').val(response['address']);
-                    console.info(response);
-                },
-                error: function (error) {
-                    console.error(error);
-                }
-            })
-
-            $('#send_money_button').click(function () {
-                if (!confirm('Are you sure to send?')) {
-                    alert('Canceled')
-                    return
-                }
-
-                let transaction_data = {
-                    'sender_private_key': $('#private_key').val(),
-                    'sender_address': $('#sender_address').val(),
-                    'recipient_address': $('#recipient_address').val(),
-                    'value': $('#send_amount').val(),
-                };
-
-                $.ajax({
-                    url: '/transaction',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(transaction_data),
-                    success: function (response) {
-                        console.info(response);
-                        if (response === "success") {
-                            alert('Send success');
-                        } else {
-                            alert('Send failed: '+response)
-                        }
-                    },
-                    error: function (response) {
-                        console.error(response);
-                        alert('Send failed');
-                    }
-                })
-            })
-
-            function refresh_amount() {
-                let data = {'address': $('#sender_address').val()}
-                $.ajax({
-                    url: '/wallet/amount',
-                    type: 'GET',
-                    data: data,
-                    success: function (response) {
-                        $('#wallet_amount').text(response);
-                    },
-                    error: function (error) {
-                        console.error(error)
-                    }
-                })
-            }
-
-            function refresh_transactions() {
-                $.ajax({
-                    url: '/transactions',
-                    type: 'GET',
-                    success: function (response) {
-                        $('#transactions_pool').text(JSON.stringify(response, undefined, 4));
-                    },
-                    error: function (error) {
-                        console.error(error)
-                    }
-                })
-            }
-
-            function start_validation() {
-                $.ajax({
-                    url: '/validation/start',
-                    type: 'POST',
-                    error: function (error) {
-                        console.error(error)
-                    }
-                })
-            }
-
-            function stop_validation() {
-                $.ajax({
-                    url: '/validation/stop',
-                    type: 'POST',
-                    error: function (error) {
-                        console.error(error)
-                    }
-                })
-            }
-
-            $('#start_validation').click(function () {
-                start_validation();
-            });
-
-            $('#stop_validation').click(function () {
-                stop_validation();
-            });
-
-            setInterval(refresh_amount, 1000)
-            setInterval(refresh_transactions, 1000)
-        })
-    </script>
-</head>
-<body>
+    <script src="https://cdn.jsdelivr.net/npm/elliptic-es@0.0.1/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/sha256.min.js"></script><body>
 <div>
     <h1>Wallet</h1>
     <div id="wallet_amount">0</div>
@@ -122,16 +14,16 @@
     <button id="stop_validation">Stop Validation</button>
     <table>
         <tr>
-            <td><label for="public_key">Public Key:</label></td>
-            <td><textarea id="public_key" rows="2" cols="80" name="public_key"></textarea></td>
-        </tr>
-        <tr>
             <td><label for="private_key">Private Key:</label></td>
             <td><textarea id="private_key" rows="1" cols="80" name="private_key"></textarea></td>
         </tr>
         <tr>
+            <td><label for="public_key">Public Key:</label></td>
+            <td><textarea readonly id="public_key" rows="2" cols="80" name="public_key"></textarea></td>
+        </tr>
+        <tr>
             <td><label for="sender_address">Address:</label></td>
-            <td><textarea id="sender_address" rows="1" cols="80" name="sender_address"></textarea></td>
+            <td><textarea readonly id="sender_address" rows="1" cols="80" name="sender_address"></textarea></td>
         </tr>
     </table>
 </div>
@@ -156,4 +48,232 @@
     <pre id="transactions_pool"></pre>
 </div>
 </body>
+<script>
+    const curve = "secp256k1";
+    const encoding = "hex";
+    const hexPrefix = "0x";
+    let keyPair
+    let publicKeyString
+    document.getElementById("private_key").addEventListener("input", event => {
+        const privateKeyString = event.target.value.toString();
+        const $publicKey = $("#public_key");
+        if (!privateKeyString) {
+            keyPair = null;
+            $publicKey.val("");
+            $("#sender_address").val("");
+            return
+        }
+        keyPair = elliptic.ec(curve).keyFromPrivate(privateKeyString.substring(2), encoding);
+        publicKeyString = hexPrefix + keyPair.getPublic(encoding);
+        $publicKey.val(publicKeyString);
+        $.ajax({
+            url: "/wallet/address",
+            type: "GET",
+            data: {"publicKey": publicKeyString},
+            success: function (response) {
+                $("#sender_address").val(response);
+            },
+            error: function (error) {
+                console.error(error);
+            }
+        })
+
+    });
+
+    $(function () {
+        $("#start_validation").click(function () {
+            $.ajax({
+                url: "/validation/start",
+                type: "POST",
+                error: function (error) {
+                    console.error(error)
+                }
+            })
+        });
+
+        $("#stop_validation").click(function () {
+            $.ajax({
+                url: "/validation/stop",
+                type: "POST",
+                error: function (error) {
+                    console.error(error)
+                }
+            })
+        });
+
+        $("#send_money_button").click(function () {
+            if (!keyPair) {
+                alert("The private key must be provided to send money")
+                return
+            }
+
+            if (!confirm("Are you sure to send?")) {
+                alert("Canceled")
+                return
+            }
+
+            const atoms = $("#send_amount").val();
+            const result = atomsToParticles(atoms, 100000000);
+            if (result.err) {
+                alert(result.err)
+                return
+            }
+
+            const dateNow = Math.floor(Date.now() * 1000000);
+            const recipientAddress = $("#recipient_address").val();
+            const senderAddress = $("#sender_address").val();
+            const transactionData = {
+                "fee": 1000,
+                "recipient_address": recipientAddress,
+                "sender_address": senderAddress,
+                "timestamp": dateNow,
+                "value": result.particles,
+            };
+
+            const hash = CryptoJS.SHA256(JSON.stringify(transactionData)).toString(CryptoJS.enc.Hex);
+            const signature = keyPair.sign(hash);
+            const signatureHex = getSignatureHex(signature);
+            const transactionRequest = {
+                "fee": 1000,
+                "recipient_address": recipientAddress,
+                "sender_address": senderAddress,
+                "sender_public_key": publicKeyString,
+                "signature": signatureHex,
+                "timestamp": dateNow,
+                "value": result.particles,
+            };
+
+            $.ajax({
+                url: "/transaction",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(transactionRequest),
+                success: function (response) {
+                    if (response === "success") {
+                        alert("Send success");
+                    } else {
+                        alert("Send failed: " + response)
+                    }
+                },
+                error: function (response) {
+                    console.error(response);
+                    alert("Send failed");
+                }
+            })
+        })
+
+        setInterval(refresh_amount, 1000)
+        setInterval(refresh_transactions, 1000)
+
+        function refresh_amount() {
+            const $walletAmount = $("#wallet_amount");
+            const address = $("#sender_address").val();
+            if (!address) {
+                $walletAmount.text(0)
+                return
+            }
+            const data = {"address": address}
+            $.ajax({
+                url: "/wallet/amount",
+                type: "GET",
+                data: data,
+                success: function (response) {
+                    $walletAmount.text(response);
+                },
+                error: function (error) {
+                    console.error(error)
+                }
+            })
+        }
+
+        function refresh_transactions() {
+            $.ajax({
+                url: "/transactions",
+                type: "GET",
+                success: function (response) {
+                    $("#transactions_pool").text(JSON.stringify(response, undefined, 4));
+                },
+                error: function (error) {
+                    console.error(error)
+                }
+            })
+        }
+    })
+
+    function atomsToParticles(atoms, particlesInOneAtom) {
+        const decimalSeparator = ".";
+        const i = atoms.indexOf(decimalSeparator);
+
+        if (i > 12 || (i === -1 && atoms.length > 12)) {
+            return {
+                particles: null,
+                err: new Error("transaction value is too big")
+            };
+        }
+
+        if (i >= 0) {
+            const unitsString = atoms.slice(0, i);
+            const units = parseInt(unitsString, 10);
+
+            if (isNaN(units)) {
+                return {
+                    particles: null,
+                    err: new Error("Failed to parse units")
+                };
+            }
+
+            const decimalsString = atoms.slice(i + 1);
+            const trailingZerosCount =
+                (particlesInOneAtom.toString().length - 1) - decimalsString.length;
+
+            if (trailingZerosCount < 0) {
+                return {
+                    particles: null,
+                    err: new Error("transaction value is too small")
+                };
+            }
+
+            const trailedDecimalsString = `${decimalsString}${"0".repeat(trailingZerosCount)}`;
+            const decimals = parseInt(trailedDecimalsString, 10);
+
+            if (isNaN(decimals)) {
+                return {
+                    particles: null,
+                    err: new Error("Failed to parse decimals")
+                };
+            }
+
+            return {
+                particles: units * particlesInOneAtom + decimals,
+                err: null
+            };
+        } else {
+            const units = parseInt(atoms, 10);
+
+            if (isNaN(units)) {
+                return {
+                    particles: null,
+                    err: new Error("Failed to parse units")
+                };
+            }
+
+            return {
+                particles: units * particlesInOneAtom,
+                err: null
+            };
+        }
+    }
+
+    function getSignatureHex(signature) {
+        let rHex = signature.r.toString(encoding);
+        while (rHex.length < 64) {
+            rHex = "0" + rHex;
+        }
+        let sHex = signature.s.toString(encoding);
+        while (sHex.length < 64) {
+            sHex = "0" + sHex;
+        }
+        return rHex + sHex;
+    }
+</script>
 </html>
