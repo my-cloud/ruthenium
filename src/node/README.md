@@ -59,22 +59,6 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 * **response value:** Array of [transaction responses](#transaction-response)
 </details>
 
-### Validation
-<details>
-<summary><b>Start validation</b></summary>
-
-*Description:* Start validating one block per minute.
-* **request value:** `START VALIDATION`  
-* **response value:** *none*
-</details>
-<details>
-<summary><b>Stop validation</b></summary>
-
-*Description:* Stop validating one block per minute.
-* **request value:** `STOP VALIDATION`  
-* **response value:** *none*
-</details>
-
 ### Wallet
 <details>
 <summary><b>Get amount</b></summary>
