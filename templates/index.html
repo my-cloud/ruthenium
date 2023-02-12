@@ -251,14 +251,11 @@
     }
 
     function getSignatureHex(signature) {
-        let r = signature.r;
-        let s = signature.s;
-
-        let rHex = r.toString('hex');
+        let rHex = signature.r.toString(encoding);
         while (rHex.length < 64) {
             rHex = "0" + rHex;
         }
-        let sHex = s.toString('hex');
+        let sHex = signature.s.toString(encoding);
         while (sHex.length < 64) {
             sHex = "0" + sHex;
         }
