@@ -1,14 +1,14 @@
 package network
 
 type TransactionRequest struct {
-	Fee                          *uint64
-	RecipientAddress             *string
-	SenderAddress                *string
-	SenderPublicKey              *string
-	Signature                    *string
-	Timestamp                    *int64
+	Fee                          *uint64 `json:"fee"`
+	RecipientAddress             *string `json:"recipient_address"`
+	SenderAddress                *string `json:"sender_address"`
+	SenderPublicKey              *string `json:"sender_public_key"`
+	Signature                    *string `json:"signature"`
+	Timestamp                    *int64  `json:"timestamp"`
 	TransactionBroadcasterTarget *string
-	Value                        *uint64
+	Value                        *uint64 `json:"value"`
 }
 
 func (transactionRequest *TransactionRequest) IsInvalid() bool {
