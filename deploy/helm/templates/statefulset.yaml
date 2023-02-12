@@ -1,7 +1,7 @@
 {{ if eq .Values.app.type "statefulset" }}
 ---
 {{- $chartName := .Chart.Name -}}
-{{- $appVersion := .Values.AppVersion | default .Chart.AppVersion -}}
+{{- $appVersion := .Values.AppVersion | default .Chart.Version -}}
 {{- $global := .Values.global }}
 
 apiVersion: apps/v1
