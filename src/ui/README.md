@@ -61,40 +61,6 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
   |500|Internal server error|
 </details>
 
-### Validation
-<details>
-<summary><b>Start validation</b></summary>
-
-![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
-![Validation start](https://img.shields.io/badge//validation/start-dimgray?style=flat-square)
-
-*Description:* Start validating one block per minute.
-* **parameters:** *none*
-* **request body:** *none*
-* **responses:**
-
-  |Code|Description|
-    |---|---|
-  |200|Validation started|
-  |500|Internal server error|
-</details>
-<details>
-<summary><b>Stop validation</b></summary>
-
-![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
-![Validation stop](https://img.shields.io/badge//validation/stop-dimgray?style=flat-square)
-
-*Description:* Stop validating one block per minute.
-* **parameters:** *none*
-* **request body:** *none*
-* **responses:**
-
-  |Code|Description|
-    |---|---|
-  |200|Validation stopped|
-  |500|Internal server error|
-</details>
-
 ### Wallet
 <details>
 <summary><b>Get wallet address</b></summary>
