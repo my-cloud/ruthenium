@@ -6,7 +6,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
-	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/log/logtest"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
@@ -247,9 +246,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	var invalidTransactionFee uint64 = 0
 	privateKey, _ := encryption.DecodePrivateKey(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	serverTransaction := server.NewTransaction(invalidTransactionFee, "A", address, publicKey, 3, 1)
-	_ = serverTransaction.Sign(privateKey)
-	transactionRequest := serverTransaction.GetRequest()
+	transactionRequest := protocoltest.NewSignedTransactionRequest(invalidTransactionFee, "A", address, privateKey, publicKey, 3, 1)
 	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
 	transactionResponse := transaction.GetResponse()
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
@@ -304,9 +301,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.DecodePrivateKey(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	serverTransaction := server.NewTransaction(transactionFee, "A", address, publicKey, 3, 1)
-	_ = serverTransaction.Sign(privateKey)
-	transactionRequest := serverTransaction.GetRequest()
+	transactionRequest := protocoltest.NewSignedTransactionRequest(transactionFee, "A", address, privateKey, publicKey, 3, 1)
 	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
 	transactionResponse := transaction.GetResponse()
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
@@ -360,9 +355,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.DecodePrivateKey(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	serverTransaction := server.NewTransaction(transactionFee, "A", address, publicKey, 0, 1)
-	_ = serverTransaction.Sign(privateKey)
-	transactionRequest := serverTransaction.GetRequest()
+	transactionRequest := protocoltest.NewSignedTransactionRequest(transactionFee, "A", address, privateKey, publicKey, 0, 1)
 	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
 	transactionResponse := transaction.GetResponse()
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
