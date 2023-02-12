@@ -3,7 +3,6 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/ui/server"
@@ -12,14 +11,13 @@ import (
 
 type Handler struct {
 	host               network.Neighbor
-	hostWallet         *encryption.Wallet
 	particlesInOneAtom uint64
 	transactionFee     uint64
 	logger             log.Logger
 }
 
-func NewHandler(host network.Neighbor, hostWallet *encryption.Wallet, particlesInOneAtom uint64, transactionFee uint64, logger log.Logger) *Handler {
-	return &Handler{host, hostWallet, particlesInOneAtom, transactionFee, logger}
+func NewHandler(host network.Neighbor, particlesInOneAtom uint64, transactionFee uint64, logger log.Logger) *Handler {
+	return &Handler{host, particlesInOneAtom, transactionFee, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {

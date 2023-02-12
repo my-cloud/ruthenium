@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/config"
-	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
@@ -15,7 +14,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server/transactions"
 	"github.com/my-cloud/ruthenium/src/ui/server/validation/start"
 	"github.com/my-cloud/ruthenium/src/ui/server/validation/stop"
-	"github.com/my-cloud/ruthenium/src/ui/server/wallet"
+	"github.com/my-cloud/ruthenium/src/ui/server/wallet/address"
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/amount"
 	"net/http"
 	"strconv"
@@ -28,10 +27,6 @@ const (
 )
 
 func main() {
-	mnemonic := flag.String("mnemonic", environment.NewVariable("MNEMONIC").GetStringValue(""), "The mnemonic (required if the private key is not provided)")
-	derivationPath := flag.String("derivation-path", environment.NewVariable("DERIVATION_PATH").GetStringValue("m/44'/60'/0'/0/0"), "The derivation path (unused if the mnemonic is omitted)")
-	password := flag.String("password", environment.NewVariable("PASSWORD").GetStringValue(""), "The mnemonic password (unused if the mnemonic is omitted)")
-	privateKey := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)")
 	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(defaultPort), "The TCP port number of the UI server")
 	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue(""), "The node host IP address")
 	hostPort := flag.Int("host-port", environment.NewVariable("HOST_PORT").GetIntValue(defaultHostPort), "The TCP port number of the host node")
@@ -53,18 +48,13 @@ func main() {
 		logger.Fatal(fmt.Errorf("unable to instantiate settings: %w", err).Error())
 	}
 	particlesCount := settings.ParticlesCount
-	hostWallet, err := encryption.DecodeWallet(*mnemonic, *derivationPath, *password, *privateKey)
-	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to create host wallet: %w", err).Error())
-		return
-	}
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
-	http.Handle("/wallet", wallet.NewHandler(hostWallet, logger))
-	http.Handle("/transaction", transaction.NewHandler(host, hostWallet, particlesCount, transactionFee, logger))
+	http.Handle("/transaction", transaction.NewHandler(host, particlesCount, transactionFee, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
-	http.Handle("/wallet/amount", amount.NewHandler(host, particlesCount, logger))
 	http.Handle("/validation/start", start.NewHandler(host, logger))
 	http.Handle("/validation/stop", stop.NewHandler(host, logger))
+	http.Handle("/wallet/address", address.NewHandler(logger))
+	http.Handle("/wallet/amount", amount.NewHandler(host, particlesCount, logger))
 	logger.Info("user interface server is running...")
 	logger.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(*port), nil).Error())
 }

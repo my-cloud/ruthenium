@@ -1,9 +1,8 @@
-package wallet
+package address
 
 import (
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/encryption"
-	"github.com/my-cloud/ruthenium/src/ui/server/wallet"
+	"github.com/my-cloud/ruthenium/src/ui/server/wallet/address"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,12 +14,12 @@ import (
 func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
-	handler := wallet.NewHandler(encryption.NewEmptyWallet(), logger)
+	handler := address.NewHandler(logger)
 	recorder := httptest.NewRecorder()
 	invalidHttpMethods := []string{http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
 	for _, method := range invalidHttpMethods {
 		t.Run(method, func(t *testing.T) {
-			request := httptest.NewRequest(method, "/wallet", nil)
+			request := httptest.NewRequest(method, "/wallet/address", nil)
 
 			// Act
 			handler.ServeHTTP(recorder, request)
@@ -32,12 +31,27 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	}
 }
 
-func Test_ServeHTTP_Get_ReturnsOk(t *testing.T) {
+func Test_ServeHTTP_InvalidPublicKey_ReturnsBadRequest(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
-	handler := wallet.NewHandler(encryption.NewEmptyWallet(), logger)
+	handler := address.NewHandler(logger)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/wallet", nil)
+	request := httptest.NewRequest(http.MethodGet, "/wallet/address?public_key=invalidPublicKey", nil)
+
+	// Act
+	handler.ServeHTTP(recorder, request)
+
+	// Assert
+	expectedStatusCode := 400
+	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
+}
+
+func Test_ServeHTTP_ValidRequest_ReturnsAddress(t *testing.T) {
+	// Arrange
+	logger := logtest.NewLoggerMock()
+	handler := address.NewHandler(logger)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/wallet/address?public_key=%s", test.PublicKey), nil)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
