@@ -20,7 +20,7 @@ $ helm install ruthenium --set secrets[0].data.privateKey=<MyPrivateKey>
 
 ## Source Code
 
-* [Ruthenium](https://github.com/my-cloud/ruthenium)>
+* [Ruthenium](https://github.com/my-cloud/ruthenium)
 
 ## Values
 
