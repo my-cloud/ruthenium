@@ -183,15 +183,24 @@ func Test_ServeHTTP_InvalidPrivateKey_BadRequest(t *testing.T) {
 func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	// Arrange
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.TargetFunc = func() string { return "" }
+	neighborMock.TargetFunc = func() string { return "0.0.0.0:0" }
 	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return errors.New("") }
 	logger := logtest.NewLoggerMock()
 	wallet, _ := encryption.DecodeWallet("", "", "", test.PrivateKey)
-	handler := transaction.NewHandler(neighborMock, wallet, 1, 0, logger)
-	transactionRequest := newTransactionRequest(
-		"A",
-		"1",
-	)
+	var transactionFee uint64 = 0
+	handler := transaction.NewHandler(neighborMock, wallet, 1, transactionFee, logger)
+	anyString := "A"
+	var transactionTimestamp int64 = 0
+	var transactionValue uint64 = 0
+	transactionRequest := network.TransactionRequest{
+		Fee:              &transactionFee,
+		RecipientAddress: &anyString,
+		SenderAddress:    &anyString,
+		SenderPublicKey:  &anyString,
+		Signature:        &anyString,
+		Timestamp:        &transactionTimestamp,
+		Value:            &transactionValue,
+	}
 	b, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(b)
 	recorder := httptest.NewRecorder()
@@ -210,15 +219,24 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	// Arrange
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.TargetFunc = func() string { return "" }
+	neighborMock.TargetFunc = func() string { return "0.0.0.0:0" }
 	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return nil }
 	logger := logtest.NewLoggerMock()
 	wallet, _ := encryption.DecodeWallet("", "", "", test.PrivateKey)
-	handler := transaction.NewHandler(neighborMock, wallet, 1, 0, logger)
-	transactionRequest := newTransactionRequest(
-		"A",
-		"1",
-	)
+	var transactionFee uint64 = 0
+	handler := transaction.NewHandler(neighborMock, wallet, 1, transactionFee, logger)
+	anyString := "A"
+	var transactionTimestamp int64 = 0
+	var transactionValue uint64 = 0
+	transactionRequest := network.TransactionRequest{
+		Fee:              &transactionFee,
+		RecipientAddress: &anyString,
+		SenderAddress:    &anyString,
+		SenderPublicKey:  &anyString,
+		Signature:        &anyString,
+		Timestamp:        &transactionTimestamp,
+		Value:            &transactionValue,
+	}
 	b, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(b)
 	recorder := httptest.NewRecorder()
