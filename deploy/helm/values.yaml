@@ -1,4 +1,4 @@
-AppVersion: 0.0.0-develop
+AppVersion: 0.0.0
 global:
   registries: []
   autoReload: "true"
