@@ -6,13 +6,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 )
 
-const (
-	GetBlocks       = "GET BLOCKS"
-	GetTransactions = "GET TRANSACTIONS"
-	StartValidation = "START VALIDATION"
-	StopValidation  = "STOP VALIDATION"
-)
-
 type Host struct {
 	handler               network.Handler
 	server                Server

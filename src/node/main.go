@@ -78,7 +78,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
 	}
-	handler := p2p.NewHandler(blockchain, synchronizer, transactionsPool, validationEngine, watch, logger)
+	handler := p2p.NewHandler(blockchain, synchronizer, transactionsPool, watch, logger)
 	host := p2p.NewHost(handler, server, synchronizationEngine, validationEngine, verificationEngine, logger)
 	err = host.Run()
 	if err != nil {
