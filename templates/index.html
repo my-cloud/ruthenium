@@ -5,8 +5,8 @@
     <title>Wallet</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/elliptic-es@0.0.1/index.min.js"></script>
-</head>
-<body>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/sha256.min.js"></script><body>
 <div>
     <h1>Wallet</h1>
     <div id="wallet_amount">0</div>
@@ -120,8 +120,9 @@
                 'value': result.particles,
             };
 
-            const signature = keyPair.sign(JSON.stringify(transactionData));
-            const signatureHex = signature.toDER(encoding).toString()
+            const hash = CryptoJS.SHA256(JSON.stringify(transactionData)).toString(CryptoJS.enc.Hex);
+            const signature = keyPair.sign(hash);
+            const signatureHex = getSignatureHex(signature);
             console.info("h: ", signatureHex);
             const transactionRequest = {
                 'fee': 1000,
@@ -247,6 +248,21 @@
                 err: null
             };
         }
+    }
+
+    function getSignatureHex(signature) {
+        let r = signature.r;
+        let s = signature.s;
+
+        let rHex = r.toString('hex');
+        while (rHex.length < 64) {
+            rHex = "0" + rHex;
+        }
+        let sHex = s.toString('hex');
+        while (sHex.length < 64) {
+            sHex = "0" + sHex;
+        }
+        return rHex + sHex;
     }
 </script>
 </html>
