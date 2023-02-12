@@ -11,11 +11,15 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 )
 
+const (
+	GetBlocks       = "GET BLOCKS"
+	GetTransactions = "GET TRANSACTIONS"
+)
+
 type Handler struct {
 	blockchain       protocol.Blockchain
 	synchronizer     network.Synchronizer
 	transactionsPool protocol.TransactionsPool
-	validationEngine clock.Engine
 	watch            clock.Watch
 	logger           log.Logger
 }
@@ -23,10 +27,9 @@ type Handler struct {
 func NewHandler(blockchain protocol.Blockchain,
 	synchronizer network.Synchronizer,
 	transactionsPool protocol.TransactionsPool,
-	validationEngine clock.Engine,
 	watch clock.Watch,
 	logger log.Logger) *Handler {
-	return &Handler{blockchain, synchronizer, transactionsPool, validationEngine, watch, logger}
+	return &Handler{blockchain, synchronizer, transactionsPool, watch, logger}
 }
 
 func (handler *Handler) Handle(_ context.Context, req gp2p.Data) (res gp2p.Data, err error) {
@@ -44,10 +47,6 @@ func (handler *Handler) Handle(_ context.Context, req gp2p.Data) (res gp2p.Data,
 			res = handler.blocks()
 		case GetTransactions:
 			res = handler.transactions()
-		case StartValidation:
-			go handler.validationEngine.Start()
-		case StopValidation:
-			go handler.validationEngine.Stop()
 		default:
 			unknownRequest = true
 		}
