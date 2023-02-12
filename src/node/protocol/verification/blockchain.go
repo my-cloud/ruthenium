@@ -165,6 +165,9 @@ func (blockchain *Blockchain) Copy() protocol.Blockchain {
 func (blockchain *Blockchain) LastBlocks(startingBlockNonce int) []*network.BlockResponse {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
+	if startingBlockNonce < 0 || startingBlockNonce > len(blockchain.blockResponses) {
+		return nil
+	}
 	lastBlocks := make([]*network.BlockResponse, len(blockchain.blockResponses)-startingBlockNonce)
 	copy(lastBlocks, blockchain.blockResponses[startingBlockNonce:])
 	return lastBlocks

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 )
@@ -52,6 +53,9 @@ func (signature *Signature) Verify(marshaledTransaction []byte, publicKey *Publi
 }
 
 func string2BigIntTuple(s string) (big.Int, big.Int, error) {
+	if len(s) != 128 {
+		return big.Int{}, big.Int{}, errors.New("signature length is invalid")
+	}
 	bx, err := hex.DecodeString(s[:64])
 	if err != nil {
 		return big.Int{}, big.Int{}, err
