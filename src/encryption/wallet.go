@@ -6,13 +6,13 @@ import (
 )
 
 type Wallet struct {
-	privateKey *PrivateKey
-	publicKey  *PublicKey
-	address    string
+	publicKey        *PublicKey
+	address          string
+	privateKeyString string
 }
 
 func NewEmptyWallet() *Wallet {
-	return &Wallet{nil, nil, ""}
+	return &Wallet{nil, "", ""}
 }
 
 func DecodeWallet(mnemonicString string, derivationPath string, password string, privateKeyString string) (*Wallet, error) {
@@ -33,35 +33,25 @@ func DecodeWallet(mnemonicString string, derivationPath string, password string,
 	}
 	publicKey = NewPublicKey(privateKey)
 	address = publicKey.Address()
-	return &Wallet{privateKey, publicKey, address}, nil
+	return &Wallet{publicKey, address, privateKeyString}, nil
 }
 
 func (wallet *Wallet) MarshalJSON() ([]byte, error) {
-	var privateKey string
-	if wallet.privateKey != nil {
-		privateKey = wallet.privateKey.String()
-	}
 	var publicKey string
 	if wallet.publicKey != nil {
 		publicKey = wallet.publicKey.String()
 	}
 	return json.Marshal(struct {
-		PrivateKey string `json:"private_key"`
-		PublicKey  string `json:"public_key"`
-		Address    string `json:"address"`
+		PublicKey string `json:"public_key"`
+		Address   string `json:"address"`
 	}{
-		PrivateKey: privateKey,
-		PublicKey:  publicKey,
-		Address:    wallet.address,
+		PublicKey: publicKey,
+		Address:   wallet.address,
 	})
 }
 
-func (wallet *Wallet) PrivateKey() *PrivateKey {
-	return wallet.privateKey
-}
-
-func (wallet *Wallet) PublicKey() *PublicKey {
-	return wallet.publicKey
+func (wallet *Wallet) PrivateKeyString() string {
+	return wallet.privateKeyString
 }
 
 func (wallet *Wallet) Address() string {

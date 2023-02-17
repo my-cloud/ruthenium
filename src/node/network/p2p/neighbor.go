@@ -89,16 +89,6 @@ func (neighbor *Neighbor) GetAmount(request network.AmountRequest) (amountRespon
 	return
 }
 
-func (neighbor *Neighbor) StartValidation() (err error) {
-	_, err = neighbor.sendRequest(StartValidation)
-	return
-}
-
-func (neighbor *Neighbor) StopValidation() (err error) {
-	_, err = neighbor.sendRequest(StopValidation)
-	return
-}
-
 func (neighbor *Neighbor) sendRequest(request interface{}) (res gp2p.Data, err error) {
 	req := gp2p.Data{}
 	data, err := json.Marshal(request)

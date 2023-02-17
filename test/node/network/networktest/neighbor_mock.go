@@ -36,12 +36,6 @@ var _ network.Neighbor = &NeighborMock{}
 //			SendTargetsFunc: func(request []TargetRequest) error {
 //				panic("mock out the SendTargets method")
 //			},
-//			StartValidationFunc: func() error {
-//				panic("mock out the StartValidation method")
-//			},
-//			StopValidationFunc: func() error {
-//				panic("mock out the StopValidation method")
-//			},
 //			TargetFunc: func() string {
 //				panic("mock out the Target method")
 //			},
@@ -69,12 +63,6 @@ type NeighborMock struct {
 
 	// SendTargetsFunc mocks the SendTargets method.
 	SendTargetsFunc func(request []network.TargetRequest) error
-
-	// StartValidationFunc mocks the StartValidation method.
-	StartValidationFunc func() error
-
-	// StopValidationFunc mocks the StopValidation method.
-	StopValidationFunc func() error
 
 	// TargetFunc mocks the Target method.
 	TargetFunc func() string
@@ -107,12 +95,6 @@ type NeighborMock struct {
 			// Request is the request argument value.
 			Request []network.TargetRequest
 		}
-		// StartValidation holds details about calls to the StartValidation method.
-		StartValidation []struct {
-		}
-		// StopValidation holds details about calls to the StopValidation method.
-		StopValidation []struct {
-		}
 		// Target holds details about calls to the Target method.
 		Target []struct {
 		}
@@ -123,8 +105,6 @@ type NeighborMock struct {
 	lockGetLastBlocks   sync.RWMutex
 	lockGetTransactions sync.RWMutex
 	lockSendTargets     sync.RWMutex
-	lockStartValidation sync.RWMutex
-	lockStopValidation  sync.RWMutex
 	lockTarget          sync.RWMutex
 }
 
@@ -307,60 +287,6 @@ func (mock *NeighborMock) SendTargetsCalls() []struct {
 	mock.lockSendTargets.RLock()
 	calls = mock.calls.SendTargets
 	mock.lockSendTargets.RUnlock()
-	return calls
-}
-
-// StartValidation calls StartValidationFunc.
-func (mock *NeighborMock) StartValidation() error {
-	if mock.StartValidationFunc == nil {
-		panic("NeighborMock.StartValidationFunc: method is nil but Neighbor.StartValidation was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockStartValidation.Lock()
-	mock.calls.StartValidation = append(mock.calls.StartValidation, callInfo)
-	mock.lockStartValidation.Unlock()
-	return mock.StartValidationFunc()
-}
-
-// StartValidationCalls gets all the calls that were made to StartValidation.
-// Check the length with:
-//
-//	len(mockedNeighbor.StartValidationCalls())
-func (mock *NeighborMock) StartValidationCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockStartValidation.RLock()
-	calls = mock.calls.StartValidation
-	mock.lockStartValidation.RUnlock()
-	return calls
-}
-
-// StopValidation calls StopValidationFunc.
-func (mock *NeighborMock) StopValidation() error {
-	if mock.StopValidationFunc == nil {
-		panic("NeighborMock.StopValidationFunc: method is nil but Neighbor.StopValidation was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockStopValidation.Lock()
-	mock.calls.StopValidation = append(mock.calls.StopValidation, callInfo)
-	mock.lockStopValidation.Unlock()
-	return mock.StopValidationFunc()
-}
-
-// StopValidationCalls gets all the calls that were made to StopValidation.
-// Check the length with:
-//
-//	len(mockedNeighbor.StopValidationCalls())
-func (mock *NeighborMock) StopValidationCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockStopValidation.RLock()
-	calls = mock.calls.StopValidation
-	mock.lockStopValidation.RUnlock()
 	return calls
 }
 

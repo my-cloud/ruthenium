@@ -6,7 +6,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
-	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/log/logtest"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
@@ -242,12 +241,12 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
+	wallet, _ := encryption.DecodeWallet("", "", "", test.PrivateKey)
 	address := wallet.Address()
 	var invalidTransactionFee uint64 = 0
-	serverTransaction := server.NewTransaction(invalidTransactionFee, "A", address, wallet.PublicKey(), 3, 1)
-	_ = serverTransaction.Sign(wallet.PrivateKey())
-	transactionRequest := serverTransaction.GetRequest()
+	privateKey, _ := encryption.DecodePrivateKey(test.PrivateKey)
+	publicKey := encryption.NewPublicKey(privateKey)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(invalidTransactionFee, "A", address, privateKey, publicKey, 3, 1)
 	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
 	transactionResponse := transaction.GetResponse()
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
@@ -297,12 +296,12 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
+	wallet, _ := encryption.DecodeWallet("", "", "", test.PrivateKey)
 	address := wallet.Address()
 	var transactionFee uint64 = 0
-	serverTransaction := server.NewTransaction(transactionFee, "A", address, wallet.PublicKey(), 3, 1)
-	_ = serverTransaction.Sign(wallet.PrivateKey())
-	transactionRequest := serverTransaction.GetRequest()
+	privateKey, _ := encryption.DecodePrivateKey(test.PrivateKey)
+	publicKey := encryption.NewPublicKey(privateKey)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(transactionFee, "A", address, privateKey, publicKey, 3, 1)
 	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
 	transactionResponse := transaction.GetResponse()
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
@@ -351,12 +350,12 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	wallet, _ := encryption.DecodeWallet(test.Mnemonic1, test.DerivationPath, "", "")
+	wallet, _ := encryption.DecodeWallet("", "", "", test.PrivateKey)
 	address := wallet.Address()
 	var transactionFee uint64 = 0
-	serverTransaction := server.NewTransaction(transactionFee, "A", address, wallet.PublicKey(), 0, 1)
-	_ = serverTransaction.Sign(wallet.PrivateKey())
-	transactionRequest := serverTransaction.GetRequest()
+	privateKey, _ := encryption.DecodePrivateKey(test.PrivateKey)
+	publicKey := encryption.NewPublicKey(privateKey)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(transactionFee, "A", address, privateKey, publicKey, 0, 1)
 	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
 	transactionResponse := transaction.GetResponse()
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
