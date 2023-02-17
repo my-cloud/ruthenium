@@ -1,0 +1,40 @@
+{{ if not ( eq .Values.app.type "job" ) }}
+---
+{{- $chartName := .Chart.Name -}}
+{{- $app := .Values.app -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $chartName }}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/whitelist-source-range: 0.0.0.0/0
+    nginx.org/location-snippets: |
+      proxy_set_header X-Forwarded-Proto https;
+      proxy_set_header X-Forwarded-Port 443;
+spec:
+  rules:
+  {{- range .Values.url.domains }}
+  {{- $domain := . }}
+  {{- range $containerName, $container := $app.containers }}
+  {{- range $container.service }}
+  {{- if gt ( len $container | int) 1  }}
+  - host: {{ $container.name }}.{{ $domain }}
+  {{- else }}
+  - host: {{ $domain }}
+  {{- end }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ $chartName }}
+            port:
+              number: {{ .port }}
+  {{- end }}
+  {{- end }}
+  {{- end }}
+
+{{ end }}

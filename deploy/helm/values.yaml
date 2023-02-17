@@ -1,0 +1,96 @@
+AppVersion: 0.0.0
+global:
+  registries: []
+  autoReload: "true"
+  image:
+    pullPolicy: "Always"
+
+url:
+  domains: [ruthenium.example.com]
+
+secrets:
+- name: ruthenium
+  annotations: {}
+  data:
+    privateKey: 
+
+app:
+  type: statefulset
+  replicas: 1
+  volumes:
+  - name: shared-data
+    emptyDir: {}
+  containers:
+  - name: node
+    image:
+      name: ghcr.io/my-cloud/ruthenium
+      tagOverride: latest
+      #pullPolicy: "IfNotPresent"
+    #autoReload: "true"
+    command: [/app/node]
+    args: []
+    service:
+    - protocol: TCP
+      port: "8106"
+      targetPort: "8106"
+    annotations:
+    health:
+      # type: grpc   # can be either: grpc httpGet tcpSocket
+      # liveness:
+      #   initialDelaySeconds: 40
+      #   periodSeconds: 5
+      # readiness:
+      #   initialDelaySeconds: 30
+      #   periodSeconds: 1
+    resources:
+      requests:
+        memory: "128Mi"
+      limits:
+        memory: "512Mi"
+    storage:
+      data: /tmp
+    secret:
+      ruthenium:
+        PRIVATE_KEY: privateKey
+    env:
+
+  - name: ui
+    image:
+      name: ghcr.io/my-cloud/ruthenium
+      tagOverride: latest
+      #pullPolicy: "IfNotPresent"
+    #autoReload: "true"
+    command: [/app/ui]
+    service:
+    - protocol: TCP
+      port: "80"
+      targetPort: "8080"
+    annotations:
+    health:
+      # type: httpGet  # can be either: grpc httpGet tcpSocket
+      # liveness:
+      #   path: /health/liveness
+      #   initialDelaySeconds: 120
+      #   periodSeconds: 5
+      # readiness:
+      #   path: /health/readiness
+      #   initialDelaySeconds: 30
+      #   periodSeconds: 1
+    resources:
+      requests:
+        memory: "128Mi"
+      limits:
+        memory: "512Mi"
+    storage:
+      data: /data
+    secret:
+      ruthenium:
+        PRIVATE_KEY: privateKey
+    env:
+      HOST_IP: "127.0.0.1"
+
+  storage:
+    data:
+      accessModes: [ "ReadWriteMany" ]
+      storageClass: kube-data
+      size: 128M

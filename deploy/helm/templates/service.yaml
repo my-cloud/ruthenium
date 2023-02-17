@@ -1,0 +1,24 @@
+{{- if not ( eq .Values.app.type "job" ) }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Chart.Name }}
+    group: {{ .Chart.Name }}
+spec:
+  type: LoadBalancer
+  selector:
+    app: {{ .Chart.Name }}
+    group: {{ .Chart.Name }}
+  ports:
+{{- range $containerName, $container := .Values.app.containers }}
+{{- range $container.service }}
+  - name: {{ $container.name }}-{{ .port }}
+    port: {{ .port }}
+    protocol: {{ .protocol }}
+    targetPort: {{ .targetPort }}
+{{- end }}
+{{- end }}
+{{- end }}

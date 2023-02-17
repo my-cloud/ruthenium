@@ -1,0 +1,11 @@
+apiVersion: v2
+name: ruthenium-service
+# pipelines override this chart version and appVersion with the container tag
+version: 0.0.0
+
+description: Ruthenium Service
+icon: https://repository-images.githubusercontent.com/536569894/47d35fd4-bce0-48b8-91bb-30fb08c6583e
+maintainers:
+  - name: Gwenall Pansier
+    email: gwenall.pansier@my-cloud.me
+
