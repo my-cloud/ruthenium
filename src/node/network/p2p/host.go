@@ -33,18 +33,17 @@ func (host *Host) Run() error {
 }
 
 func (host *Host) startBlockchain() {
-	host.logger.Info("updating the blockchain...")
 	host.synchronizationEngine.Do()
-	host.logger.Info("neighbors are synchronized")
+	host.logger.Info("neighbors are synchronized, updating the blockchain...")
 	go host.synchronizationEngine.Start()
 	host.verificationEngine.Do()
-	host.logger.Info("the blockchain is now up to date")
+	host.logger.Info("the blockchain is now up to date, waiting for validating the next block...")
 	host.validationEngine.Do()
+	host.logger.Info("first block validation done, the node is now fully operational")
 	go host.validationEngine.Start()
 	go host.verificationEngine.Start()
 }
 
 func (host *Host) startServer() error {
-	host.logger.Info("host node started...")
 	return host.server.Serve()
 }

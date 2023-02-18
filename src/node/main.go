@@ -80,6 +80,7 @@ func main() {
 	}
 	handler := p2p.NewHandler(blockchain, synchronizer, transactionsPool, watch, logger)
 	host := p2p.NewHost(handler, server, synchronizationEngine, validationEngine, verificationEngine, logger)
+	logger.Info(fmt.Sprintf("host node starting for address: %s", wallet.Address()))
 	err = host.Run()
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to run host: %w", err).Error())
