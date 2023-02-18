@@ -52,7 +52,7 @@ There are two ways to use the Ruthenium blockchain. You can either use your own 
     ```
   * Run the [UI server](src/ui/README.md):
     ```
-    sudo docker run -p 8080:8080 -ti ghcr.io/my-cloud/ruthenium:latest \app\ui -host-ip=<your external IP address> -private-key=<private key>
+    sudo docker run -p 8080:8080 -ti ghcr.io/my-cloud/ruthenium:latest \app\ui -host-ip=<your external IP address>
     ```
 * Using a web browser, go to:
   * http://localhost:8080
@@ -90,8 +90,6 @@ For a [tutorial to create a first blockchain in Go][1], thanks to [Yuko Sakai][2
 
 ## Project status
 [![Commit activity](https://img.shields.io/github/commit-activity/m/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/commits/main)
-[![Active milestones](https://img.shields.io/github/milestones/open/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/milestones)
-[![Completed milestones](https://img.shields.io/github/milestones/closed/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/milestones)
 
 [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=sqale_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=sqale_rating)
 [![Security](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=security_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=security_rating)
