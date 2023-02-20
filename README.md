@@ -2,6 +2,8 @@
 [![Release](https://img.shields.io/github/release/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/my-cloud/ruthenium/build.yml?logo=github)](https://github.com/my-cloud/ruthenium/actions?query=workflow%3ABuild+event%3Apush+branch%3Amain)
 
+![ruthenium-coin](https://user-images.githubusercontent.com/25606221/220205440-3d61878d-a164-462b-ac09-4045ff06b855.png)
+
 ## Description
 [![Doc](https://img.shields.io/badge/doc-wiki-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
 [![Doc](https://img.shields.io/badge/doc-whitepaper-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki/Whitepaper)
