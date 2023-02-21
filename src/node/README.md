@@ -29,8 +29,15 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 <details>
 <summary><b>Get blocks</b></summary>
 
-*Description*: Get all the blocks of the blockchain for the current timestamp.
+*Description*: Get all the blocks.
   * **request value:** `GET BLOCKS`  
+  * **response value:** Array of [block responses](#block-response)
+</details>
+<details>
+<summary><b>Get last blocks</b></summary>
+
+*Description*: Get the last blocks starting from the given index.
+  * **request value:** [last blocks request](#last-blocks-request)
   * **response value:** Array of [block responses](#block-response)
 </details>
 
@@ -144,6 +151,45 @@ The amount
 ```
 {
   "Amount": 100000000
+}
+```
+</td>
+</tr>
+</table>
+
+### Last blocks request
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+LastBlocksRequest {
+  StartingBlockIndex  int64
+}
+```
+</td>
+<td>
+
+```
+The last blocks request data structure
+The index of the first of the last blocks
+
+```
+</td>
+<td>
+
+```
+{
+  "StartingBlockIndex": 0
 }
 ```
 </td>
