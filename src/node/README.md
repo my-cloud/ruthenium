@@ -173,7 +173,7 @@ Example
 
 ```
 LastBlocksRequest {
-  StartingBlockIndex  int64
+  StartingBlockHeight  int64
 }
 ```
 </td>
@@ -181,7 +181,7 @@ LastBlocksRequest {
 
 ```
 The last blocks request data structure
-The index of the first of the last blocks
+The height of the first of the last blocks
 
 ```
 </td>
@@ -189,7 +189,7 @@ The index of the first of the last blocks
 
 ```
 {
-  "StartingBlockIndex": 0
+  "StartingBlockHeight": 0
 }
 ```
 </td>
