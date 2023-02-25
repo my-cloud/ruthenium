@@ -3,7 +3,6 @@ package address
 import (
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/amount"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
 	"net/http"
@@ -39,7 +38,7 @@ func Test_ServeHTTP_InvalidAddress_ReturnsBadRequest(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.GetAmountFunc = func(network.AmountRequest) (*network.AmountResponse, error) { return nil, errors.New("") }
+	neighborMock.GetAmountFunc = func(string) (uint64, error) { return 0, errors.New("") }
 	handler := amount.NewHandler(neighborMock, 1, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/wallet/amount", nil)
@@ -58,7 +57,7 @@ func Test_ServeHTTP_NodeError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.GetAmountFunc = func(network.AmountRequest) (*network.AmountResponse, error) { return nil, errors.New("") }
+	neighborMock.GetAmountFunc = func(string) (uint64, error) { return 0, errors.New("") }
 	handler := amount.NewHandler(neighborMock, 1, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/wallet/amount?address=address", nil)
@@ -77,9 +76,7 @@ func Test_ServeHTTP_ValidRequest_ReturnsAmount(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.GetAmountFunc = func(network.AmountRequest) (*network.AmountResponse, error) {
-		return &network.AmountResponse{Amount: 0}, nil
-	}
+	neighborMock.GetAmountFunc = func(string) (uint64, error) { return 0, nil }
 	handler := amount.NewHandler(neighborMock, 1, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/wallet/amount?address=address", nil)

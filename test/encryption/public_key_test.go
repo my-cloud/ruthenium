@@ -7,7 +7,20 @@ import (
 	"testing"
 )
 
-func Test_AddressFromPublicKey(t *testing.T) {
+func Test_NewPublicKey(t *testing.T) {
+	// Arrange
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
+
+	// Act
+	publicKey := encryption.NewPublicKey(privateKey)
+
+	// Assert
+	expectedPublicKey := test.PublicKey
+	actualPublicKey := publicKey.String()
+	test.Assert(t, actualPublicKey == expectedPublicKey, fmt.Sprintf("Wrong public key. Expected: %s - Actual: %s", expectedPublicKey, actualPublicKey))
+}
+
+func Test_Address(t *testing.T) {
 	// Arrange
 	publicKey, _ := encryption.DecodePublicKey(test.PublicKey)
 

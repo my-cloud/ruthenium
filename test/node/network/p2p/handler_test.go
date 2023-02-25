@@ -170,9 +170,9 @@ func Test_Handle_Blocks_BlocksCalled(t *testing.T) {
 func Test_Handle_LastBlocks_LastBlocksCalled(t *testing.T) {
 	// Arrange
 	blockchainMock := new(protocoltest.BlockchainMock)
-	blockchainMock.LastBlocksFunc = func(int64) []*network.BlockResponse { return nil }
+	blockchainMock.LastBlocksFunc = func(uint64) []*network.BlockResponse { return nil }
 	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
-	var index int64 = 0
+	var index uint64 = 0
 	data, err := json.Marshal(network.LastBlocksRequest{StartingBlockHeight: &index})
 	if err != nil {
 		return

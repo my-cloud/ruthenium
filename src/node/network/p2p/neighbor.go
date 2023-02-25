@@ -48,7 +48,7 @@ func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, 
 	return
 }
 
-func (neighbor *Neighbor) GetLastBlocks(startingBlockHeight int64) (blockResponses []*network.BlockResponse, err error) {
+func (neighbor *Neighbor) GetLastBlocks(startingBlockHeight uint64) (blockResponses []*network.BlockResponse, err error) {
 	request := network.LastBlocksRequest{StartingBlockHeight: &startingBlockHeight}
 	res, err := neighbor.sendRequest(request)
 	if err == nil {
@@ -81,15 +81,19 @@ func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.Tran
 	return
 }
 
-func (neighbor *Neighbor) GetAmount(address string) (uint64, error) {
-	request := &network.AmountRequest{Address: &address}
+func (neighbor *Neighbor) GetAmount(address string) (amount uint64, err error) {
+	request := network.AmountRequest{Address: &address}
 	res, err := neighbor.sendRequest(request)
 	var amountResponse *network.AmountResponse
-	if err == nil {
-		data := res.GetBytes()
-		err = json.Unmarshal(data, &amountResponse)
+	if err != nil {
+		return
 	}
-	return amountResponse.Amount, err
+	data := res.GetBytes()
+	err = json.Unmarshal(data, &amountResponse)
+	if err != nil {
+		return
+	}
+	return amountResponse.Amount, nil
 }
 
 func (neighbor *Neighbor) sendRequest(request interface{}) (res gp2p.Data, err error) {

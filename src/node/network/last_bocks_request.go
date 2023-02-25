@@ -1,7 +1,7 @@
 package network
 
 type LastBlocksRequest struct {
-	StartingBlockHeight *int64
+	StartingBlockHeight *uint64
 }
 
 func (lastBlocksRequest LastBlocksRequest) IsInvalid() bool {
