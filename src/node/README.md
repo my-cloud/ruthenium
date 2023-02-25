@@ -173,7 +173,7 @@ Example
 
 ```
 LastBlocksRequest {
-  StartingBlockHeight  int64
+  StartingBlockHeight uint64
 }
 ```
 </td>
