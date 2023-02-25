@@ -46,7 +46,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to instantiate settings: %w", err).Error())
 	}
-	wallet, err := encryption.DecodeWallet(*mnemonic, *derivationPath, *password, *privateKey)
+	wallet, err := encryption.NewWallet(*mnemonic, *derivationPath, *password, *privateKey)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
 	}
