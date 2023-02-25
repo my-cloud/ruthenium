@@ -48,8 +48,9 @@ func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, 
 	return
 }
 
-func (neighbor *Neighbor) GetLastBlocks(lastBlocksRequest network.LastBlocksRequest) (blockResponses []*network.BlockResponse, err error) {
-	res, err := neighbor.sendRequest(lastBlocksRequest)
+func (neighbor *Neighbor) GetLastBlocks(startingBlockHeight uint64) (blockResponses []*network.BlockResponse, err error) {
+	request := network.LastBlocksRequest{StartingBlockHeight: &startingBlockHeight}
+	res, err := neighbor.sendRequest(request)
 	if err == nil {
 		data := res.GetBytes()
 		err = json.Unmarshal(data, &blockResponses)
@@ -80,13 +81,19 @@ func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.Tran
 	return
 }
 
-func (neighbor *Neighbor) GetAmount(request network.AmountRequest) (amountResponse *network.AmountResponse, err error) {
+func (neighbor *Neighbor) GetAmount(address string) (amount uint64, err error) {
+	request := network.AmountRequest{Address: &address}
 	res, err := neighbor.sendRequest(request)
-	if err == nil {
-		data := res.GetBytes()
-		err = json.Unmarshal(data, &amountResponse)
+	var amountResponse *network.AmountResponse
+	if err != nil {
+		return
 	}
-	return
+	data := res.GetBytes()
+	err = json.Unmarshal(data, &amountResponse)
+	if err != nil {
+		return
+	}
+	return amountResponse.Amount, nil
 }
 
 func (neighbor *Neighbor) sendRequest(request interface{}) (res gp2p.Data, err error) {

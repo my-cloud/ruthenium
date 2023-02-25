@@ -9,5 +9,5 @@ type Blockchain interface {
 	Blocks() []*network.BlockResponse
 	CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64
 	Copy() Blockchain
-	LastBlocks(startingBlockNonce int) []*network.BlockResponse
+	LastBlocks(startingBlockHeight uint64) []*network.BlockResponse
 }

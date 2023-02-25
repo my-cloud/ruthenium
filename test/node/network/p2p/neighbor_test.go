@@ -67,9 +67,10 @@ func Test_GetLastBlocks_NoError_ClientCalled(t *testing.T) {
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
+	var startingBlockHeight uint64 = 0
 
 	// Act
-	_, _ = neighbor.GetLastBlocks(network.LastBlocksRequest{})
+	_, _ = neighbor.GetLastBlocks(startingBlockHeight)
 
 	// Assert
 	sendCalls := clientMock.SendCalls()
@@ -77,7 +78,7 @@ func Test_GetLastBlocks_NoError_ClientCalled(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	data, _ := json.Marshal(network.LastBlocksRequest{})
+	data, _ := json.Marshal(network.LastBlocksRequest{StartingBlockHeight: &startingBlockHeight})
 	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 }
@@ -90,9 +91,10 @@ func Test_GetLastBlocks_Error_ReturnsError(t *testing.T) {
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
+	var startingBlockHeight uint64 = 0
 
 	// Act
-	_, err := neighbor.GetLastBlocks(network.LastBlocksRequest{})
+	_, err := neighbor.GetLastBlocks(startingBlockHeight)
 
 	// Assert
 	sendCalls := clientMock.SendCalls()
@@ -100,7 +102,7 @@ func Test_GetLastBlocks_Error_ReturnsError(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	data, _ := json.Marshal(network.LastBlocksRequest{})
+	data, _ := json.Marshal(network.LastBlocksRequest{StartingBlockHeight: &startingBlockHeight})
 	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 	test.Assert(t, err != nil, "Error is nil whereas it should not.")
@@ -255,9 +257,10 @@ func Test_GetAmount_NoError_ClientCalled(t *testing.T) {
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
+	expectedAddress := "expected address"
 
 	// Act
-	_, _ = neighbor.GetAmount(network.AmountRequest{})
+	_, _ = neighbor.GetAmount(expectedAddress)
 
 	// Assert
 	sendCalls := clientMock.SendCalls()
@@ -265,7 +268,7 @@ func Test_GetAmount_NoError_ClientCalled(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	data, _ := json.Marshal(network.AmountRequest{})
+	data, _ := json.Marshal(network.AmountRequest{Address: &expectedAddress})
 	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 }
@@ -278,9 +281,10 @@ func Test_GetAmount_Error_ReturnsError(t *testing.T) {
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
+	expectedAddress := "expected address"
 
 	// Act
-	_, err := neighbor.GetAmount(network.AmountRequest{})
+	_, err := neighbor.GetAmount(expectedAddress)
 
 	// Assert
 	sendCalls := clientMock.SendCalls()
@@ -288,7 +292,7 @@ func Test_GetAmount_Error_ReturnsError(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	data, _ := json.Marshal(network.AmountRequest{})
+	data, _ := json.Marshal(network.AmountRequest{Address: &expectedAddress})
 	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 	test.Assert(t, err != nil, "Error is nil whereas it should not.")

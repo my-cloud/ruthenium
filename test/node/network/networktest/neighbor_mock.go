@@ -21,13 +21,13 @@ var _ network.Neighbor = &NeighborMock{}
 //			AddTransactionFunc: func(request TransactionRequest) error {
 //				panic("mock out the AddTransaction method")
 //			},
-//			GetAmountFunc: func(request AmountRequest) (*AmountResponse, error) {
+//			GetAmountFunc: func(address string) (uint64, error) {
 //				panic("mock out the GetAmount method")
 //			},
 //			GetBlocksFunc: func() ([]*BlockResponse, error) {
 //				panic("mock out the GetBlocks method")
 //			},
-//			GetLastBlocksFunc: func(lastBlocksRequest LastBlocksRequest) ([]*BlockResponse, error) {
+//			GetLastBlocksFunc: func(startingBlockHeight uint64) ([]*BlockResponse, error) {
 //				panic("mock out the GetLastBlocks method")
 //			},
 //			GetTransactionsFunc: func() ([]TransactionResponse, error) {
@@ -50,13 +50,13 @@ type NeighborMock struct {
 	AddTransactionFunc func(request network.TransactionRequest) error
 
 	// GetAmountFunc mocks the GetAmount method.
-	GetAmountFunc func(request network.AmountRequest) (*network.AmountResponse, error)
+	GetAmountFunc func(address string) (uint64, error)
 
 	// GetBlocksFunc mocks the GetBlocks method.
 	GetBlocksFunc func() ([]*network.BlockResponse, error)
 
 	// GetLastBlocksFunc mocks the GetLastBlocks method.
-	GetLastBlocksFunc func(lastBlocksRequest network.LastBlocksRequest) ([]*network.BlockResponse, error)
+	GetLastBlocksFunc func(startingBlockHeight uint64) ([]*network.BlockResponse, error)
 
 	// GetTransactionsFunc mocks the GetTransactions method.
 	GetTransactionsFunc func() ([]network.TransactionResponse, error)
@@ -76,16 +76,16 @@ type NeighborMock struct {
 		}
 		// GetAmount holds details about calls to the GetAmount method.
 		GetAmount []struct {
-			// Request is the request argument value.
-			Request network.AmountRequest
+			// Address is the address argument value.
+			Address string
 		}
 		// GetBlocks holds details about calls to the GetBlocks method.
 		GetBlocks []struct {
 		}
 		// GetLastBlocks holds details about calls to the GetLastBlocks method.
 		GetLastBlocks []struct {
-			// LastBlocksRequest is the lastBlocksRequest argument value.
-			LastBlocksRequest network.LastBlocksRequest
+			// StartingBlockHeight is the startingBlockHeight argument value.
+			StartingBlockHeight uint64
 		}
 		// GetTransactions holds details about calls to the GetTransactions method.
 		GetTransactions []struct {
@@ -141,19 +141,19 @@ func (mock *NeighborMock) AddTransactionCalls() []struct {
 }
 
 // GetAmount calls GetAmountFunc.
-func (mock *NeighborMock) GetAmount(request network.AmountRequest) (*network.AmountResponse, error) {
+func (mock *NeighborMock) GetAmount(address string) (uint64, error) {
 	if mock.GetAmountFunc == nil {
 		panic("NeighborMock.GetAmountFunc: method is nil but Neighbor.GetAmount was just called")
 	}
 	callInfo := struct {
-		Request network.AmountRequest
+		Address string
 	}{
-		Request: request,
+		Address: address,
 	}
 	mock.lockGetAmount.Lock()
 	mock.calls.GetAmount = append(mock.calls.GetAmount, callInfo)
 	mock.lockGetAmount.Unlock()
-	return mock.GetAmountFunc(request)
+	return mock.GetAmountFunc(address)
 }
 
 // GetAmountCalls gets all the calls that were made to GetAmount.
@@ -161,10 +161,10 @@ func (mock *NeighborMock) GetAmount(request network.AmountRequest) (*network.Amo
 //
 //	len(mockedNeighbor.GetAmountCalls())
 func (mock *NeighborMock) GetAmountCalls() []struct {
-	Request network.AmountRequest
+	Address string
 } {
 	var calls []struct {
-		Request network.AmountRequest
+		Address string
 	}
 	mock.lockGetAmount.RLock()
 	calls = mock.calls.GetAmount
@@ -200,19 +200,19 @@ func (mock *NeighborMock) GetBlocksCalls() []struct {
 }
 
 // GetLastBlocks calls GetLastBlocksFunc.
-func (mock *NeighborMock) GetLastBlocks(lastBlocksRequest network.LastBlocksRequest) ([]*network.BlockResponse, error) {
+func (mock *NeighborMock) GetLastBlocks(startingBlockHeight uint64) ([]*network.BlockResponse, error) {
 	if mock.GetLastBlocksFunc == nil {
 		panic("NeighborMock.GetLastBlocksFunc: method is nil but Neighbor.GetLastBlocks was just called")
 	}
 	callInfo := struct {
-		LastBlocksRequest network.LastBlocksRequest
+		StartingBlockHeight uint64
 	}{
-		LastBlocksRequest: lastBlocksRequest,
+		StartingBlockHeight: startingBlockHeight,
 	}
 	mock.lockGetLastBlocks.Lock()
 	mock.calls.GetLastBlocks = append(mock.calls.GetLastBlocks, callInfo)
 	mock.lockGetLastBlocks.Unlock()
-	return mock.GetLastBlocksFunc(lastBlocksRequest)
+	return mock.GetLastBlocksFunc(startingBlockHeight)
 }
 
 // GetLastBlocksCalls gets all the calls that were made to GetLastBlocks.
@@ -220,10 +220,10 @@ func (mock *NeighborMock) GetLastBlocks(lastBlocksRequest network.LastBlocksRequ
 //
 //	len(mockedNeighbor.GetLastBlocksCalls())
 func (mock *NeighborMock) GetLastBlocksCalls() []struct {
-	LastBlocksRequest network.LastBlocksRequest
+	StartingBlockHeight uint64
 } {
 	var calls []struct {
-		LastBlocksRequest network.LastBlocksRequest
+		StartingBlockHeight uint64
 	}
 	mock.lockGetLastBlocks.RLock()
 	calls = mock.calls.GetLastBlocks

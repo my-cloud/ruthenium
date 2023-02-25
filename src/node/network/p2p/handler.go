@@ -100,7 +100,7 @@ func (handler *Handler) blocks() (res gp2p.Data) {
 }
 
 func (handler *Handler) lastBlocks(request *network.LastBlocksRequest) (res gp2p.Data) {
-	blockResponses := handler.blockchain.LastBlocks(*request.StartingBlockNonce)
+	blockResponses := handler.blockchain.LastBlocks(*request.StartingBlockHeight)
 	data, err := json.Marshal(blockResponses)
 	if err != nil {
 		handler.logger.Error(fmt.Errorf("failed to get last blocks: %w", err).Error())

@@ -7,15 +7,24 @@ import (
 	"testing"
 )
 
-func Test_PublicKeyFromPrivateKey(t *testing.T) {
+func Test_NewPrivateKeyFromHex(t *testing.T) {
 	// Arrange
-	privateKey, _ := encryption.DecodePrivateKey(test.PrivateKey)
-
 	// Act
-	publicKey := encryption.NewPublicKey(privateKey)
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 
 	// Assert
-	expectedPublicKey := test.PublicKey
-	actualPublicKey := publicKey.String()
-	test.Assert(t, actualPublicKey == expectedPublicKey, fmt.Sprintf("Wrong public key. Expected: %s - Actual: %s", expectedPublicKey, actualPublicKey))
+	expectedPrivateKey := test.PrivateKey
+	actualPrivateKey := privateKey.String()
+	test.Assert(t, actualPrivateKey == expectedPrivateKey, fmt.Sprintf("Wrong private key. Expected: %s - Actual: %s", expectedPrivateKey, actualPrivateKey))
+}
+
+func Test_NewPrivateKeyFromMnemonic(t *testing.T) {
+	// Arrange
+	// Act
+	privateKey, _ := encryption.NewPrivateKeyFromMnemonic(test.Mnemonic, test.DerivationPath, "")
+
+	// Assert
+	expectedPrivateKey := test.PrivateKey
+	actualPrivateKey := privateKey.String()
+	test.Assert(t, actualPrivateKey == expectedPrivateKey, fmt.Sprintf("Wrong private key. Expected: %s - Actual: %s", expectedPrivateKey, actualPrivateKey))
 }

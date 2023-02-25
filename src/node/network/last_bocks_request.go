@@ -1,9 +1,9 @@
 package network
 
 type LastBlocksRequest struct {
-	StartingBlockNonce *int
+	StartingBlockHeight *uint64
 }
 
 func (lastBlocksRequest LastBlocksRequest) IsInvalid() bool {
-	return lastBlocksRequest.StartingBlockNonce == nil
+	return lastBlocksRequest.StartingBlockHeight == nil
 }

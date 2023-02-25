@@ -92,7 +92,7 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return errors.New("") }
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, logger)
-	privateKey, _ := encryption.DecodePrivateKey(test.PrivateKey)
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey, _ := encryption.DecodePublicKey(test.PublicKey)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(0, "RecipientAddress", "SenderAddress", privateKey, publicKey, 0, 0)
 	b, _ := json.Marshal(&transactionRequest)
@@ -117,7 +117,7 @@ func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return nil }
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, logger)
-	privateKey, _ := encryption.DecodePrivateKey(test.PrivateKey)
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey, _ := encryption.DecodePublicKey(test.PublicKey)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(0, "RecipientAddress", "SenderAddress", privateKey, publicKey, 0, 0)
 	b, _ := json.Marshal(&transactionRequest)

@@ -6,34 +6,28 @@ import (
 )
 
 type Wallet struct {
-	publicKey        *PublicKey
-	address          string
-	privateKeyString string
+	publicKey *PublicKey
+	address   string
 }
 
-func NewEmptyWallet() *Wallet {
-	return &Wallet{nil, "", ""}
-}
-
-func DecodeWallet(mnemonicString string, derivationPath string, password string, privateKeyString string) (*Wallet, error) {
+func NewWallet(mnemonicString string, derivationPath string, password string, privateKeyString string) (*Wallet, error) {
 	var privateKey *PrivateKey
 	var publicKey *PublicKey
 	var address string
 	var err error
 	if mnemonicString != "" {
-		mnemonic := NewMnemonic(mnemonicString)
-		privateKey, err = mnemonic.PrivateKey(derivationPath, password)
+		privateKey, err = NewPrivateKeyFromMnemonic(mnemonicString, derivationPath, password)
 	} else if privateKeyString != "" {
-		privateKey, err = DecodePrivateKey(privateKeyString)
+		privateKey, err = NewPrivateKeyFromHex(privateKeyString)
 	} else {
-		return NewEmptyWallet(), nil
+		return nil, fmt.Errorf("nor the mnemonic neither the private key have been provided")
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to create private key: %w", err)
 	}
 	publicKey = NewPublicKey(privateKey)
 	address = publicKey.Address()
-	return &Wallet{publicKey, address, privateKeyString}, nil
+	return &Wallet{publicKey, address}, nil
 }
 
 func (wallet *Wallet) MarshalJSON() ([]byte, error) {
@@ -48,10 +42,6 @@ func (wallet *Wallet) MarshalJSON() ([]byte, error) {
 		PublicKey: publicKey,
 		Address:   wallet.address,
 	})
-}
-
-func (wallet *Wallet) PrivateKeyString() string {
-	return wallet.privateKeyString
 }
 
 func (wallet *Wallet) Address() string {

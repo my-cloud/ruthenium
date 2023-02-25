@@ -31,7 +31,7 @@ var _ protocol.Blockchain = &BlockchainMock{}
 //			CopyFunc: func() Blockchain {
 //				panic("mock out the Copy method")
 //			},
-//			LastBlocksFunc: func(startingBlockNonce int) []*network.BlockResponse {
+//			LastBlocksFunc: func(startingBlockHeight uint64) []*network.BlockResponse {
 //				panic("mock out the LastBlocks method")
 //			},
 //		}
@@ -54,7 +54,7 @@ type BlockchainMock struct {
 	CopyFunc func() protocol.Blockchain
 
 	// LastBlocksFunc mocks the LastBlocks method.
-	LastBlocksFunc func(startingBlockNonce int) []*network.BlockResponse
+	LastBlocksFunc func(startingBlockHeight uint64) []*network.BlockResponse
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -82,8 +82,8 @@ type BlockchainMock struct {
 		}
 		// LastBlocks holds details about calls to the LastBlocks method.
 		LastBlocks []struct {
-			// StartingBlockNonce is the startingBlockNonce argument value.
-			StartingBlockNonce int
+			// StartingBlockHeight is the startingBlockHeight argument value.
+			StartingBlockHeight uint64
 		}
 	}
 	lockAddBlock             sync.RWMutex
@@ -224,19 +224,19 @@ func (mock *BlockchainMock) CopyCalls() []struct {
 }
 
 // LastBlocks calls LastBlocksFunc.
-func (mock *BlockchainMock) LastBlocks(startingBlockNonce int) []*network.BlockResponse {
+func (mock *BlockchainMock) LastBlocks(startingBlockHeight uint64) []*network.BlockResponse {
 	if mock.LastBlocksFunc == nil {
 		panic("BlockchainMock.LastBlocksFunc: method is nil but Blockchain.LastBlocks was just called")
 	}
 	callInfo := struct {
-		StartingBlockNonce int
+		StartingBlockHeight uint64
 	}{
-		StartingBlockNonce: startingBlockNonce,
+		StartingBlockHeight: startingBlockHeight,
 	}
 	mock.lockLastBlocks.Lock()
 	mock.calls.LastBlocks = append(mock.calls.LastBlocks, callInfo)
 	mock.lockLastBlocks.Unlock()
-	return mock.LastBlocksFunc(startingBlockNonce)
+	return mock.LastBlocksFunc(startingBlockHeight)
 }
 
 // LastBlocksCalls gets all the calls that were made to LastBlocks.
@@ -244,10 +244,10 @@ func (mock *BlockchainMock) LastBlocks(startingBlockNonce int) []*network.BlockR
 //
 //	len(mockedBlockchain.LastBlocksCalls())
 func (mock *BlockchainMock) LastBlocksCalls() []struct {
-	StartingBlockNonce int
+	StartingBlockHeight uint64
 } {
 	var calls []struct {
-		StartingBlockNonce int
+		StartingBlockHeight uint64
 	}
 	mock.lockLastBlocks.RLock()
 	calls = mock.calls.LastBlocks

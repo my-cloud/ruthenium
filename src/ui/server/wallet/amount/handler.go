@@ -6,7 +6,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/ui/server"
-	"github.com/my-cloud/ruthenium/src/ui/server/wallet"
 	"net/http"
 )
 
@@ -32,16 +31,15 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		amount := wallet.NewAmount(*amountRequest.Address)
-		amountResponse, err := handler.host.GetAmount(*amount.GetRequest())
+		amount, err := handler.host.GetAmount(*amountRequest.Address)
 		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to get amountResponse: %w", err).Error())
+			handler.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		marshaledAmount, err := json.Marshal(float64(amountResponse.Amount) / float64(handler.particlesCount))
+		marshaledAmount, err := json.Marshal(float64(amount) / float64(handler.particlesCount))
 		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to marshal amountResponse: %w", err).Error())
+			handler.logger.Error(fmt.Errorf("failed to marshal amount: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}

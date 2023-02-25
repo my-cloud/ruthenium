@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-func Test_DecodeWallet_BothMnemonicAndDerivationPathProvided_ReturnsCorrespondingWallet(t *testing.T) {
+func Test_NewWallet_BothMnemonicAndDerivationPathProvided_ReturnsCorrespondingWallet(t *testing.T) {
 	// Act
-	wallet, _ := encryption.DecodeWallet(test.Mnemonic, test.DerivationPath, "", "")
+	wallet, _ := encryption.NewWallet(test.Mnemonic, test.DerivationPath, "", "")
 
 	// Assert
 	actualAddress := wallet.Address()
@@ -17,9 +17,9 @@ func Test_DecodeWallet_BothMnemonicAndDerivationPathProvided_ReturnsCorrespondin
 	test.Assert(t, actualAddress == expectedAddress, fmt.Sprintf("Wrong address. Expected: %s - Actual: %s", expectedAddress, actualAddress))
 }
 
-func Test_DecodeWallet_PrivateKeyProvided_ReturnsCorrespondingWallet(t *testing.T) {
+func Test_NewWallet_PrivateKeyProvided_ReturnsCorrespondingWallet(t *testing.T) {
 	// Act
-	wallet, _ := encryption.DecodeWallet("", "", "", test.PrivateKey)
+	wallet, _ := encryption.NewWallet("", "", "", test.PrivateKey)
 
 	// Assert
 	actualAddress := wallet.Address()
@@ -27,30 +27,19 @@ func Test_DecodeWallet_PrivateKeyProvided_ReturnsCorrespondingWallet(t *testing.
 	test.Assert(t, actualAddress == expectedAddress, fmt.Sprintf("Wrong address. Expected: %s - Actual: %s", expectedAddress, actualAddress))
 }
 
-func Test_DecodeWallet_BothPrivateKeyAndMnemonicAreEmpty_ReturnsEmptyWallet(t *testing.T) {
+func Test_NewWallet_BothPrivateKeyAndMnemonicAreEmpty_ReturnsError(t *testing.T) {
 	// Act
-	wallet, _ := encryption.DecodeWallet("", "", "", "")
+	wallet, err := encryption.NewWallet("", "", "", "")
 
 	// Assert
-	test.Assert(t, wallet.Address() == "", "Address is not empty whereas it should be.")
+	test.Assert(t, wallet == nil, "Wallet is not nil whereas it should be.")
+	test.Assert(t, err != nil, "Error is nil whereas it should not.")
 }
 
 func Test_MarshalJSON_ValidPrivateKey_ReturnsMarshaledJsonWithoutError(t *testing.T) {
 	// Arrange
 	privateKey := test.PrivateKey
-	wallet, _ := encryption.DecodeWallet("", "", "", privateKey)
-
-	// Act
-	marshaledWallet, err := wallet.MarshalJSON()
-
-	// Assert
-	test.Assert(t, marshaledWallet != nil, "Marshaled wallet is nil.")
-	test.Assert(t, err == nil, "Marshal wallet returned an error.")
-}
-
-func Test_MarshalJSON_EmptyWallet_ReturnsMarshaledJsonWithoutError(t *testing.T) {
-	// Arrange
-	wallet := encryption.NewEmptyWallet()
+	wallet, _ := encryption.NewWallet("", "", "", privateKey)
 
 	// Act
 	marshaledWallet, err := wallet.MarshalJSON()

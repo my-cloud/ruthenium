@@ -162,14 +162,14 @@ func (blockchain *Blockchain) Copy() protocol.Blockchain {
 	return blockchainCopy
 }
 
-func (blockchain *Blockchain) LastBlocks(startingBlockNonce int) []*network.BlockResponse {
+func (blockchain *Blockchain) LastBlocks(startingBlockHeight uint64) []*network.BlockResponse {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
-	if startingBlockNonce < 0 || startingBlockNonce > len(blockchain.blockResponses) {
+	if startingBlockHeight > uint64(len(blockchain.blockResponses)) {
 		return nil
 	}
-	lastBlocks := make([]*network.BlockResponse, len(blockchain.blockResponses)-startingBlockNonce)
-	copy(lastBlocks, blockchain.blockResponses[startingBlockNonce:])
+	lastBlocks := make([]*network.BlockResponse, uint64(len(blockchain.blockResponses))-startingBlockHeight)
+	copy(lastBlocks, blockchain.blockResponses[startingBlockHeight:])
 	return lastBlocks
 }
 
@@ -201,9 +201,8 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		lastRegisteredAddresses = oldHostBlocks[len(oldHostBlocks)-1].RegisteredAddresses()
 		for _, neighbor := range neighbors {
 			target := neighbor.Target()
-			startingBlockNonce := len(hostBlocks) - 3
-			lastBlocksRequest := network.LastBlocksRequest{StartingBlockNonce: &startingBlockNonce}
-			lastNeighborBlockResponses, err := neighbor.GetLastBlocks(lastBlocksRequest)
+			startingBlockHeight := uint64(len(hostBlocks) - 3)
+			lastNeighborBlockResponses, err := neighbor.GetLastBlocks(startingBlockHeight)
 			if err == nil {
 				var verifiedBlocks []*Block
 				verifiedBlocks, err = blockchain.verify(lastHostBlocks, lastNeighborBlockResponses, lastRegisteredAddresses, oldHostBlockResponses, timestamp)
