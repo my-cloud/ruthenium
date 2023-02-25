@@ -202,8 +202,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		for _, neighbor := range neighbors {
 			target := neighbor.Target()
 			startingBlockHeight := int64(len(hostBlocks) - 3)
-			lastBlocksRequest := network.LastBlocksRequest{StartingBlockHeight: &startingBlockHeight}
-			lastNeighborBlockResponses, err := neighbor.GetLastBlocks(lastBlocksRequest)
+			lastNeighborBlockResponses, err := neighbor.GetLastBlocks(startingBlockHeight)
 			if err == nil {
 				var verifiedBlocks []*Block
 				verifiedBlocks, err = blockchain.verify(lastHostBlocks, lastNeighborBlockResponses, lastRegisteredAddresses, oldHostBlockResponses, timestamp)
