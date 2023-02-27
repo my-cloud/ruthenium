@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/my-cloud/ruthenium/src/config"
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/clock/tick"
+	"github.com/my-cloud/ruthenium/src/node/config"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/net"

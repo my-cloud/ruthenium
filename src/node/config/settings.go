@@ -8,7 +8,6 @@ import (
 )
 
 type Settings struct {
-	ParticlesPerToken                uint64
 	GenesisAmountInParticles         uint64
 	MaxOutboundsCount                int
 	MinimalTransactionFee            uint64
