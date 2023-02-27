@@ -67,7 +67,7 @@ func Test_CalculateTotalAmount_InitialValidator_ReturnsGenesisAmount(t *testing.
 func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
-	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
+	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 	neighborMock.TargetFunc = func() string {
@@ -113,7 +113,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
-	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
+	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 	neighborMock.TargetFunc = func() string {
@@ -197,7 +197,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
-	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
+	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
@@ -238,7 +238,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
-	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
+	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 	wallet, _ := encryption.NewWallet("", "", "", test.PrivateKey)
@@ -293,7 +293,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
-	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
+	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 	wallet, _ := encryption.NewWallet("", "", "", test.PrivateKey)
@@ -347,7 +347,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
-	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
+	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 	wallet, _ := encryption.NewWallet("", "", "", test.PrivateKey)

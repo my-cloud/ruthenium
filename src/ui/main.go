@@ -18,15 +18,10 @@ import (
 	"strconv"
 )
 
-const (
-	defaultPort     = 8080
-	defaultHostPort = 8106
-)
-
 func main() {
-	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(defaultPort), "The TCP port number of the UI server")
-	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue(""), "The node host IP address")
-	hostPort := flag.Int("host-port", environment.NewVariable("HOST_PORT").GetIntValue(defaultHostPort), "The TCP port number of the host node")
+	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(8080), "The TCP port number of the UI server")
+	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue("127.0.0.1"), "The node host IP address")
+	hostPort := flag.Int("host-port", environment.NewVariable("HOST_PORT").GetIntValue(8106), "The TCP port number of the host node")
 	templatesPath := flag.String("templates-path", environment.NewVariable("TEMPLATES_PATH").GetStringValue("templates"), "The UI templates path")
 	configurationPath := flag.String("configuration-path", environment.NewVariable("CONFIGURATION_PATH").GetStringValue("config"), "The configuration files path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level")
@@ -44,7 +39,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to instantiate settings: %w", err).Error())
 	}
-	particlesCount := settings.ParticlesCount
+	particlesCount := settings.ParticlesPerToken
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
 	http.Handle("/transaction", transaction.NewHandler(host, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))

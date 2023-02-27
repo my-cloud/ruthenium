@@ -17,18 +17,11 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/net"
+	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/node/protocol/poh"
+	"github.com/my-cloud/ruthenium/src/node/protocol/pohtest"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
-)
-
-const (
-	synchronizationIntervalInSeconds = 10
-	validationIntervalInSeconds      = 60
-	verificationsCountPerValidation  = 6
-	defaultPort                      = 8106
-	minimalTransactionFee            = 1000
-	maxOutboundsCount                = 8
 )
 
 func main() {
@@ -36,7 +29,7 @@ func main() {
 	derivationPath := flag.String("derivation-path", environment.NewVariable("DERIVATION_PATH").GetStringValue("m/44'/60'/0'/0/0"), "The derivation path (unused if the mnemonic is omitted)")
 	password := flag.String("password", environment.NewVariable("PASSWORD").GetStringValue(""), "The mnemonic password (unused if the mnemonic is omitted)")
 	privateKey := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)")
-	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(defaultPort), "The TCP port number of the host node")
+	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(8106), "The TCP port number of the host node")
 	configurationPath := flag.String("configuration-path", environment.NewVariable("CONFIGURATION_PATH").GetStringValue("config"), "The configuration files path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level")
 
@@ -50,8 +43,13 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
 	}
-	registry := poh.NewRegistry()
-	validationTimer := validationIntervalInSeconds * time.Second
+	var registry protocol.Registry
+	if settings.NetworkId == "mainnet" {
+		registry = poh.NewRegistry()
+	} else {
+		registry = pohtest.NewRegistry()
+	}
+	validationTimer := time.Duration(settings.ValidationIntervalInSeconds) * time.Second
 	watch := tick.NewWatch()
 	ipFinder := net.NewIpFinder(logger)
 	clientFactory := gp2p.NewClientFactory(ipFinder)
@@ -63,16 +61,16 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to read seeds targets: %w", err).Error())
 	}
-	synchronizer := p2p.NewSynchronizer(clientFactory, hostIp, strconv.Itoa(*port), maxOutboundsCount, scoresBySeedTarget, watch)
-	synchronizationTimer := time.Second * synchronizationIntervalInSeconds
+	synchronizer := p2p.NewSynchronizer(clientFactory, hostIp, strconv.Itoa(*port), settings.MaxOutboundsCount, scoresBySeedTarget, watch)
+	synchronizationTimer := time.Second * time.Duration(settings.SynchronizationIntervalInSeconds)
 	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, synchronizationTimer, 1, 0)
 	now := watch.Now()
 	initialTimestamp := now.Truncate(validationTimer).Add(validationTimer).UnixNano()
-	genesisTransaction := validation.NewRewardTransaction(wallet.Address(), initialTimestamp, settings.GenesisAmount)
-	blockchain := verification.NewBlockchain(genesisTransaction, minimalTransactionFee, registry, validationTimer, synchronizer, logger)
-	transactionsPool := validation.NewTransactionsPool(blockchain, minimalTransactionFee, registry, synchronizer, wallet.Address(), validationTimer, logger)
+	genesisTransaction := validation.NewRewardTransaction(wallet.Address(), initialTimestamp, settings.GenesisAmountInParticles)
+	blockchain := verification.NewBlockchain(genesisTransaction, settings.MinimalTransactionFee, registry, validationTimer, synchronizer, logger)
+	transactionsPool := validation.NewTransactionsPool(blockchain, settings.MinimalTransactionFee, registry, synchronizer, wallet.Address(), validationTimer, logger)
 	validationEngine := tick.NewEngine(transactionsPool.Validate, watch, validationTimer, 1, 0)
-	verificationEngine := tick.NewEngine(blockchain.Update, watch, validationTimer, verificationsCountPerValidation, 1)
+	verificationEngine := tick.NewEngine(blockchain.Update, watch, validationTimer, settings.VerificationsCountPerValidation, 1)
 	serverFactory := gp2p.NewServerFactory()
 	server, err := serverFactory.CreateServer(*port)
 	if err != nil {

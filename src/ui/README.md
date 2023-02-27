@@ -15,9 +15,10 @@ go run src/ui/main.go -host-ip=0.0.0.0
 ## Program arguments:
 ```
 -port: The TCP port number for the UI server (default: 8080)
--host-ip: The node host IP address
+-host-ip: The node host IP address (default: 127.0.0.1)
 -host-port: The TCP port number of the host node (default: 8106)
 -templates-path: The UI templates path (default: "templates")
+-configuration-path: The configuration files path (default: "config")
 -log-level: The log level (default: "info")  
 ```
 

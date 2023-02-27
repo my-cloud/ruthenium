@@ -8,8 +8,14 @@ import (
 )
 
 type Settings struct {
-	ParticlesCount uint64
-	GenesisAmount  uint64
+	ParticlesPerToken                uint64
+	GenesisAmountInParticles         uint64
+	MaxOutboundsCount                int
+	MinimalTransactionFee            uint64
+	NetworkId                        string
+	SynchronizationIntervalInSeconds int
+	ValidationIntervalInSeconds      int
+	VerificationsCountPerValidation  int
 }
 
 func NewSettings(configurationPath string) (*Settings, error) {
