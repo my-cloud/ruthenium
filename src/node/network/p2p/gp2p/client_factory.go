@@ -19,15 +19,11 @@ func NewClientFactory(ipFinder network.IpFinder) *ClientFactory {
 }
 
 func (factory *ClientFactory) CreateClient(ip string, port string) (p2p.Client, error) {
-	lookedUpIps, err := factory.ipFinder.LookupIP(ip)
+	lookedUpIp, err := factory.ipFinder.LookupIP(ip)
 	if err != nil {
-		return nil, fmt.Errorf("DNS discovery failed on addresse %s: %w", ip, err)
+		return nil, fmt.Errorf("failed to look up IP on addresse %s: %w", ip, err)
 	}
-	ipsCount := len(lookedUpIps)
-	if ipsCount != 1 {
-		return nil, fmt.Errorf("DNS discovery did not find a single address (%d addresses found) for the given IP %s", ipsCount, ip)
-	}
-	tcp := gp2p.NewTCP(ip, port)
+	tcp := gp2p.NewTCP(lookedUpIp, port)
 	var client *gp2p.Client
 	client, err = gp2p.NewClient(tcp)
 	if err != nil {

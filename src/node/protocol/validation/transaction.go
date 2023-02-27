@@ -78,11 +78,11 @@ func NewTransactionFromResponse(transactionResponse *network.TransactionResponse
 
 func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Fee              uint64 `json:"fee"`
 		RecipientAddress string `json:"recipient_address"`
 		SenderAddress    string `json:"sender_address"`
 		Timestamp        int64  `json:"timestamp"`
 		Value            uint64 `json:"value"`
+		Fee              uint64 `json:"fee"`
 	}{
 		Fee:              transaction.fee,
 		RecipientAddress: transaction.recipientAddress,

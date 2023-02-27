@@ -17,9 +17,10 @@ go run src/node/main.go -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0
 -derivation-path: The derivation path (unused if the mnemonic is omitted, default: "m/44'/60'/0'/0/0")
 -password: The mnemonic password (unused if the mnemonic is omitted)
 -privateKey: The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)
--port: TCP port number of the host node (default: 8106)
+-ip: The node IP or DNS address (detected if not provided)
+-port: The TCP port number of the host node (default: "8106")
 -configuration-path: The configuration files path (default: "config")
--log-level: The log level (default: "info")
+-log-level: The log level (possible values: "debug", "info", "warn", "error", "fatal", default: "info")
 ```
   
 ## API

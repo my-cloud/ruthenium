@@ -16,25 +16,31 @@ func NewIpFinder(logger log.Logger) *IpFinder {
 	return &IpFinder{logger}
 }
 
-func (finder *IpFinder) LookupIP(ip string) ([]net.IP, error) {
-	return net.LookupIP(ip)
+func (finder *IpFinder) LookupIP(ip string) (string, error) {
+	ips, err := net.LookupIP(ip)
+	if err != nil {
+		return "", fmt.Errorf("DNS discovery failed on addresse %s: %w", ip, err)
+	}
+	ipsCount := len(ips)
+	if ipsCount != 1 {
+		return "", fmt.Errorf("DNS discovery did not find a single address (%d addresses found) for the given IP %s", ipsCount, ip)
+	}
+	return ips[0].String(), nil
 }
 
-func (finder *IpFinder) FindHostPublicIp() (ip string, err error) {
+func (finder *IpFinder) FindHostPublicIp() (string, error) {
 	resp, err := http.Get("https://ifconfig.me")
 	if err != nil {
-		return
+		return "", err
 	}
 	defer func() {
 		if bodyCloseError := resp.Body.Close(); bodyCloseError != nil {
 			finder.logger.Error(fmt.Errorf("failed to close public IP request body: %w", bodyCloseError).Error())
 		}
 	}()
-	var body []byte
-	body, err = io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return
+		return "", err
 	}
-	ip = string(body)
-	return
+	return string(body), nil
 }

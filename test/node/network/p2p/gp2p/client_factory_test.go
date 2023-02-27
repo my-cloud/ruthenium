@@ -5,31 +5,13 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
-	"net"
 	"testing"
 )
 
-func Test_CreateClient_NoSuchHost_ReturnsNil(t *testing.T) {
+func Test_CreateClient_IpFinderError_ReturnsNil(t *testing.T) {
 	// Arrange
 	ipFinder := new(networktest.IpFinderMock)
-	ipFinder.LookupIPFunc = func(ip string) ([]net.IP, error) {
-		return nil, errors.New("no such host")
-	}
-	clientFactory := gp2p.NewClientFactory(ipFinder)
-
-	// Act
-	client, _ := clientFactory.CreateClient("", "0")
-
-	// Assert
-	test.Assert(t, client == nil, "client is not nil whereas it should be")
-}
-
-func Test_CreateClient_NoIpAddress_ReturnsNil(t *testing.T) {
-	// Arrange
-	ipFinder := new(networktest.IpFinderMock)
-	ipFinder.LookupIPFunc = func(ip string) ([]net.IP, error) {
-		return []net.IP{}, nil
-	}
+	ipFinder.LookupIPFunc = func(string) (string, error) { return "", errors.New("") }
 	clientFactory := gp2p.NewClientFactory(ipFinder)
 
 	// Act
@@ -42,9 +24,7 @@ func Test_CreateClient_NoIpAddress_ReturnsNil(t *testing.T) {
 func Test_CreateClient_ValidIp_ReturnsClient(t *testing.T) {
 	// Arrange
 	ipFinder := new(networktest.IpFinderMock)
-	ipFinder.LookupIPFunc = func(ip string) ([]net.IP, error) {
-		return []net.IP{{}}, nil
-	}
+	ipFinder.LookupIPFunc = func(string) (string, error) { return "", nil }
 	clientFactory := gp2p.NewClientFactory(ipFinder)
 
 	// Act

@@ -29,9 +29,10 @@ func main() {
 	derivationPath := flag.String("derivation-path", environment.NewVariable("DERIVATION_PATH").GetStringValue("m/44'/60'/0'/0/0"), "The derivation path (unused if the mnemonic is omitted)")
 	password := flag.String("password", environment.NewVariable("PASSWORD").GetStringValue(""), "The mnemonic password (unused if the mnemonic is omitted)")
 	privateKey := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)")
+	ip := flag.String("ip", environment.NewVariable("IP").GetStringValue(""), "The node IP or DNS address (detected if not provided)")
 	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(8106), "The TCP port number of the host node")
 	configurationPath := flag.String("configuration-path", environment.NewVariable("CONFIGURATION_PATH").GetStringValue("config"), "The configuration files path")
-	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level")
+	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level (possible values: 'debug', 'info', 'warn', 'error', 'fatal')")
 
 	flag.Parse()
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
@@ -53,9 +54,12 @@ func main() {
 	watch := tick.NewWatch()
 	ipFinder := net.NewIpFinder(logger)
 	clientFactory := gp2p.NewClientFactory(ipFinder)
-	hostIp, err := ipFinder.FindHostPublicIp()
-	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
+	hostIp := *ip
+	if hostIp == "" {
+		hostIp, err = ipFinder.FindHostPublicIp()
+		if err != nil {
+			logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
+		}
 	}
 	scoresBySeedTarget, err := readSeedsTargets(*configurationPath, logger)
 	if err != nil {

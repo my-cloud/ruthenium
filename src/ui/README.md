@@ -14,12 +14,12 @@ go run src/ui/main.go -host-ip=0.0.0.0
 
 ## Program arguments:
 ```
--port: The TCP port number for the UI server (default: 8080)
--host-ip: The node host IP address (default: 127.0.0.1)
--host-port: The TCP port number of the host node (default: 8106)
+-port: The TCP port number for the UI server (default: "8080")
+-host-ip: The node host IP or DNS address (default: "127.0.0.1")
+-host-port: The TCP port number of the host node (default: "8106")
 -templates-path: The UI templates path (default: "templates")
 -configuration-path: The configuration files path (default: "config")
--log-level: The log level (default: "info")  
+-log-level: The log level (possible values: "debug", "info", "warn", "error", "fatal", default: "info")
 ```
 
 Using a web browser, go to `http://localhost:8080` (If needed, replace `localhost` by the UI server IP address and `8080` by the TCP port number for the UI server)

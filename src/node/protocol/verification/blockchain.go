@@ -202,10 +202,10 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		for _, neighbor := range neighbors {
 			target := neighbor.Target()
 			startingBlockHeight := uint64(len(hostBlocks) - 3)
-			lastNeighborBlockResponses, err := neighbor.GetLastBlocks(startingBlockHeight)
-			if err == nil {
+			lastNeighborBlockResponses, _ := neighbor.GetLastBlocks(startingBlockHeight)
+			if lastNeighborBlockResponses != nil {
 				var verifiedBlocks []*Block
-				verifiedBlocks, err = blockchain.verify(lastHostBlocks, lastNeighborBlockResponses, lastRegisteredAddresses, oldHostBlockResponses, timestamp)
+				verifiedBlocks, err := blockchain.verify(lastHostBlocks, lastNeighborBlockResponses, lastRegisteredAddresses, oldHostBlockResponses, timestamp)
 				if err != nil || verifiedBlocks == nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 				} else {
@@ -219,10 +219,10 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	if len(selectedTargets) < 2 {
 		for _, neighbor := range neighbors {
 			target := neighbor.Target()
-			neighborBlockResponses, err := neighbor.GetBlocks()
-			if err == nil {
+			neighborBlockResponses, _ := neighbor.GetBlocks()
+			if neighborBlockResponses != nil {
 				var verifiedBlocks []*Block
-				verifiedBlocks, err = blockchain.verify(hostBlocks, neighborBlockResponses, nil, nil, timestamp)
+				verifiedBlocks, err := blockchain.verify(hostBlocks, neighborBlockResponses, nil, nil, timestamp)
 				if err != nil || verifiedBlocks == nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 				} else {
