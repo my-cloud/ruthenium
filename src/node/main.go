@@ -19,7 +19,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/net"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/node/protocol/poh"
-	"github.com/my-cloud/ruthenium/src/node/protocol/pohtest"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 )
@@ -45,11 +44,7 @@ func main() {
 		logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
 	}
 	var registry protocol.Registry
-	if settings.NetworkId == "mainnet" {
-		registry = poh.NewRegistry()
-	} else {
-		registry = pohtest.NewRegistry()
-	}
+	registry = poh.NewRegistry(settings.InfuraKey)
 	validationTimer := time.Duration(settings.ValidationIntervalInSeconds) * time.Second
 	watch := tick.NewWatch()
 	ipFinder := net.NewIpFinder(logger)

@@ -3,7 +3,6 @@
   "genesisAmountInParticles": 10000000000000,
   "maxOutboundsCount": 8,
   "minimalTransactionFee": 1000,
-  "networkId": "mainnet",
   "synchronizationIntervalInSeconds": 10,
   "validationIntervalInSeconds": 60,
   "verificationsCountPerValidation": 6
