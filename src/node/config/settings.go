@@ -7,7 +7,6 @@ import (
 
 type Settings struct {
 	GenesisAmountInParticles         uint64
-	InfuraKey                        string
 	MaxOutboundsCount                int
 	MinimalTransactionFee            uint64
 	NetworkId                        string
