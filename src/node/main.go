@@ -29,7 +29,7 @@ func main() {
 	privateKey := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)")
 	infuraKey := flag.String("infura-key", environment.NewVariable("INFURA_KEY").GetStringValue(""), "The infura key (required to check the proof of humanity)")
 	ip := flag.String("ip", environment.NewVariable("IP").GetStringValue(""), "The node IP or DNS address (detected if not provided)")
-	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(8106), "The TCP port number of the host node")
+	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(10600), "The TCP port number of the host node")
 	configurationPath := flag.String("configuration-path", environment.NewVariable("CONFIGURATION_PATH").GetStringValue("config"), "The configuration files path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level (possible values: 'debug', 'info', 'warn', 'error', 'fatal')")
 
@@ -44,7 +44,7 @@ func main() {
 		logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
 	}
 	if *infuraKey == "" {
-		logger.Warn("infura key is empty")
+		logger.Warn("infura key is not provided")
 	}
 	registry := poh.NewRegistry(*infuraKey)
 	validationTimer := time.Duration(settings.ValidationIntervalInSeconds) * time.Second

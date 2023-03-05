@@ -19,9 +19,9 @@ go run src/node/main.go -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0
 -private-key: The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)
 -infura-key: The infura key (required to check the proof of humanity)
 -ip: The node IP or DNS address (detected if not provided)
--port: The TCP port number of the host node (default: "8106")
+-port: The TCP port number of the host node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
 -configuration-path: The configuration files path (default: "config")
--log-level: The log level (possible values: "debug", "info", "warn", "error", "fatal", default: "info")
+-log-level: The log level (accepted values: "debug", "info", "warn", "error", "fatal", default: "info")
 ```
   
 ## API
@@ -281,7 +281,7 @@ The port
 ```
 {
   "Ip":   0.0.0.0
-  "Port": 8106
+  "Port": 10600
 }
 ```
 </td>
