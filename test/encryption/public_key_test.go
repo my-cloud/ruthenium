@@ -22,7 +22,7 @@ func Test_NewPublicKey(t *testing.T) {
 
 func Test_Address(t *testing.T) {
 	// Arrange
-	publicKey, _ := encryption.DecodePublicKey(test.PublicKey)
+	publicKey, _ := encryption.NewPublicKeyFromHex(test.PublicKey)
 
 	// Act
 	address := publicKey.Address()

@@ -11,27 +11,27 @@ import (
 const rewardSenderAddress = "REWARD SENDER ADDRESS"
 
 type Transaction struct {
-	fee              uint64
 	recipientAddress string
 	senderAddress    string
 	senderPublicKey  *encryption.PublicKey
 	signature        *encryption.Signature
 	timestamp        int64
 	value            uint64
+	fee              uint64
 }
 
 func NewRewardTransaction(recipientAddress string, timestamp int64, value uint64) *network.TransactionResponse {
 	return &network.TransactionResponse{
-		Fee:              0,
 		RecipientAddress: recipientAddress,
 		SenderAddress:    rewardSenderAddress,
 		Timestamp:        timestamp,
 		Value:            value,
+		Fee:              0,
 	}
 }
 
 func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (*Transaction, error) {
-	senderPublicKey, err := encryption.DecodePublicKey(*transactionRequest.SenderPublicKey)
+	senderPublicKey, err := encryption.NewPublicKeyFromHex(*transactionRequest.SenderPublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode transaction public key: %w", err)
 	}
@@ -40,20 +40,20 @@ func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (
 		return nil, fmt.Errorf("failed to decode transaction signature: %w", err)
 	}
 	return &Transaction{
-		*transactionRequest.Fee,
 		*transactionRequest.RecipientAddress,
 		*transactionRequest.SenderAddress,
 		senderPublicKey,
 		signature,
 		*transactionRequest.Timestamp,
 		*transactionRequest.Value,
+		*transactionRequest.Fee,
 	}, nil
 }
 
 func NewTransactionFromResponse(transactionResponse *network.TransactionResponse) (transaction *Transaction, err error) {
 	var senderPublicKey *encryption.PublicKey
 	if len(transactionResponse.SenderPublicKey) != 0 {
-		senderPublicKey, err = encryption.DecodePublicKey(transactionResponse.SenderPublicKey)
+		senderPublicKey, err = encryption.NewPublicKeyFromHex(transactionResponse.SenderPublicKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode transaction public key: %w", err)
 		}
@@ -66,14 +66,22 @@ func NewTransactionFromResponse(transactionResponse *network.TransactionResponse
 		}
 	}
 	return &Transaction{
-		transactionResponse.Fee,
 		transactionResponse.RecipientAddress,
 		transactionResponse.SenderAddress,
 		senderPublicKey,
 		signature,
 		transactionResponse.Timestamp,
 		transactionResponse.Value,
+		transactionResponse.Fee,
 	}, nil
+}
+
+func (transaction *Transaction) Equals(other *network.TransactionResponse) bool {
+	return transaction.recipientAddress == other.RecipientAddress &&
+		transaction.senderAddress == other.SenderAddress &&
+		transaction.timestamp == other.Timestamp &&
+		transaction.value == other.Value &&
+		transaction.fee == other.Fee
 }
 
 func (transaction *Transaction) MarshalJSON() ([]byte, error) {
@@ -110,14 +118,6 @@ func (transaction *Transaction) GetResponse() *network.TransactionResponse {
 		Value:            transaction.value,
 		Fee:              transaction.fee,
 	}
-}
-
-func (transaction *Transaction) Equals(other *network.TransactionResponse) bool {
-	return transaction.recipientAddress == other.RecipientAddress &&
-		transaction.senderAddress == other.SenderAddress &&
-		transaction.timestamp == other.Timestamp &&
-		transaction.value == other.Value &&
-		transaction.fee == other.Fee
 }
 
 func (transaction *Transaction) VerifySignature() error {

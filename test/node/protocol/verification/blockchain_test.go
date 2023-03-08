@@ -22,6 +22,7 @@ const (
 func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
+	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
 	genesisTransaction := validation.NewRewardTransaction("", 0, 0)
@@ -54,14 +55,15 @@ func Test_CalculateTotalAmount_InitialValidator_ReturnsGenesisAmount(t *testing.
 	registry := new(protocoltest.RegistryMock)
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
-	genesisTransaction := validation.NewRewardTransaction("", 0, 10)
+	var genesisTransactionValue uint64 = 10
+	genesisTransaction := validation.NewRewardTransaction("", 0, genesisTransactionValue)
 	blockchain := verification.NewBlockchain(genesisTransaction, 0, registry, 1, synchronizer, logger)
 
 	// Act
 	amount := blockchain.CalculateTotalAmount(1, genesisTransaction.RecipientAddress)
 
 	// Assert
-	test.Assert(t, amount == genesisTransaction.Value, "calculated amount is not the genesis amount whereas it should be")
+	test.Assert(t, amount == genesisTransactionValue, "calculated amount is not the genesis amount whereas it should be")
 }
 
 func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
@@ -241,8 +243,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	wallet, _ := encryption.NewWallet("", "", "", test.PrivateKey)
-	address := wallet.Address()
+	address := test.Address
 	var invalidTransactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -296,8 +297,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	wallet, _ := encryption.NewWallet("", "", "", test.PrivateKey)
-	address := wallet.Address()
+	address := test.Address
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -350,8 +350,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	wallet, _ := encryption.NewWallet("", "", "", test.PrivateKey)
-	address := wallet.Address()
+	address := test.Address
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)

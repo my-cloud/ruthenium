@@ -334,7 +334,8 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 
 func (blockchain *Blockchain) addGenesisBlock(genesisTransaction *network.TransactionResponse) {
 	transactions := []*network.TransactionResponse{genesisTransaction}
-	blockResponse := NewBlockResponse(genesisTransaction.Timestamp, [32]byte{}, transactions, nil, nil)
+	addedAddresses := []string{genesisTransaction.RecipientAddress}
+	blockResponse := NewBlockResponse(genesisTransaction.Timestamp, [32]byte{}, transactions, addedAddresses, nil)
 	block, err := NewBlockFromResponse(blockResponse, nil)
 	if err != nil {
 		blockchain.logger.Error(fmt.Errorf("unable to instantiate block: %w", err).Error())

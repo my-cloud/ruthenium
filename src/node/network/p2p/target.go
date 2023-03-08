@@ -6,15 +6,14 @@ import (
 )
 
 type Target struct {
-	ip        string
-	port      string
-	value     string
-	networkId string
+	ip    string
+	port  string
+	value string
 }
 
 func NewTarget(ip string, port string) *Target {
 	value := net.JoinHostPort(ip, port)
-	return &Target{ip, port, value, networkId(port)}
+	return &Target{ip, port, value}
 }
 
 func NewTargetFromValue(value string) (*Target, error) {
@@ -22,15 +21,15 @@ func NewTargetFromValue(value string) (*Target, error) {
 	if err != nil {
 		return nil, fmt.Errorf("seed target format is invalid: %w", err)
 	}
-	return &Target{ip, port, value, networkId(port)}, nil
+	return &Target{ip, port, value}, nil
+}
+
+func (target *Target) IsSameNetworkId(other *Target) bool {
+	return target.networkId() == other.networkId()
 }
 
 func (target *Target) Ip() string {
 	return target.ip
-}
-
-func (target *Target) IsSameNetworkId(other *Target) bool {
-	return target.networkId == other.networkId
 }
 
 func (target *Target) Port() string {
@@ -41,10 +40,10 @@ func (target *Target) Value() string {
 	return target.value
 }
 
-func networkId(port string) string {
-	if port == "10600" {
+func (target *Target) networkId() string {
+	if target.port == "10600" {
 		return "mainnet"
-	} else if len(port) == 5 && port[:3] == "106" {
+	} else if len(target.port) == 5 && target.port[:3] == "106" {
 		return "testnet"
 	} else {
 		return "unknown"

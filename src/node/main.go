@@ -26,7 +26,7 @@ func main() {
 	mnemonic := flag.String("mnemonic", environment.NewVariable("MNEMONIC").GetStringValue(""), "The mnemonic (required if the private key is not provided)")
 	derivationPath := flag.String("derivation-path", environment.NewVariable("DERIVATION_PATH").GetStringValue("m/44'/60'/0'/0/0"), "The derivation path (unused if the mnemonic is omitted)")
 	password := flag.String("password", environment.NewVariable("PASSWORD").GetStringValue(""), "The mnemonic password (unused if the mnemonic is omitted)")
-	privateKey := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)")
+	privateKeyString := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)")
 	infuraKey := flag.String("infura-key", environment.NewVariable("INFURA_KEY").GetStringValue(""), "The infura key (required to check the proof of humanity)")
 	ip := flag.String("ip", environment.NewVariable("IP").GetStringValue(""), "The node IP or DNS address (detected if not provided)")
 	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(10600), "The TCP port number of the host node")
@@ -39,12 +39,21 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to instantiate settings: %w", err).Error())
 	}
-	wallet, err := encryption.NewWallet(*mnemonic, *derivationPath, *password, *privateKey)
-	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to create wallet: %w", err).Error())
+	var privateKey *encryption.PrivateKey
+	if *mnemonic != "" {
+		privateKey, err = encryption.NewPrivateKeyFromMnemonic(*mnemonic, *derivationPath, *password)
+	} else if *privateKeyString != "" {
+		privateKey, err = encryption.NewPrivateKeyFromHex(*privateKeyString)
+	} else {
+		logger.Fatal(fmt.Errorf("nor the mnemonic neither the private key have been provided").Error())
 	}
+	if err != nil {
+		logger.Fatal(fmt.Errorf("failed to create private key: %w", err).Error())
+	}
+	publicKey := encryption.NewPublicKey(privateKey)
+	wallet := encryption.NewWallet(publicKey)
 	if *infuraKey == "" {
-		logger.Warn("infura key is not provided")
+		logger.Warn("infura key not provided")
 	}
 	registry := poh.NewRegistry(*infuraKey)
 	validationTimer := time.Duration(settings.ValidationIntervalInSeconds) * time.Second
