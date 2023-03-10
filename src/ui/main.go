@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/environment"
+	"github.com/my-cloud/ruthenium/src/file"
 	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
@@ -15,6 +16,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/address"
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/amount"
 	"net/http"
+	"path/filepath"
 	"strconv"
 )
 
@@ -35,9 +37,13 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
 	}
-	settings, err := config.NewSettings(*configurationPath)
+	// TODO get the full path in arguments
+	settingsPath := filepath.Join(*configurationPath, "settings.json")
+	parser := file.NewJsonParser()
+	var settings config.Settings
+	err = parser.Parse(settingsPath, &settings)
 	if err != nil {
-		logger.Fatal(fmt.Errorf("unable to instantiate settings: %w", err).Error())
+		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
 	}
 	particlesCount := settings.ParticlesPerToken
 	http.Handle("/", index.NewHandler(*templatesPath, logger))

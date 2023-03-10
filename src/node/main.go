@@ -1,11 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
-	"os"
+	"github.com/my-cloud/ruthenium/src/file"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -35,9 +34,24 @@ func main() {
 
 	flag.Parse()
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
-	settings, err := config.NewSettings(*configurationPath)
+	// TODO get the full path in arguments
+	settingsPath := filepath.Join(*configurationPath, "settings.json")
+	parser := file.NewJsonParser()
+	var settings config.Settings
+	err := parser.Parse(settingsPath, &settings)
 	if err != nil {
-		logger.Fatal(fmt.Errorf("unable to instantiate settings: %w", err).Error())
+		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
+	}
+	// TODO get the full path in arguments
+	seedsPath := filepath.Join(*configurationPath, "seeds.json")
+	var seedsStringTargets []string
+	err = parser.Parse(seedsPath, &seedsStringTargets)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("unable to parse seeds: %w", err).Error())
+	}
+	scoresBySeedTarget := map[string]int{}
+	for _, seedStringTarget := range seedsStringTargets {
+		scoresBySeedTarget[seedStringTarget] = 0
 	}
 	var privateKey *encryption.PrivateKey
 	if *mnemonic != "" {
@@ -67,10 +81,6 @@ func main() {
 			logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
 		}
 	}
-	scoresBySeedTarget, err := readSeedsTargets(*configurationPath, logger)
-	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to read seeds targets: %w", err).Error())
-	}
 	synchronizer := p2p.NewSynchronizer(clientFactory, hostIp, strconv.Itoa(*port), settings.MaxOutboundsCount, scoresBySeedTarget, watch)
 	synchronizationTimer := time.Second * time.Duration(settings.SynchronizationIntervalInSeconds)
 	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, synchronizationTimer, 1, 0)
@@ -93,27 +103,4 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to run host: %w", err).Error())
 	}
-}
-
-func readSeedsTargets(configurationPath string, logger *console.Logger) (map[string]int, error) {
-	jsonFile, err := os.Open(configurationPath + "/seeds.json")
-	if err != nil {
-		return nil, fmt.Errorf("unable to open seeds IPs configuration file: %w", err)
-	}
-	byteValue, err := io.ReadAll(jsonFile)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read seeds IPs configuration file: %w", err)
-	}
-	if err = jsonFile.Close(); err != nil {
-		logger.Error(fmt.Errorf("unable to close seeds IPs configuration file: %w", err).Error())
-	}
-	var seedsStringTargets []string
-	if err = json.Unmarshal(byteValue, &seedsStringTargets); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal seeds IPs: %w", err)
-	}
-	scoresBySeedTarget := map[string]int{}
-	for _, seedStringTarget := range seedsStringTargets {
-		scoresBySeedTarget[seedStringTarget] = 0
-	}
-	return scoresBySeedTarget, nil
 }

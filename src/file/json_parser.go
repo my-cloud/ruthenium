@@ -7,16 +7,14 @@ import (
 	"os"
 )
 
-type JsonParser struct {
-	path string
+type JsonParser struct{}
+
+func NewJsonParser() *JsonParser {
+	return &JsonParser{}
 }
 
-func NewJsonParser(path string) *JsonParser {
-	return &JsonParser{path}
-}
-
-func (parser *JsonParser) Parse(any interface{}) error {
-	jsonFile, err := os.Open(parser.path)
+func (parser *JsonParser) Parse(path string, any interface{}) error {
+	jsonFile, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("unable to open file: %w", err)
 	}
