@@ -16,7 +16,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/address"
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/amount"
 	"net/http"
-	"path/filepath"
 	"strconv"
 )
 
@@ -25,7 +24,7 @@ func main() {
 	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue("127.0.0.1"), "The node host IP or DNS address")
 	hostPort := flag.Int("host-port", environment.NewVariable("HOST_PORT").GetIntValue(10600), "The TCP port number of the host node")
 	templatesPath := flag.String("templates-path", environment.NewVariable("TEMPLATES_PATH").GetStringValue("templates"), "The UI templates path")
-	configurationPath := flag.String("configuration-path", environment.NewVariable("CONFIGURATION_PATH").GetStringValue("config"), "The configuration files path")
+	settingsPath := flag.String("settings-path", environment.NewVariable("SETTINGS_PATH").GetStringValue("config/settings.json"), "The settings file path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level (possible values: 'debug', 'info', 'warn', 'error', 'fatal')")
 
 	flag.Parse()
@@ -37,11 +36,9 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
 	}
-	// TODO get the full path in arguments
-	settingsPath := filepath.Join(*configurationPath, "settings.json")
 	parser := file.NewJsonParser()
 	var settings config.Settings
-	err = parser.Parse(settingsPath, &settings)
+	err = parser.Parse(*settingsPath, &settings)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
 	}

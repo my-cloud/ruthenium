@@ -18,7 +18,7 @@ go run src/ui/main.go -host-ip=0.0.0.0
 -host-ip: The node host IP or DNS address (default: "127.0.0.1")
 -host-port: The TCP port number of the host node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
 -templates-path: The UI templates path (default: "templates")
--configuration-path: The configuration files path (default: "config")
+-settings-path: The settings file path (default: "config/settings.json")
 -log-level: The log level (accepted values: "debug", "info", "warn", "error", "fatal", default: "info")
 ```
 

@@ -22,7 +22,6 @@ const (
 func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
-	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
 	blockchain := verification.NewBlockchain(0, nil, 0, registry, 1, synchronizer, logger)

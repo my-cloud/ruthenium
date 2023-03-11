@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/my-cloud/ruthenium/src/log"
 )
 
 const (
@@ -15,7 +16,10 @@ type Registry struct {
 	infuraKey string
 }
 
-func NewRegistry(infuraKey string) *Registry {
+func NewRegistry(infuraKey string, logger log.Logger) *Registry {
+	if infuraKey == "" {
+		logger.Warn("infura key not provided")
+	}
 	return &Registry{infuraKey}
 }
 

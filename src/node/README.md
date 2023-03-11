@@ -20,7 +20,8 @@ go run src/node/main.go -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0
 -infura-key: The infura key (required to check the proof of humanity)
 -ip: The node IP or DNS address (detected if not provided)
 -port: The TCP port number of the host node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
--configuration-path: The configuration files path (default: "config")
+-settings-path: The settings file path (default: "config/settings.json")
+-seeds-path: The seeds file path (default: "config/seeds.json")
 -log-level: The log level (accepted values: "debug", "info", "warn", "error", "fatal", default: "info")
 ```
   
