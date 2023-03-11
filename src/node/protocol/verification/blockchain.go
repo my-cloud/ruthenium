@@ -64,26 +64,21 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 		lastRegisteredAddresses = previousBlock.RegisteredAddresses()
 	}
 	registeredAddressesMap := make(map[string]bool)
-	for _, address := range lastRegisteredAddresses {
+	for _, address := range append(lastRegisteredAddresses, newAddresses...) {
 		if _, ok := registeredAddressesMap[address]; !ok {
 			registeredAddressesMap[address] = false
 		}
 	}
-	for _, address := range newAddresses {
-		if _, ok := registeredAddressesMap[address]; !ok {
-			registeredAddressesMap[address] = true
-		}
-	}
 	var addedRegisteredAddresses []string
 	var removedRegisteredAddresses []string
-	for address, isNew := range registeredAddressesMap {
+	for address := range registeredAddressesMap {
 		isPohValid, err := blockchain.registry.IsRegistered(address)
 		if err != nil {
 			return fmt.Errorf("failed to get proof of humanity: %w", err)
 		}
-		if isPohValid && isNew {
+		if isPohValid {
 			addedRegisteredAddresses = append(addedRegisteredAddresses, address)
-		} else if !isPohValid && !isNew {
+		} else {
 			removedRegisteredAddresses = append(removedRegisteredAddresses, address)
 		}
 	}
@@ -534,8 +529,8 @@ func (blockchain *Blockchain) verifyLastBlock(lastHostBlocks []*Block, lastNeigh
 }
 
 func (blockchain *Blockchain) verifyRegisteredAddresses(lastNeighborBlock *Block) error {
-	addedRegisteredAddresses := lastNeighborBlock.AddedRegisteredAddresses()
 	registeredAddressesMap := make(map[string]bool)
+	addedRegisteredAddresses := lastNeighborBlock.AddedRegisteredAddresses()
 	for _, address := range addedRegisteredAddresses {
 		registeredAddressesMap[address] = true
 	}

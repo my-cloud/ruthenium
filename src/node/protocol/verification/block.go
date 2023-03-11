@@ -40,7 +40,16 @@ func NewBlockFromResponse(block *network.BlockResponse, lastRegisteredAddresses 
 	for _, address := range block.RemovedRegisteredAddresses {
 		removeAddress(cleanedAddresses, address)
 	}
-	registeredAddresses := append(cleanedAddresses, block.AddedRegisteredAddresses...)
+	registeredAddressesMap := make(map[string]bool)
+	for _, address := range append(lastRegisteredAddresses, block.AddedRegisteredAddresses...) {
+		if _, ok := registeredAddressesMap[address]; !ok {
+			registeredAddressesMap[address] = false
+		}
+	}
+	var registeredAddresses []string
+	for address := range registeredAddressesMap {
+		registeredAddresses = append(registeredAddresses, address)
+	}
 	return &Block{
 		block.Timestamp,
 		block.PreviousHash,

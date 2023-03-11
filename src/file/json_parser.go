@@ -3,7 +3,7 @@ package file
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
@@ -18,7 +18,7 @@ func (parser *JsonParser) Parse(path string, any interface{}) error {
 	if err != nil {
 		return fmt.Errorf("unable to open file: %w", err)
 	}
-	byteValue, err := ioutil.ReadAll(jsonFile)
+	byteValue, err := io.ReadAll(jsonFile)
 	if err != nil {
 		return fmt.Errorf("unable to read file: %w", err)
 	}
