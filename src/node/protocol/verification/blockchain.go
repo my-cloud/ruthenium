@@ -29,9 +29,9 @@ type Blockchain struct {
 	logger                log.Logger
 }
 
-func NewBlockchain(genesisTransaction *network.TransactionResponse, minimalTransactionFee uint64, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+func NewBlockchain(genesisTimestamp int64, genesisTransaction *network.TransactionResponse, minimalTransactionFee uint64, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
 	blockchain := newBlockchain(nil, minimalTransactionFee, registry, validationTimer, synchronizer, logger)
-	blockchain.addGenesisBlock(genesisTransaction)
+	blockchain.addGenesisBlock(genesisTimestamp, genesisTransaction)
 	return blockchain
 }
 
@@ -64,21 +64,26 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 		lastRegisteredAddresses = previousBlock.RegisteredAddresses()
 	}
 	registeredAddressesMap := make(map[string]bool)
-	for _, address := range append(lastRegisteredAddresses, newAddresses...) {
+	for _, address := range lastRegisteredAddresses {
 		if _, ok := registeredAddressesMap[address]; !ok {
 			registeredAddressesMap[address] = false
 		}
 	}
+	for _, address := range newAddresses {
+		if _, ok := registeredAddressesMap[address]; !ok {
+			registeredAddressesMap[address] = true
+		}
+	}
 	var addedRegisteredAddresses []string
 	var removedRegisteredAddresses []string
-	for address := range registeredAddressesMap {
+	for address, isNew := range registeredAddressesMap {
 		isPohValid, err := blockchain.registry.IsRegistered(address)
 		if err != nil {
 			return fmt.Errorf("failed to get proof of humanity: %w", err)
 		}
-		if isPohValid {
+		if isPohValid && isNew {
 			addedRegisteredAddresses = append(addedRegisteredAddresses, address)
-		} else {
+		} else if !isPohValid && !isNew {
 			removedRegisteredAddresses = append(removedRegisteredAddresses, address)
 		}
 	}
@@ -330,10 +335,14 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	}
 }
 
-func (blockchain *Blockchain) addGenesisBlock(genesisTransaction *network.TransactionResponse) {
-	transactions := []*network.TransactionResponse{genesisTransaction}
-	addedAddresses := []string{genesisTransaction.RecipientAddress}
-	blockResponse := NewBlockResponse(genesisTransaction.Timestamp, [32]byte{}, transactions, addedAddresses, nil)
+func (blockchain *Blockchain) addGenesisBlock(genesisTimestamp int64, genesisTransaction *network.TransactionResponse) {
+	var transactions []*network.TransactionResponse
+	var addedAddresses []string
+	if genesisTransaction != nil {
+		transactions = []*network.TransactionResponse{genesisTransaction}
+		addedAddresses = []string{genesisTransaction.RecipientAddress}
+	}
+	blockResponse := NewBlockResponse(genesisTimestamp, [32]byte{}, transactions, addedAddresses, nil)
 	block, err := NewBlockFromResponse(blockResponse, nil)
 	if err != nil {
 		blockchain.logger.Error(fmt.Errorf("unable to instantiate block: %w", err).Error())

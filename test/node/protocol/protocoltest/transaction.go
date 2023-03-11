@@ -14,32 +14,32 @@ func NewSignedTransactionRequest(fee uint64, recipientAddress string, senderAddr
 		Value            uint64 `json:"value"`
 		Fee              uint64 `json:"fee"`
 	}{
-		Fee:              fee,
 		RecipientAddress: recipientAddress,
 		SenderAddress:    senderAddress,
 		Timestamp:        timestamp,
 		Value:            value,
+		Fee:              fee,
 	})
 	signature, _ := encryption.NewSignature(marshaledTransaction, senderPrivateKey)
 	encodedPublicKey := senderPublicKey.String()
 	encodedSignature := signature.String()
 	return network.TransactionRequest{
-		Fee:              &fee,
 		RecipientAddress: &recipientAddress,
 		SenderAddress:    &senderAddress,
 		SenderPublicKey:  &encodedPublicKey,
 		Signature:        &encodedSignature,
 		Timestamp:        &timestamp,
 		Value:            &value,
+		Fee:              &fee,
 	}
 }
 
 func NewTransactionRequest(fee uint64, recipientAddress string, senderAddress string, timestamp int64, value uint64) network.TransactionRequest {
 	return network.TransactionRequest{
-		Fee:              &fee,
 		RecipientAddress: &recipientAddress,
 		SenderAddress:    &senderAddress,
 		Timestamp:        &timestamp,
 		Value:            &value,
+		Fee:              &fee,
 	}
 }
