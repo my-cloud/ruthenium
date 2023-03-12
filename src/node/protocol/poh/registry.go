@@ -4,25 +4,30 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/my-cloud/ruthenium/src/log"
 )
 
 const (
-	networkId                  = "mainnet"
-	infuraKey                  = "ac46e51cf15e45e0a4c00c35fa780f1b"
 	pohSmartContractAddressHex = "0xC5E9dDebb09Cd64DfaCab4011A0D5cEDaf7c9BDb"
+	clientUrl                  = "https://mainnet.infura.io/v3/"
 )
 
 type Registry struct {
-	clientUrl string
+	infuraKey string
 }
 
-func NewRegistry() *Registry {
-	clientUrl := fmt.Sprintf("https://%s.infura.io/v3/%s", networkId, infuraKey)
-	return &Registry{clientUrl}
+func NewRegistry(infuraKey string, logger log.Logger) *Registry {
+	if infuraKey == "" {
+		logger.Warn("infura key not provided")
+	}
+	return &Registry{infuraKey}
 }
 
 func (registry *Registry) IsRegistered(address string) (isRegistered bool, err error) {
-	client, err := ethclient.Dial(registry.clientUrl)
+	if registry.infuraKey == "" {
+		return true, nil
+	}
+	client, err := ethclient.Dial(fmt.Sprint(clientUrl, registry.infuraKey))
 	if err != nil {
 		return
 	}

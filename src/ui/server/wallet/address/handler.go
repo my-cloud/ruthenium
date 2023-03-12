@@ -21,7 +21,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 	switch req.Method {
 	case http.MethodGet:
 		publicKeyString := req.URL.Query().Get("publicKey")
-		publicKey, err := encryption.DecodePublicKey(publicKeyString)
+		publicKey, err := encryption.NewPublicKeyFromHex(publicKeyString)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to decode public key: %w", err).Error())
 			writer.WriteHeader(http.StatusBadRequest)

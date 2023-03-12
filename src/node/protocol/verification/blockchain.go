@@ -29,9 +29,9 @@ type Blockchain struct {
 	logger                log.Logger
 }
 
-func NewBlockchain(genesisTransaction *network.TransactionResponse, minimalTransactionFee uint64, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+func NewBlockchain(genesisTimestamp int64, genesisTransaction *network.TransactionResponse, minimalTransactionFee uint64, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
 	blockchain := newBlockchain(nil, minimalTransactionFee, registry, validationTimer, synchronizer, logger)
-	blockchain.addGenesisBlock(genesisTransaction)
+	blockchain.addGenesisBlock(genesisTimestamp, genesisTransaction)
 	return blockchain
 }
 
@@ -203,9 +203,8 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			target := neighbor.Target()
 			startingBlockHeight := uint64(len(hostBlocks) - 3)
 			lastNeighborBlockResponses, err := neighbor.GetLastBlocks(startingBlockHeight)
-			if err == nil {
-				var verifiedBlocks []*Block
-				verifiedBlocks, err = blockchain.verify(lastHostBlocks, lastNeighborBlockResponses, lastRegisteredAddresses, oldHostBlockResponses, timestamp)
+			if err == nil && lastNeighborBlockResponses != nil {
+				verifiedBlocks, err := blockchain.verify(lastHostBlocks, lastNeighborBlockResponses, lastRegisteredAddresses, oldHostBlockResponses, timestamp)
 				if err != nil || verifiedBlocks == nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 				} else {
@@ -220,9 +219,8 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		for _, neighbor := range neighbors {
 			target := neighbor.Target()
 			neighborBlockResponses, err := neighbor.GetBlocks()
-			if err == nil {
-				var verifiedBlocks []*Block
-				verifiedBlocks, err = blockchain.verify(hostBlocks, neighborBlockResponses, nil, nil, timestamp)
+			if err == nil && neighborBlockResponses != nil {
+				verifiedBlocks, err := blockchain.verify(hostBlocks, neighborBlockResponses, nil, nil, timestamp)
 				if err != nil || verifiedBlocks == nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 				} else {
@@ -332,9 +330,14 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	}
 }
 
-func (blockchain *Blockchain) addGenesisBlock(genesisTransaction *network.TransactionResponse) {
-	transactions := []*network.TransactionResponse{genesisTransaction}
-	blockResponse := NewBlockResponse(genesisTransaction.Timestamp, [32]byte{}, transactions, nil, nil)
+func (blockchain *Blockchain) addGenesisBlock(genesisTimestamp int64, genesisTransaction *network.TransactionResponse) {
+	var transactions []*network.TransactionResponse
+	var addedAddresses []string
+	if genesisTransaction != nil {
+		transactions = []*network.TransactionResponse{genesisTransaction}
+		addedAddresses = []string{genesisTransaction.RecipientAddress}
+	}
+	blockResponse := NewBlockResponse(genesisTimestamp, [32]byte{}, transactions, addedAddresses, nil)
 	block, err := NewBlockFromResponse(blockResponse, nil)
 	if err != nil {
 		blockchain.logger.Error(fmt.Errorf("unable to instantiate block: %w", err).Error())
@@ -413,8 +416,8 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, lastNeighborBlockR
 		neighborBlockPreviousHash := neighborBlock.PreviousHash()
 		isPreviousHashValid := neighborBlockPreviousHash == previousNeighborBlockHash
 		if !isPreviousHashValid {
-			blockNumber := len(oldHostBlockResponses) + i
-			return nil, fmt.Errorf("a previous neighbor block hash is invalid: block number: %d, block previous hash: %v, previous block hash: %v", blockNumber, neighborBlockPreviousHash, previousNeighborBlockHash)
+			blockHeight := len(oldHostBlockResponses) + i
+			return nil, fmt.Errorf("a previous neighbor block hash is invalid: block height: %d, block previous hash: %v, previous block hash: %v", blockHeight, neighborBlockPreviousHash, previousNeighborBlockHash)
 		}
 		var isNewBlock bool
 		if i >= len(lastHostBlocks) {
@@ -526,8 +529,8 @@ func (blockchain *Blockchain) verifyLastBlock(lastHostBlocks []*Block, lastNeigh
 }
 
 func (blockchain *Blockchain) verifyRegisteredAddresses(lastNeighborBlock *Block) error {
-	addedRegisteredAddresses := lastNeighborBlock.AddedRegisteredAddresses()
 	registeredAddressesMap := make(map[string]bool)
+	addedRegisteredAddresses := lastNeighborBlock.AddedRegisteredAddresses()
 	for _, address := range addedRegisteredAddresses {
 		registeredAddressesMap[address] = true
 	}

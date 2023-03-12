@@ -24,6 +24,10 @@ func NewTargetFromValue(value string) (*Target, error) {
 	return &Target{ip, port, value}, nil
 }
 
+func (target *Target) IsSameNetworkId(other *Target) bool {
+	return target.networkId() == other.networkId()
+}
+
 func (target *Target) Ip() string {
 	return target.ip
 }
@@ -34,4 +38,14 @@ func (target *Target) Port() string {
 
 func (target *Target) Value() string {
 	return target.value
+}
+
+func (target *Target) networkId() string {
+	if target.port == "10600" {
+		return "mainnet"
+	} else if len(target.port) == 5 && target.port[:3] == "106" {
+		return "testnet"
+	} else {
+		return "unknown"
+	}
 }

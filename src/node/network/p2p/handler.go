@@ -70,7 +70,7 @@ func (handler *Handler) Handle(_ context.Context, req gp2p.Data) (res gp2p.Data,
 	}
 
 	if unknownRequest {
-		handler.logger.Error("unknown request")
+		handler.logger.Debug("unknown request")
 	}
 	return
 }
