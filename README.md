@@ -21,7 +21,7 @@ There are two ways to use the Ruthenium blockchain. You can either use your own 
   * If you are using Windows, you need to have [tdm-gcc](https://jmeubank.github.io/tdm-gcc/) installed.
 * Option B (using docker image):
   * You need to have [![Docker](https://img.shields.io/badge/docker-grey?logo=docker)](https://www.docker.com/) installed.
-* Your firewall port 8106 must be open (please read "Program arguments" section of the [node](src/node/README.md#program-arguments) and [UI server](src/ui/README.md#program-arguments) documentation if you want to use another port than 8106).
+* Your firewall port 10600 must be open (please read "Program arguments" section of the [node](src/node/README.md#program-arguments) and [UI server](src/ui/README.md#program-arguments) documentation if you want to use another port than 10600).
 * To get an income or validate blocks ou need to be registered in the [Proof of Humanity](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#proof-of-humanity) registry.
 
 ### Installation
@@ -50,7 +50,7 @@ There are two ways to use the Ruthenium blockchain. You can either use your own 
 * Option B (using docker image):
   * Run the [node](src/node/README.md):
     ```
-    sudo docker run -p 8106:8106 -ti ghcr.io/my-cloud/ruthenium:latest \app\node -private-key=<private key>
+    sudo docker run -p 10600:10600 -ti ghcr.io/my-cloud/ruthenium:latest \app\node -private-key=<private key>
     ```
   * Run the [UI server](src/ui/README.md):
     ```

@@ -15,7 +15,7 @@ func NewPublicKey(privateKey *PrivateKey) *PublicKey {
 	return &PublicKey{privateKey.Public().(*ecdsa.PublicKey)}
 }
 
-func DecodePublicKey(publicKeyString string) (*PublicKey, error) {
+func NewPublicKeyFromHex(publicKeyString string) (*PublicKey, error) {
 	bytes, err := hexutil.Decode(publicKeyString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode public key: %w", err)

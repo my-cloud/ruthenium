@@ -104,24 +104,24 @@
             const recipientAddress = $("#recipient_address").val();
             const senderAddress = $("#sender_address").val();
             const transactionData = {
-                "fee": 1000,
                 "recipient_address": recipientAddress,
                 "sender_address": senderAddress,
                 "timestamp": dateNow,
                 "value": result.particles,
+                "fee": 1000,
             };
 
             const hash = CryptoJS.SHA256(JSON.stringify(transactionData)).toString(CryptoJS.enc.Hex);
             const signature = keyPair.sign(hash);
             const signatureHex = getSignatureHex(signature);
             const transactionRequest = {
-                "fee": 1000,
                 "recipient_address": recipientAddress,
                 "sender_address": senderAddress,
                 "sender_public_key": publicKeyString,
                 "signature": signatureHex,
                 "timestamp": dateNow,
                 "value": result.particles,
+                "fee": 1000,
             };
 
             $.ajax({

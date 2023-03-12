@@ -9,37 +9,19 @@ import (
 
 func Test_NewWallet_BothMnemonicAndDerivationPathProvided_ReturnsCorrespondingWallet(t *testing.T) {
 	// Act
-	wallet, _ := encryption.NewWallet(test.Mnemonic, test.DerivationPath, "", "")
+	publicKey, _ := encryption.NewPublicKeyFromHex(test.PublicKey)
+	wallet := encryption.NewWallet(publicKey)
 
 	// Assert
 	actualAddress := wallet.Address()
 	expectedAddress := test.Address
 	test.Assert(t, actualAddress == expectedAddress, fmt.Sprintf("Wrong address. Expected: %s - Actual: %s", expectedAddress, actualAddress))
-}
-
-func Test_NewWallet_PrivateKeyProvided_ReturnsCorrespondingWallet(t *testing.T) {
-	// Act
-	wallet, _ := encryption.NewWallet("", "", "", test.PrivateKey)
-
-	// Assert
-	actualAddress := wallet.Address()
-	expectedAddress := test.Address
-	test.Assert(t, actualAddress == expectedAddress, fmt.Sprintf("Wrong address. Expected: %s - Actual: %s", expectedAddress, actualAddress))
-}
-
-func Test_NewWallet_BothPrivateKeyAndMnemonicAreEmpty_ReturnsError(t *testing.T) {
-	// Act
-	wallet, err := encryption.NewWallet("", "", "", "")
-
-	// Assert
-	test.Assert(t, wallet == nil, "Wallet is not nil whereas it should be.")
-	test.Assert(t, err != nil, "Error is nil whereas it should not.")
 }
 
 func Test_MarshalJSON_ValidPrivateKey_ReturnsMarshaledJsonWithoutError(t *testing.T) {
 	// Arrange
-	privateKey := test.PrivateKey
-	wallet, _ := encryption.NewWallet("", "", "", privateKey)
+	publicKey, _ := encryption.NewPublicKeyFromHex(test.PublicKey)
+	wallet := encryption.NewWallet(publicKey)
 
 	// Act
 	marshaledWallet, err := wallet.MarshalJSON()

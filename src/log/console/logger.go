@@ -25,7 +25,7 @@ func ParseLevel(level string) Level {
 		return Warn
 	case "error":
 		return Error
-	case "panic":
+	case "fatal":
 		return Fatal
 	}
 	return Info

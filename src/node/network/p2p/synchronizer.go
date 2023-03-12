@@ -11,7 +11,7 @@ import (
 
 type Synchronizer struct {
 	clientFactory       ClientFactory
-	hostTarget          string
+	hostTarget          *Target
 	maxOutboundsCount   int
 	neighbors           []network.Neighbor
 	neighborsMutex      sync.RWMutex
@@ -24,7 +24,7 @@ type Synchronizer struct {
 func NewSynchronizer(clientFactory ClientFactory, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTarget map[string]int, watch clock.Watch) *Synchronizer {
 	synchronizer := new(Synchronizer)
 	synchronizer.clientFactory = clientFactory
-	synchronizer.hostTarget = NewTarget(hostIp, hostPort).Value()
+	synchronizer.hostTarget = NewTarget(hostIp, hostPort)
 	synchronizer.maxOutboundsCount = maxOutboundsCount
 	synchronizer.scoresBySeedTarget = scoresBySeedTarget
 	synchronizer.scoresByTarget = map[string]int{}
@@ -36,14 +36,20 @@ func (synchronizer *Synchronizer) AddTargets(targetRequests []network.TargetRequ
 	synchronizer.scoresByTargetMutex.Lock()
 	defer synchronizer.scoresByTargetMutex.Unlock()
 	for _, targetRequest := range targetRequests {
-		if _, ok := synchronizer.scoresByTarget[*targetRequest.Target]; !ok {
+		_, isTargetAlreadyKnown := synchronizer.scoresByTarget[*targetRequest.Target]
+		target, err := NewTargetFromValue(*targetRequest.Target)
+		if err != nil {
+			continue
+		}
+		isTargetOnSameNetwork := synchronizer.hostTarget.IsSameNetworkId(target)
+		if !isTargetAlreadyKnown && isTargetOnSameNetwork {
 			synchronizer.scoresByTarget[*targetRequest.Target] = 0
 		}
 	}
 }
 
 func (synchronizer *Synchronizer) HostTarget() string {
-	return synchronizer.hostTarget
+	return synchronizer.hostTarget.Value()
 }
 
 func (synchronizer *Synchronizer) Incentive(target string) {
@@ -68,12 +74,13 @@ func (synchronizer *Synchronizer) Synchronize(int64) {
 	synchronizer.scoresByTargetMutex.Unlock()
 	neighborsByScore := map[int][]network.Neighbor{}
 	var targetRequests []network.TargetRequest
+	hostTargetValue := synchronizer.hostTarget.Value()
 	hostTargetRequest := network.TargetRequest{
-		Target: &synchronizer.hostTarget,
+		Target: &hostTargetValue,
 	}
 	targetRequests = append(targetRequests, hostTargetRequest)
 	for target, score := range scoresByTarget {
-		if target != synchronizer.hostTarget {
+		if target != synchronizer.hostTarget.Value() {
 			neighborTarget, err := NewTargetFromValue(target)
 			if err != nil {
 				continue
