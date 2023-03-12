@@ -13,7 +13,7 @@ func NewJsonParser() *JsonParser {
 	return &JsonParser{}
 }
 
-func (parser *JsonParser) Parse(path string, any interface{}) error {
+func (parser *JsonParser) Parse(path string, output interface{}) error {
 	jsonFile, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("unable to open file: %w", err)
@@ -25,7 +25,7 @@ func (parser *JsonParser) Parse(path string, any interface{}) error {
 	if err = jsonFile.Close(); err != nil {
 		return fmt.Errorf("unable to close file: %w", err)
 	}
-	if err = json.Unmarshal(byteValue, &any); err != nil {
+	if err = json.Unmarshal(byteValue, &output); err != nil {
 		return fmt.Errorf("unable to unmarshal: %w", err)
 	}
 	return nil
