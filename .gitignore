@@ -6,5 +6,8 @@
 #Microsoft VS
 .vs/**
 
+##Development Configuration
+configtest/**
+
 ##Build
 *.exe
