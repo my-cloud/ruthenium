@@ -1,11 +1,8 @@
 package network
 
 type TransactionResponse struct {
-	RecipientAddress string
-	SenderAddress    string
-	SenderPublicKey  string
-	Signature        string
-	Timestamp        int64
-	Value            uint64
-	Fee              uint64
+	Id        [32]byte
+	Inputs    []*InputResponse
+	Outputs   []*OutputResponse
+	Timestamp int64
 }

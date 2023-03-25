@@ -132,7 +132,7 @@ func Test_AddTransaction_TransactionIsAlreadyInTheBlockchain_TransactionNotAdded
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(transactionFee, "A", validatorWalletAddress, privateKey, publicKey, now, 1)
-	transaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
+	transaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest, nil)
 	var blockResponses []*network.BlockResponse
 	blockResponses = append(blockResponses, protocoltest.NewGenesisBlockResponse(validatorWalletAddress))
 	var transactionResponses []*network.TransactionResponse
@@ -321,7 +321,7 @@ func Test_Validate_TransactionIsAlreadyInTheBlockchain_TransactionNotValidated(t
 	blockchainMock.CalculateTotalAmountFunc = func(int64, string) uint64 { return genesisAmount }
 	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, registryMock, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	pool.AddTransaction(&invalidTransactionRequest, "")
-	transaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
+	transaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest, nil)
 	var transactionResponses []*network.TransactionResponse
 	transactionResponses = append(transactionResponses, transaction.GetResponse())
 	blockResponses = append(blockResponses, verification.NewBlockResponse(now-1, [32]byte{}, transactionResponses, nil, nil))
@@ -371,10 +371,10 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	isTwoTransactions := len(validatedTransactions) == 2
 	test.Assert(t, isTwoTransactions, "Validated transactions pool should contain exactly 2 transactions.")
 	actualTransaction := validatedTransactions[0]
-	expectedTransaction, _ := validation.NewTransactionFromRequest(&validTransactionRequest)
+	expectedTransaction, _ := validation.NewTransactionFromRequest(&validTransactionRequest, nil)
 	test.Assert(t, expectedTransaction.Equals(actualTransaction), "The first validated transaction is not the expected one.")
 	rewardTransaction, _ := validation.NewTransactionFromResponse(validatedTransactions[1])
-	isRewardTransaction := rewardTransaction.IsReward()
+	isRewardTransaction := rewardTransaction.HasReward()
 	test.Assert(t, isRewardTransaction, "The second validated transaction should be the reward.")
 }
 
@@ -386,6 +386,6 @@ func assertAddBlockCalledWithRewardTransactionOnly(t *testing.T, blockchainMock 
 	isSingleTransaction := len(validatedTransactions) == 1
 	test.Assert(t, isSingleTransaction, "Validated transactions pool should contain only one transaction.")
 	transaction, _ := validation.NewTransactionFromResponse(validatedTransactions[0])
-	isRewardTransaction := transaction.IsReward()
+	isRewardTransaction := transaction.HasReward()
 	test.Assert(t, isRewardTransaction, "The single validated transaction should be the reward.")
 }

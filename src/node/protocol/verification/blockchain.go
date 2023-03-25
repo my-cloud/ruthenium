@@ -12,10 +12,7 @@ import (
 	"time"
 )
 
-const (
-	incomeExponent = 0.54692829
-	halfLifeInDays = 373.59
-)
+const halfLifeInDays = 373.59
 
 type Blockchain struct {
 	blocks                []*Block
@@ -26,6 +23,7 @@ type Blockchain struct {
 	registry              protocol.Registry
 	synchronizer          network.Synchronizer
 	validationTimer       time.Duration
+	walletsByAddress      map[string]*Wallet
 	logger                log.Logger
 }
 
@@ -42,6 +40,7 @@ func newBlockchain(blockResponses []*network.BlockResponse, minimalTransactionFe
 	blockchain.registry = registry
 	blockchain.validationTimer = validationTimer
 	blockchain.synchronizer = synchronizer
+	blockchain.walletsByAddress = make(map[string]*Wallet)
 	const hoursADay = 24
 	halfLife := halfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
 	blockchain.lambda = math.Log(2) / halfLife
@@ -91,6 +90,10 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
 	blockchain.blocks = append(blockchain.blocks, block)
 	return nil
+}
+
+func (blockchain *Blockchain) Wallet(address string) protocol.Wallet {
+	return blockchain.walletsByAddress[address]
 }
 
 func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
@@ -276,15 +279,15 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			var rewardRecipientAddressAge uint64
 			var lastBlockRewardRecipientAddress string
 			for _, transaction := range blocks[len(blocks)-1].transactions {
-				if transaction.IsReward() {
-					lastBlockRewardRecipientAddress = transaction.RecipientAddress()
+				if transaction.HasReward() {
+					lastBlockRewardRecipientAddress = transaction.RewardRecipientAddress()
 				}
 			}
 			var isAgeCalculated bool
 			for i := len(blocks) - 2; i >= 0; i-- {
 				for _, transaction := range blocks[i].transactions {
-					if transaction.IsReward() {
-						if transaction.RecipientAddress() == lastBlockRewardRecipientAddress {
+					if transaction.HasReward() {
+						if transaction.RewardRecipientAddress() == lastBlockRewardRecipientAddress {
 							isAgeCalculated = true
 						}
 						rewardRecipientAddressAge++
@@ -302,7 +305,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			}
 		}
 		// Check if blockchain is different to know if it should be updated
-		if len(hostBlocks) < 2 && selectedBlocks != nil || len(hostBlocks) < len(selectedBlocks) {
+		if len(hostBlocks) < len(selectedBlocks) {
 			isDifferent = true
 		} else if len(selectedBlocks) >= 2 {
 			lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()
@@ -335,7 +338,7 @@ func (blockchain *Blockchain) addGenesisBlock(genesisTimestamp int64, genesisTra
 	var addedAddresses []string
 	if genesisTransaction != nil {
 		transactions = []*network.TransactionResponse{genesisTransaction}
-		addedAddresses = []string{genesisTransaction.RecipientAddress}
+		addedAddresses = []string{genesisTransaction.Outputs[0].Address}
 	}
 	blockResponse := NewBlockResponse(genesisTimestamp, [32]byte{}, transactions, addedAddresses, nil)
 	block, err := NewBlockFromResponse(blockResponse, nil)
@@ -345,10 +348,6 @@ func (blockchain *Blockchain) addGenesisBlock(genesisTimestamp int64, genesisTra
 	}
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
 	blockchain.blocks = append(blockchain.blocks, block)
-}
-
-func calculateIncome(amount uint64) uint64 {
-	return uint64(math.Round(math.Pow(float64(amount), incomeExponent)))
 }
 
 func (blockchain *Blockchain) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
@@ -466,7 +465,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlock *B
 	var reward uint64
 	var totalTransactionsFees uint64
 	for _, transaction := range neighborBlock.Transactions() {
-		if transaction.IsReward() {
+		if transaction.HasReward() {
 			// Check that there is only one reward by block
 			if rewarded {
 				return errors.New("multiple rewards attempt for the same neighbor block")
@@ -474,7 +473,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlock *B
 			rewarded = true
 			reward = transaction.Value()
 		} else {
-			if err := transaction.VerifySignature(); err != nil {
+			if err := transaction.VerifySignatures(); err != nil {
 				return fmt.Errorf("neighbor transaction is invalid: %w", err)
 			}
 			fee := transaction.Fee()
@@ -539,7 +538,7 @@ func (blockchain *Blockchain) verifyRegisteredAddresses(lastNeighborBlock *Block
 		registeredAddressesMap[address] = false
 	}
 	for _, transaction := range lastNeighborBlock.Transactions() {
-		if !transaction.IsReward() && transaction.Value() > 0 {
+		if !transaction.HasReward() && transaction.Value() > 0 {
 			senderAddress := transaction.SenderAddress()
 			isPohValid, err := blockchain.registry.IsRegistered(senderAddress)
 			if err != nil {

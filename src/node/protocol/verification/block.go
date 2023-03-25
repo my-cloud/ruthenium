@@ -125,8 +125,8 @@ func (block *Block) Transactions() []*validation.Transaction {
 func (block *Block) ValidatorAddress() string {
 	var validatorAddress string
 	for i := len(block.transactions) - 1; i >= 0; i-- {
-		if block.transactions[i].IsReward() {
-			validatorAddress = block.transactions[i].RecipientAddress()
+		if block.transactions[i].HasReward() {
+			validatorAddress = block.transactions[i].RewardRecipientAddress()
 			break
 		}
 	}

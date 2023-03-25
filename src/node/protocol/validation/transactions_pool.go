@@ -155,23 +155,27 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	if fee < pool.minimalTransactionFee {
 		return fmt.Errorf("the transaction fee is too low, fee: %d, minimal fee: %d", fee, pool.minimalTransactionFee)
 	}
-	transaction, err := NewTransactionFromRequest(transactionRequest)
+	currentBlockchain := pool.blockchain.Copy()
+	blocks := currentBlockchain.Blocks()
+	if len(blocks) == 0 {
+		return errors.New("the blockchain is empty")
+	}
+	transaction, err := NewTransactionFromRequest(transactionRequest, len(blocks)-1, pool.registry)
 	if err != nil {
 		return fmt.Errorf("failed to instantiate transaction: %w", err)
 	}
-	currentBlockchain := pool.blockchain.Copy()
-	blocks := currentBlockchain.Blocks()
+	currentBlock := blocks[len(blocks)-1]
 	if len(blocks) > 1 {
 		timestamp := transaction.Timestamp()
-		nextBlockTimestamp := blocks[len(blocks)-1].Timestamp + 2*pool.validationTimer.Nanoseconds()
+		nextBlockTimestamp := currentBlock.Timestamp + 2*pool.validationTimer.Nanoseconds()
 		if nextBlockTimestamp < timestamp {
 			return fmt.Errorf("the transaction timestamp is too far in the future: %v, now: %v", time.Unix(0, timestamp), time.Unix(0, nextBlockTimestamp))
 		}
-		currentBlockTimestamp := blocks[len(blocks)-1].Timestamp
+		currentBlockTimestamp := currentBlock.Timestamp
 		if timestamp < currentBlockTimestamp {
 			return fmt.Errorf("the transaction timestamp is too old: %v, current block timestamp: %v", time.Unix(0, timestamp), time.Unix(0, currentBlockTimestamp))
 		}
-		for _, validatedTransaction := range blocks[len(blocks)-1].Transactions {
+		for _, validatedTransaction := range currentBlock.Transactions {
 			if transaction.Equals(validatedTransaction) {
 				return errors.New("the transaction is already in the blockchain")
 			}
@@ -182,13 +186,10 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 			return errors.New("the transaction is already in the transactions pool")
 		}
 	}
-	if err = transaction.VerifySignature(); err != nil {
+	if err = transaction.VerifySignatures(); err != nil {
 		return errors.New("failed to verify transaction")
 	}
-	var senderWalletAmount uint64
-	if len(blocks) > 0 {
-		senderWalletAmount = currentBlockchain.CalculateTotalAmount(blocks[len(blocks)-1].Timestamp, transaction.SenderAddress())
-	}
+	senderWalletAmount := currentBlockchain.CalculateTotalAmount(currentBlock.Timestamp, transaction.SenderAddress())
 	insufficientBalance := senderWalletAmount < transaction.Value()+transaction.Fee()
 	if insufficientBalance {
 		return errors.New("not enough balance in the sender wallet")

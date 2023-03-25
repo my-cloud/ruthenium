@@ -20,7 +20,7 @@ func NewWallet(address string, lambda float64, validationTimestamp int64, initia
 	return &Wallet{address, initialTimestamp, lambda, make(map[int][]network.OutputResponse), validationTimestamp}
 }
 
-func (wallet *Wallet) Amount(currentTimestamp int64) uint64 {
+func (wallet *Wallet) Balance(currentTimestamp int64) uint64 {
 	blockHeights := make([]int, 0)
 	for blockHeight := range wallet.utxosByBlockHeight {
 		blockHeights = append(blockHeights, blockHeight)
@@ -60,10 +60,6 @@ func (wallet *Wallet) IsEmpty() bool {
 	return len(wallet.utxosByBlockHeight) == 0
 }
 
-func calculateIncome(amount uint64) uint64 {
-	return uint64(math.Round(math.Pow(float64(amount), incomeExponent)))
-}
-
 func (wallet *Wallet) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
 	elapsedTimestamp := newTimestamp - lastTimestamp
 	return uint64(math.Floor(float64(amount) * math.Exp(-wallet.lambda*float64(elapsedTimestamp))))
@@ -80,6 +76,10 @@ func (wallet *Wallet) calculateIncome(currentTimestamp int64, utxo network.Outpu
 		}
 	}
 	return wallet.decay(timestamp, currentTimestamp, totalIncome)
+}
+
+func calculateIncome(amount uint64) uint64 {
+	return uint64(math.Round(math.Pow(float64(amount), incomeExponent)))
 }
 
 func removeUtxo(utxos []network.OutputResponse, utxo network.OutputResponse) []network.OutputResponse {

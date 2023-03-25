@@ -242,7 +242,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(invalidTransactionFee, "A", address, privateKey, publicKey, 3, 1)
-	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
+	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest, nil)
 	transactionResponse := transaction.GetResponse()
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
 		blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
@@ -295,7 +295,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(transactionFee, "A", address, privateKey, publicKey, 3, 1)
-	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
+	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest, nil)
 	transactionResponse := transaction.GetResponse()
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
 		blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
@@ -347,7 +347,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(transactionFee, "A", address, privateKey, publicKey, 0, 1)
-	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
+	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest, nil)
 	transactionResponse := transaction.GetResponse()
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
 		blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
