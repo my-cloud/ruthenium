@@ -26,24 +26,24 @@ type Blockchain struct {
 	synchronizer          network.Synchronizer
 	utxosByAddress        map[string][]*network.OutputResponse
 	utxosById             map[[32]byte][]*network.OutputResponse
-	validationTimer       time.Duration
+	validationTimestamp   int64
 	logger                log.Logger
 }
 
 func NewBlockchain(genesisTimestamp int64, genesisTransaction *network.TransactionResponse, minimalTransactionFee uint64, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
 	utxosById := make(map[[32]byte][]*network.OutputResponse)
-	blockchain := newBlockchain(nil, genesisTimestamp, minimalTransactionFee, registry, utxosById, validationTimer, synchronizer, logger)
+	blockchain := newBlockchain(nil, genesisTimestamp, minimalTransactionFee, registry, utxosById, validationTimer.Nanoseconds(), synchronizer, logger)
 	blockchain.addGenesisBlock(genesisTransaction)
 	return blockchain
 }
 
-func newBlockchain(blockResponses []*network.BlockResponse, genesisTimestamp int64, minimalTransactionFee uint64, registry protocol.Registry, utxosById map[[32]byte][]*network.OutputResponse, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+func newBlockchain(blockResponses []*network.BlockResponse, genesisTimestamp int64, minimalTransactionFee uint64, registry protocol.Registry, utxosById map[[32]byte][]*network.OutputResponse, validationTimestamp int64, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blockResponses = blockResponses
 	blockchain.genesisTimestamp = genesisTimestamp
 	blockchain.minimalTransactionFee = minimalTransactionFee
 	blockchain.registry = registry
-	blockchain.validationTimer = validationTimer
+	blockchain.validationTimestamp = validationTimestamp
 	blockchain.synchronizer = synchronizer
 	blockchain.utxosByAddress = make(map[string][]*network.OutputResponse)
 	blockchain.utxosById = utxosById
@@ -126,7 +126,7 @@ func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
 func (blockchain *Blockchain) Copy() protocol.Blockchain {
 	blockchainCopy := new(Blockchain)
 	blockchainCopy.registry = blockchain.registry
-	blockchainCopy.validationTimer = blockchain.validationTimer
+	blockchainCopy.validationTimestamp = blockchain.validationTimestamp
 	blockchainCopy.synchronizer = blockchain.synchronizer
 	blockchainCopy.logger = blockchain.logger
 	blockchainCopy.lambda = blockchain.lambda
@@ -392,7 +392,7 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, lastNeighborBlockR
 		blockchain.minimalTransactionFee,
 		blockchain.registry,
 		blockchain.utxosById,
-		blockchain.validationTimer,
+		blockchain.validationTimestamp,
 		blockchain.synchronizer,
 		blockchain.logger,
 	)
@@ -450,7 +450,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlock *B
 	var rewarded bool
 	currentBlockTimestamp := neighborBlock.Timestamp()
 	previousBlockTimestamp := previousBlock.Timestamp()
-	expectedBlockTimestamp := previousBlockTimestamp + blockchain.validationTimer.Nanoseconds()
+	expectedBlockTimestamp := previousBlockTimestamp + blockchain.validationTimestamp
 	if currentBlockTimestamp != expectedBlockTimestamp {
 		blockDate := time.Unix(0, currentBlockTimestamp)
 		expectedDate := time.Unix(0, expectedBlockTimestamp)
@@ -480,7 +480,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlock *B
 				return fmt.Errorf("a neighbor block transaction fee is too low, fee: %d, minimal fee: %d", fee, blockchain.minimalTransactionFee)
 			}
 			totalTransactionsFees += fee
-			if currentBlockTimestamp+blockchain.validationTimer.Nanoseconds() < transaction.Timestamp() {
+			if currentBlockTimestamp+blockchain.validationTimestamp < transaction.Timestamp() {
 				return fmt.Errorf("a neighbor block transaction timestamp is too far in the future, transaction: %v", transaction.GetResponse())
 			}
 			if transaction.Timestamp() < previousBlock.Timestamp() {
@@ -548,7 +548,7 @@ func (blockchain *Blockchain) CalculateFee(transaction *network.TransactionRespo
 	var inputValues uint64
 	var outputValues uint64
 	for _, input := range transaction.Inputs {
-		output := validation.NewOutputFromResponse(blockchain.utxosById[input.TransactionId][input.OutputIndex], blockchain.lambda, blockchain.validationTimer.Nanoseconds(), blockchain.genesisTimestamp)
+		output := validation.NewOutputFromResponse(blockchain.utxosById[input.TransactionId][input.OutputIndex], blockchain.lambda, blockchain.validationTimestamp, blockchain.genesisTimestamp)
 		inputValues += output.Value(timestamp)
 	}
 	for _, output := range transaction.Outputs {
