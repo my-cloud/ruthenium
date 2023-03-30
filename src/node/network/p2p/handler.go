@@ -13,6 +13,7 @@ import (
 
 const (
 	GetBlocks       = "GET BLOCKS"
+	GetLambda       = "GET LAMBDA"
 	GetTransactions = "GET TRANSACTIONS"
 )
 
@@ -37,7 +38,7 @@ func (handler *Handler) Handle(_ context.Context, req gp2p.Data) (res gp2p.Data,
 	var requestString string
 	var lastBlocksRequest network.LastBlocksRequest
 	var transactionRequest network.TransactionRequest
-	var amountRequest network.AmountRequest
+	var utxosRequest network.UtxosRequest
 	var targetsRequest []network.TargetRequest
 	res = gp2p.Data{}
 	data := req.GetBytes()
@@ -45,13 +46,15 @@ func (handler *Handler) Handle(_ context.Context, req gp2p.Data) (res gp2p.Data,
 		switch requestString {
 		case GetBlocks:
 			res = handler.blocks()
+		case GetLambda:
+			res = handler.lambda()
 		case GetTransactions:
 			res = handler.transactions()
 		default:
 			unknownRequest = true
 		}
-	} else if err = json.Unmarshal(data, &amountRequest); err == nil && !amountRequest.IsInvalid() {
-		res = handler.amount(&amountRequest)
+	} else if err = json.Unmarshal(data, &utxosRequest); err == nil && !utxosRequest.IsInvalid() {
+		res = handler.utxos(&utxosRequest)
 	} else if err = json.Unmarshal(data, &transactionRequest); err == nil && !transactionRequest.IsInvalid() {
 		go handler.transactionsPool.AddTransaction(&transactionRequest, handler.synchronizer.HostTarget())
 	} else if err = json.Unmarshal(data, &lastBlocksRequest); err == nil && !lastBlocksRequest.IsInvalid() {
@@ -75,11 +78,9 @@ func (handler *Handler) Handle(_ context.Context, req gp2p.Data) (res gp2p.Data,
 	return
 }
 
-func (handler *Handler) amount(request *network.AmountRequest) (res gp2p.Data) {
-	blockchainAddress := *request.Address
-	amount := handler.blockchain.Copy().CalculateTotalAmount(handler.watch.Now().UnixNano(), blockchainAddress)
-	amountResponse := &network.AmountResponse{Amount: amount}
-	data, err := json.Marshal(amountResponse)
+func (handler *Handler) utxos(request *network.UtxosRequest) (res gp2p.Data) {
+	utxosByAddress := handler.blockchain.UtxosByAddress(*request.Address)
+	data, err := json.Marshal(utxosByAddress)
 	if err != nil {
 		handler.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
 		return
@@ -93,6 +94,17 @@ func (handler *Handler) blocks() (res gp2p.Data) {
 	data, err := json.Marshal(blockResponses)
 	if err != nil {
 		handler.logger.Error(fmt.Errorf("failed to get blocks: %w", err).Error())
+		return
+	}
+	res.SetBytes(data)
+	return
+}
+
+func (handler *Handler) lambda() (res gp2p.Data) {
+	lambda := handler.blockchain.Lambda()
+	data, err := json.Marshal(lambda)
+	if err != nil {
+		handler.logger.Error(fmt.Errorf("failed to get lambda: %w", err).Error())
 		return
 	}
 	res.SetBytes(data)

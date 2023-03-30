@@ -18,25 +18,21 @@ type Transaction struct {
 	rewardValue            uint64
 }
 
-func NewRewardTransaction(address string, blockHeight int, timestamp int64, value uint64) *network.TransactionResponse {
-	return &network.TransactionResponse{
-		Inputs: []*network.InputResponse{
-			{
-				OutputIndex:   0,
-				TransactionId: [32]byte{},
-			},
+func NewRewardTransaction(address string, blockHeight int, timestamp int64, value uint64) (*network.TransactionResponse, error) {
+	outputs := []*network.OutputResponse{
+		{
+			Address:     address,
+			BlockHeight: blockHeight,
+			HasReward:   true,
+			HasIncome:   true,
+			Value:       value,
 		},
-		Outputs: []*network.OutputResponse{
-			{
-				address,
-				blockHeight,
-				true,
-				true,
-				value,
-			},
-		},
-		Timestamp: timestamp,
 	}
+	transaction, err := newTransaction([]*network.InputResponse{}, outputs, timestamp)
+	if err != nil {
+		return nil, err
+	}
+	return transaction.GetResponse(), nil
 }
 
 func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (*Transaction, error) {
@@ -72,20 +68,31 @@ func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (
 	for _, output := range *transactionRequest.Outputs {
 		outputs = append(outputs, &network.OutputResponse{Address: *output.Address, BlockHeight: *output.BlockHeight, HasReward: *output.HasReward, HasIncome: *output.HasIncome, Value: *output.Value})
 	}
-	transaction := &Transaction{nil, inputs, outputs, *transactionRequest.Timestamp, false, "", 0}
+	transaction, err := newTransaction(inputs, outputs, *transactionRequest.Timestamp)
+	if err != nil {
+		return nil, err
+	}
+	return transaction, nil
+}
+
+func newTransaction(inputs []*network.InputResponse, outputs []*network.OutputResponse, timestamp int64) (*Transaction, error) {
+	transaction := &Transaction{[32]byte{}, inputs, outputs, timestamp, false, "", 0}
 	if err := transaction.generateId(); err != nil {
 		return nil, fmt.Errorf("failed to generate id: %w", err)
+	}
+	if err := transaction.findReward(); err != nil {
+		return nil, fmt.Errorf("failed to find reward: %w", err)
 	}
 	return transaction, nil
 }
 
 func NewTransactionFromResponse(transactionResponse *network.TransactionResponse) (*Transaction, error) {
-	transaction := &Transaction{nil, transactionResponse.Inputs, transactionResponse.Outputs, transactionResponse.Timestamp, false, "", 0}
-	if err := transaction.generateId(); err != nil {
-		return nil, fmt.Errorf("failed to generate id: %w", err)
+	transaction, err := newTransaction(transactionResponse.Inputs, transactionResponse.Outputs, transactionResponse.Timestamp)
+	if err != nil {
+		return nil, err
 	}
 	if !transaction.Equals(transactionResponse) {
-		return nil, errors.New(fmt.Sprintf("wrong transaction ID, provided: %s, calculated: %s", transactionResponse.Id, transaction.id))
+		return nil, fmt.Errorf("wrong transaction ID, provided: %s, calculated: %s", transactionResponse.Id, transaction.id)
 	}
 	return transaction, nil
 }
@@ -119,10 +126,10 @@ func (transaction *Transaction) VerifySignatures() error {
 	for _, inputResponse := range transaction.inputs {
 		input, err := NewInputFromResponse(inputResponse)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to instantiate input: %v: %w", input, err)
 		}
 		if err = input.VerifySignature(); err != nil {
-			return err
+			return fmt.Errorf("failed to verify signature for input: %v: %w", input, err)
 		}
 	}
 	return nil
@@ -165,7 +172,7 @@ func (transaction *Transaction) generateId() error {
 	return nil
 }
 
-func (transaction *Transaction) searchReward() error {
+func (transaction *Transaction) findReward() error {
 	for _, output := range transaction.outputs {
 		if output.HasReward {
 			if transaction.hasReward {

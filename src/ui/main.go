@@ -6,6 +6,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/file"
 	"github.com/my-cloud/ruthenium/src/log/console"
+	"github.com/my-cloud/ruthenium/src/node/clock/tick"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/net"
@@ -42,11 +43,26 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
 	}
+	watch := tick.NewWatch()
+	lambda, err := host.GetLambda()
+	if err != nil {
+		logger.Fatal(fmt.Errorf("failed to get lambda: %w", err).Error())
+	}
+	genesisBlock, err := host.GetBlock(0)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("failed to get genesis block: %w", err).Error())
+	}
+	secondBlock, err := host.GetBlock(1)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("failed to get second block: %w", err).Error())
+	}
+	genesisTimestamp := genesisBlock.Timestamp
+	validationTimestamp := secondBlock.Timestamp - genesisTimestamp
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
 	http.Handle("/transaction", transaction.NewHandler(host, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/wallet/address", address.NewHandler(logger))
-	http.Handle("/wallet/amount", amount.NewHandler(host, settings.ParticlesPerToken, logger))
+	http.Handle("/wallet/amount", amount.NewHandler(host, lambda, settings.ParticlesPerToken, genesisTimestamp, validationTimestamp, watch, logger))
 	logger.Info("user interface server is running...")
 	logger.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(*port), nil).Error())
 }

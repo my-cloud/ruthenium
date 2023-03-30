@@ -2,6 +2,7 @@ package validation
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/node/network"
@@ -14,16 +15,16 @@ type Input struct {
 	signature     *encryption.Signature
 }
 
-func NewInput(outputIndex uint16, previousTransactionId [32]byte, publicKeyString string, signatureString string) (*Input, error) {
-	publicKey, err := encryption.NewPublicKeyFromHex(publicKeyString)
+func NewInputFromResponse(input *network.InputResponse) (*Input, error) {
+	publicKey, err := encryption.NewPublicKeyFromHex(input.PublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode public key: %w", err)
 	}
-	signature, err := encryption.DecodeSignature(signatureString)
+	signature, err := encryption.DecodeSignature(input.Signature)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode signature: %w", err)
 	}
-	return &Input{outputIndex, previousTransactionId, publicKey, signature}, nil
+	return &Input{input.OutputIndex, input.TransactionId, publicKey, signature}, nil
 }
 
 func (input *Input) MarshalJSON() ([]byte, error) {
@@ -54,14 +55,13 @@ func (input *Input) GetResponse() *network.InputResponse {
 }
 
 func (input *Input) VerifySignature() error {
-	// FIXME implement
-	//marshaledTransaction, err := input.MarshalJSON()
-	//if err != nil {
-	//	return fmt.Errorf("failed to marshal transaction, %w", err)
-	//}
-	//if !input.signature.Verify(marshaledTransaction, input.publicKey, input.address) {
-	//	return errors.New("failed to verify signature")
-	//}
+	marshaledTransaction, err := input.MarshalJSON()
+	if err != nil {
+		return fmt.Errorf("failed to marshal transaction, %w", err)
+	}
+	if !input.signature.Verify(marshaledTransaction, input.publicKey) {
+		return errors.New("failed to verify signature")
+	}
 	return nil
 }
 

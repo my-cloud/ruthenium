@@ -35,6 +35,16 @@ func (neighbor *Neighbor) Target() string {
 	return neighbor.target.Value()
 }
 
+func (neighbor *Neighbor) GetBlock(blockHeight uint64) (blockResponse *network.BlockResponse, err error) {
+	request := network.BlockRequest{BlockHeight: &blockHeight}
+	res, err := neighbor.sendRequest(request)
+	if err == nil {
+		data := res.GetBytes()
+		err = json.Unmarshal(data, &blockResponse)
+	}
+	return
+}
+
 func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, err error) {
 	neighbor.settings.SetConnTimeout(initializationConnectionTimeoutInSeconds * time.Second)
 	neighbor.client.SetSettings(neighbor.settings)
@@ -45,6 +55,15 @@ func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, 
 	}
 	neighbor.settings.SetConnTimeout(commonConnectionTimeoutInSeconds * time.Second)
 	neighbor.client.SetSettings(neighbor.settings)
+	return
+}
+
+func (neighbor *Neighbor) GetLambda() (lambda float64, err error) {
+	res, err := neighbor.sendRequest(GetLambda)
+	if err == nil {
+		data := res.GetBytes()
+		err = json.Unmarshal(data, &lambda)
+	}
 	return
 }
 
@@ -81,19 +100,18 @@ func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.Tran
 	return
 }
 
-func (neighbor *Neighbor) GetAmount(address string) (amount uint64, err error) {
-	request := network.AmountRequest{Address: &address}
+func (neighbor *Neighbor) GetUtxos(address string) (utxos []*network.OutputResponse, err error) {
+	request := network.UtxosRequest{Address: &address}
 	res, err := neighbor.sendRequest(request)
-	var amountResponse *network.AmountResponse
 	if err != nil {
 		return
 	}
 	data := res.GetBytes()
-	err = json.Unmarshal(data, &amountResponse)
+	err = json.Unmarshal(data, &utxos)
 	if err != nil {
 		return
 	}
-	return amountResponse.Amount, nil
+	return
 }
 
 func (neighbor *Neighbor) sendRequest(request interface{}) (res gp2p.Data, err error) {

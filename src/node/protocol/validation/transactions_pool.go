@@ -132,9 +132,13 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
 		return
 	}
-	rewardTransaction := NewRewardTransaction(pool.validatorAddress, len(blockResponses), timestamp, reward)
+	rewardTransaction, err := NewRewardTransaction(pool.validatorAddress, len(blockResponses), timestamp, reward)
+	if err != nil {
+		pool.logger.Error(fmt.Errorf("failed to create reward transaction: %w", err).Error())
+		return
+	}
 	transactionResponses = append(transactionResponses, rewardTransaction)
-	err := pool.blockchain.AddBlock(timestamp, transactionResponses, newAddresses)
+	err = pool.blockchain.AddBlock(timestamp, transactionResponses, newAddresses)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("unable to create block: %w", err).Error())
 		return
