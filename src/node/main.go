@@ -75,7 +75,7 @@ func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *
 	genesisTimestamp := now.Truncate(validationTimer).Add(validationTimer).UnixNano()
 	genesisTransaction := validation.NewRewardTransaction(address, 0, genesisTimestamp, settings.GenesisAmountInParticles)
 	blockchain := verification.NewBlockchain(genesisTimestamp, genesisTransaction, settings.MinimalTransactionFee, registry, validationTimer, synchronizer, logger)
-	transactionsPool := validation.NewTransactionsPool(blockchain, settings.MinimalTransactionFee, registry, synchronizer, address, validationTimer, logger)
+	transactionsPool := validation.NewTransactionsPool(blockchain, settings.MinimalTransactionFee, synchronizer, address, validationTimer, logger)
 	synchronizationTimer := time.Second * time.Duration(settings.SynchronizationIntervalInSeconds)
 	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, synchronizationTimer, 1, 0)
 	validationEngine := tick.NewEngine(transactionsPool.Validate, watch, validationTimer, 1, 0)

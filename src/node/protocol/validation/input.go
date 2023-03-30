@@ -8,10 +8,10 @@ import (
 )
 
 type Input struct {
-	outputIndex           uint16
-	previousTransactionId [32]byte
-	publicKey             *encryption.PublicKey
-	signature             *encryption.Signature
+	outputIndex   uint16
+	transactionId [32]byte
+	publicKey     *encryption.PublicKey
+	signature     *encryption.Signature
 }
 
 func NewInput(outputIndex uint16, previousTransactionId [32]byte, publicKeyString string, signatureString string) (*Input, error) {
@@ -28,11 +28,11 @@ func NewInput(outputIndex uint16, previousTransactionId [32]byte, publicKeyStrin
 
 func (input *Input) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		OutputIndex           uint16 `json:"output_index"`
-		PreviousTransactionId string `json:"previous_transaction_id"`
+		OutputIndex   uint16 `json:"output_index"`
+		TransactionId string `json:"transaction_id"`
 	}{
-		OutputIndex:           input.outputIndex,
-		PreviousTransactionId: fmt.Sprintf("%x", input.previousTransactionId),
+		OutputIndex:   input.outputIndex,
+		TransactionId: fmt.Sprintf("%x", input.transactionId),
 	})
 }
 
@@ -46,10 +46,10 @@ func (input *Input) GetResponse() *network.InputResponse {
 		encodedSignature = input.signature.String()
 	}
 	return &network.InputResponse{
-		OutputIndex:           input.outputIndex,
-		PreviousTransactionId: input.previousTransactionId,
-		PublicKey:             encodedPublicKey,
-		Signature:             encodedSignature,
+		OutputIndex:   input.outputIndex,
+		TransactionId: input.transactionId,
+		PublicKey:     encodedPublicKey,
+		Signature:     encodedSignature,
 	}
 }
 
@@ -63,4 +63,12 @@ func (input *Input) VerifySignature() error {
 	//	return errors.New("failed to verify signature")
 	//}
 	return nil
+}
+
+func (input *Input) OutputIndex() uint16 {
+	return input.outputIndex
+}
+
+func (input *Input) TransactionIndex() [32]byte {
+	return input.transactionId
 }

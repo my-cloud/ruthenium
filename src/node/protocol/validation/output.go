@@ -3,7 +3,10 @@ package validation
 import (
 	"encoding/json"
 	"github.com/my-cloud/ruthenium/src/node/network"
+	"math"
 )
+
+const incomeExponent = 0.54692829
 
 type Output struct {
 	address     string
@@ -11,10 +14,14 @@ type Output struct {
 	hasReward   bool
 	hasIncome   bool
 	value       uint64
+
+	genesisTimestamp    int64
+	lambda              float64
+	validationTimestamp int64
 }
 
-func NewOutput(address string, blockHeight int, hasReward bool, hasIncome bool, value uint64) *Output {
-	return &Output{address, blockHeight, hasReward, hasIncome, value}
+func NewOutputFromResponse(response *network.OutputResponse, lambda float64, validationTimestamp int64, genesisTimestamp int64) *Output {
+	return &Output{response.Address, response.BlockHeight, response.HasReward, response.HasIncome, response.Value, genesisTimestamp, lambda, validationTimestamp}
 }
 
 func (output *Output) MarshalJSON() ([]byte, error) {
@@ -40,4 +47,31 @@ func (output *Output) GetResponse() *network.OutputResponse {
 		HasIncome:   output.hasIncome,
 		Value:       output.value,
 	}
+}
+
+func (output *Output) Value(currentTimestamp int64) uint64 {
+	if output.hasIncome {
+		return output.calculateIncome(currentTimestamp)
+	} else {
+		timestamp := output.genesisTimestamp + int64(output.blockHeight)*output.validationTimestamp
+		return output.decay(timestamp, currentTimestamp, output.value)
+	}
+}
+
+func (output *Output) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
+	elapsedTimestamp := newTimestamp - lastTimestamp
+	return uint64(math.Floor(float64(amount) * math.Exp(-output.lambda*float64(elapsedTimestamp))))
+}
+
+func (output *Output) calculateIncome(currentTimestamp int64) uint64 {
+	totalIncome := output.value
+	var timestamp int64
+	blockTimestamp := output.genesisTimestamp + int64(output.blockHeight)*output.validationTimestamp
+	for timestamp = blockTimestamp; timestamp < currentTimestamp; timestamp += output.validationTimestamp {
+		if totalIncome > 0 {
+			totalIncome = output.decay(timestamp, timestamp-output.validationTimestamp, totalIncome)
+			totalIncome += uint64(math.Round(math.Pow(float64(totalIncome), incomeExponent)))
+		}
+	}
+	return output.decay(timestamp, currentTimestamp, totalIncome)
 }

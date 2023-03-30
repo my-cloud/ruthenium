@@ -6,6 +6,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
+	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"math"
 	"sort"
 	"sync"
@@ -17,30 +18,35 @@ const halfLifeInDays = 373.59
 type Blockchain struct {
 	blocks                []*Block
 	blockResponses        []*network.BlockResponse
+	genesisTimestamp      int64
 	lambda                float64
 	minimalTransactionFee uint64
 	mutex                 sync.RWMutex
 	registry              protocol.Registry
 	synchronizer          network.Synchronizer
+	utxosById             map[[32]byte][]*network.OutputResponse
 	validationTimer       time.Duration
-	walletsByAddress      map[string]*Wallet
+	walletByAddress       map[string]*Wallet
 	logger                log.Logger
 }
 
 func NewBlockchain(genesisTimestamp int64, genesisTransaction *network.TransactionResponse, minimalTransactionFee uint64, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
-	blockchain := newBlockchain(nil, minimalTransactionFee, registry, validationTimer, synchronizer, logger)
-	blockchain.addGenesisBlock(genesisTimestamp, genesisTransaction)
+	utxosById := make(map[[32]byte][]*network.OutputResponse)
+	blockchain := newBlockchain(nil, genesisTimestamp, minimalTransactionFee, registry, utxosById, validationTimer, synchronizer, logger)
+	blockchain.addGenesisBlock(genesisTransaction)
 	return blockchain
 }
 
-func newBlockchain(blockResponses []*network.BlockResponse, minimalTransactionFee uint64, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+func newBlockchain(blockResponses []*network.BlockResponse, genesisTimestamp int64, minimalTransactionFee uint64, registry protocol.Registry, utxosById map[[32]byte][]*network.OutputResponse, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blockResponses = blockResponses
+	blockchain.genesisTimestamp = genesisTimestamp
 	blockchain.minimalTransactionFee = minimalTransactionFee
 	blockchain.registry = registry
 	blockchain.validationTimer = validationTimer
 	blockchain.synchronizer = synchronizer
-	blockchain.walletsByAddress = make(map[string]*Wallet)
+	blockchain.utxosById = utxosById
+	blockchain.walletByAddress = make(map[string]*Wallet)
 	const hoursADay = 24
 	halfLife := halfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
 	blockchain.lambda = math.Log(2) / halfLife
@@ -87,68 +93,20 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 	if err != nil {
 		return fmt.Errorf("unable to instantiate block: %w", err)
 	}
+	blockchain.addUtxos([]*network.BlockResponse{blockchain.blockResponses[len(blockchain.blockResponses)-1]})
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
 	blockchain.blocks = append(blockchain.blocks, block)
 	return nil
 }
 
 func (blockchain *Blockchain) Wallet(address string) protocol.Wallet {
-	return blockchain.walletsByAddress[address]
+	return blockchain.walletByAddress[address]
 }
 
 func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
 	return blockchain.blockResponses
-}
-
-func (blockchain *Blockchain) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64 {
-	blockchain.mutex.RLock()
-	defer blockchain.mutex.RUnlock()
-	var registeredAddresses []string
-	var totalAmount uint64
-	var lastTimestamp int64
-	for _, block := range blockchain.blockResponses {
-		if block.Timestamp > currentTimestamp {
-			break
-		}
-		for _, address := range block.RemovedRegisteredAddresses {
-			registeredAddresses = removeAddress(registeredAddresses, address)
-		}
-		registeredAddresses = append(registeredAddresses, block.AddedRegisteredAddresses...)
-		for _, registeredAddress := range registeredAddresses {
-			if blockchainAddress == registeredAddress {
-				if totalAmount > 0 {
-					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp, totalAmount)
-					totalAmount += calculateIncome(totalAmount)
-					lastTimestamp = block.Timestamp
-				}
-				break
-			}
-		}
-		for _, transaction := range block.Transactions {
-			value := transaction.Value
-			if blockchainAddress == transaction.RecipientAddress {
-				if totalAmount > 0 {
-					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp, totalAmount)
-				}
-				totalAmount += value
-				lastTimestamp = block.Timestamp
-			} else if blockchainAddress == transaction.SenderAddress {
-				if totalAmount > 0 {
-					totalAmount = blockchain.decay(lastTimestamp, block.Timestamp, totalAmount)
-				}
-				if totalAmount < value+transaction.Fee {
-					blockchain.logger.Error(fmt.Sprintf("historical transaction have not been properly validated: wallet amount=%d, transaction value=%d", totalAmount, value))
-					totalAmount = 0
-				} else {
-					totalAmount -= value + transaction.Fee
-				}
-				lastTimestamp = block.Timestamp
-			}
-		}
-	}
-	return blockchain.decay(lastTimestamp, currentTimestamp, totalAmount)
 }
 
 func (blockchain *Blockchain) Copy() protocol.Blockchain {
@@ -184,27 +142,24 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	var selectedTargets []string
 	hostBlocks := blockchain.blocks
 	hostBlockResponses := blockchain.blockResponses
+	var oldHostBlockResponses []*network.BlockResponse
+	var oldHostBlocks []*Block
+	var lastHostBlocks []*Block
+	var lastRegisteredAddresses []string
 	if len(hostBlocks) > 2 {
 		hostTarget := "host"
 		blockResponsesByTarget[hostTarget] = hostBlockResponses
 		blocksByTarget[hostTarget] = hostBlocks
 		selectedTargets = append(selectedTargets, hostTarget)
-	}
-	var oldHostBlockResponses []*network.BlockResponse
-	var oldHostBlocks []*Block
-	var lastHostBlocks []*Block
-	var lastRegisteredAddresses []string
-	if len(hostBlocks) > 4 {
-		oldHostBlockResponses = make([]*network.BlockResponse, len(hostBlockResponses)-3)
-		oldHostBlocks = make([]*Block, len(hostBlocks)-3)
-		lastHostBlocks = make([]*Block, 3)
-		copy(oldHostBlockResponses, hostBlockResponses[:len(hostBlockResponses)-3])
-		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-3])
-		copy(lastHostBlocks, hostBlocks[len(hostBlocks)-3:])
+		oldHostBlockResponses = make([]*network.BlockResponse, len(hostBlockResponses)-1)
+		oldHostBlocks = make([]*Block, len(hostBlocks)-1)
+		lastHostBlocks = []*Block{hostBlocks[len(hostBlocks)-1]}
+		copy(oldHostBlockResponses, hostBlockResponses[:len(hostBlockResponses)-1])
+		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-1])
 		lastRegisteredAddresses = oldHostBlocks[len(oldHostBlocks)-1].RegisteredAddresses()
 		for _, neighbor := range neighbors {
 			target := neighbor.Target()
-			startingBlockHeight := uint64(len(hostBlocks) - 3)
+			startingBlockHeight := uint64(len(hostBlocks) - 1)
 			lastNeighborBlockResponses, err := neighbor.GetLastBlocks(startingBlockHeight)
 			if err == nil && lastNeighborBlockResponses != nil {
 				verifiedBlocks, err := blockchain.verify(lastHostBlocks, lastNeighborBlockResponses, lastRegisteredAddresses, oldHostBlockResponses, timestamp)
@@ -218,7 +173,10 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			}
 		}
 	}
+	var isFork bool
 	if len(selectedTargets) < 2 {
+		isFork = true
+		blockchain.logger.Debug("all neighbor blockchains are forks, verifying the whole blockchains")
 		for _, neighbor := range neighbors {
 			target := neighbor.Target()
 			neighborBlockResponses, err := neighbor.GetBlocks()
@@ -325,6 +283,11 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	if isDifferent {
 		blockchain.mutex.Lock()
 		defer blockchain.mutex.Unlock()
+		if isFork {
+			blockchain.replaceUtxos(selectedBlockResponses[:len(selectedBlockResponses)-1])
+		} else {
+			blockchain.addUtxos(selectedBlockResponses[len(blockchain.blockResponses)-1 : len(selectedBlockResponses)-1])
+		}
 		blockchain.blockResponses = selectedBlockResponses
 		blockchain.blocks = selectedBlocks
 		blockchain.logger.Debug("verification done: blockchain replaced")
@@ -333,14 +296,14 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	}
 }
 
-func (blockchain *Blockchain) addGenesisBlock(genesisTimestamp int64, genesisTransaction *network.TransactionResponse) {
+func (blockchain *Blockchain) addGenesisBlock(genesisTransaction *network.TransactionResponse) {
 	var transactions []*network.TransactionResponse
 	var addedAddresses []string
 	if genesisTransaction != nil {
 		transactions = []*network.TransactionResponse{genesisTransaction}
 		addedAddresses = []string{genesisTransaction.Outputs[0].Address}
 	}
-	blockResponse := NewBlockResponse(genesisTimestamp, [32]byte{}, transactions, addedAddresses, nil)
+	blockResponse := NewBlockResponse(blockchain.genesisTimestamp, [32]byte{}, transactions, addedAddresses, nil)
 	block, err := NewBlockFromResponse(blockResponse, nil)
 	if err != nil {
 		blockchain.logger.Error(fmt.Errorf("unable to instantiate block: %w", err).Error())
@@ -386,6 +349,8 @@ func (blockchain *Blockchain) sortByBlocksLength(selectedTargets []string, block
 }
 
 func (blockchain *Blockchain) verify(lastHostBlocks []*Block, lastNeighborBlockResponses []*network.BlockResponse, lastRegisteredAddresses []string, oldHostBlockResponses []*network.BlockResponse, timestamp int64) ([]*Block, error) {
+	// TODO verify double spend
+
 	err := blockchain.verifyLastBlock(lastHostBlocks, lastNeighborBlockResponses)
 	if err != nil {
 		return nil, err
@@ -396,13 +361,22 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, lastNeighborBlockR
 	}
 	verifiedBlocks := []*Block{previousNeighborBlock}
 	neighborBlockchain := newBlockchain(
-		append(oldHostBlockResponses, lastNeighborBlockResponses...),
+		oldHostBlockResponses,
+		blockchain.genesisTimestamp,
 		blockchain.minimalTransactionFee,
 		blockchain.registry,
+		blockchain.utxosById,
 		blockchain.validationTimer,
 		blockchain.synchronizer,
 		blockchain.logger,
 	)
+	for _, b := range lastNeighborBlockResponses {
+		// Add blocks individually to update utxos
+		err = neighborBlockchain.AddBlock(b.Timestamp, b.Transactions, b.AddedRegisteredAddresses)
+		if err != nil {
+			return nil, err
+		}
+	}
 	for i := 1; i < len(lastNeighborBlockResponses); i++ {
 		neighborBlock, err := NewBlockFromResponse(lastNeighborBlockResponses[i], previousNeighborBlock.RegisteredAddresses())
 		if err != nil {
@@ -448,7 +422,6 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, lastNeighborBlockR
 
 func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlock *Block, timestamp int64, neighborBlockchain *Blockchain) error {
 	var rewarded bool
-	totalTransactionsValueBySenderAddress := make(map[string]uint64)
 	currentBlockTimestamp := neighborBlock.Timestamp()
 	previousBlockTimestamp := previousBlock.Timestamp()
 	expectedBlockTimestamp := previousBlockTimestamp + blockchain.validationTimer.Nanoseconds()
@@ -471,16 +444,15 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlock *B
 				return errors.New("multiple rewards attempt for the same neighbor block")
 			}
 			rewarded = true
-			reward = transaction.Value()
+			reward = transaction.RewardValue()
 		} else {
 			if err := transaction.VerifySignatures(); err != nil {
 				return fmt.Errorf("neighbor transaction is invalid: %w", err)
 			}
-			fee := transaction.Fee()
+			fee := neighborBlockchain.CalculateFee(transaction.GetResponse(), neighborBlock.Timestamp())
 			if fee < blockchain.minimalTransactionFee {
 				return fmt.Errorf("a neighbor block transaction fee is too low, fee: %d, minimal fee: %d", fee, blockchain.minimalTransactionFee)
 			}
-			totalTransactionsValueBySenderAddress[transaction.SenderAddress()] += transaction.Value() + fee
 			totalTransactionsFees += fee
 			if currentBlockTimestamp+blockchain.validationTimer.Nanoseconds() < transaction.Timestamp() {
 				return fmt.Errorf("a neighbor block transaction timestamp is too far in the future, transaction: %v", transaction.GetResponse())
@@ -495,12 +467,6 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlock *B
 	}
 	if reward > totalTransactionsFees {
 		return errors.New("neighbor block reward exceeds the consented one")
-	}
-	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
-		amount := neighborBlockchain.CalculateTotalAmount(previousBlockTimestamp, senderAddress)
-		if totalTransactionsValue > amount {
-			return errors.New("neighbor block total transactions value exceeds its sender wallet amount")
-		}
 	}
 	return nil
 }
@@ -524,49 +490,59 @@ func (blockchain *Blockchain) verifyLastBlock(lastHostBlocks []*Block, lastNeigh
 	if !isValidatorRegistered {
 		return fmt.Errorf("validator address is not registered in Proof of Humanity registry")
 	}
-	return blockchain.verifyRegisteredAddresses(lastNeighborBlock)
+	return nil
 }
 
-func (blockchain *Blockchain) verifyRegisteredAddresses(lastNeighborBlock *Block) error {
-	registeredAddressesMap := make(map[string]bool)
-	addedRegisteredAddresses := lastNeighborBlock.AddedRegisteredAddresses()
-	for _, address := range addedRegisteredAddresses {
-		registeredAddressesMap[address] = true
-	}
-	removedRegisteredAddresses := lastNeighborBlock.RemovedRegisteredAddresses()
-	for _, address := range removedRegisteredAddresses {
-		registeredAddressesMap[address] = false
-	}
-	for _, transaction := range lastNeighborBlock.Transactions() {
-		if !transaction.HasReward() && transaction.Value() > 0 {
-			senderAddress := transaction.SenderAddress()
-			isPohValid, err := blockchain.registry.IsRegistered(senderAddress)
-			if err != nil {
-				return fmt.Errorf("failed to get proof of humanity: %w", err)
-			} else if isPohValid {
-				if isRegistered, ok := registeredAddressesMap[senderAddress]; !isRegistered || !ok {
-					return fmt.Errorf("a registered address is missing in the neighbor block")
-				} else {
-					delete(registeredAddressesMap, senderAddress)
+func (blockchain *Blockchain) addUtxos(blocks []*network.BlockResponse) {
+	for _, block := range blocks {
+		for _, transaction := range block.Transactions {
+			blockchain.utxosById[transaction.Id] = transaction.Outputs
+			for _, input := range transaction.Inputs {
+				blockchain.utxosById[input.TransactionId][input.OutputIndex] = nil
+				isEmpty := true
+				for _, output := range blockchain.utxosById[input.TransactionId] {
+					if output != nil {
+						isEmpty = false
+					}
 				}
-			} else {
-				if isRegistered, ok := registeredAddressesMap[senderAddress]; isRegistered || !ok {
-					return fmt.Errorf("a registered address is one too many in the neighbor block")
-				} else {
-					delete(registeredAddressesMap, senderAddress)
+				if isEmpty {
+					delete(blockchain.utxosById, input.TransactionId)
 				}
 			}
 		}
 	}
-	for address, isRegistered := range registeredAddressesMap {
-		isPohValid, err := blockchain.registry.IsRegistered(address)
-		if err != nil {
-			return fmt.Errorf("failed to get proof of humanity: %w", err)
-		} else if !isPohValid && isRegistered {
-			return fmt.Errorf("a registered address has wrongly be added in the neighbor block")
-		} else if isPohValid && !isRegistered {
-			return fmt.Errorf("a registered address has wrongly be removed in the neighbor block")
+}
+
+func (blockchain *Blockchain) replaceUtxos(blocks []*network.BlockResponse) {
+	blockchain.utxosById = make(map[[32]byte][]*network.OutputResponse)
+	for _, block := range blocks {
+		for _, transaction := range block.Transactions {
+			blockchain.utxosById[transaction.Id] = transaction.Outputs
+			for _, input := range transaction.Inputs {
+				blockchain.utxosById[input.TransactionId][input.OutputIndex] = nil
+				isEmpty := true
+				for _, output := range blockchain.utxosById[input.TransactionId] {
+					if output != nil {
+						isEmpty = false
+					}
+				}
+				if isEmpty {
+					delete(blockchain.utxosById, input.TransactionId)
+				}
+			}
 		}
 	}
-	return nil
+}
+
+func (blockchain *Blockchain) CalculateFee(transaction *network.TransactionResponse, timestamp int64) uint64 {
+	var inputValues uint64
+	var outputValues uint64
+	for _, input := range transaction.Inputs {
+		output := validation.NewOutputFromResponse(blockchain.utxosById[input.TransactionId][input.OutputIndex], blockchain.lambda, blockchain.validationTimer.Nanoseconds(), blockchain.genesisTimestamp)
+		inputValues += output.Value(timestamp)
+	}
+	for _, output := range transaction.Outputs {
+		outputValues += output.Value
+	}
+	return inputValues - outputValues
 }
