@@ -93,7 +93,9 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 	if err != nil {
 		return fmt.Errorf("unable to instantiate block: %w", err)
 	}
-	blockchain.addUtxos([]*network.BlockResponse{blockchain.blockResponses[len(blockchain.blockResponses)-1]})
+	if !blockchain.isEmpty() {
+		blockchain.addUtxos([]*network.BlockResponse{blockchain.blockResponses[len(blockchain.blockResponses)-1]})
+	}
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
 	blockchain.blocks = append(blockchain.blocks, block)
 	return nil
@@ -330,11 +332,6 @@ func (blockchain *Blockchain) addGenesisBlock(genesisTransaction *network.Transa
 	blockchain.blocks = append(blockchain.blocks, block)
 }
 
-func (blockchain *Blockchain) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
-	elapsedTimestamp := newTimestamp - lastTimestamp
-	return uint64(math.Floor(float64(amount) * math.Exp(-blockchain.lambda*float64(elapsedTimestamp))))
-}
-
 func (blockchain *Blockchain) isEmpty() bool {
 	return blockchain.blocks == nil
 }
@@ -377,7 +374,9 @@ func (blockchain *Blockchain) sortByBlocksLength(selectedTargets []string, block
 
 func (blockchain *Blockchain) verify(lastHostBlocks []*Block, lastNeighborBlockResponses []*network.BlockResponse, lastRegisteredAddresses []string, oldHostBlockResponses []*network.BlockResponse, timestamp int64) ([]*Block, error) {
 	// TODO verify double spend
-
+	if len(lastNeighborBlockResponses) < len(lastHostBlocks) {
+		return nil, errors.New("neighbor's blockchain is too short")
+	}
 	err := blockchain.verifyLastBlock(lastHostBlocks, lastNeighborBlockResponses)
 	if err != nil {
 		return nil, err
@@ -499,9 +498,6 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlock *B
 }
 
 func (blockchain *Blockchain) verifyLastBlock(lastHostBlocks []*Block, lastNeighborBlockResponses []*network.BlockResponse) error {
-	if len(lastNeighborBlockResponses) < 2 || len(lastNeighborBlockResponses) < len(lastHostBlocks) {
-		return errors.New("neighbor's blockchain is too short")
-	}
 	if lastHostBlocks[0].PreviousHash() != lastNeighborBlockResponses[0].PreviousHash {
 		return errors.New("neighbor's blockchain is is a fork")
 	}
@@ -525,11 +521,7 @@ func (blockchain *Blockchain) addUtxos(blocks []*network.BlockResponse) {
 		for _, transaction := range block.Transactions {
 			blockchain.utxosById[transaction.Id] = transaction.Outputs
 			for _, output := range transaction.Outputs {
-				if _, ok := blockchain.utxosByAddress[output.Address]; ok {
-					blockchain.utxosByAddress[output.Address] = append(blockchain.utxosByAddress[output.Address], output)
-				} else {
-					blockchain.utxosByAddress[output.Address] = []*network.OutputResponse{output}
-				}
+				blockchain.utxosByAddress[output.Address] = append(blockchain.utxosByAddress[output.Address], output)
 			}
 			for _, input := range transaction.Inputs {
 				utxo := blockchain.utxosById[input.TransactionId][input.OutputIndex]
