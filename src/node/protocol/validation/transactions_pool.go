@@ -97,19 +97,24 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 					pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction is already in the blockchain, transaction: %v", transaction))
 					rejectedTransactions = append(rejectedTransactions, transaction)
 					skip = true
-					continue
+					break
 				}
 			}
 			if skip {
 				continue
 			}
-			fee := currentBlockchain.CalculateFee(transaction, timestamp)
+			fee, err := currentBlockchain.FindFee(transaction, timestamp)
+			if err != nil {
+				pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to find fee, transaction: %v\n %w", transaction, err).Error())
+				rejectedTransactions = append(rejectedTransactions, transaction)
+				continue
+			}
 			for _, input := range transaction.Inputs {
 				if _, ok := isAlreadySpentByInput[input]; ok {
 					pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, an input has already been spent, transaction: %v", transaction))
 					rejectedTransactions = append(rejectedTransactions, transaction)
 					skip = true
-					continue
+					break
 				}
 				isAlreadySpentByInput[input] = true
 			}
@@ -159,7 +164,10 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	}
 	currentBlock := blocks[len(blocks)-1]
 	transactionResponse := transaction.GetResponse()
-	fee := currentBlockchain.CalculateFee(transactionResponse, currentBlock.Timestamp+pool.validationTimer.Nanoseconds())
+	fee, err := currentBlockchain.FindFee(transactionResponse, currentBlock.Timestamp+pool.validationTimer.Nanoseconds())
+	if err != nil {
+		return fmt.Errorf("failed to find fee: %w", err)
+	}
 	if fee < pool.minimalTransactionFee {
 		return fmt.Errorf("the transaction fee is too low, fee: %d, minimal fee: %d", fee, pool.minimalTransactionFee)
 	}

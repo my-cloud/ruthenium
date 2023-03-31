@@ -8,8 +8,22 @@ type TransactionRequest struct {
 }
 
 func (transactionRequest *TransactionRequest) IsInvalid() bool {
-	return transactionRequest.Inputs == nil || len(*transactionRequest.Inputs) == 0 ||
-		transactionRequest.Outputs == nil || len(*transactionRequest.Outputs) == 0 ||
-		transactionRequest.Timestamp == nil ||
+	if transactionRequest.Inputs == nil {
+		return true
+	}
+	for _, input := range *transactionRequest.Inputs {
+		if input.IsInvalid() {
+			return true
+		}
+	}
+	if transactionRequest.Outputs == nil || len(*transactionRequest.Outputs) == 0 {
+		return true
+	}
+	for _, output := range *transactionRequest.Outputs {
+		if output.IsInvalid() {
+			return true
+		}
+	}
+	return transactionRequest.Timestamp == nil ||
 		transactionRequest.TransactionBroadcasterTarget == nil || len(*transactionRequest.TransactionBroadcasterTarget) == 0
 }

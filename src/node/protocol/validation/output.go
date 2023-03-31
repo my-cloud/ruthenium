@@ -24,6 +24,10 @@ func NewOutputFromResponse(response *network.OutputResponse, lambda float64, val
 	return &Output{response.Address, response.BlockHeight, response.HasReward, response.HasIncome, response.Value, genesisTimestamp, lambda, validationTimestamp}
 }
 
+func NewOutputFromWalletResponse(response *network.WalletOutputResponse, lambda float64, validationTimestamp int64, genesisTimestamp int64) *Output {
+	return &Output{response.Address, response.BlockHeight, response.HasReward, response.HasIncome, response.Value, genesisTimestamp, lambda, validationTimestamp}
+}
+
 func (output *Output) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Address     string `json:"address"`

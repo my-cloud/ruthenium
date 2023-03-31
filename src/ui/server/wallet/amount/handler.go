@@ -37,7 +37,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		}
 		var balance uint64
 		for _, utxo := range utxos {
-			balance += validation.NewOutputFromResponse(utxo, handler.lambda, handler.validationTimestamp, handler.genesisTimestamp).Value(handler.watch.Now().UnixNano())
+			balance += validation.NewOutputFromWalletResponse(utxo, handler.lambda, handler.validationTimestamp, handler.genesisTimestamp).Value(handler.watch.Now().UnixNano())
 		}
 		marshaledAmount, err := json.Marshal(float64(balance) / float64(handler.particlesCount))
 		if err != nil {

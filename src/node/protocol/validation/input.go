@@ -55,12 +55,12 @@ func (input *Input) GetResponse() *network.InputResponse {
 }
 
 func (input *Input) VerifySignature() error {
-	marshaledTransaction, err := input.MarshalJSON()
+	marshaledInput, err := input.MarshalJSON()
 	if err != nil {
-		return fmt.Errorf("failed to marshal transaction, %w", err)
+		return fmt.Errorf("failed to marshal input, %w", err)
 	}
-	if !input.signature.Verify(marshaledTransaction, input.publicKey) {
-		return errors.New("failed to verify signature")
+	if !input.signature.Verify(marshaledInput, input.publicKey) {
+		return errors.New("signature is invalid")
 	}
 	return nil
 }

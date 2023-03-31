@@ -6,7 +6,8 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/elliptic-es@0.0.1/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/core.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/sha256.min.js"></script><body>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/sha256.min.js"></script>
+<body>
 <div>
     <h1>Wallet</h1>
     <table>
@@ -23,8 +24,12 @@
             <td><textarea disabled id="sender_address" rows="1" cols="80" name="sender_address"></textarea></td>
         </tr>
         <tr>
-            <td><div>Amount:</div></td>
-            <td><div id="wallet_amount"></div></td>
+            <td>
+                <div>Amount:</div>
+            </td>
+            <td>
+                <div id="wallet_amount"></div>
+            </td>
         </tr>
     </table>
 </div>
@@ -88,40 +93,80 @@
                 return
             }
 
-            if (!confirm("Are you sure to send?")) {
-                alert("Canceled")
-                return
-            }
-
+            const senderAddress = $("#sender_address").val();
             const atoms = $("#send_amount").val();
             const result = atomsToParticles(atoms, 100000000);
             if (result.err) {
-                alert(result.err)
+                alert(result.err);
+                return
+            }
+            let value = result.particles;
+            const data = {"address": senderAddress, "value": value};
+            let wallet_response = {
+                "block_height": 0,
+                "rest": 0,
+                "utxos": [{
+                    "address":"0x0000000000000000000000000000000000000000",
+                    "block_height":0,
+                    "has_reward":false,
+                    "has_income":false,
+                    "output_index":0,
+                    "transaction_id":[255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255],
+                    "value":0
+                }],
+            };
+            $.ajax({
+                url: "/wallet/utxos",
+                type: "GET",
+                data: data,
+                success: function (response) {
+                    wallet_response = JSON.parse(response);
+                },
+                error: function (error) {
+                    console.error(error);
+                    alert("Send failed");
+                }
+            })
+
+            let inputs = [];
+            for (let i = 0; i < wallet_response.utxos.length; i++) {
+                let utxo = wallet_response.utxos[i];
+                const hash = CryptoJS.SHA256(JSON.stringify(utxo)).toString(CryptoJS.enc.Hex);
+                const signature = keyPair.sign(hash);
+                const signatureHex = getSignatureHex(signature);
+                inputs[i] = {
+                    "output_index": utxo.output_index,
+                    "transaction_id": utxo.transaction_id,
+                    "public_key": publicKeyString,
+                    "signature": signatureHex,
+                };
+            }
+
+            if (!confirm("Are you sure to send?")) {
+                alert("Canceled");
                 return
             }
 
-            const dateNow = Math.floor(Date.now() * 1000000);
             const recipientAddress = $("#recipient_address").val();
-            const senderAddress = $("#sender_address").val();
-            const transactionData = {
-                "recipient_address": recipientAddress,
-                "sender_address": senderAddress,
-                "timestamp": dateNow,
-                "value": result.particles,
-                "fee": 1000,
-            };
-
-            const hash = CryptoJS.SHA256(JSON.stringify(transactionData)).toString(CryptoJS.enc.Hex);
-            const signature = keyPair.sign(hash);
-            const signatureHex = getSignatureHex(signature);
+            const spend = {
+                "address": recipientAddress,
+                "block_height": wallet_response.block_height,
+                "has_reward": false,
+                "has_income": false,
+                "value": value,
+            }
+            const rest = {
+                "address": senderAddress,
+                "block_height": wallet_response.block_height,
+                "has_reward": false,
+                "has_income": true,
+                "value": wallet_response.rest,
+            }
+            const dateNow = Math.floor(Date.now() * 1000000);
             const transactionRequest = {
-                "recipient_address": recipientAddress,
-                "sender_address": senderAddress,
-                "sender_public_key": publicKeyString,
-                "signature": signatureHex,
+                "inputs": inputs,
+                "outputs": [spend, rest],
                 "timestamp": dateNow,
-                "value": result.particles,
-                "fee": 1000,
             };
 
             $.ajax({

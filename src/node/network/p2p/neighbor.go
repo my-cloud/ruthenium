@@ -100,7 +100,7 @@ func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.Tran
 	return
 }
 
-func (neighbor *Neighbor) GetUtxos(address string) (utxos []*network.OutputResponse, err error) {
+func (neighbor *Neighbor) GetUtxos(address string) (utxos []*network.WalletOutputResponse, err error) {
 	request := network.UtxosRequest{Address: &address}
 	res, err := neighbor.sendRequest(request)
 	if err != nil {

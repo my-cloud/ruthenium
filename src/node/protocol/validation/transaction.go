@@ -126,10 +126,10 @@ func (transaction *Transaction) VerifySignatures() error {
 	for _, inputResponse := range transaction.inputs {
 		input, err := NewInputFromResponse(inputResponse)
 		if err != nil {
-			return fmt.Errorf("failed to instantiate input: %v: %w", input, err)
+			return fmt.Errorf("failed to instantiate input: %v\n %w", input, err)
 		}
 		if err = input.VerifySignature(); err != nil {
-			return fmt.Errorf("failed to verify signature for input: %v: %w", input, err)
+			return fmt.Errorf("failed to verify signature for input: %v\n %w", input, err)
 		}
 	}
 	return nil
