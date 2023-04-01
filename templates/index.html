@@ -115,12 +115,17 @@
                     "value":0
                 }],
             };
+
+            // FIXME wait for GET utxos call to finish before to POST transaction
+            // var dfd = $.Deferred()
             $.ajax({
                 url: "/wallet/utxos",
                 type: "GET",
+                contentType: "application/json",
+                dataType: 'json',
                 data: data,
                 success: function (response) {
-                    wallet_response = JSON.parse(response);
+                    wallet_response = response;
                 },
                 error: function (error) {
                     console.error(error);
