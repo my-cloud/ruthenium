@@ -193,7 +193,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 		}
 	}
 	if err = transaction.VerifySignatures(); err != nil {
-		return errors.New("failed to verify transaction")
+		return fmt.Errorf("failed to verify transaction: %w", err)
 	}
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()

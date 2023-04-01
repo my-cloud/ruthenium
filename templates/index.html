@@ -102,22 +102,63 @@
             }
             let value = result.particles;
             const data = {"address": senderAddress, "value": value};
-            let wallet_response = {
-                "block_height": 0,
-                "rest": 0,
-                "utxos": [{
-                    "address":"0x0000000000000000000000000000000000000000",
-                    "block_height":0,
-                    "has_reward":false,
-                    "has_income":false,
-                    "output_index":0,
-                    "transaction_id":[255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255],
-                    "value":0
-                }],
-            };
 
-            // FIXME wait for GET utxos call to finish before to POST transaction
-            // var dfd = $.Deferred()
+            function send(response) {
+                let inputs = [];
+                for (let i = 0; i < response.utxos.length; i++) {
+                    let utxo = response.utxos[i];
+                    const hash = CryptoJS.SHA256(JSON.stringify(utxo)).toString(CryptoJS.enc.Hex);
+                    const signature = keyPair.sign(hash);
+                    const signatureHex = getSignatureHex(signature);
+                    inputs[i] = {
+                        "output_index": utxo.output_index,
+                        "transaction_id": utxo.transaction_id,
+                        "public_key": publicKeyString,
+                        "signature": signatureHex,
+                    };
+                }
+
+                const recipientAddress = $("#recipient_address").val();
+                const spend = {
+                    "address": recipientAddress,
+                    "block_height": response.block_height,
+                    "has_reward": false,
+                    "has_income": false,
+                    "value": value,
+                }
+                const rest = {
+                    "address": senderAddress,
+                    "block_height": response.block_height,
+                    "has_reward": false,
+                    "has_income": true,
+                    "value": response.rest,
+                }
+                const dateNow = Math.floor(Date.now() * 1000000);
+                const transactionRequest = {
+                    "inputs": inputs,
+                    "outputs": [spend, rest],
+                    "timestamp": dateNow,
+                };
+
+                $.ajax({
+                    url: "/transaction",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(transactionRequest),
+                    success: function (response) {
+                        if (response === "success") {
+                            alert("Send success");
+                        } else {
+                            alert("Send failed: " + response)
+                        }
+                    },
+                    error: function (response) {
+                        console.error(response);
+                        alert("Send failed");
+                    }
+                })
+            }
+
             $.ajax({
                 url: "/wallet/utxos",
                 type: "GET",
@@ -125,69 +166,14 @@
                 dataType: 'json',
                 data: data,
                 success: function (response) {
-                    wallet_response = response;
+                    if (!confirm("Are you sure to send?")) {
+                        alert("Canceled");
+                        return
+                    }
+                    send(response);
                 },
                 error: function (error) {
                     console.error(error);
-                    alert("Send failed");
-                }
-            })
-
-            let inputs = [];
-            for (let i = 0; i < wallet_response.utxos.length; i++) {
-                let utxo = wallet_response.utxos[i];
-                const hash = CryptoJS.SHA256(JSON.stringify(utxo)).toString(CryptoJS.enc.Hex);
-                const signature = keyPair.sign(hash);
-                const signatureHex = getSignatureHex(signature);
-                inputs[i] = {
-                    "output_index": utxo.output_index,
-                    "transaction_id": utxo.transaction_id,
-                    "public_key": publicKeyString,
-                    "signature": signatureHex,
-                };
-            }
-
-            if (!confirm("Are you sure to send?")) {
-                alert("Canceled");
-                return
-            }
-
-            const recipientAddress = $("#recipient_address").val();
-            const spend = {
-                "address": recipientAddress,
-                "block_height": wallet_response.block_height,
-                "has_reward": false,
-                "has_income": false,
-                "value": value,
-            }
-            const rest = {
-                "address": senderAddress,
-                "block_height": wallet_response.block_height,
-                "has_reward": false,
-                "has_income": true,
-                "value": wallet_response.rest,
-            }
-            const dateNow = Math.floor(Date.now() * 1000000);
-            const transactionRequest = {
-                "inputs": inputs,
-                "outputs": [spend, rest],
-                "timestamp": dateNow,
-            };
-
-            $.ajax({
-                url: "/transaction",
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify(transactionRequest),
-                success: function (response) {
-                    if (response === "success") {
-                        alert("Send success");
-                    } else {
-                        alert("Send failed: " + response)
-                    }
-                },
-                error: function (response) {
-                    console.error(response);
                     alert("Send failed");
                 }
             })
