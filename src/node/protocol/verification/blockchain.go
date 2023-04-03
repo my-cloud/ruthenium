@@ -539,6 +539,10 @@ func (blockchain *Blockchain) addUtxos(blocks []*network.BlockResponse) {
 			}
 			for _, input := range transaction.Inputs {
 				utxos := blockchain.utxosById[input.TransactionId]
+				// FIXME
+				//if utxos == nil {
+				//	return 0, fmt.Errorf("failed to find utxo, input: %v", input)
+				//}
 				utxo := utxos[input.OutputIndex]
 				blockchain.utxosByAddress[utxo.Address] = removeUtxo(blockchain.utxosByAddress[utxo.Address], input.TransactionId, input.OutputIndex)
 				blockchain.utxosById[input.TransactionId][input.OutputIndex] = nil
