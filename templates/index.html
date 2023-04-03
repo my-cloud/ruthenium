@@ -107,7 +107,11 @@
                 let inputs = [];
                 for (let i = 0; i < response.utxos.length; i++) {
                     let utxo = response.utxos[i];
-                    const hash = CryptoJS.SHA256(JSON.stringify(utxo)).toString(CryptoJS.enc.Hex);
+                    const input = {
+                        "output_index": utxo.output_index,
+                        "transaction_id": utxo.transaction_id,
+                    }
+                    const hash = CryptoJS.SHA256(JSON.stringify(input)).toString(CryptoJS.enc.Hex);
                     const signature = keyPair.sign(hash);
                     const signatureHex = getSignatureHex(signature);
                     inputs[i] = {

@@ -29,11 +29,11 @@ func NewInputFromResponse(input *network.InputResponse) (*Input, error) {
 
 func (input *Input) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		OutputIndex   uint16 `json:"output_index"`
-		TransactionId string `json:"transaction_id"`
+		OutputIndex   uint16   `json:"output_index"`
+		TransactionId [32]byte `json:"transaction_id"`
 	}{
 		OutputIndex:   input.outputIndex,
-		TransactionId: fmt.Sprintf("%x", input.transactionId),
+		TransactionId: input.transactionId,
 	})
 }
 
