@@ -125,6 +125,7 @@ func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
 
 func (blockchain *Blockchain) Copy() protocol.Blockchain {
 	blockchainCopy := new(Blockchain)
+	blockchainCopy.genesisTimestamp = blockchain.genesisTimestamp
 	blockchainCopy.registry = blockchain.registry
 	blockchainCopy.validationTimestamp = blockchain.validationTimestamp
 	blockchainCopy.synchronizer = blockchain.synchronizer
