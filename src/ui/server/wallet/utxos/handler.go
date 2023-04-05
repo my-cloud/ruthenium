@@ -50,17 +50,18 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		var selectedUtxos []*network.WalletOutputResponse
 		var inputsValue uint64
 		now := handler.watch.Now().UnixNano()
+		nextBlockHeight := (now-handler.genesisTimestamp)/handler.validationTimestamp + 1
+		nextBlockTimestamp := handler.genesisTimestamp + nextBlockHeight*handler.validationTimestamp
 		value := uint64(parsedValue)
 		for _, utxo := range utxos {
-			inputsValue += validation.NewOutputFromWalletResponse(utxo, handler.lambda, handler.validationTimestamp, handler.genesisTimestamp).Value(now)
+			inputsValue += validation.NewOutputFromWalletResponse(utxo, handler.lambda, handler.validationTimestamp, handler.genesisTimestamp).Value(nextBlockTimestamp)
 			selectedUtxos = append(selectedUtxos, utxo)
 			if inputsValue >= value {
 				break
 			}
 		}
-		blockHeight := (now-handler.genesisTimestamp)/handler.validationTimestamp + 1
 		response := &Response{
-			BlockHeight: int(blockHeight),
+			BlockHeight: int(nextBlockHeight),
 			Rest:        inputsValue - value - handler.minimalTransactionFee,
 			Utxos:       selectedUtxos,
 		}

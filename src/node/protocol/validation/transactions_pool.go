@@ -164,7 +164,8 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	}
 	currentBlock := blocks[len(blocks)-1]
 	transactionResponse := transaction.GetResponse()
-	fee, err := currentBlockchain.FindFee(transactionResponse, currentBlock.Timestamp+pool.validationTimer.Nanoseconds())
+	feeTimestamp := currentBlock.Timestamp + pool.validationTimer.Nanoseconds()
+	fee, err := currentBlockchain.FindFee(transactionResponse, feeTimestamp)
 	if err != nil {
 		return fmt.Errorf("failed to find fee: %w", err)
 	}

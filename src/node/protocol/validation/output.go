@@ -73,7 +73,7 @@ func (output *Output) calculateIncome(currentTimestamp int64) uint64 {
 	blockTimestamp := output.genesisTimestamp + int64(output.blockHeight)*output.validationTimestamp
 	for timestamp = blockTimestamp; timestamp < currentTimestamp; timestamp += output.validationTimestamp {
 		if totalIncome > 0 {
-			totalIncome = output.decay(timestamp, timestamp-output.validationTimestamp, totalIncome)
+			totalIncome = output.decay(timestamp-output.validationTimestamp, timestamp, totalIncome)
 			totalIncome += uint64(math.Round(math.Pow(float64(totalIncome), incomeExponent)))
 		}
 	}

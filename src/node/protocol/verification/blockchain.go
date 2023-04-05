@@ -305,9 +305,9 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		defer blockchain.mutex.Unlock()
 		if isFork {
 			blockchain.utxosById = make(map[[32]byte][]*network.OutputResponse)
-			blockchain.addUtxos(selectedBlockResponses[:len(selectedBlockResponses)-1])
+			blockchain.addUtxos(selectedBlockResponses[:len(selectedBlockResponses)-2])
 		} else {
-			blockchain.addUtxos(selectedBlockResponses[len(blockchain.blockResponses)-1 : len(selectedBlockResponses)-1])
+			blockchain.addUtxos(selectedBlockResponses[len(blockchain.blockResponses)-2 : len(selectedBlockResponses)-2])
 		}
 		blockchain.blockResponses = selectedBlockResponses
 		blockchain.blocks = selectedBlocks
@@ -526,16 +526,18 @@ func (blockchain *Blockchain) addUtxos(blocks []*network.BlockResponse) {
 		for _, transaction := range block.Transactions {
 			blockchain.utxosById[transaction.Id] = transaction.Outputs
 			for i, output := range transaction.Outputs {
-				walletOutput := &network.WalletOutputResponse{
-					Address:       output.Address,
-					BlockHeight:   output.BlockHeight,
-					HasReward:     output.HasReward,
-					HasIncome:     output.HasIncome,
-					OutputIndex:   uint16(i),
-					TransactionId: transaction.Id,
-					Value:         output.Value,
+				if output.Value > 0 {
+					walletOutput := &network.WalletOutputResponse{
+						Address:       output.Address,
+						BlockHeight:   output.BlockHeight,
+						HasReward:     output.HasReward,
+						HasIncome:     output.HasIncome,
+						OutputIndex:   uint16(i),
+						TransactionId: transaction.Id,
+						Value:         output.Value,
+					}
+					blockchain.utxosByAddress[output.Address] = append(blockchain.utxosByAddress[output.Address], walletOutput)
 				}
-				blockchain.utxosByAddress[output.Address] = append(blockchain.utxosByAddress[output.Address], walletOutput)
 			}
 			for _, input := range transaction.Inputs {
 				utxos := blockchain.utxosById[input.TransactionId]
@@ -576,6 +578,9 @@ func (blockchain *Blockchain) FindFee(transaction *network.TransactionResponse, 
 	}
 	for _, output := range transaction.Outputs {
 		outputValues += output.Value
+	}
+	if inputValues < outputValues {
+		return 0, errors.New("fee is negative")
 	}
 	return inputValues - outputValues, nil
 }
