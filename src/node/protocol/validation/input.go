@@ -10,7 +10,7 @@ import (
 
 type Input struct {
 	outputIndex   uint16
-	transactionId [32]byte
+	transactionId string
 	publicKey     *encryption.PublicKey
 	signature     *encryption.Signature
 }
@@ -29,8 +29,8 @@ func NewInputFromResponse(input *network.InputResponse) (*Input, error) {
 
 func (input *Input) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		OutputIndex   uint16   `json:"output_index"`
-		TransactionId [32]byte `json:"transaction_id"`
+		OutputIndex   uint16 `json:"output_index"`
+		TransactionId string `json:"transaction_id"`
 	}{
 		OutputIndex:   input.outputIndex,
 		TransactionId: input.transactionId,
@@ -63,12 +63,4 @@ func (input *Input) VerifySignature() error {
 		return errors.New("signature is invalid")
 	}
 	return nil
-}
-
-func (input *Input) OutputIndex() uint16 {
-	return input.outputIndex
-}
-
-func (input *Input) TransactionIndex() [32]byte {
-	return input.transactionId
 }

@@ -1,7 +1,7 @@
 package network
 
 type TransactionResponse struct {
-	Id        [32]byte
+	Id        string
 	Inputs    []*InputResponse
 	Outputs   []*OutputResponse
 	Timestamp int64

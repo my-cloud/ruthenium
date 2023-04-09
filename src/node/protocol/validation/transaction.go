@@ -9,7 +9,7 @@ import (
 )
 
 type Transaction struct {
-	id                     [32]byte
+	id                     string
 	inputs                 []*network.InputResponse
 	outputs                []*network.OutputResponse
 	timestamp              int64
@@ -76,7 +76,7 @@ func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (
 }
 
 func newTransaction(inputs []*network.InputResponse, outputs []*network.OutputResponse, timestamp int64) (*Transaction, error) {
-	transaction := &Transaction{[32]byte{}, inputs, outputs, timestamp, false, "", 0}
+	transaction := &Transaction{"", inputs, outputs, timestamp, false, "", 0}
 	if err := transaction.generateId(); err != nil {
 		return nil, fmt.Errorf("failed to generate id: %w", err)
 	}
@@ -135,7 +135,7 @@ func (transaction *Transaction) VerifySignatures() error {
 	return nil
 }
 
-func (transaction *Transaction) Id() [32]byte {
+func (transaction *Transaction) Id() string {
 	return transaction.id
 }
 
@@ -168,7 +168,8 @@ func (transaction *Transaction) generateId() error {
 	if err != nil {
 		return errors.New("failed to marshal transaction")
 	}
-	transaction.id = sha256.Sum256(marshaledTransaction)
+	transactionHash := sha256.Sum256(marshaledTransaction)
+	transaction.id = fmt.Sprintf("%x", transactionHash)
 	return nil
 }
 
