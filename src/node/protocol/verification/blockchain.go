@@ -126,19 +126,37 @@ func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
 }
 
 func (blockchain *Blockchain) Copy() protocol.Blockchain {
-	blockchainCopy := new(Blockchain)
-	blockchainCopy.genesisTimestamp = blockchain.genesisTimestamp
-	blockchainCopy.registry = blockchain.registry
-	blockchainCopy.validationTimestamp = blockchain.validationTimestamp
-	blockchainCopy.synchronizer = blockchain.synchronizer
-	blockchainCopy.utxosByAddress = blockchain.utxosByAddress
-	blockchainCopy.utxosById = blockchain.utxosById
-	blockchainCopy.lambda = blockchain.lambda
-	blockchainCopy.logger = blockchain.logger
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
-	blockchainCopy.blocks = blockchain.blocks
-	blockchainCopy.blockResponses = blockchain.blockResponses
+	blocks := make([]*Block, len(blockchain.blocks))
+	copy(blocks, blockchain.blocks)
+	blockResponses := make([]*network.BlockResponse, len(blockchain.blockResponses))
+	copy(blockResponses, blockchain.blockResponses)
+	utxosByAddress := make(map[string][]*network.WalletOutputResponse, len(blockchain.utxosByAddress))
+	for address, utxos := range blockchain.utxosByAddress {
+		utxosCopy := make([]*network.WalletOutputResponse, len(utxos))
+		copy(utxosCopy, utxos)
+		utxosByAddress[address] = utxosCopy
+	}
+	utxosById := make(map[string][]*network.OutputResponse)
+	for id, utxos := range blockchain.utxosById {
+		utxosCopy := make([]*network.OutputResponse, len(utxos))
+		copy(utxosCopy, utxos)
+		utxosById[id] = utxosCopy
+	}
+	blockchainCopy := newBlockchain(
+		blockResponses,
+		blockchain.genesisTimestamp,
+		blockchain.minimalTransactionFee,
+		blockchain.registry,
+		utxosByAddress,
+		utxosById,
+		blockchain.validationTimestamp,
+		blockchain.synchronizer,
+		blockchain.logger)
+	blockchainCopy.blocks = blocks
+	blockchainCopy.lambda = blockchain.lambda
+	blockchainCopy.logger = blockchain.logger
 	return blockchainCopy
 }
 
@@ -298,6 +316,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 					blockchain.logger.Error("failed to calculate old block hash")
 					isDifferent = true
 				} else {
+					// FIXME sometimes same objects give different hashes
 					isDifferent = lastOldBlockHash != lastNewBlockHash
 				}
 			}
@@ -526,6 +545,9 @@ func (blockchain *Blockchain) verifyLastBlock(lastHostBlocks []*Block, lastNeigh
 func (blockchain *Blockchain) addUtxos(blocks []*network.BlockResponse) {
 	for _, block := range blocks {
 		for _, transaction := range block.Transactions {
+			if _, ok := blockchain.utxosById[transaction.Id]; ok {
+				fmt.Println("already exists")
+			}
 			for i, output := range transaction.Outputs {
 				if output.Value > 0 {
 					blockchain.utxosById[transaction.Id] = append(blockchain.utxosById[transaction.Id], output)
