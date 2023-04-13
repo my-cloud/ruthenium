@@ -13,14 +13,18 @@
 <div>
     <h1>Wallet</h1>
     <form>
-        <div>
+        <div class="password-field">
             <label for="private_key">Private Key:</label>
-            <input type="password" placeholder="0x" id="private_key" width="100%">
-            <label>
-                <input class="password-checkbox" type="checkbox" onclick="switchVisibility()">
-                <span class="glyphicon glyphicon-eye-open checked"></span>
-                <span class="glyphicon glyphicon-eye-close unchecked"></span>
-            </label>
+            <input type="password" placeholder="0x" id="private_key">
+            <div class="checkbox-container-anchor">
+                <div class="checkbox-container">
+                    <label>
+                        <input class="password-checkbox" type="checkbox" onclick="switchVisibility()">
+                        <span class="glyphicon glyphicon-eye-open checked"></span>
+                        <span class="glyphicon glyphicon-eye-close unchecked"></span>
+                    </label>
+                </div>
+            </div>
         </div>
         <div>
             <label for="public_key">Public Key:</label>
@@ -325,6 +329,18 @@
 
     .password-checkbox:checked ~ .unchecked {
         display: none;
+    }
+
+    .checkbox-container {
+        position: absolute;
+        top: -15px;
+        left: -100px;
+        z-index: 10;
+    }
+
+    .checkbox-container-anchor {
+        position: relative;
+        display: inline-block;
     }
 
     div > input {
