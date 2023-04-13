@@ -71,7 +71,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	lastBlockResponse := blockResponses[len(blockResponses)-1]
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
-	isAlreadySpentByInput := make(map[*network.InputResponse]bool)
+	isAlreadySpentByOutputIdByTransactionIndex := make(map[string]map[uint16]bool)
 	transactionResponses := pool.transactionResponses
 	rand.Seed(pool.watch.Now().UnixNano())
 	rand.Shuffle(len(transactionResponses), func(i, j int) {
@@ -110,13 +110,17 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 				continue
 			}
 			for _, input := range transaction.Inputs {
-				if _, ok := isAlreadySpentByInput[input]; ok {
-					pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, an input has already been spent, transaction: %v", transaction))
-					rejectedTransactions = append(rejectedTransactions, transaction)
-					skip = true
-					break
+				if isAlreadySpentByOutputIndex, ok := isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId]; ok {
+					if _, ok := isAlreadySpentByOutputIndex[input.OutputIndex]; ok {
+						pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, an input has already been spent, transaction: %v", transaction))
+						rejectedTransactions = append(rejectedTransactions, transaction)
+						skip = true
+						break
+					}
+				} else {
+					isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId] = make(map[uint16]bool)
 				}
-				isAlreadySpentByInput[input] = true
+				isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId][input.OutputIndex] = true
 			}
 			if skip {
 				continue
@@ -165,6 +169,10 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	currentBlock := blocks[len(blocks)-1]
 	transactionResponse := transaction.GetResponse()
 	feeTimestamp := currentBlock.Timestamp + pool.validationTimer.Nanoseconds()
+	err = currentBlockchain.AddBlock(feeTimestamp, nil, nil)
+	if err != nil {
+		return fmt.Errorf("failed to add temporary block: %w", err)
+	}
 	fee, err := currentBlockchain.FindFee(transactionResponse, feeTimestamp)
 	if err != nil {
 		return fmt.Errorf("failed to find fee: %w", err)

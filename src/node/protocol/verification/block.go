@@ -3,6 +3,7 @@ package verification
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
@@ -30,6 +31,9 @@ func NewBlockResponse(timestamp int64, previousHash [32]byte, transactions []*ne
 func NewBlockFromResponse(block *network.BlockResponse, lastRegisteredAddresses []string) (*Block, error) {
 	var transactions []*validation.Transaction
 	for _, transactionResponse := range block.Transactions {
+		if transactionResponse == nil {
+			return nil, errors.New("a transaction is nil")
+		}
 		transaction, err := validation.NewTransactionFromResponse(transactionResponse)
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate transaction: %w", err)

@@ -36,30 +36,9 @@ func NewRewardTransaction(address string, blockHeight int, timestamp int64, valu
 }
 
 func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (*Transaction, error) {
-	//address := *transactionRequest.SenderAddress
-	//isRegistered, err := registry.IsRegistered(address)
-	//if err != nil {
-	//	return nil, fmt.Errorf("failed to get proof of humanity: %w", err)
-	//}
-	//
-	//var inputs []*Input
-	//var inputsValue uint64
-	//// for _, utxo := range utxos {
-	//// TODO if isRegistered then use all utxo, else select only some to have the smallest byte size
-	//input, err := NewInput(0, [32]byte{}, *transactionRequest.SenderPublicKey, *transactionRequest.Signature)
-	//if err != nil {
-	//	return nil, fmt.Errorf("failed to instantiate input: %w", err)
-	//}
-	//inputs = append(inputs, input)
-	////inputsValue += utxo.Value
-	//// }
-	//
-	//var outputs []*Output
-	//transactionRequestValue := *transactionRequest.Value
-	//output := NewOutput(*transactionRequest.RecipientAddress, blockHeight, false, false, transactionRequestValue)
-	//outputs = append(outputs, output)
-	//surplus := NewOutput(address, blockHeight, false, isRegistered, inputsValue-transactionRequestValue)
-	//outputs = append(outputs, surplus)
+	if transactionRequest.IsInvalid() {
+		return nil, errors.New("transaction request is invalid")
+	}
 	var inputs []*network.InputResponse
 	for _, input := range *transactionRequest.Inputs {
 		inputs = append(inputs, &network.InputResponse{OutputIndex: *input.OutputIndex, TransactionId: *input.TransactionId, PublicKey: *input.PublicKey, Signature: *input.Signature})
@@ -175,6 +154,9 @@ func (transaction *Transaction) generateId() error {
 
 func (transaction *Transaction) findReward() error {
 	for _, output := range transaction.outputs {
+		if output == nil {
+			return errors.New("an output is nil")
+		}
 		if output.HasReward {
 			if transaction.hasReward {
 				return errors.New("multiple rewards attempt for the same transaction")

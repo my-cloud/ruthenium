@@ -53,6 +53,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		nextBlockHeight := (now-handler.genesisTimestamp)/handler.validationTimestamp + 1
 		nextBlockTimestamp := handler.genesisTimestamp + nextBlockHeight*handler.validationTimestamp
 		value := uint64(parsedValue)
+		// TODO if isRegistered then use all utxo, else select only some to have the smallest byte size
 		for _, utxo := range utxos {
 			inputsValue += validation.NewOutputFromWalletResponse(utxo, handler.lambda, handler.validationTimestamp, handler.genesisTimestamp).Value(nextBlockTimestamp)
 			selectedUtxos = append(selectedUtxos, utxo)

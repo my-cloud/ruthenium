@@ -11,16 +11,18 @@ func (transactionRequest *TransactionRequest) IsInvalid() bool {
 	if transactionRequest.Inputs == nil {
 		return true
 	}
-	for _, input := range *transactionRequest.Inputs {
-		if input.IsInvalid() {
+	for _, i := range *transactionRequest.Inputs {
+		input := &i
+		if input == nil || input.IsInvalid() {
 			return true
 		}
 	}
 	if transactionRequest.Outputs == nil || len(*transactionRequest.Outputs) == 0 {
 		return true
 	}
-	for _, output := range *transactionRequest.Outputs {
-		if output.IsInvalid() {
+	for _, o := range *transactionRequest.Outputs {
+		output := &o
+		if output == nil || output.IsInvalid() {
 			return true
 		}
 	}

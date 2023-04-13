@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"math/rand"
@@ -12,6 +13,7 @@ import (
 type Synchronizer struct {
 	clientFactory       ClientFactory
 	hostTarget          *Target
+	ipFinder            network.IpFinder
 	maxOutboundsCount   int
 	neighbors           []network.Neighbor
 	neighborsMutex      sync.RWMutex
@@ -19,16 +21,19 @@ type Synchronizer struct {
 	scoresByTarget      map[string]int
 	scoresByTargetMutex sync.RWMutex
 	watch               clock.Watch
+	logger              log.Logger
 }
 
-func NewSynchronizer(clientFactory ClientFactory, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTarget map[string]int, watch clock.Watch) *Synchronizer {
+func NewSynchronizer(clientFactory ClientFactory, hostIp string, hostPort string, ipFinder network.IpFinder, maxOutboundsCount int, scoresBySeedTarget map[string]int, watch clock.Watch, logger log.Logger) *Synchronizer {
 	synchronizer := new(Synchronizer)
 	synchronizer.clientFactory = clientFactory
 	synchronizer.hostTarget = NewTarget(hostIp, hostPort)
+	synchronizer.ipFinder = ipFinder
 	synchronizer.maxOutboundsCount = maxOutboundsCount
 	synchronizer.scoresBySeedTarget = scoresBySeedTarget
 	synchronizer.scoresByTarget = map[string]int{}
 	synchronizer.watch = watch
+	synchronizer.logger = logger
 	return synchronizer
 }
 
@@ -79,8 +84,15 @@ func (synchronizer *Synchronizer) Synchronize(int64) {
 		Target: &hostTargetValue,
 	}
 	targetRequests = append(targetRequests, hostTargetRequest)
+	// TODO filter 127.0.0.1
+	//hostPublicIp, err := synchronizer.ipFinder.FindHostPublicIp()
+	//if err != nil {
+	//	synchronizer.logger.Warn(fmt.Errorf("failed to find the public IP: %w", err).Error())
+	//}
+	//hostPublicTarget := NewTarget(hostPublicIp, synchronizer.hostTarget.Port())
 	for target, score := range scoresByTarget {
-		if target != synchronizer.hostTarget.Value() {
+		if target != hostTargetValue {
+			//if target != hostTargetValue && target != hostPublicTarget.Value() && target != "127.0.0.1" {
 			neighborTarget, err := NewTargetFromValue(target)
 			if err != nil {
 				continue
