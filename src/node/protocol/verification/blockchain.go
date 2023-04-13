@@ -526,11 +526,10 @@ func (blockchain *Blockchain) verifyLastBlock(lastHostBlocks []*Block, lastNeigh
 func (blockchain *Blockchain) addUtxos(blocks []*network.BlockResponse) {
 	for _, block := range blocks {
 		for _, transaction := range block.Transactions {
-			var outputs = make([]*network.OutputResponse, len(transaction.Outputs))
-			copy(outputs, transaction.Outputs)
-			blockchain.utxosById[transaction.Id] = outputs
+			blockchain.utxosById[transaction.Id] = make([]*network.OutputResponse, len(transaction.Outputs))
 			for i, output := range transaction.Outputs {
 				if output.Value > 0 {
+					blockchain.utxosById[transaction.Id] = append(blockchain.utxosById[transaction.Id], output)
 					walletOutput := &network.WalletOutputResponse{
 						Address:       output.Address,
 						BlockHeight:   output.BlockHeight,
