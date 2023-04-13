@@ -2,6 +2,7 @@ package utxos
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
@@ -49,20 +50,36 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		}
 		var selectedUtxos []*network.WalletOutputResponse
 		var inputsValue uint64
+		var inputsValueForIncome uint64
 		now := handler.watch.Now().UnixNano()
 		nextBlockHeight := (now-handler.genesisTimestamp)/handler.validationTimestamp + 1
 		nextBlockTimestamp := handler.genesisTimestamp + nextBlockHeight*handler.validationTimestamp
 		value := uint64(parsedValue)
-		// TODO if isRegistered then use all utxo, else select only some to have the smallest byte size
+		var hasIncome bool
 		for _, utxo := range utxos {
-			inputsValue += validation.NewOutputFromWalletResponse(utxo, handler.lambda, handler.validationTimestamp, handler.genesisTimestamp).Value(nextBlockTimestamp)
-			selectedUtxos = append(selectedUtxos, utxo)
-			if inputsValue >= value {
-				break
+			output := validation.NewOutputFromWalletResponse(utxo, handler.lambda, handler.validationTimestamp, handler.genesisTimestamp)
+			outputValue := output.Value(nextBlockTimestamp)
+			inputsValueForIncome += outputValue
+			if inputsValue < value {
+				inputsValue += outputValue
+				selectedUtxos = append(selectedUtxos, utxo)
 			}
+			if utxo.HasIncome {
+				hasIncome = true
+			}
+		}
+		if inputsValue < value {
+			handler.logger.Error(errors.New("insufficient wallet balance to send transaction").Error())
+			writer.WriteHeader(http.StatusBadRequest)
+			jsonWriter.Write("insufficient wallet balance to send transaction")
+			return
+		}
+		if hasIncome {
+			selectedUtxos = utxos
 		}
 		response := &Response{
 			BlockHeight: int(nextBlockHeight),
+			HasIncome:   hasIncome,
 			Rest:        inputsValue - value - handler.minimalTransactionFee,
 			Utxos:       selectedUtxos,
 		}

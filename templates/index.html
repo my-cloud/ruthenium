@@ -141,7 +141,7 @@
                     "address": senderAddress,
                     "block_height": response.block_height,
                     "has_reward": false,
-                    "has_income": true,
+                    "has_income": response.has_income,
                     "value": response.rest,
                 }
                 const dateNow = Math.floor(Date.now() * 1000000);
@@ -165,7 +165,7 @@
                     },
                     error: function (response) {
                         console.error(response);
-                        alert("Send failed");
+                        alert("Send failed: " + response.responseText);
                     }
                 })
             }
@@ -183,9 +183,9 @@
                     }
                     send(response);
                 },
-                error: function (error) {
-                    console.error(error);
-                    alert("Send failed");
+                error: function (response) {
+                    console.error(response);
+                    alert("Send failed: " + response.responseText);
                 }
             })
         })
@@ -332,10 +332,15 @@
     }
 
     .checkbox-container {
+        width: 25px;
+        height: 20px;
+        padding-top: 1px;
+        padding-right: 5px;
         position: absolute;
         top: -15px;
-        left: -100px;
+        left: -30px;
         z-index: 10;
+        background-color: white;
     }
 
     .checkbox-container-anchor {
