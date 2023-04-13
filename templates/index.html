@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Wallet</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
+          integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/elliptic-es@0.0.1/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/core.min.js"></script>
@@ -10,42 +12,43 @@
 <body>
 <div>
     <h1>Wallet</h1>
-    <table>
-        <tr>
-            <td><label for="private_key">Private Key:</label></td>
-            <td><textarea id="private_key" rows="1" cols="80" name="private_key"></textarea></td>
-        </tr>
-        <tr>
-            <td><label for="public_key">Public Key:</label></td>
-            <td><textarea disabled id="public_key" rows="2" cols="80" name="public_key"></textarea></td>
-        </tr>
-        <tr>
-            <td><label for="sender_address">Address:</label></td>
-            <td><textarea disabled id="sender_address" rows="1" cols="80" name="sender_address"></textarea></td>
-        </tr>
-        <tr>
-            <td>
-                <div>Amount:</div>
-            </td>
-            <td>
-                <div id="wallet_amount"></div>
-            </td>
-        </tr>
-    </table>
+    <form>
+        <div>
+            <label for="private_key">Private Key:</label>
+            <input type="password" placeholder="0x" id="private_key" width="100%">
+            <label>
+                <input class="password-checkbox" type="checkbox" onclick="switchVisibility()">
+                <span class="glyphicon glyphicon-eye-open checked"></span>
+                <span class="glyphicon glyphicon-eye-close unchecked"></span>
+            </label>
+        </div>
+        <div>
+            <label for="public_key">Public Key:</label>
+            <input disabled id="public_key" name="public_key">
+        </div>
+        <div>
+            <label for="sender_address">Address:</label>
+            <input disabled id="sender_address" name="sender_address">
+        </div>
+        <div>
+            <label>Amount:</label>
+            <span id="wallet_amount"></span>
+        </div>
+    </form>
 </div>
 
 <div>
-    <h1>Send Money</h1>
-    <table>
-        <tr>
-            <td><label for="recipient_address">To address:</label></td>
-            <td><textarea id="recipient_address" rows="1" cols="80" name="recipient_address"></textarea></td>
-        </tr>
-        <tr>
-            <td><label for="send_amount">Amount:</label></td>
-            <td><input id="send_amount" type="text" name="send_amount"></td>
-        </tr>
-    </table>
+    <h1>Send Tokens</h1>
+    <form>
+        <div>
+            <label for="recipient_address">To address:</label>
+            <input id="recipient_address" name="recipient_address">
+        </div>
+        <div>
+            <label for="send_amount">Amount:</label>
+            <input id="send_amount" type="text" name="send_amount">
+        </div>
+    </form>
     <button id="send_money_button">Send</button>
 </div>
 
@@ -296,5 +299,41 @@
         }
         return rHex + sHex;
     }
+
+    function switchVisibility() {
+        let x = document.getElementById("private_key");
+        if (x.type === "password") {
+            x.type = "text";
+        } else {
+            x.type = "password";
+        }
+    }
 </script>
 </html>
+<style>
+    .password-checkbox {
+        display: none;
+    }
+
+    .password-checkbox ~ .checked {
+        display: none;
+    }
+
+    .password-checkbox:checked ~ .checked {
+        display: inline-block;
+    }
+
+    .password-checkbox:checked ~ .unchecked {
+        display: none;
+    }
+
+    div > input {
+        width: 50%;
+    }
+
+    label {
+        display: inline-block;
+        width: 90px;
+        text-align: right;
+    }
+</style>
