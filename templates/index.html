@@ -28,7 +28,7 @@
         </div>
         <div>
             <label for="public_key">Public Key:</label>
-            <input disabled id="public_key" name="public_key">
+            <textarea disabled id="public_key" name="public_key" rows="1"></textarea>
         </div>
         <div>
             <label for="sender_address">Address:</label>
@@ -53,7 +53,10 @@
             <input id="send_amount" type="text" name="send_amount">
         </div>
     </form>
-    <button id="send_money_button">Send</button>
+    <div>
+        <label></label>
+        <button id="send_tokens_button">Send</button>
+    </div>
 </div>
 
 <div>
@@ -94,9 +97,9 @@
     });
 
     $(function () {
-        $("#send_money_button").click(function () {
+        $("#send_tokens_button").click(function () {
             if (!keyPair) {
-                alert("The private key must be provided to send money")
+                alert("The private key must be provided to send tokens")
                 return
             }
 
@@ -352,9 +355,48 @@
         width: 50%;
     }
 
+    div > textarea {
+        width: 50%;
+        margin-top: 3px;
+        margin-bottom: -3px;
+    }
+
     label {
         display: inline-block;
         width: 90px;
         text-align: right;
+    }
+
+    button {
+        background-color: #FFFFFF;
+        border: 1px solid rgb(209, 213, 219);
+        border-radius: .5rem;
+        box-sizing: border-box;
+        color: #111827;
+        font-family: "Inter var", ui-sans-serif, system-ui, -apple-system, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        font-weight: 600;
+        line-height: 1.25rem;
+        padding: .75rem 1rem;
+        text-align: center;
+        text-decoration: none #D1D5DB solid;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+        width: 50%
+    }
+
+    button:hover {
+        background-color: rgb(249, 250, 251);
+    }
+
+    button:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+    }
+
+    button:focus-visible {
+        box-shadow: none;
     }
 </style>
