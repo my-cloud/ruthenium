@@ -55,7 +55,7 @@ func (output *Output) GetResponse() *network.OutputResponse {
 
 func (output *Output) Value(currentTimestamp int64) uint64 {
 	if output.hasIncome {
-		return output.calculateIncome(currentTimestamp)
+		return output.calculateValue(currentTimestamp)
 	} else {
 		timestamp := output.genesisTimestamp + int64(output.blockHeight)*output.validationTimestamp
 		return output.decay(timestamp, currentTimestamp, output.value)
@@ -67,15 +67,16 @@ func (output *Output) decay(lastTimestamp int64, newTimestamp int64, amount uint
 	return uint64(math.Floor(float64(amount) * math.Exp(-output.lambda*float64(elapsedTimestamp))))
 }
 
-func (output *Output) calculateIncome(currentTimestamp int64) uint64 {
-	totalIncome := output.value
+func (output *Output) calculateValue(currentTimestamp int64) uint64 {
+	totalValue := output.value
 	var timestamp int64
 	blockTimestamp := output.genesisTimestamp + int64(output.blockHeight)*output.validationTimestamp
 	for timestamp = blockTimestamp; timestamp < currentTimestamp; timestamp += output.validationTimestamp {
-		if totalIncome > 0 {
-			totalIncome = output.decay(timestamp-output.validationTimestamp, timestamp, totalIncome)
-			totalIncome += uint64(math.Round(math.Pow(float64(totalIncome), incomeExponent)))
+		if totalValue > 0 {
+			totalValue = output.decay(timestamp, timestamp+output.validationTimestamp, totalValue)
+			income := uint64(math.Round(math.Pow(float64(totalValue), incomeExponent)))
+			totalValue += income
 		}
 	}
-	return output.decay(timestamp, currentTimestamp, totalIncome)
+	return output.decay(timestamp, currentTimestamp, totalValue)
 }

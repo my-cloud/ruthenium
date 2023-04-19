@@ -94,15 +94,17 @@ func (block *Block) Hash() (hash [32]byte, err error) {
 
 func (block *Block) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Timestamp           int64                     `json:"timestamp"`
-		PreviousHash        string                    `json:"previous_hash"`
-		Transactions        []*validation.Transaction `json:"transactions"`
-		RegisteredAddresses []string                  `json:"registered_addresses"`
+		Timestamp                  int64                     `json:"timestamp"`
+		PreviousHash               string                    `json:"previous_hash"`
+		Transactions               []*validation.Transaction `json:"transactions"`
+		AddedRegisteredAddresses   []string                  `json:"added_registered_addresses"`
+		RemovedRegisteredAddresses []string                  `json:"removed_registered_addresses"`
 	}{
-		Timestamp:           block.timestamp,
-		PreviousHash:        fmt.Sprintf("%x", block.previousHash),
-		Transactions:        block.transactions,
-		RegisteredAddresses: block.registeredAddresses,
+		Timestamp:                  block.timestamp,
+		PreviousHash:               fmt.Sprintf("%x", block.previousHash),
+		Transactions:               block.transactions,
+		AddedRegisteredAddresses:   block.addedRegisteredAddresses,
+		RemovedRegisteredAddresses: block.removedRegisteredAddresses,
 	})
 }
 

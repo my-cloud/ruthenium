@@ -96,7 +96,10 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 	}
 	if !blockchain.isEmpty() {
 		newBlocks := []*network.BlockResponse{blockchain.blockResponses[len(blockchain.blockResponses)-1]}
-		blockchain.addUtxos(newBlocks)
+		err = blockchain.addUtxos(newBlocks)
+		if err != nil {
+			return fmt.Errorf("faild to add UTXO: %w", err)
+		}
 	}
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
 	blockchain.blocks = append(blockchain.blocks, block)
@@ -316,7 +319,6 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 					blockchain.logger.Error("failed to calculate old block hash")
 					isDifferent = true
 				} else {
-					// FIXME sometimes same objects give different hashes
 					isDifferent = lastOldBlockHash != lastNewBlockHash
 				}
 			}
@@ -325,15 +327,21 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	if isDifferent {
 		blockchain.mutex.Lock()
 		defer blockchain.mutex.Unlock()
+		var newBlocks []*network.BlockResponse
 		if isFork {
 			blockchain.utxosById = make(map[string][]*network.OutputResponse)
-			blockchain.addUtxos(selectedBlockResponses[:len(selectedBlockResponses)-2])
+			newBlocks = selectedBlockResponses[:len(selectedBlockResponses)-2]
 		} else if len(hostBlocks) < len(selectedBlocks) {
-			blockchain.addUtxos(selectedBlockResponses[len(blockchain.blockResponses)-1 : len(selectedBlockResponses)-2])
+			newBlocks = selectedBlockResponses[len(blockchain.blockResponses)-1 : len(selectedBlockResponses)-2]
 		}
-		blockchain.blockResponses = selectedBlockResponses
-		blockchain.blocks = selectedBlocks
-		blockchain.logger.Debug("verification done: blockchain replaced")
+		err := blockchain.addUtxos(newBlocks)
+		if err != nil {
+			blockchain.logger.Error(fmt.Errorf("verification failed: faild to add UTXO: %w", err).Error())
+		} else {
+			blockchain.blockResponses = selectedBlockResponses
+			blockchain.blocks = selectedBlocks
+			blockchain.logger.Debug("verification done: blockchain replaced")
+		}
 	} else {
 		blockchain.logger.Debug("verification done: blockchain kept")
 	}
@@ -542,11 +550,11 @@ func (blockchain *Blockchain) verifyLastBlock(lastHostBlocks []*Block, lastNeigh
 	return nil
 }
 
-func (blockchain *Blockchain) addUtxos(blocks []*network.BlockResponse) {
+func (blockchain *Blockchain) addUtxos(blocks []*network.BlockResponse) error {
 	for _, block := range blocks {
 		for _, transaction := range block.Transactions {
 			if _, ok := blockchain.utxosById[transaction.Id]; ok {
-				fmt.Println("already exists")
+				return fmt.Errorf("transaction ID already exists: %s", transaction.Id)
 			}
 			for i, output := range transaction.Outputs {
 				if output.Value > 0 {
@@ -566,13 +574,11 @@ func (blockchain *Blockchain) addUtxos(blocks []*network.BlockResponse) {
 			for _, input := range transaction.Inputs {
 				utxos := blockchain.utxosById[input.TransactionId]
 				if utxos == nil {
-					blockchain.logger.Error(fmt.Errorf("failed to find utxo, input: %v", input).Error())
-					return
+					return fmt.Errorf("failed to find transaction ID, input: %v", input)
 				}
 				utxo := utxos[input.OutputIndex]
 				if utxo == nil {
-					blockchain.logger.Error(fmt.Errorf("failed to find utxo, input: %v", input).Error())
-					return
+					return fmt.Errorf("failed to find output index, input: %v", input)
 				}
 				blockchain.utxosByAddress[utxo.Address] = removeUtxo(blockchain.utxosByAddress[utxo.Address], input.TransactionId, input.OutputIndex)
 				blockchain.utxosById[input.TransactionId][input.OutputIndex] = nil
@@ -591,6 +597,7 @@ func (blockchain *Blockchain) addUtxos(blocks []*network.BlockResponse) {
 			}
 		}
 	}
+	return nil
 }
 
 func (blockchain *Blockchain) FindFee(transaction *network.TransactionResponse, timestamp int64) (uint64, error) {
