@@ -50,6 +50,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		}
 		var selectedUtxos []*network.WalletOutputResponse
 		var inputsValue uint64
+		var utxosValue uint64
 		var inputsValueForIncome uint64
 		now := handler.watch.Now().UnixNano()
 		nextBlockHeight := (now-handler.genesisTimestamp)/handler.validationTimestamp + 1
@@ -60,6 +61,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			output := validation.NewOutputFromWalletResponse(utxo, handler.lambda, handler.validationTimestamp, handler.genesisTimestamp)
 			outputValue := output.Value(nextBlockTimestamp)
 			inputsValueForIncome += outputValue
+			utxosValue += outputValue
 			if inputsValue < value {
 				inputsValue += outputValue
 				selectedUtxos = append(selectedUtxos, utxo)
@@ -74,13 +76,17 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write("insufficient wallet balance to send transaction")
 			return
 		}
+		var rest uint64
 		if hasIncome {
 			selectedUtxos = utxos
+			rest = utxosValue - value - handler.minimalTransactionFee
+		} else {
+			rest = inputsValue - value - handler.minimalTransactionFee
 		}
 		response := &Response{
 			BlockHeight: int(nextBlockHeight),
 			HasIncome:   hasIncome,
-			Rest:        inputsValue - value - handler.minimalTransactionFee,
+			Rest:        rest,
 			Utxos:       selectedUtxos,
 		}
 		marshaledResponse, err := json.Marshal(response)

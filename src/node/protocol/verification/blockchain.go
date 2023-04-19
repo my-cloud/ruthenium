@@ -601,8 +601,8 @@ func (blockchain *Blockchain) addUtxos(blocks []*network.BlockResponse) error {
 }
 
 func (blockchain *Blockchain) FindFee(transaction *network.TransactionResponse, timestamp int64) (uint64, error) {
-	var inputValues uint64
-	var outputValues uint64
+	var inputsValue uint64
+	var outputsValue uint64
 	for _, input := range transaction.Inputs {
 		utxos := blockchain.utxosById[input.TransactionId]
 		if utxos == nil {
@@ -613,13 +613,14 @@ func (blockchain *Blockchain) FindFee(transaction *network.TransactionResponse, 
 			return 0, fmt.Errorf("failed to find utxo, input: %v", input)
 		}
 		output := validation.NewOutputFromResponse(utxo, blockchain.lambda, blockchain.validationTimestamp, blockchain.genesisTimestamp)
-		inputValues += output.Value(timestamp)
+		value := output.Value(timestamp)
+		inputsValue += value
 	}
 	for _, output := range transaction.Outputs {
-		outputValues += output.Value
+		outputsValue += output.Value
 	}
-	if inputValues < outputValues {
+	if inputsValue < outputsValue {
 		return 0, errors.New("fee is negative")
 	}
-	return inputValues - outputValues, nil
+	return inputsValue - outputsValue, nil
 }
