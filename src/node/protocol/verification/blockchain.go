@@ -96,9 +96,9 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 	}
 	if !blockchain.isEmpty() {
 		newBlocks := []*network.BlockResponse{blockchain.blockResponses[len(blockchain.blockResponses)-1]}
-		err = blockchain.addUtxos(newBlocks)
+		err = blockchain.updateUtxos(newBlocks)
 		if err != nil {
-			return fmt.Errorf("faild to add UTXO: %w", err)
+			return fmt.Errorf("failed to add UTXO: %w", err)
 		}
 	}
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
@@ -335,7 +335,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		} else if len(hostBlocks) < len(selectedBlocks) {
 			newBlocks = selectedBlockResponses[len(hostBlocks)-1 : len(selectedBlockResponses)-2]
 		}
-		err := blockchain.addUtxos(newBlocks)
+		err := blockchain.updateUtxos(newBlocks)
 		if err != nil {
 			blockchain.logger.Error(fmt.Errorf("verification failed: faild to add UTXO: %w", err).Error())
 		} else {
@@ -543,15 +543,14 @@ func (blockchain *Blockchain) verifyLastBlock(lastHostBlocks []*Block, lastNeigh
 	validatorAddress := lastNeighborBlock.ValidatorAddress()
 	isValidatorRegistered, err := blockchain.registry.IsRegistered(validatorAddress)
 	if err != nil {
-		return fmt.Errorf("failed to get validator proof of humanity: %w", err)
-	}
-	if !isValidatorRegistered {
+		blockchain.logger.Debug(fmt.Errorf("failed to get validator proof of humanity: %w", err).Error())
+	} else if !isValidatorRegistered {
 		return fmt.Errorf("validator address is not registered in Proof of Humanity registry")
 	}
 	return nil
 }
 
-func (blockchain *Blockchain) addUtxos(blocks []*network.BlockResponse) error {
+func (blockchain *Blockchain) updateUtxos(blocks []*network.BlockResponse) error {
 	for _, block := range blocks {
 		for _, transaction := range block.Transactions {
 			if _, ok := blockchain.utxosById[transaction.Id]; ok {

@@ -134,7 +134,9 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	var newAddresses []string
 	for _, transaction := range transactionResponses {
 		for _, output := range transaction.Outputs {
-			newAddresses = append(newAddresses, output.Address)
+			if output.HasIncome {
+				newAddresses = append(newAddresses, output.Address)
+			}
 		}
 	}
 	if lastBlockResponse.Timestamp == timestamp {
