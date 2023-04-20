@@ -324,14 +324,14 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			}
 		}
 	}
-	if isDifferent {
+	if isDifferent && selectedBlockResponses != nil {
 		blockchain.mutex.Lock()
 		defer blockchain.mutex.Unlock()
 		var newBlocks []*network.BlockResponse
 		if isFork {
 			blockchain.utxosById = make(map[string][]*network.OutputResponse)
 			newBlocks = selectedBlockResponses[:len(selectedBlockResponses)-2]
-			blockchain.genesisTimestamp = newBlocks[0].Timestamp
+			blockchain.genesisTimestamp = selectedBlockResponses[0].Timestamp
 		} else if len(hostBlocks) < len(selectedBlocks) {
 			newBlocks = selectedBlockResponses[len(hostBlocks)-1 : len(selectedBlockResponses)-2]
 		}
