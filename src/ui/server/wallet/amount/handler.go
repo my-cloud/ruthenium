@@ -15,14 +15,13 @@ type Handler struct {
 	host                network.Neighbor
 	lambda              float64
 	particlesCount      uint64
-	genesisTimestamp    int64
 	validationTimestamp int64
 	watch               clock.Watch
 	logger              log.Logger
 }
 
-func NewHandler(host network.Neighbor, lambda float64, particlesCount uint64, genesisTimestamp int64, validationTimestamp int64, watch clock.Watch, logger log.Logger) *Handler {
-	return &Handler{host, lambda, particlesCount, genesisTimestamp, validationTimestamp, watch, logger}
+func NewHandler(host network.Neighbor, lambda float64, particlesCount uint64, validationTimestamp int64, watch clock.Watch, logger log.Logger) *Handler {
+	return &Handler{host, lambda, particlesCount, validationTimestamp, watch, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -35,9 +34,15 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		genesisBlock, err := handler.host.GetBlock(0)
+		if err != nil || genesisBlock == nil {
+			handler.logger.Error(fmt.Errorf("failed to get genesis block: %w", err).Error())
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		var balance uint64
 		for _, utxo := range utxos {
-			balance += validation.NewOutputFromWalletResponse(utxo, handler.lambda, handler.validationTimestamp, handler.genesisTimestamp).Value(handler.watch.Now().UnixNano())
+			balance += validation.NewOutputFromWalletResponse(utxo, handler.lambda, handler.validationTimestamp, genesisBlock.Timestamp).Value(handler.watch.Now().UnixNano())
 		}
 		marshaledAmount, err := json.Marshal(float64(balance) / float64(handler.particlesCount))
 		if err != nil {

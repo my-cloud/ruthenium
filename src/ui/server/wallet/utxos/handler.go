@@ -18,14 +18,13 @@ type Handler struct {
 	lambda                float64
 	minimalTransactionFee uint64
 	particlesCount        uint64
-	genesisTimestamp      int64
 	validationTimestamp   int64
 	watch                 clock.Watch
 	logger                log.Logger
 }
 
-func NewHandler(host network.Neighbor, lambda float64, minimalTransactionFee uint64, particlesCount uint64, genesisTimestamp int64, validationTimestamp int64, watch clock.Watch, logger log.Logger) *Handler {
-	return &Handler{host, lambda, minimalTransactionFee, particlesCount, genesisTimestamp, validationTimestamp, watch, logger}
+func NewHandler(host network.Neighbor, lambda float64, minimalTransactionFee uint64, particlesCount uint64, validationTimestamp int64, watch clock.Watch, logger log.Logger) *Handler {
+	return &Handler{host, lambda, minimalTransactionFee, particlesCount, validationTimestamp, watch, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -48,17 +47,23 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		genesisBlock, err := handler.host.GetBlock(0)
+		if err != nil || genesisBlock == nil {
+			handler.logger.Error(fmt.Errorf("failed to get genesis block: %w", err).Error())
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		var selectedUtxos []*network.WalletOutputResponse
 		var inputsValue uint64
 		var utxosValue uint64
 		var inputsValueForIncome uint64
 		now := handler.watch.Now().UnixNano()
-		nextBlockHeight := (now-handler.genesisTimestamp)/handler.validationTimestamp + 1
-		nextBlockTimestamp := handler.genesisTimestamp + nextBlockHeight*handler.validationTimestamp
+		nextBlockHeight := (now-genesisBlock.Timestamp)/handler.validationTimestamp + 1
+		nextBlockTimestamp := genesisBlock.Timestamp + nextBlockHeight*handler.validationTimestamp
 		value := uint64(parsedValue)
 		var hasIncome bool
 		for _, utxo := range utxos {
-			output := validation.NewOutputFromWalletResponse(utxo, handler.lambda, handler.validationTimestamp, handler.genesisTimestamp)
+			output := validation.NewOutputFromWalletResponse(utxo, handler.lambda, handler.validationTimestamp, genesisBlock.Timestamp)
 			outputValue := output.Value(nextBlockTimestamp)
 			inputsValueForIncome += outputValue
 			utxosValue += outputValue

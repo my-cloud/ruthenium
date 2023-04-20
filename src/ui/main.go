@@ -63,8 +63,8 @@ func main() {
 	http.Handle("/transaction", transaction.NewHandler(host, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/wallet/address", address.NewHandler(logger))
-	http.Handle("/wallet/amount", amount.NewHandler(host, lambda, settings.ParticlesPerToken, genesisTimestamp, validationTimestamp, watch, logger))
-	http.Handle("/wallet/utxos", utxos.NewHandler(host, lambda, settings.MinimalTransactionFee, settings.ParticlesPerToken, genesisTimestamp, validationTimestamp, watch, logger))
+	http.Handle("/wallet/amount", amount.NewHandler(host, lambda, settings.ParticlesPerToken, validationTimestamp, watch, logger))
+	http.Handle("/wallet/utxos", utxos.NewHandler(host, lambda, settings.MinimalTransactionFee, settings.ParticlesPerToken, validationTimestamp, watch, logger))
 	logger.Info("user interface server is running...")
 	logger.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(*port), nil).Error())
 }

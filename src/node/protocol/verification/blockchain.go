@@ -333,7 +333,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			newBlocks = selectedBlockResponses[:len(selectedBlockResponses)-2]
 			blockchain.genesisTimestamp = newBlocks[0].Timestamp
 		} else if len(hostBlocks) < len(selectedBlocks) {
-			newBlocks = selectedBlockResponses[len(blockchain.blockResponses)-1 : len(selectedBlockResponses)-2]
+			newBlocks = selectedBlockResponses[len(hostBlocks)-1 : len(selectedBlockResponses)-2]
 		}
 		err := blockchain.addUtxos(newBlocks)
 		if err != nil {
