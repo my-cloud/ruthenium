@@ -52,6 +52,10 @@
             <label for="send_amount">Amount:</label>
             <input id="send_amount" type="text" name="send_amount">
         </div>
+        <div>
+            <label for="is_registered">Registered:</label>
+            <span><input id="is_registered" type="checkbox" name="is_registered" checked></span>
+        </div>
     </form>
     <div>
         <label></label>
@@ -111,7 +115,11 @@
                 return
             }
             let value = result.particles;
-            const data = {"address": senderAddress, "value": value};
+            let isRegistered = false
+            if ($("#is_registered").val() === "on") {
+                isRegistered = true
+            }
+            const data = {"address": senderAddress, "value": value, "registered": isRegistered};
 
             function send(response) {
                 let inputs = [];
@@ -144,7 +152,7 @@
                     "address": senderAddress,
                     "block_height": response.block_height,
                     "has_reward": false,
-                    "has_income": response.has_income,
+                    "has_income": isRegistered,
                     "value": response.rest,
                 }
                 const dateNow = Math.floor(Date.now() * 1000000);

@@ -41,6 +41,15 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write(errorMessage)
 			return
 		}
+		requestIsRegistered := req.URL.Query().Get("registered")
+		isRegistered, err := strconv.ParseBool(requestIsRegistered)
+		if err != nil {
+			errorMessage := "failed to parse registered value"
+			handler.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
+			writer.WriteHeader(http.StatusBadRequest)
+			jsonWriter.Write(errorMessage)
+			return
+		}
 		utxos, err := handler.host.GetUtxos(address)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())
@@ -55,24 +64,18 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		}
 		var selectedUtxos []*network.WalletOutputResponse
 		var inputsValue uint64
-		var utxosValue uint64
-		var inputsValueForIncome uint64
 		now := handler.watch.Now().UnixNano()
 		nextBlockHeight := (now-genesisBlock.Timestamp)/handler.validationTimestamp + 1
 		nextBlockTimestamp := genesisBlock.Timestamp + nextBlockHeight*handler.validationTimestamp
 		value := uint64(parsedValue)
-		var hasIncome bool
 		for _, utxo := range utxos {
 			output := validation.NewOutputFromWalletResponse(utxo, handler.lambda, handler.validationTimestamp, genesisBlock.Timestamp)
 			outputValue := output.Value(nextBlockTimestamp)
-			inputsValueForIncome += outputValue
-			utxosValue += outputValue
-			if inputsValue < value {
+			if isRegistered {
+				inputsValue += outputValue
+			} else if inputsValue < value {
 				inputsValue += outputValue
 				selectedUtxos = append(selectedUtxos, utxo)
-			}
-			if utxo.HasIncome {
-				hasIncome = true
 			}
 		}
 		if inputsValue < value {
@@ -81,16 +84,12 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write("insufficient wallet balance to send transaction")
 			return
 		}
-		var rest uint64
-		if hasIncome {
+		if isRegistered {
 			selectedUtxos = utxos
-			rest = utxosValue - value - handler.minimalTransactionFee
-		} else {
-			rest = inputsValue - value - handler.minimalTransactionFee
 		}
+		rest := inputsValue - value - handler.minimalTransactionFee
 		response := &Response{
 			BlockHeight: int(nextBlockHeight),
-			HasIncome:   hasIncome,
 			Rest:        rest,
 			Utxos:       selectedUtxos,
 		}

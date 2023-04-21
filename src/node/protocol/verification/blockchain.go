@@ -407,9 +407,6 @@ func (blockchain *Blockchain) sortByBlocksLength(selectedTargets []string, block
 
 func (blockchain *Blockchain) verify(lastHostBlocks []*Block, lastNeighborBlockResponses []*network.BlockResponse, lastRegisteredAddresses []string, oldHostBlockResponses []*network.BlockResponse, timestamp int64) ([]*Block, error) {
 	// TODO verify double spend
-	if len(lastNeighborBlockResponses) < len(lastHostBlocks) {
-		return nil, errors.New("neighbor's blockchain is too short")
-	}
 	err := blockchain.verifyLastBlock(lastHostBlocks, lastNeighborBlockResponses)
 	if err != nil {
 		return nil, err
@@ -456,7 +453,7 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, lastNeighborBlockR
 			}
 			hostBlockHash, err := lastHostBlocks[i].Hash()
 			if err != nil {
-				return nil, fmt.Errorf("failed to calculate host block hash: %w", err)
+				blockchain.logger.Error(fmt.Errorf("failed to calculate host block hash: %w", err).Error())
 			}
 			if neighborBlockHash != hostBlockHash {
 				isNewBlock = true
@@ -533,7 +530,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlock *B
 }
 
 func (blockchain *Blockchain) verifyLastBlock(lastHostBlocks []*Block, lastNeighborBlockResponses []*network.BlockResponse) error {
-	if lastHostBlocks[0].PreviousHash() != lastNeighborBlockResponses[0].PreviousHash {
+	if len(lastNeighborBlockResponses) == 0 || lastHostBlocks[0].PreviousHash() != lastNeighborBlockResponses[0].PreviousHash {
 		return errors.New("neighbor's blockchain is is a fork")
 	}
 	lastNeighborBlock, err := NewBlockFromResponse(lastNeighborBlockResponses[len(lastNeighborBlockResponses)-1], lastHostBlocks[0].RegisteredAddresses())
