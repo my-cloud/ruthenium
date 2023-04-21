@@ -18,13 +18,21 @@ type Transaction struct {
 	rewardValue            uint64
 }
 
+func NewGenesisTransaction(address string, timestamp int64, value uint64) (*network.TransactionResponse, error) {
+	return newTransactionResponse(address, 0, true, timestamp, value)
+}
+
 func NewRewardTransaction(address string, blockHeight int, timestamp int64, value uint64) (*network.TransactionResponse, error) {
+	return newTransactionResponse(address, blockHeight, false, timestamp, value)
+}
+
+func newTransactionResponse(address string, blockHeight int, hasIncome bool, timestamp int64, value uint64) (*network.TransactionResponse, error) {
 	outputs := []*network.OutputResponse{
 		{
 			Address:     address,
 			BlockHeight: blockHeight,
 			HasReward:   true,
-			HasIncome:   true,
+			HasIncome:   hasIncome,
 			Value:       value,
 		},
 	}

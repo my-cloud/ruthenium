@@ -1,6 +1,6 @@
 package network
 
-type WalletOutputResponse struct {
+type UtxoResponse struct {
 	Address       string `json:"address"`
 	BlockHeight   int    `json:"block_height"`
 	HasReward     bool   `json:"has_reward"`

@@ -62,14 +62,14 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var selectedUtxos []*network.WalletOutputResponse
+		var selectedUtxos []*network.UtxoResponse
 		var inputsValue uint64
 		now := handler.watch.Now().UnixNano()
 		nextBlockHeight := (now-genesisBlock.Timestamp)/handler.validationTimestamp + 1
 		nextBlockTimestamp := genesisBlock.Timestamp + nextBlockHeight*handler.validationTimestamp
 		value := uint64(parsedValue)
 		for _, utxo := range utxos {
-			output := validation.NewOutputFromWalletResponse(utxo, handler.lambda, handler.validationTimestamp, genesisBlock.Timestamp)
+			output := validation.NewOutputFromUtxoResponse(utxo, handler.lambda, handler.validationTimestamp, genesisBlock.Timestamp)
 			outputValue := output.Value(nextBlockTimestamp)
 			if isRegistered {
 				inputsValue += outputValue

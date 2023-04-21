@@ -260,7 +260,7 @@ func Test_GetAmount_NoError_ClientCalled(t *testing.T) {
 	expectedAddress := "expected address"
 
 	// Act
-	_, _ = neighbor.GetAmount(expectedAddress)
+	_, _ = neighbor.GetUtxos(expectedAddress)
 
 	// Assert
 	sendCalls := clientMock.SendCalls()
@@ -268,7 +268,7 @@ func Test_GetAmount_NoError_ClientCalled(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	data, _ := json.Marshal(network.AmountRequest{Address: &expectedAddress})
+	data, _ := json.Marshal(network.UtxosRequest{Address: &expectedAddress})
 	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 }
@@ -284,7 +284,7 @@ func Test_GetAmount_Error_ReturnsError(t *testing.T) {
 	expectedAddress := "expected address"
 
 	// Act
-	_, err := neighbor.GetAmount(expectedAddress)
+	_, err := neighbor.GetUtxos(expectedAddress)
 
 	// Assert
 	sendCalls := clientMock.SendCalls()
@@ -292,7 +292,7 @@ func Test_GetAmount_Error_ReturnsError(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	data, _ := json.Marshal(network.AmountRequest{Address: &expectedAddress})
+	data, _ := json.Marshal(network.UtxosRequest{Address: &expectedAddress})
 	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 	test.Assert(t, err != nil, "Error is nil whereas it should not.")

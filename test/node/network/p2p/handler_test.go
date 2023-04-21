@@ -102,13 +102,13 @@ func Test_Handle_AddInvalidTransaction_AddTransactionNotCalled(t *testing.T) {
 //	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
 //}
 
-func Test_Handle_InvalidAmountRequest_CalculateTotalAmountNotCalled(t *testing.T) {
+func Test_Handle_InvalidUtxosRequest_UtxosByAddressNotCalled(t *testing.T) {
 	// Arrange
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
-	blockchainMock.CalculateTotalAmountFunc = func(int64, string) uint64 { return 0 }
+	blockchainMock.UtxosByAddressFunc = func(string) []*network.UtxoResponse { return nil }
 	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
-	data, err := json.Marshal(network.AmountRequest{})
+	data, err := json.Marshal(network.UtxosRequest{})
 	if err != nil {
 		return
 	}
@@ -119,20 +119,20 @@ func Test_Handle_InvalidAmountRequest_CalculateTotalAmountNotCalled(t *testing.T
 	_, _ = handler.Handle(context.TODO(), req)
 
 	// Assert
-	isMethodCalled := len(blockchainMock.CalculateTotalAmountCalls()) != 0
+	isMethodCalled := len(blockchainMock.UtxosByAddressCalls()) != 0
 	test.Assert(t, !isMethodCalled, "Method is not called whereas it should be.")
 }
 
-func Test_Handle_Amount_CalculateTotalAmountCalled(t *testing.T) {
+func Test_Handle_UtxosRequest_UtxosByAddressCalled(t *testing.T) {
 	// Arrange
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
-	blockchainMock.CalculateTotalAmountFunc = func(int64, string) uint64 { return 0 }
+	blockchainMock.UtxosByAddressFunc = func(string) []*network.UtxoResponse { return nil }
 	watchMock := new(clocktest.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), watchMock, logtest.NewLoggerMock())
 	address := "address"
-	data, err := json.Marshal(network.AmountRequest{Address: &address})
+	data, err := json.Marshal(network.UtxosRequest{Address: &address})
 	if err != nil {
 		return
 	}
@@ -143,7 +143,7 @@ func Test_Handle_Amount_CalculateTotalAmountCalled(t *testing.T) {
 	_, _ = handler.Handle(context.TODO(), req)
 
 	// Assert
-	isMethodCalled := len(blockchainMock.CalculateTotalAmountCalls()) == 1
+	isMethodCalled := len(blockchainMock.UtxosByAddressCalls()) == 1
 	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
 }
 

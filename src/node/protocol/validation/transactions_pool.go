@@ -171,10 +171,6 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	currentBlock := blocks[len(blocks)-1]
 	transactionResponse := transaction.GetResponse()
 	feeTimestamp := currentBlock.Timestamp + pool.validationTimer.Nanoseconds()
-	err = currentBlockchain.AddBlock(feeTimestamp, nil, nil)
-	if err != nil {
-		return fmt.Errorf("failed to add temporary block: %w", err)
-	}
 	fee, err := currentBlockchain.FindFee(transactionResponse, feeTimestamp)
 	if err != nil {
 		return fmt.Errorf("failed to find fee: %w", err)

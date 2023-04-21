@@ -13,7 +13,6 @@ import (
 type Synchronizer struct {
 	clientFactory       ClientFactory
 	hostTarget          *Target
-	ipFinder            network.IpFinder
 	maxOutboundsCount   int
 	neighbors           []network.Neighbor
 	neighborsMutex      sync.RWMutex
@@ -24,11 +23,10 @@ type Synchronizer struct {
 	logger              log.Logger
 }
 
-func NewSynchronizer(clientFactory ClientFactory, hostIp string, hostPort string, ipFinder network.IpFinder, maxOutboundsCount int, scoresBySeedTarget map[string]int, watch clock.Watch, logger log.Logger) *Synchronizer {
+func NewSynchronizer(clientFactory ClientFactory, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTarget map[string]int, watch clock.Watch, logger log.Logger) *Synchronizer {
 	synchronizer := new(Synchronizer)
 	synchronizer.clientFactory = clientFactory
 	synchronizer.hostTarget = NewTarget(hostIp, hostPort)
-	synchronizer.ipFinder = ipFinder
 	synchronizer.maxOutboundsCount = maxOutboundsCount
 	synchronizer.scoresBySeedTarget = scoresBySeedTarget
 	synchronizer.scoresByTarget = map[string]int{}

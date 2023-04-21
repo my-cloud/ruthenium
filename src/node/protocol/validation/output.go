@@ -24,7 +24,7 @@ func NewOutputFromResponse(response *network.OutputResponse, lambda float64, val
 	return &Output{response.Address, response.BlockHeight, response.HasReward, response.HasIncome, response.Value, genesisTimestamp, lambda, validationTimestamp}
 }
 
-func NewOutputFromWalletResponse(response *network.WalletOutputResponse, lambda float64, validationTimestamp int64, genesisTimestamp int64) *Output {
+func NewOutputFromUtxoResponse(response *network.UtxoResponse, lambda float64, validationTimestamp int64, genesisTimestamp int64) *Output {
 	return &Output{response.Address, response.BlockHeight, response.HasReward, response.HasIncome, response.Value, genesisTimestamp, lambda, validationTimestamp}
 }
 

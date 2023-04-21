@@ -9,5 +9,5 @@ type Neighbor interface {
 	SendTargets(request []TargetRequest) (err error)
 	AddTransaction(request TransactionRequest) (err error)
 	GetTransactions() (transactionResponses []TransactionResponse, err error)
-	GetUtxos(address string) (utxos []*WalletOutputResponse, err error)
+	GetUtxos(address string) (utxos []*UtxoResponse, err error)
 }

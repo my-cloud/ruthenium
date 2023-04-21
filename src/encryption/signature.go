@@ -20,8 +20,8 @@ type Signature struct {
 	s *big.Int
 }
 
-func NewSignature(marshaledTransaction []byte, privateKey *PrivateKey) (*Signature, error) {
-	hash := sha256.Sum256(marshaledTransaction)
+func NewSignature(bytes []byte, privateKey *PrivateKey) (*Signature, error) {
+	hash := sha256.Sum256(bytes)
 	r, s, err := ecdsa.Sign(rand.Reader, privateKey.PrivateKey, hash[:])
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign transaction: %w", err)

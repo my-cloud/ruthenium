@@ -12,5 +12,5 @@ type Blockchain interface {
 	Copy() Blockchain
 	Lambda() float64
 	LastBlocks(startingBlockHeight uint64) []*network.BlockResponse
-	UtxosByAddress(address string) []*network.WalletOutputResponse
+	UtxosByAddress(address string) []*network.UtxoResponse
 }

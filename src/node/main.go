@@ -73,7 +73,7 @@ func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *
 	validationTimer := time.Duration(settings.ValidationIntervalInSeconds) * time.Second
 	now := watch.Now()
 	genesisTimestamp := now.Truncate(validationTimer).Add(validationTimer).UnixNano()
-	genesisTransaction, err := validation.NewRewardTransaction(address, 0, genesisTimestamp, settings.GenesisAmountInParticles)
+	genesisTransaction, err := validation.NewGenesisTransaction(address, genesisTimestamp, settings.GenesisAmountInParticles)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create genesis transaction: %w", err).Error())
 	}
@@ -110,5 +110,5 @@ func createSynchronizer(parser *file.JsonParser, seedsPath string, hostIp string
 		}
 	}
 	clientFactory := gp2p.NewClientFactory(ipFinder)
-	return p2p.NewSynchronizer(clientFactory, hostIp, strconv.Itoa(port), ipFinder, maxOutboundsCount, scoresBySeedTarget, watch, logger)
+	return p2p.NewSynchronizer(clientFactory, hostIp, strconv.Itoa(port), maxOutboundsCount, scoresBySeedTarget, watch, logger)
 }
