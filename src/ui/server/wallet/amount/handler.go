@@ -28,6 +28,11 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 	switch req.Method {
 	case http.MethodGet:
 		address := req.URL.Query().Get("address")
+		if address == "" {
+			handler.logger.Error("address is missing in amount request")
+			writer.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		utxos, err := handler.host.GetUtxos(address)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())

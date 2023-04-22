@@ -72,7 +72,7 @@ func NewTransactionRequest(address string, blockHeight int, value uint64, timest
 		Value:       &value,
 	}
 	transactionRequest := network.TransactionRequest{
-		Inputs:                       nil,
+		Inputs:                       &[]network.InputRequest{},
 		Outputs:                      &[]network.OutputRequest{output},
 		Timestamp:                    &timestamp,
 		TransactionBroadcasterTarget: &target,
