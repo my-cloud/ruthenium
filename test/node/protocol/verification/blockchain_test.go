@@ -306,7 +306,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
 }
 
-// FIXME fix tests
+// FIXME
 //func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
 //	// Arrange
 //	registry := new(protocoltest.RegistryMock)
