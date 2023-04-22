@@ -1,6 +1,7 @@
 package verification
 
 import (
+	"fmt"
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
@@ -306,112 +307,120 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
 }
 
-// FIXME
-//func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
-//	// Arrange
-//	registry := new(protocoltest.RegistryMock)
-//	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-//	logger := logtest.NewLoggerMock()
-//	neighborMock := new(networktest.NeighborMock)
-//	address := test.Address
-//	var transactionFee uint64 = 0
-//	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
-//	publicKey := encryption.NewPublicKey(privateKey)
-//	transactionRequest := protocoltest.NewSignedTransactionRequest(transactionFee, "A", address, privateKey, publicKey, 3, 1)
-//	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
-//	transactionResponse := transaction.GetResponse()
-//	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
-//		blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
-//		block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
-//		hash, _ := block1.Hash()
-//		var block2Timestamp int64 = 1
-//		rewardTransaction, _ := validation.NewRewardTransaction(address, 1, block2Timestamp, 0)
-//		transactions := []*network.TransactionResponse{
-//			transactionResponse,
-//			rewardTransaction,
-//		}
-//		blockResponse2 := verification.NewBlockResponse(block2Timestamp, hash, transactions, []string{address}, nil)
-//		return []*network.BlockResponse{blockResponse1, blockResponse2}, nil
-//	}
-//	neighborMock.TargetFunc = func() string {
-//		return "neighbor"
-//	}
-//	synchronizer := new(networktest.SynchronizerMock)
-//	synchronizer.NeighborsFunc = func() []network.Neighbor {
-//		return []network.Neighbor{neighborMock}
-//	}
-//	blockchain := verification.NewBlockchain(0, nil, transactionFee, registry, 1, synchronizer, logger)
-//
-//	// Act
-//	blockchain.Update(1)
-//
-//	// Assert
-//	var isKept bool
-//	var isExplicitMessageLogged bool
-//	for _, call := range logger.DebugCalls() {
-//		expectedMessage := fmt.Sprintf("a neighbor block transaction timestamp is too far in the future, transaction: %v", transactionResponse)
-//		if call.Msg == blockchainKeptMessage {
-//			isKept = true
-//		} else if strings.Contains(call.Msg, expectedMessage) {
-//			isExplicitMessageLogged = true
-//		}
-//	}
-//	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
-//	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
-//}
-// FIXME
-//func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
-//	// Arrange
-//	registry := new(protocoltest.RegistryMock)
-//	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-//	logger := logtest.NewLoggerMock()
-//	neighborMock := new(networktest.NeighborMock)
-//	address := test.Address
-//	var transactionFee uint64 = 0
-//	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
-//	publicKey := encryption.NewPublicKey(privateKey)
-//	transactionRequest := protocoltest.NewSignedTransactionRequest(transactionFee, "A", address, privateKey, publicKey, 0, 1)
-//	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
-//	transactionResponse := transaction.GetResponse()
-//	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
-//		blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
-//		block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
-//		hash1, _ := block1.Hash()
-//		blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, 1)
-//		block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
-//		hash2, _ := block2.Hash()
-//		var block3Timestamp int64 = 2
-//		rewardTransaction, _ := validation.NewRewardTransaction(address, 2, block3Timestamp, 0)
-//		transactions := []*network.TransactionResponse{
-//			transactionResponse,
-//			rewardTransaction,
-//		}
-//		blockResponse3 := verification.NewBlockResponse(block3Timestamp, hash2, transactions, []string{address}, nil)
-//		return []*network.BlockResponse{blockResponse1, blockResponse2, blockResponse3}, nil
-//	}
-//	neighborMock.TargetFunc = func() string {
-//		return "neighbor"
-//	}
-//	synchronizer := new(networktest.SynchronizerMock)
-//	synchronizer.NeighborsFunc = func() []network.Neighbor {
-//		return []network.Neighbor{neighborMock}
-//	}
-//	blockchain := verification.NewBlockchain(0, nil, transactionFee, registry, 1, synchronizer, logger)
-//
-//	// Act
-//	blockchain.Update(2)
-//
-//	// Assert
-//	var isKept bool
-//	var isExplicitMessageLogged bool
-//	for _, call := range logger.DebugCalls() {
-//		expectedMessage := fmt.Sprintf("a neighbor block transaction timestamp is too old, transaction: %v", transactionResponse)
-//		if call.Msg == blockchainKeptMessage {
-//			isKept = true
-//		} else if strings.Contains(call.Msg, expectedMessage) {
-//			isExplicitMessageLogged = true
-//		}
-//	}
-//	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
-//	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
-//}
+func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	logger := logtest.NewLoggerMock()
+	neighborMock := new(networktest.NeighborMock)
+	address := test.Address
+	var transactionFee uint64 = 0
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
+	publicKey := encryption.NewPublicKey(privateKey)
+	blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
+	var genesisOutputIndex uint16 = 0
+	genesisTransaction := blockResponse1.Transactions[0]
+	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
+	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 4, genesisValue, 4)
+	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
+	invalidTransactionResponse := invalidTransaction.GetResponse()
+	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
+	hash1, _ := block1.Hash()
+	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, 1)
+	block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
+	hash2, _ := block2.Hash()
+	var block3Timestamp int64 = 2
+	rewardTransaction, _ := validation.NewRewardTransaction(address, 2, block3Timestamp, 0)
+	transactions := []*network.TransactionResponse{
+		invalidTransactionResponse,
+		rewardTransaction,
+	}
+	blockResponse3 := verification.NewBlockResponse(block3Timestamp, hash2, transactions, []string{address}, nil)
+	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
+		return []*network.BlockResponse{blockResponse1, blockResponse2, blockResponse3}, nil
+	}
+	neighborMock.TargetFunc = func() string {
+		return "neighbor"
+	}
+	synchronizer := new(networktest.SynchronizerMock)
+	synchronizer.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
+	}
+	blockchain := verification.NewBlockchain(0, nil, transactionFee, registry, 1, synchronizer, logger)
+
+	// Act
+	blockchain.Update(2)
+
+	// Assert
+	var isKept bool
+	var isExplicitMessageLogged bool
+	for _, call := range logger.DebugCalls() {
+		expectedMessage := fmt.Sprintf("a neighbor block transaction timestamp is too far in the future, transaction: %v", invalidTransactionResponse)
+		if call.Msg == blockchainKeptMessage {
+			isKept = true
+		} else if strings.Contains(call.Msg, expectedMessage) {
+			isExplicitMessageLogged = true
+		}
+	}
+	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
+	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
+}
+
+func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	logger := logtest.NewLoggerMock()
+	neighborMock := new(networktest.NeighborMock)
+	address := test.Address
+	var transactionFee uint64 = 0
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
+	publicKey := encryption.NewPublicKey(privateKey)
+	blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
+	var genesisOutputIndex uint16 = 0
+	genesisTransaction := blockResponse1.Transactions[0]
+	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
+	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 0, genesisValue, 0)
+	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
+	invalidTransactionResponse := invalidTransaction.GetResponse()
+	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
+	hash1, _ := block1.Hash()
+	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, 1)
+	block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
+	hash2, _ := block2.Hash()
+	var block3Timestamp int64 = 2
+	rewardTransaction, _ := validation.NewRewardTransaction(address, 2, block3Timestamp, 0)
+	transactions := []*network.TransactionResponse{
+		invalidTransactionResponse,
+		rewardTransaction,
+	}
+	blockResponse3 := verification.NewBlockResponse(block3Timestamp, hash2, transactions, []string{address}, nil)
+	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
+		return []*network.BlockResponse{blockResponse1, blockResponse2, blockResponse3}, nil
+	}
+	neighborMock.TargetFunc = func() string {
+		return "neighbor"
+	}
+	synchronizer := new(networktest.SynchronizerMock)
+	synchronizer.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
+	}
+	blockchain := verification.NewBlockchain(0, nil, transactionFee, registry, 1, synchronizer, logger)
+
+	// Act
+	blockchain.Update(2)
+
+	// Assert
+	var isKept bool
+	var isExplicitMessageLogged bool
+	for _, call := range logger.DebugCalls() {
+		expectedMessage := fmt.Sprintf("a neighbor block transaction timestamp is too old, transaction: %v", invalidTransactionResponse)
+		if call.Msg == blockchainKeptMessage {
+			isKept = true
+		} else if strings.Contains(call.Msg, expectedMessage) {
+			isExplicitMessageLogged = true
+		}
+	}
+	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
+	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
+}
