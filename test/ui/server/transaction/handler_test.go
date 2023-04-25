@@ -17,6 +17,8 @@ import (
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
 )
 
+const urlTarget = "/url-target"
+
 func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	neighborMock := new(networktest.NeighborMock)
@@ -27,7 +29,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	invalidHttpMethods := []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
 	for _, method := range invalidHttpMethods {
 		t.Run(method, func(t *testing.T) {
-			request := httptest.NewRequest(method, "/transaction", nil)
+			request := httptest.NewRequest(method, urlTarget, nil)
 
 			// Act
 			handler.ServeHTTP(recorder, request)
@@ -50,7 +52,7 @@ func Test_ServeHTTP_UndecipherableTransaction_BadRequest(t *testing.T) {
 	b, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(b)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("POST", "/transaction", body)
+	request := httptest.NewRequest("POST", urlTarget, body)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
@@ -72,7 +74,7 @@ func Test_ServeHTTP_InvalidTransaction_BadRequest(t *testing.T) {
 	b, _ := json.Marshal(&transactionRequest)
 	body := bytes.NewReader(b)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("POST", "/transaction", body)
+	request := httptest.NewRequest("POST", urlTarget, body)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
@@ -100,7 +102,7 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	marshalledTransaction, _ := json.Marshal(&transactionRequest)
 	body := bytes.NewReader(marshalledTransaction)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("POST", "/transaction", body)
+	request := httptest.NewRequest("POST", urlTarget, body)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
@@ -128,7 +130,7 @@ func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	marshalledTransaction, _ := json.Marshal(&transactionRequest)
 	body := bytes.NewReader(marshalledTransaction)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("POST", "/transaction", body)
+	request := httptest.NewRequest("POST", urlTarget, body)
 
 	// Act
 	handler.ServeHTTP(recorder, request)

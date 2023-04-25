@@ -32,6 +32,13 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 	case http.MethodGet:
 		jsonWriter := server.NewIoWriter(writer, handler.logger)
 		address := req.URL.Query().Get("address")
+		if address == "" {
+			errorMessage := "address is missing in amount request"
+			handler.logger.Error("address is missing in amount request")
+			writer.WriteHeader(http.StatusBadRequest)
+			jsonWriter.Write(errorMessage)
+			return
+		}
 		requestValue := req.URL.Query().Get("value")
 		parsedValue, err := strconv.Atoi(requestValue)
 		if err != nil {

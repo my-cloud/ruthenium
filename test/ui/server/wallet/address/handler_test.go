@@ -11,6 +11,8 @@ import (
 	"github.com/my-cloud/ruthenium/test/log/logtest"
 )
 
+const urlTarget = "/url-target"
+
 func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
@@ -19,7 +21,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	invalidHttpMethods := []string{http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
 	for _, method := range invalidHttpMethods {
 		t.Run(method, func(t *testing.T) {
-			request := httptest.NewRequest(method, "/wallet/address", nil)
+			request := httptest.NewRequest(method, urlTarget, nil)
 
 			// Act
 			handler.ServeHTTP(recorder, request)
@@ -36,7 +38,7 @@ func Test_ServeHTTP_InvalidPublicKey_ReturnsBadRequest(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	handler := address.NewHandler(logger)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/wallet/address?publicKey=invalidPublicKey", nil)
+	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?publicKey=invalidPublicKey", urlTarget), nil)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
@@ -51,7 +53,7 @@ func Test_ServeHTTP_ValidRequest_ReturnsAddress(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	handler := address.NewHandler(logger)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/wallet/address?publicKey=%s", test.PublicKey), nil)
+	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?publicKey=%s", urlTarget, test.PublicKey), nil)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
