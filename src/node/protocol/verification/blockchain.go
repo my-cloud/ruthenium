@@ -190,6 +190,8 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	var oldHostBlocks []*Block
 	var lastHostBlocks []*Block
 	var lastRegisteredAddresses []string
+	var mutex sync.RWMutex
+	var waitGroup sync.WaitGroup
 	if len(hostBlocks) > 2 {
 		hostTarget := "host"
 		blockResponsesByTarget[hostTarget] = hostBlockResponses
@@ -202,44 +204,58 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-1])
 		lastRegisteredAddresses = oldHostBlocks[len(oldHostBlocks)-1].RegisteredAddresses()
 		for _, neighbor := range neighbors {
-			target := neighbor.Target()
-			startingBlockHeight := uint64(len(hostBlocks) - 1)
-			lastNeighborBlockResponses, err := neighbor.GetLastBlocks(startingBlockHeight)
-			if err != nil || len(lastNeighborBlockResponses) == 0 || lastHostBlocks[0].PreviousHash() != lastNeighborBlockResponses[0].PreviousHash {
-				blockchain.logger.Debug(errors.New("neighbor's blockchain is a fork").Error())
-			} else {
-				verifiedBlocks, err := blockchain.verify(lastHostBlocks, lastNeighborBlockResponses, lastRegisteredAddresses, oldHostBlockResponses, timestamp)
-				if err != nil || verifiedBlocks == nil {
-					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
+			waitGroup.Add(1)
+			go func(neighbor network.Neighbor) {
+				target := neighbor.Target()
+				startingBlockHeight := uint64(len(hostBlocks) - 1)
+				lastNeighborBlockResponses, err := neighbor.GetLastBlocks(startingBlockHeight)
+				if err != nil || len(lastNeighborBlockResponses) == 0 || lastHostBlocks[0].PreviousHash() != lastNeighborBlockResponses[0].PreviousHash {
+					blockchain.logger.Debug(errors.New("neighbor's blockchain is a fork").Error())
 				} else {
-					blocksByTarget[target] = append(oldHostBlocks, verifiedBlocks...)
-					blockResponsesByTarget[target] = append(oldHostBlockResponses, lastNeighborBlockResponses...)
-					selectedTargets = append(selectedTargets, target)
+					verifiedBlocks, err := blockchain.verify(lastHostBlocks, lastNeighborBlockResponses, lastRegisteredAddresses, oldHostBlockResponses, timestamp)
+					if err != nil || verifiedBlocks == nil {
+						blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
+					} else {
+						mutex.Lock()
+						blocksByTarget[target] = append(oldHostBlocks, verifiedBlocks...)
+						blockResponsesByTarget[target] = append(oldHostBlockResponses, lastNeighborBlockResponses...)
+						selectedTargets = append(selectedTargets, target)
+						mutex.Unlock()
+					}
 				}
-			}
+				waitGroup.Done()
+			}(neighbor)
 		}
 	}
+	waitGroup.Wait()
 	var isFork bool
 	if len(selectedTargets) < 2 && len(neighbors) > 0 {
 		isFork = true
 		blockchain.logger.Debug("all neighbor blockchains are forks, verifying the whole blockchains")
 		for _, neighbor := range neighbors {
-			target := neighbor.Target()
-			neighborBlockResponses, err := neighbor.GetBlocks()
-			if err != nil && len(neighborBlockResponses) < 2 {
-				blockchain.logger.Debug(errors.New("neighbor's blockchain is too short").Error())
-			} else {
-				verifiedBlocks, err := blockchain.verify(hostBlocks, neighborBlockResponses, nil, nil, timestamp)
-				if err != nil || verifiedBlocks == nil {
-					blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
+			waitGroup.Add(1)
+			go func(neighbor network.Neighbor) {
+				target := neighbor.Target()
+				neighborBlockResponses, err := neighbor.GetBlocks()
+				if err != nil && len(neighborBlockResponses) < 2 {
+					blockchain.logger.Debug(errors.New("neighbor's blockchain is too short").Error())
 				} else {
-					blocksByTarget[target] = verifiedBlocks
-					blockResponsesByTarget[target] = neighborBlockResponses
-					selectedTargets = append(selectedTargets, target)
+					verifiedBlocks, err := blockchain.verify(hostBlocks, neighborBlockResponses, nil, nil, timestamp)
+					if err != nil || verifiedBlocks == nil {
+						blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
+					} else {
+						mutex.Lock()
+						blocksByTarget[target] = verifiedBlocks
+						blockResponsesByTarget[target] = neighborBlockResponses
+						selectedTargets = append(selectedTargets, target)
+						mutex.Unlock()
+					}
 				}
-			}
+				waitGroup.Done()
+			}(neighbor)
 		}
 	}
+	waitGroup.Wait()
 	var selectedBlockResponses []*network.BlockResponse
 	var selectedBlocks []*Block
 	var isDifferent bool
