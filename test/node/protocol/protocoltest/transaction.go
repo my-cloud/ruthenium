@@ -6,7 +6,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 )
 
-func NewSignedTransactionRequest(inputsValue uint64, fee uint64, recipientAddress string, utxoTransaction *network.TransactionResponse, utxoIndex uint16, senderPrivateKey *encryption.PrivateKey, senderPublicKey *encryption.PublicKey, timestamp int64, value uint64, blockHeight int) network.TransactionRequest {
+func NewSignedTransactionRequest(inputsValue uint64, fee uint64, recipientAddress string, utxoTransaction *network.TransactionResponse, utxoIndex uint16, senderPrivateKey *encryption.PrivateKey, senderPublicKey *encryption.PublicKey, timestamp int64, value uint64) network.TransactionRequest {
 	utxo := NewUtxoFromOutput(utxoTransaction, utxoIndex)
 	marshalledInput, _ := json.Marshal(struct {
 		OutputIndex   uint16 `json:"output_index"`
@@ -26,19 +26,17 @@ func NewSignedTransactionRequest(inputsValue uint64, fee uint64, recipientAddres
 	}
 	var b bool
 	sent := network.OutputRequest{
-		Address:     &recipientAddress,
-		BlockHeight: &blockHeight,
-		HasReward:   &b,
-		HasIncome:   &b,
-		Value:       &value,
+		Address:   &recipientAddress,
+		HasReward: &b,
+		HasIncome: &b,
+		Value:     &value,
 	}
 	restValue := inputsValue - value - fee
 	rest := network.OutputRequest{
-		Address:     &recipientAddress,
-		BlockHeight: &blockHeight,
-		HasReward:   &b,
-		HasIncome:   &b,
-		Value:       &restValue,
+		Address:   &recipientAddress,
+		HasReward: &b,
+		HasIncome: &b,
+		Value:     &restValue,
 	}
 	broadcasterTarget := "0"
 	return network.TransactionRequest{
@@ -53,7 +51,6 @@ func NewUtxoFromOutput(utxoTransaction *network.TransactionResponse, utxoIndex u
 	outputResponse := utxoTransaction.Outputs[utxoIndex]
 	return &network.UtxoResponse{
 		Address:       outputResponse.Address,
-		BlockHeight:   outputResponse.BlockHeight,
 		HasReward:     outputResponse.HasReward,
 		HasIncome:     outputResponse.HasIncome,
 		OutputIndex:   utxoIndex,
@@ -62,14 +59,13 @@ func NewUtxoFromOutput(utxoTransaction *network.TransactionResponse, utxoIndex u
 	}
 }
 
-func NewTransactionRequest(address string, blockHeight int, value uint64, timestamp int64, target string) network.TransactionRequest {
+func NewTransactionRequest(address string, value uint64, timestamp int64, target string) network.TransactionRequest {
 	b := false
 	output := network.OutputRequest{
-		Address:     &address,
-		BlockHeight: &blockHeight,
-		HasReward:   &b,
-		HasIncome:   &b,
-		Value:       &value,
+		Address:   &address,
+		HasReward: &b,
+		HasIncome: &b,
+		Value:     &value,
 	}
 	transactionRequest := network.TransactionRequest{
 		Inputs:                       &[]network.InputRequest{},

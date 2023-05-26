@@ -267,7 +267,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	genesisTransaction := blockResponse1.Transactions[0]
 	var genesisOutputIndex uint16 = 0
 	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, invalidTransactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 3, genesisValue, 3)
+	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, invalidTransactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 3, genesisValue)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
 	rewardTransaction, _ := validation.NewRewardTransaction(address, now, 0)
@@ -321,7 +321,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := blockResponse1.Transactions[0]
 	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 4, genesisValue, 4)
+	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 4, genesisValue)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
 	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
@@ -380,7 +380,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := blockResponse1.Transactions[0]
 	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 0, genesisValue, 0)
+	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 0, genesisValue)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
 	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
