@@ -95,10 +95,9 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, logger)
 	address := "RecipientAddress"
-	blockHeight := 0
 	var value uint64 = 0
 	var timestamp int64 = 0
-	transactionRequest := protocoltest.NewTransactionRequest(address, blockHeight, value, timestamp, target)
+	transactionRequest := protocoltest.NewTransactionRequest(address, value, timestamp, target)
 	marshalledTransaction, _ := json.Marshal(&transactionRequest)
 	body := bytes.NewReader(marshalledTransaction)
 	recorder := httptest.NewRecorder()
@@ -123,10 +122,9 @@ func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, logger)
 	address := "RecipientAddress"
-	blockHeight := 0
 	var value uint64 = 0
 	var timestamp int64 = 0
-	transactionRequest := protocoltest.NewTransactionRequest(address, blockHeight, value, timestamp, target)
+	transactionRequest := protocoltest.NewTransactionRequest(address, value, timestamp, target)
 	marshalledTransaction, _ := json.Marshal(&transactionRequest)
 	body := bytes.NewReader(marshalledTransaction)
 	recorder := httptest.NewRecorder()
