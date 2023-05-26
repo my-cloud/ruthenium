@@ -143,14 +143,12 @@
                 const recipientAddress = $("#recipient_address").val();
                 const spend = {
                     "address": recipientAddress,
-                    "block_height": response.block_height,
                     "has_reward": false,
                     "has_income": false,
                     "value": value,
                 }
                 const rest = {
                     "address": senderAddress,
-                    "block_height": response.block_height,
                     "has_reward": false,
                     "has_income": isRegistered,
                     "value": response.rest,

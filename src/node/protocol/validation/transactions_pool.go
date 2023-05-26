@@ -103,7 +103,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			if skip {
 				continue
 			}
-			fee, err := currentBlockchain.FindFee(transaction, timestamp)
+			fee, err := currentBlockchain.FindFee(transaction, len(blockResponses), timestamp)
 			if err != nil {
 				pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to find fee, transaction: %v\n %w", transaction, err).Error())
 				rejectedTransactions = append(rejectedTransactions, transaction)
@@ -143,7 +143,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
 		return
 	}
-	rewardTransaction, err := NewRewardTransaction(pool.validatorAddress, len(blockResponses), timestamp, reward)
+	rewardTransaction, err := NewRewardTransaction(pool.validatorAddress, timestamp, reward)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("failed to create reward transaction: %w", err).Error())
 		return
@@ -171,7 +171,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	currentBlock := blocks[len(blocks)-1]
 	transactionResponse := transaction.GetResponse()
 	feeTimestamp := currentBlock.Timestamp + pool.validationTimer.Nanoseconds()
-	fee, err := currentBlockchain.FindFee(transactionResponse, feeTimestamp)
+	fee, err := currentBlockchain.FindFee(transactionResponse, len(blocks), feeTimestamp)
 	if err != nil {
 		return fmt.Errorf("failed to find fee: %w", err)
 	}

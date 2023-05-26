@@ -19,21 +19,20 @@ type Transaction struct {
 }
 
 func NewGenesisTransaction(address string, timestamp int64, value uint64) (*network.TransactionResponse, error) {
-	return newTransactionResponse(address, 0, true, timestamp, value)
+	return newTransactionResponse(address, true, timestamp, value)
 }
 
-func NewRewardTransaction(address string, blockHeight int, timestamp int64, value uint64) (*network.TransactionResponse, error) {
-	return newTransactionResponse(address, blockHeight, false, timestamp, value)
+func NewRewardTransaction(address string, timestamp int64, value uint64) (*network.TransactionResponse, error) {
+	return newTransactionResponse(address, false, timestamp, value)
 }
 
-func newTransactionResponse(address string, blockHeight int, hasIncome bool, timestamp int64, value uint64) (*network.TransactionResponse, error) {
+func newTransactionResponse(address string, hasIncome bool, timestamp int64, value uint64) (*network.TransactionResponse, error) {
 	outputs := []*network.OutputResponse{
 		{
-			Address:     address,
-			BlockHeight: blockHeight,
-			HasReward:   true,
-			HasIncome:   hasIncome,
-			Value:       value,
+			Address:   address,
+			HasReward: true,
+			HasIncome: hasIncome,
+			Value:     value,
 		},
 	}
 	transaction, err := newTransaction([]*network.InputResponse{}, outputs, timestamp)
@@ -53,7 +52,7 @@ func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (
 	}
 	var outputs []*network.OutputResponse
 	for _, output := range *transactionRequest.Outputs {
-		outputs = append(outputs, &network.OutputResponse{Address: *output.Address, BlockHeight: *output.BlockHeight, HasReward: *output.HasReward, HasIncome: *output.HasIncome, Value: *output.Value})
+		outputs = append(outputs, &network.OutputResponse{Address: *output.Address, HasReward: *output.HasReward, HasIncome: *output.HasIncome, Value: *output.Value})
 	}
 	transaction, err := newTransaction(inputs, outputs, *transactionRequest.Timestamp)
 	if err != nil {

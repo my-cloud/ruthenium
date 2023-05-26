@@ -77,7 +77,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		value := uint64(parsedValue)
 		for _, utxo := range utxos {
 			output := validation.NewOutputFromUtxoResponse(utxo, handler.lambda, handler.validationTimestamp, genesisBlock.Timestamp)
-			outputValue := output.Value(nextBlockTimestamp)
+			outputValue := output.Value(int(nextBlockHeight), nextBlockTimestamp)
 			if isRegistered {
 				inputsValue += outputValue
 			} else if inputsValue < value {
@@ -96,9 +96,8 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		}
 		rest := inputsValue - value - handler.minimalTransactionFee
 		response := &Response{
-			BlockHeight: int(nextBlockHeight),
-			Rest:        rest,
-			Utxos:       selectedUtxos,
+			Rest:  rest,
+			Utxos: selectedUtxos,
 		}
 		marshaledResponse, err := json.Marshal(response)
 		if err != nil {

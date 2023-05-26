@@ -270,7 +270,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, invalidTransactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 3, genesisValue, 3)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
-	rewardTransaction, _ := validation.NewRewardTransaction(address, int(now), now, 0)
+	rewardTransaction, _ := validation.NewRewardTransaction(address, now, 0)
 	transactions := []*network.TransactionResponse{
 		invalidTransactionResponse,
 		rewardTransaction,
@@ -330,7 +330,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
 	hash2, _ := block2.Hash()
 	var block3Timestamp int64 = 2
-	rewardTransaction, _ := validation.NewRewardTransaction(address, 2, block3Timestamp, 0)
+	rewardTransaction, _ := validation.NewRewardTransaction(address, block3Timestamp, 0)
 	transactions := []*network.TransactionResponse{
 		invalidTransactionResponse,
 		rewardTransaction,
@@ -389,7 +389,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
 	hash2, _ := block2.Hash()
 	var block3Timestamp int64 = 2
-	rewardTransaction, _ := validation.NewRewardTransaction(address, 2, block3Timestamp, 0)
+	rewardTransaction, _ := validation.NewRewardTransaction(address, block3Timestamp, 0)
 	transactions := []*network.TransactionResponse{
 		invalidTransactionResponse,
 		rewardTransaction,
