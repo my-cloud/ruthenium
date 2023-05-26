@@ -82,15 +82,8 @@ func (synchronizer *Synchronizer) Synchronize(int64) {
 		Target: &hostTargetValue,
 	}
 	targetRequests = append(targetRequests, hostTargetRequest)
-	// TODO filter 127.0.0.1
-	//hostPublicIp, err := synchronizer.ipFinder.FindHostPublicIp()
-	//if err != nil {
-	//	synchronizer.logger.Warn(fmt.Errorf("failed to find the public IP: %w", err).Error())
-	//}
-	//hostPublicTarget := NewTarget(hostPublicIp, synchronizer.hostTarget.Port())
 	for target, score := range scoresByTarget {
 		if target != hostTargetValue {
-			//if target != hostTargetValue && target != hostPublicTarget.Value() && target != "127.0.0.1" {
 			neighborTarget, err := NewTargetFromValue(target)
 			if err != nil {
 				continue
