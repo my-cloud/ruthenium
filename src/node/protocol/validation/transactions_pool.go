@@ -68,6 +68,11 @@ func (pool *TransactionsPool) Transactions() []*network.TransactionResponse {
 func (pool *TransactionsPool) Validate(timestamp int64) {
 	currentBlockchain := pool.blockchain.Copy()
 	blockResponses := currentBlockchain.Blocks()
+	nextBlockTimestamp := blockResponses[len(blockResponses)-1].Timestamp + pool.validationTimer.Nanoseconds()
+	err := currentBlockchain.AddBlock(nextBlockTimestamp, nil, nil)
+	if err != nil {
+		pool.logger.Error("failed to add temporary block")
+	}
 	lastBlockResponse := blockResponses[len(blockResponses)-1]
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
@@ -161,6 +166,11 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 func (pool *TransactionsPool) addTransaction(transactionRequest *network.TransactionRequest) error {
 	currentBlockchain := pool.blockchain.Copy()
 	blocks := currentBlockchain.Blocks()
+	nextBlockTimestamp := blocks[len(blocks)-1].Timestamp + pool.validationTimer.Nanoseconds()
+	err := currentBlockchain.AddBlock(nextBlockTimestamp, nil, nil)
+	if err != nil {
+		return errors.New("failed to add temporary block")
+	}
 	if len(blocks) == 0 {
 		return errors.New("the blockchain is empty")
 	}
@@ -170,8 +180,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	}
 	currentBlock := blocks[len(blocks)-1]
 	transactionResponse := transaction.GetResponse()
-	feeTimestamp := currentBlock.Timestamp + pool.validationTimer.Nanoseconds()
-	fee, err := currentBlockchain.FindFee(transactionResponse, len(blocks), feeTimestamp)
+	fee, err := currentBlockchain.FindFee(transactionResponse, len(blocks), nextBlockTimestamp)
 	if err != nil {
 		return fmt.Errorf("failed to find fee: %w", err)
 	}
@@ -180,8 +189,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	}
 	if len(blocks) > 1 {
 		timestamp := transaction.Timestamp()
-		nextBlockTimestamp := currentBlock.Timestamp + 2*pool.validationTimer.Nanoseconds()
-		if nextBlockTimestamp < timestamp {
+		if nextBlockTimestamp+pool.validationTimer.Nanoseconds() < timestamp {
 			return fmt.Errorf("the transaction timestamp is too far in the future: %v, now: %v", time.Unix(0, timestamp), time.Unix(0, nextBlockTimestamp))
 		}
 		currentBlockTimestamp := currentBlock.Timestamp

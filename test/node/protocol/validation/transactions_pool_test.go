@@ -33,6 +33,7 @@ func Test_AddTransaction_TransactionFeeIsTooLow_TransactionNotAdded(t *testing.T
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
+	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
 	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int, int64) (uint64, error) { return invalidTransactionFee, nil }
 	pool := validation.NewTransactionsPool(blockchainMock, minimalTransactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	genesisTransaction := genesisBlockResponse.Transactions[0]
@@ -69,6 +70,7 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
+	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
 	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int, int64) (uint64, error) { return transactionFee, nil }
 	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	genesisTransaction := genesisBlockResponse.Transactions[0]
@@ -103,6 +105,7 @@ func Test_AddTransaction_TransactionTimestampIsOlderThan1Blocks_TransactionNotAd
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
+	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
 	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int, int64) (uint64, error) { return transactionFee, nil }
 	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	genesisTransaction := genesisBlockResponse.Transactions[0]
@@ -136,6 +139,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
+	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
 	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int, int64) (uint64, error) { return transactionFee, nil }
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -177,6 +181,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
+	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
 	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int, int64) (uint64, error) { return transactionFee, nil }
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -302,9 +307,9 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 
 	// Assert
 	validatedPool := blockchainMock.AddBlockCalls()
-	isTransactionsPoolValidated := len(validatedPool) == 1
+	isTransactionsPoolValidated := len(validatedPool) == 3
 	test.Assert(t, isTransactionsPoolValidated, "Transactions pool should be validated only once.")
-	validatedTransactions := validatedPool[0].Transactions
+	validatedTransactions := validatedPool[2].Transactions
 	isTwoTransactions := len(validatedTransactions) == 2
 	test.Assert(t, isTwoTransactions, "Validated transactions pool should contain exactly 2 transactions.")
 	actualTransaction := validatedTransactions[0]
@@ -317,9 +322,9 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 
 func assertAddBlockCalledWithRewardTransactionOnly(t *testing.T, blockchainMock *protocoltest.BlockchainMock) {
 	validatedPool := blockchainMock.AddBlockCalls()
-	isTransactionsPoolValidated := len(validatedPool) == 1
+	isTransactionsPoolValidated := len(validatedPool) == 3
 	test.Assert(t, isTransactionsPoolValidated, "Transactions pool should be validated only once.")
-	validatedTransactions := validatedPool[0].Transactions
+	validatedTransactions := validatedPool[2].Transactions
 	isSingleTransaction := len(validatedTransactions) == 1
 	test.Assert(t, isSingleTransaction, "Validated transactions pool should contain only one transaction.")
 	transaction, _ := validation.NewTransactionFromResponse(validatedTransactions[0])
