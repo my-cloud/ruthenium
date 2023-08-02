@@ -15,7 +15,7 @@ import (
 
 type Handler struct {
 	host                  network.Neighbor
-	lambda                float64
+	halfLifeInNanoseconds float64
 	minimalTransactionFee uint64
 	particlesCount        uint64
 	validationTimestamp   int64
@@ -23,8 +23,8 @@ type Handler struct {
 	logger                log.Logger
 }
 
-func NewHandler(host network.Neighbor, lambda float64, minimalTransactionFee uint64, particlesCount uint64, validationTimestamp int64, watch clock.Watch, logger log.Logger) *Handler {
-	return &Handler{host, lambda, minimalTransactionFee, particlesCount, validationTimestamp, watch, logger}
+func NewHandler(host network.Neighbor, halfLifeInNanoseconds float64, minimalTransactionFee uint64, particlesCount uint64, validationTimestamp int64, watch clock.Watch, logger log.Logger) *Handler {
+	return &Handler{host, halfLifeInNanoseconds, minimalTransactionFee, particlesCount, validationTimestamp, watch, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -76,7 +76,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		nextBlockTimestamp := genesisBlock.Timestamp + nextBlockHeight*handler.validationTimestamp
 		value := uint64(parsedValue)
 		for _, utxo := range utxos {
-			output := validation.NewOutputFromUtxoResponse(utxo, handler.lambda, handler.validationTimestamp, genesisBlock.Timestamp)
+			output := validation.NewOutputFromUtxoResponse(utxo, handler.halfLifeInNanoseconds, handler.validationTimestamp, genesisBlock.Timestamp)
 			outputValue := output.Value(int(nextBlockHeight), nextBlockTimestamp)
 			if isRegistered {
 				inputsValue += outputValue

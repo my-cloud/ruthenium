@@ -27,9 +27,6 @@ var _ network.Neighbor = &NeighborMock{}
 //			GetBlocksFunc: func() ([]*BlockResponse, error) {
 //				panic("mock out the GetBlocks method")
 //			},
-//			GetLambdaFunc: func() (float64, error) {
-//				panic("mock out the GetLambda method")
-//			},
 //			GetLastBlocksFunc: func(startingBlockHeight uint64) ([]*BlockResponse, error) {
 //				panic("mock out the GetLastBlocks method")
 //			},
@@ -61,9 +58,6 @@ type NeighborMock struct {
 	// GetBlocksFunc mocks the GetBlocks method.
 	GetBlocksFunc func() ([]*network.BlockResponse, error)
 
-	// GetLambdaFunc mocks the GetLambda method.
-	GetLambdaFunc func() (float64, error)
-
 	// GetLastBlocksFunc mocks the GetLastBlocks method.
 	GetLastBlocksFunc func(startingBlockHeight uint64) ([]*network.BlockResponse, error)
 
@@ -94,9 +88,6 @@ type NeighborMock struct {
 		// GetBlocks holds details about calls to the GetBlocks method.
 		GetBlocks []struct {
 		}
-		// GetLambda holds details about calls to the GetLambda method.
-		GetLambda []struct {
-		}
 		// GetLastBlocks holds details about calls to the GetLastBlocks method.
 		GetLastBlocks []struct {
 			// StartingBlockHeight is the startingBlockHeight argument value.
@@ -122,7 +113,6 @@ type NeighborMock struct {
 	lockAddTransaction  sync.RWMutex
 	lockGetBlock        sync.RWMutex
 	lockGetBlocks       sync.RWMutex
-	lockGetLambda       sync.RWMutex
 	lockGetLastBlocks   sync.RWMutex
 	lockGetTransactions sync.RWMutex
 	lockGetUtxos        sync.RWMutex
@@ -218,33 +208,6 @@ func (mock *NeighborMock) GetBlocksCalls() []struct {
 	mock.lockGetBlocks.RLock()
 	calls = mock.calls.GetBlocks
 	mock.lockGetBlocks.RUnlock()
-	return calls
-}
-
-// GetLambda calls GetLambdaFunc.
-func (mock *NeighborMock) GetLambda() (float64, error) {
-	if mock.GetLambdaFunc == nil {
-		panic("NeighborMock.GetLambdaFunc: method is nil but Neighbor.GetLambda was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockGetLambda.Lock()
-	mock.calls.GetLambda = append(mock.calls.GetLambda, callInfo)
-	mock.lockGetLambda.Unlock()
-	return mock.GetLambdaFunc()
-}
-
-// GetLambdaCalls gets all the calls that were made to GetLambda.
-// Check the length with:
-//
-//	len(mockedNeighbor.GetLambdaCalls())
-func (mock *NeighborMock) GetLambdaCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockGetLambda.RLock()
-	calls = mock.calls.GetLambda
-	mock.lockGetLambda.RUnlock()
 	return calls
 }
 

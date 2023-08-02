@@ -13,7 +13,6 @@ import (
 
 const (
 	GetBlocks       = "GET BLOCKS"
-	GetLambda       = "GET LAMBDA"
 	GetTransactions = "GET TRANSACTIONS"
 )
 
@@ -47,8 +46,6 @@ func (handler *Handler) Handle(_ context.Context, req gp2p.Data) (res gp2p.Data,
 		switch requestString {
 		case GetBlocks:
 			res = handler.blocks()
-		case GetLambda:
-			res = handler.lambda()
 		case GetTransactions:
 			res = handler.transactions()
 		default:
@@ -108,17 +105,6 @@ func (handler *Handler) blocks() (res gp2p.Data) {
 	data, err := json.Marshal(blockResponses)
 	if err != nil {
 		handler.logger.Error(fmt.Errorf("failed to get blocks: %w", err).Error())
-		return
-	}
-	res.SetBytes(data)
-	return
-}
-
-func (handler *Handler) lambda() (res gp2p.Data) {
-	lambda := handler.blockchain.Lambda()
-	data, err := json.Marshal(lambda)
-	if err != nil {
-		handler.logger.Error(fmt.Errorf("failed to get lambda: %w", err).Error())
 		return
 	}
 	res.SetBytes(data)

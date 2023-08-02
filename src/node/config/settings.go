@@ -7,4 +7,5 @@ type Settings struct {
 	SynchronizationIntervalInSeconds int
 	ValidationIntervalInSeconds      int
 	VerificationsCountPerValidation  int
+	HalfLifeInDays                   float64
 }

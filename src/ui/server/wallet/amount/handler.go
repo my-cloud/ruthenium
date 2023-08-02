@@ -12,16 +12,16 @@ import (
 )
 
 type Handler struct {
-	host                network.Neighbor
-	lambda              float64
-	particlesCount      uint64
-	validationTimestamp int64
-	watch               clock.Watch
-	logger              log.Logger
+	host                  network.Neighbor
+	halfLifeInNanoseconds float64
+	particlesCount        uint64
+	validationTimestamp   int64
+	watch                 clock.Watch
+	logger                log.Logger
 }
 
-func NewHandler(host network.Neighbor, lambda float64, particlesCount uint64, validationTimestamp int64, watch clock.Watch, logger log.Logger) *Handler {
-	return &Handler{host, lambda, particlesCount, validationTimestamp, watch, logger}
+func NewHandler(host network.Neighbor, halfLifeInNanoseconds float64, particlesCount uint64, validationTimestamp int64, watch clock.Watch, logger log.Logger) *Handler {
+	return &Handler{host, halfLifeInNanoseconds, particlesCount, validationTimestamp, watch, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -47,7 +47,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		}
 		var balance uint64
 		for _, utxo := range utxos {
-			balance += validation.NewOutputFromUtxoResponse(utxo, handler.lambda, handler.validationTimestamp, genesisBlock.Timestamp).Value(utxo.BlockHeight, handler.watch.Now().UnixNano())
+			balance += validation.NewOutputFromUtxoResponse(utxo, handler.halfLifeInNanoseconds, handler.validationTimestamp, genesisBlock.Timestamp).Value(utxo.BlockHeight, handler.watch.Now().UnixNano())
 		}
 		marshaledAmount, err := json.Marshal(float64(balance) / float64(handler.particlesCount))
 		if err != nil {

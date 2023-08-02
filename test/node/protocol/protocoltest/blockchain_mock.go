@@ -34,9 +34,6 @@ var _ protocol.Blockchain = &BlockchainMock{}
 //			FindFeeFunc: func(transaction *network.TransactionResponse, blockHeight int, timestamp int64) (uint64, error) {
 //				panic("mock out the FindFee method")
 //			},
-//			LambdaFunc: func() float64 {
-//				panic("mock out the Lambda method")
-//			},
 //			LastBlocksFunc: func(startingBlockHeight uint64) []*network.BlockResponse {
 //				panic("mock out the LastBlocks method")
 //			},
@@ -64,9 +61,6 @@ type BlockchainMock struct {
 
 	// FindFeeFunc mocks the FindFee method.
 	FindFeeFunc func(transaction *network.TransactionResponse, blockHeight int, timestamp int64) (uint64, error)
-
-	// LambdaFunc mocks the Lambda method.
-	LambdaFunc func() float64
 
 	// LastBlocksFunc mocks the LastBlocks method.
 	LastBlocksFunc func(startingBlockHeight uint64) []*network.BlockResponse
@@ -105,9 +99,6 @@ type BlockchainMock struct {
 			// Timestamp is the timestamp argument value.
 			Timestamp int64
 		}
-		// Lambda holds details about calls to the Lambda method.
-		Lambda []struct {
-		}
 		// LastBlocks holds details about calls to the LastBlocks method.
 		LastBlocks []struct {
 			// StartingBlockHeight is the startingBlockHeight argument value.
@@ -124,7 +115,6 @@ type BlockchainMock struct {
 	lockBlocks         sync.RWMutex
 	lockCopy           sync.RWMutex
 	lockFindFee        sync.RWMutex
-	lockLambda         sync.RWMutex
 	lockLastBlocks     sync.RWMutex
 	lockUtxosByAddress sync.RWMutex
 }
@@ -292,33 +282,6 @@ func (mock *BlockchainMock) FindFeeCalls() []struct {
 	mock.lockFindFee.RLock()
 	calls = mock.calls.FindFee
 	mock.lockFindFee.RUnlock()
-	return calls
-}
-
-// Lambda calls LambdaFunc.
-func (mock *BlockchainMock) Lambda() float64 {
-	if mock.LambdaFunc == nil {
-		panic("BlockchainMock.LambdaFunc: method is nil but Blockchain.Lambda was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockLambda.Lock()
-	mock.calls.Lambda = append(mock.calls.Lambda, callInfo)
-	mock.lockLambda.Unlock()
-	return mock.LambdaFunc()
-}
-
-// LambdaCalls gets all the calls that were made to Lambda.
-// Check the length with:
-//
-//	len(mockedBlockchain.LambdaCalls())
-func (mock *BlockchainMock) LambdaCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockLambda.RLock()
-	calls = mock.calls.Lambda
-	mock.lockLambda.RUnlock()
 	return calls
 }
 

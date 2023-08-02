@@ -19,6 +19,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/utxos"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func main() {
@@ -45,10 +46,6 @@ func main() {
 		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
 	}
 	watch := tick.NewWatch()
-	lambda, err := host.GetLambda()
-	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to get lambda: %w", err).Error())
-	}
 	genesisBlock, err := host.GetBlock(0)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to get genesis block: %w", err).Error())
@@ -57,14 +54,16 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to get second block: %w", err).Error())
 	}
+	hoursADay := 24.
+	halfLifeInNanoseconds := settings.HalfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
 	genesisTimestamp := genesisBlock.Timestamp
 	validationTimestamp := secondBlock.Timestamp - genesisTimestamp
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
 	http.Handle("/transaction", transaction.NewHandler(host, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/wallet/address", address.NewHandler(logger))
-	http.Handle("/wallet/amount", amount.NewHandler(host, lambda, settings.ParticlesPerToken, validationTimestamp, watch, logger))
-	http.Handle("/wallet/utxos", utxos.NewHandler(host, lambda, settings.MinimalTransactionFee, settings.ParticlesPerToken, validationTimestamp, watch, logger))
+	http.Handle("/wallet/amount", amount.NewHandler(host, halfLifeInNanoseconds, settings.ParticlesPerToken, validationTimestamp, watch, logger))
+	http.Handle("/wallet/utxos", utxos.NewHandler(host, halfLifeInNanoseconds, settings.MinimalTransactionFee, settings.ParticlesPerToken, validationTimestamp, watch, logger))
 	logger.Info("user interface server is running...")
 	logger.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(*port), nil).Error())
 }

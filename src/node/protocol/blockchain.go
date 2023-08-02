@@ -10,7 +10,6 @@ type Blockchain interface {
 	Blocks() []*network.BlockResponse
 	FindFee(transaction *network.TransactionResponse, blockHeight int, timestamp int64) (uint64, error)
 	Copy() Blockchain
-	Lambda() float64
 	LastBlocks(startingBlockHeight uint64) []*network.BlockResponse
 	UtxosByAddress(address string) []*network.UtxoResponse
 }

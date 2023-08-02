@@ -58,15 +58,6 @@ func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, 
 	return
 }
 
-func (neighbor *Neighbor) GetLambda() (lambda float64, err error) {
-	res, err := neighbor.sendRequest(GetLambda)
-	if err == nil {
-		data := res.GetBytes()
-		err = json.Unmarshal(data, &lambda)
-	}
-	return
-}
-
 func (neighbor *Neighbor) GetLastBlocks(startingBlockHeight uint64) (blockResponses []*network.BlockResponse, err error) {
 	request := network.LastBlocksRequest{StartingBlockHeight: &startingBlockHeight}
 	res, err := neighbor.sendRequest(request)

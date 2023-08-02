@@ -14,17 +14,17 @@ type Output struct {
 	hasIncome bool
 	value     uint64
 
-	genesisTimestamp    int64
-	lambda              float64
-	validationTimestamp int64
+	genesisTimestamp      int64
+	halfLifeInNanoseconds float64
+	validationTimestamp   int64
 }
 
-func NewOutputFromResponse(response *network.OutputResponse, lambda float64, validationTimestamp int64, genesisTimestamp int64) *Output {
-	return &Output{response.Address, response.HasReward, response.HasIncome, response.Value, genesisTimestamp, lambda, validationTimestamp}
+func NewOutputFromResponse(response *network.OutputResponse, halfLifeInNanoseconds float64, validationTimestamp int64, genesisTimestamp int64) *Output {
+	return &Output{response.Address, response.HasReward, response.HasIncome, response.Value, genesisTimestamp, halfLifeInNanoseconds, validationTimestamp}
 }
 
-func NewOutputFromUtxoResponse(response *network.UtxoResponse, lambda float64, validationTimestamp int64, genesisTimestamp int64) *Output {
-	return &Output{response.Address, response.HasReward, response.HasIncome, response.Value, genesisTimestamp, lambda, validationTimestamp}
+func NewOutputFromUtxoResponse(response *network.UtxoResponse, halfLifeInNanoseconds float64, validationTimestamp int64, genesisTimestamp int64) *Output {
+	return &Output{response.Address, response.HasReward, response.HasIncome, response.Value, genesisTimestamp, halfLifeInNanoseconds, validationTimestamp}
 }
 
 func (output *Output) MarshalJSON() ([]byte, error) {
@@ -61,7 +61,7 @@ func (output *Output) Value(blockHeight int, currentTimestamp int64) uint64 {
 
 func (output *Output) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
 	elapsedTimestamp := newTimestamp - lastTimestamp
-	return uint64(math.Floor(float64(amount) * math.Exp(-output.lambda*float64(elapsedTimestamp))))
+	return uint64(math.Floor(float64(amount) * math.Exp(-float64(elapsedTimestamp)/output.halfLifeInNanoseconds)))
 }
 
 func (output *Output) calculateValue(blockHeight int, currentTimestamp int64) uint64 {
