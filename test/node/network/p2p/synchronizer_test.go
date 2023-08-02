@@ -6,7 +6,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/test"
-	"github.com/my-cloud/ruthenium/test/log/logtest"
 	"github.com/my-cloud/ruthenium/test/node/clock/clocktest"
 	"github.com/my-cloud/ruthenium/test/node/network/p2p/p2ptest"
 	"testing"
@@ -23,8 +22,7 @@ func Test_AddTargets_MoreThanOneTarget_IncentiveTargetsSender(t *testing.T) {
 	client.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return client, nil }
 	scoresBySeedTarget := map[string]int{}
-	logger := logtest.NewLoggerMock()
-	synchronizer := p2p.NewSynchronizer(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock, logger)
+	synchronizer := p2p.NewSynchronizer(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
 	target1 := "0.0.0.0:1"
 	target2 := "0.0.0.0:0"
 	targetRequests := []network.TargetRequest{{Target: &target1}, {Target: &target2}}
@@ -51,8 +49,7 @@ func Test_Incentive_TargetIsNotKnown_TargetIncentive(t *testing.T) {
 	client.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return client, nil }
 	scoresBySeedTarget := map[string]int{}
-	logger := logtest.NewLoggerMock()
-	synchronizer := p2p.NewSynchronizer(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock, logger)
+	synchronizer := p2p.NewSynchronizer(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
 	expectedTarget := "0.0.0.0:1"
 
 	// Act
@@ -77,8 +74,7 @@ func Test_Synchronize_OneSeed_NeighborAdded(t *testing.T) {
 	client.SetSettingsFunc = func(*gp2p.ClientSettings) {}
 	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return client, nil }
 	scoresBySeedTarget := map[string]int{"0.0.0.0:1": 0}
-	logger := logtest.NewLoggerMock()
-	synchronizer := p2p.NewSynchronizer(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock, logger)
+	synchronizer := p2p.NewSynchronizer(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
 
 	// Act
 	synchronizer.Synchronize(0)

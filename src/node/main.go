@@ -112,5 +112,5 @@ func createSynchronizer(parser *file.JsonParser, seedsPath string, hostIp string
 		}
 	}
 	clientFactory := gp2p.NewClientFactory(ipFinder)
-	return p2p.NewSynchronizer(clientFactory, hostIp, strconv.Itoa(port), maxOutboundsCount, scoresBySeedTarget, watch, logger)
+	return p2p.NewSynchronizer(clientFactory, hostIp, strconv.Itoa(port), maxOutboundsCount, scoresBySeedTarget, watch)
 }

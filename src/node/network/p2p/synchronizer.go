@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"math/rand"
@@ -20,10 +19,9 @@ type Synchronizer struct {
 	scoresByTarget      map[string]int
 	scoresByTargetMutex sync.RWMutex
 	watch               clock.Watch
-	logger              log.Logger
 }
 
-func NewSynchronizer(clientFactory ClientFactory, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTarget map[string]int, watch clock.Watch, logger log.Logger) *Synchronizer {
+func NewSynchronizer(clientFactory ClientFactory, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTarget map[string]int, watch clock.Watch) *Synchronizer {
 	synchronizer := new(Synchronizer)
 	synchronizer.clientFactory = clientFactory
 	synchronizer.hostTarget = NewTarget(hostIp, hostPort)
@@ -31,7 +29,6 @@ func NewSynchronizer(clientFactory ClientFactory, hostIp string, hostPort string
 	synchronizer.scoresBySeedTarget = scoresBySeedTarget
 	synchronizer.scoresByTarget = map[string]int{}
 	synchronizer.watch = watch
-	synchronizer.logger = logger
 	return synchronizer
 }
 
