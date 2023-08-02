@@ -46,18 +46,9 @@ func main() {
 		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
 	}
 	watch := tick.NewWatch()
-	genesisBlock, err := host.GetBlock(0)
-	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to get genesis block: %w", err).Error())
-	}
-	secondBlock, err := host.GetBlock(1)
-	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to get second block: %w", err).Error())
-	}
 	hoursADay := 24.
 	halfLifeInNanoseconds := settings.HalfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
-	genesisTimestamp := genesisBlock.Timestamp
-	validationTimestamp := secondBlock.Timestamp - genesisTimestamp
+	validationTimestamp := settings.ValidationIntervalInSeconds * time.Second.Nanoseconds()
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
 	http.Handle("/transaction", transaction.NewHandler(host, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))

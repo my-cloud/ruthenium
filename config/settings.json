@@ -1,10 +1,10 @@
 {
   "genesisAmountInParticles": 10000000000000,
+  "halfLifeInDays": 373.59,
   "maxOutboundsCount": 8,
   "minimalTransactionFee": 1000,
   "particlesPerToken": 100000000,
   "synchronizationIntervalInSeconds": 10,
   "validationIntervalInSeconds": 60,
-  "verificationsCountPerValidation": 6,
-  "halfLifeInDays": 373.59
+  "verificationsCountPerValidation": 6
 }

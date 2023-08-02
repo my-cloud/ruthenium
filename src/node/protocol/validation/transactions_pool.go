@@ -166,19 +166,19 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 func (pool *TransactionsPool) addTransaction(transactionRequest *network.TransactionRequest) error {
 	currentBlockchain := pool.blockchain.Copy()
 	blocks := currentBlockchain.Blocks()
-	nextBlockTimestamp := blocks[len(blocks)-1].Timestamp + pool.validationTimer.Nanoseconds()
+	if len(blocks) == 0 {
+		return errors.New("the blockchain is empty")
+	}
+	currentBlock := blocks[len(blocks)-1]
+	nextBlockTimestamp := currentBlock.Timestamp + pool.validationTimer.Nanoseconds()
 	err := currentBlockchain.AddBlock(nextBlockTimestamp, nil, nil)
 	if err != nil {
 		return errors.New("failed to add temporary block")
-	}
-	if len(blocks) == 0 {
-		return errors.New("the blockchain is empty")
 	}
 	transaction, err := NewTransactionFromRequest(transactionRequest)
 	if err != nil {
 		return fmt.Errorf("failed to instantiate transaction: %w", err)
 	}
-	currentBlock := blocks[len(blocks)-1]
 	transactionResponse := transaction.GetResponse()
 	fee, err := currentBlockchain.FindFee(transactionResponse, len(blocks), nextBlockTimestamp)
 	if err != nil {
