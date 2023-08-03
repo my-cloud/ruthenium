@@ -14,8 +14,8 @@
     <h1>Wallet</h1>
     <form>
         <div class="password-field">
-            <label for="private_key">Private Key:</label>
-            <input type="password" placeholder="0x" id="private_key">
+            <label for="private_key" class="form-label">Private Key:</label>
+            <input type="password" placeholder="0x" id="private_key" class="form-field">
             <div class="checkbox-container-anchor">
                 <div class="checkbox-container">
                     <label>
@@ -27,16 +27,16 @@
             </div>
         </div>
         <div>
-            <label for="public_key">Public Key:</label>
-            <textarea disabled id="public_key" name="public_key" rows="1"></textarea>
+            <label for="public_key" class="form-label">Public Key:</label>
+            <textarea disabled id="public_key" name="public_key" rows="1" class="form-field"></textarea>
         </div>
         <div>
-            <label for="sender_address">Address:</label>
-            <input disabled id="sender_address" name="sender_address">
+            <label for="sender_address" class="form-label">Address:</label>
+            <input disabled id="sender_address" name="sender_address" class="form-field">
         </div>
         <div>
-            <label>Amount:</label>
-            <span id="wallet_amount"></span>
+            <label class="form-label">Amount:</label>
+            <span id="wallet_amount" class="form-field"></span>
         </div>
     </form>
 </div>
@@ -45,21 +45,25 @@
     <h1>Send Tokens</h1>
     <form>
         <div>
-            <label for="recipient_address">To address:</label>
-            <input id="recipient_address" name="recipient_address">
+            <label for="recipient_address" class="form-label">To address:</label>
+            <input id="recipient_address" name="recipient_address" class="form-field">
         </div>
         <div>
-            <label for="send_amount">Amount:</label>
-            <input id="send_amount" type="text" name="send_amount">
+            <label for="send_amount" class="form-label">Amount:</label>
+            <input id="send_amount" type="text" name="send_amount" class="form-field">
         </div>
         <div>
-            <label for="is_registered">Registered:</label>
-            <span><input id="is_registered" type="checkbox" name="is_registered" checked></span>
+            <input id="utxo_consolidation" type="checkbox" name="utxo_consolidation" class="form-label" checked>
+            <label for="utxo_consolidation" class="form-field">Consolidate UTXOs</label>
+        </div>
+        <div>
+            <input id="income_update" type="checkbox" name="income_update" class="form-label" checked>
+            <label for="income_update" class="form-field">Update income (requires to be registered in <a href="https://proofofhumanity.id/">PoH</a>)</label>
         </div>
     </form>
     <div>
-        <label></label>
-        <button id="send_tokens_button">Send</button>
+        <label class="form-label"></label>
+        <button id="send_tokens_button" class="form-field">Send</button>
     </div>
 </div>
 
@@ -115,11 +119,15 @@
                 return
             }
             let value = result.particles;
-            let isRegistered = false
-            if ($("#is_registered").val() === "on") {
-                isRegistered = true
+            let isConsolidationRequested = false
+            if ($("#utxo_consolidation").val() === "on") {
+                isConsolidationRequested = true
             }
-            const data = {"address": senderAddress, "value": value, "registered": isRegistered};
+            let isIncomeUpdateRequested = false
+            if ($("#income_update").val() === "on") {
+                isIncomeUpdateRequested = true
+            }
+            const data = {"address": senderAddress, "value": value, "consolidation": isConsolidationRequested, "income": isIncomeUpdateRequested};
 
             function send(response) {
                 let inputs = [];
@@ -150,7 +158,7 @@
                 const rest = {
                     "address": senderAddress,
                     "has_reward": false,
-                    "has_income": isRegistered,
+                    "has_income": isIncomeUpdateRequested,
                     "value": response.rest,
                 }
                 const dateNow = Math.floor(Date.now() * 1000000);
@@ -341,15 +349,15 @@
     }
 
     .checkbox-container {
-        width: 25px;
-        height: 20px;
-        padding-top: 1px;
-        padding-right: 5px;
+        width: 35px;
+        height: 24px;
+        padding-top: 3px;
+        padding-left: 11px;
         position: absolute;
-        top: -15px;
-        left: -30px;
+        top: -17px;
+        left: -40px;
         z-index: 10;
-        background-color: white;
+        background-color: #e9e9e9;
     }
 
     .checkbox-container-anchor {
@@ -357,32 +365,32 @@
         display: inline-block;
     }
 
-    div > input {
-        width: 50%;
-    }
-
     div > textarea {
-        width: 50%;
         margin-top: 3px;
         margin-bottom: -3px;
+        resize: vertical;
     }
 
-    label {
+    .form-label {
         display: inline-block;
         width: 90px;
         text-align: right;
     }
 
+    .form-field {
+        width: calc(100% - 110px);;
+    }
+
     button {
         background-color: #FFFFFF;
         border: 1px solid rgb(209, 213, 219);
-        border-radius: .5rem;
+        border-radius: 0.5rem;
         box-sizing: border-box;
         color: #111827;
-        font-family: "Inter var", ui-sans-serif, system-ui, -apple-system, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        font-family: "Inter var", ui-sans-serif, -apple-system, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
         font-weight: 600;
         line-height: 1.25rem;
-        padding: .75rem 1rem;
+        padding: 0.75rem 1rem;
         text-align: center;
         text-decoration: none #D1D5DB solid;
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -390,7 +398,6 @@
         user-select: none;
         -webkit-user-select: none;
         touch-action: manipulation;
-        width: 50%
     }
 
     button:hover {
@@ -404,5 +411,10 @@
 
     button:focus-visible {
         box-shadow: none;
+    }
+
+    table {
+        width: 50%;
+        margin-left: 90px;
     }
 </style>

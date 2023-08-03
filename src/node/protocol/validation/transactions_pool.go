@@ -69,11 +69,11 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	currentBlockchain := pool.blockchain.Copy()
 	blockResponses := currentBlockchain.Blocks()
 	nextBlockTimestamp := blockResponses[len(blockResponses)-1].Timestamp + pool.validationTimer.Nanoseconds()
+	lastBlockResponse := blockResponses[len(blockResponses)-1]
 	err := currentBlockchain.AddBlock(nextBlockTimestamp, nil, nil)
 	if err != nil {
 		pool.logger.Error("failed to add temporary block")
 	}
-	lastBlockResponse := blockResponses[len(blockResponses)-1]
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 	isAlreadySpentByOutputIdByTransactionIndex := make(map[string]map[uint16]bool)
@@ -169,8 +169,8 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	if len(blocks) == 0 {
 		return errors.New("the blockchain is empty")
 	}
-	currentBlock := blocks[len(blocks)-1]
-	nextBlockTimestamp := currentBlock.Timestamp + pool.validationTimer.Nanoseconds()
+	currentBlockResponse := blocks[len(blocks)-1]
+	nextBlockTimestamp := currentBlockResponse.Timestamp + pool.validationTimer.Nanoseconds()
 	err := currentBlockchain.AddBlock(nextBlockTimestamp, nil, nil)
 	if err != nil {
 		return errors.New("failed to add temporary block")
@@ -192,11 +192,11 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 		if nextBlockTimestamp+pool.validationTimer.Nanoseconds() < timestamp {
 			return fmt.Errorf("the transaction timestamp is too far in the future: %v, now: %v", time.Unix(0, timestamp), time.Unix(0, nextBlockTimestamp))
 		}
-		currentBlockTimestamp := currentBlock.Timestamp
+		currentBlockTimestamp := currentBlockResponse.Timestamp
 		if timestamp < currentBlockTimestamp {
 			return fmt.Errorf("the transaction timestamp is too old: %v, current block timestamp: %v", time.Unix(0, timestamp), time.Unix(0, currentBlockTimestamp))
 		}
-		for _, validatedTransaction := range currentBlock.Transactions {
+		for _, validatedTransaction := range currentBlockResponse.Transactions {
 			if transaction.Equals(validatedTransaction) {
 				return errors.New("the transaction is already in the blockchain")
 			}

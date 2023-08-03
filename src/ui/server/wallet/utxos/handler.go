@@ -48,10 +48,10 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write(errorMessage)
 			return
 		}
-		requestIsRegistered := req.URL.Query().Get("registered")
-		isRegistered, err := strconv.ParseBool(requestIsRegistered)
+		requestConsolidation := req.URL.Query().Get("consolidation")
+		isConsolidationRequired, err := strconv.ParseBool(requestConsolidation)
 		if err != nil {
-			errorMessage := "failed to parse registered value"
+			errorMessage := "failed to parse consolidation value"
 			handler.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
 			writer.WriteHeader(http.StatusBadRequest)
 			jsonWriter.Write(errorMessage)
@@ -78,7 +78,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		for _, utxo := range utxos {
 			output := validation.NewOutputFromUtxoResponse(utxo, handler.halfLifeInNanoseconds, handler.validationTimestamp, genesisBlock.Timestamp)
 			outputValue := output.Value(int(nextBlockHeight), nextBlockTimestamp)
-			if isRegistered {
+			if isConsolidationRequired {
 				inputsValue += outputValue
 			} else if inputsValue < value {
 				inputsValue += outputValue
@@ -91,7 +91,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write("insufficient wallet balance to send transaction")
 			return
 		}
-		if isRegistered {
+		if isConsolidationRequired {
 			selectedUtxos = utxos
 		}
 		rest := inputsValue - value - handler.minimalTransactionFee
