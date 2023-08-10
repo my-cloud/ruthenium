@@ -19,9 +19,9 @@
             <div class="checkbox-container-anchor">
                 <div class="checkbox-container">
                     <label>
-                        <input class="password-checkbox" type="checkbox" onclick="switchVisibility()">
-                        <span class="glyphicon glyphicon-eye-open checked"></span>
-                        <span class="glyphicon glyphicon-eye-close unchecked"></span>
+                        <input class="password-checkbox" type="checkbox" onchange="switchVisibility()">
+                        <span id="checked_eye" class="glyphicon glyphicon-eye-open checked eye"></span>
+                        <span id="unchecked_eye" class="glyphicon glyphicon-eye-close unchecked eye"></span>
                     </label>
                 </div>
             </div>
@@ -322,16 +322,28 @@
     }
 
     function switchVisibility() {
-        let x = document.getElementById("private_key");
-        if (x.type === "password") {
-            x.type = "text";
+        let password_field = document.getElementById("private_key");
+        if (password_field.type === "password") {
+            password_field.type = "text";
         } else {
-            x.type = "password";
+            password_field.type = "password";
         }
     }
 </script>
 </html>
 <style>
+    .eye {
+        background-color: whitesmoke;
+        width: 35px;
+        height: 24px;
+        padding-top: 5px;
+        padding-left: 11px;
+    }
+
+    .eye:hover {
+        background-color: gainsboro;
+    }
+
     .password-checkbox {
         display: none;
     }
@@ -349,15 +361,9 @@
     }
 
     .checkbox-container {
-        width: 35px;
-        height: 24px;
-        padding-top: 3px;
-        padding-left: 11px;
-        position: absolute;
-        top: -17px;
+        top: -18px;
         left: -40px;
-        z-index: 10;
-        background-color: #e9e9e9;
+        position: absolute;
     }
 
     .checkbox-container-anchor {
@@ -382,17 +388,17 @@
     }
 
     button {
-        background-color: #FFFFFF;
-        border: 1px solid rgb(209, 213, 219);
+        background-color: white;
+        border: 1px solid lightgrey;
         border-radius: 0.5rem;
         box-sizing: border-box;
-        color: #111827;
+        color: black;
         font-family: "Inter var", ui-sans-serif, -apple-system, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
         font-weight: 600;
         line-height: 1.25rem;
         padding: 0.75rem 1rem;
         text-align: center;
-        text-decoration: none #D1D5DB solid;
+        text-decoration: none whitesmoke solid;
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         cursor: pointer;
         user-select: none;
@@ -401,7 +407,7 @@
     }
 
     button:hover {
-        background-color: rgb(249, 250, 251);
+        background-color: whitesmoke;
     }
 
     button:focus {
