@@ -307,9 +307,10 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 
 	// Assert
 	validatedPool := blockchainMock.AddBlockCalls()
-	isTransactionsPoolValidated := len(validatedPool) == 3
-	test.Assert(t, isTransactionsPoolValidated, "Transactions pool should be validated only once.")
-	validatedTransactions := validatedPool[2].Transactions
+	expectedCallsCount := 7
+	isTransactionsPoolValidated := len(validatedPool) == expectedCallsCount
+	test.Assert(t, isTransactionsPoolValidated, fmt.Sprintf("AddBlock method should be called only %d times whereas it's called %d times", expectedCallsCount, len(validatedPool)))
+	validatedTransactions := validatedPool[expectedCallsCount-1].Transactions
 	isTwoTransactions := len(validatedTransactions) == 2
 	test.Assert(t, isTwoTransactions, "Validated transactions pool should contain exactly 2 transactions.")
 	actualTransaction := validatedTransactions[0]
@@ -322,9 +323,10 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 
 func assertAddBlockCalledWithRewardTransactionOnly(t *testing.T, blockchainMock *protocoltest.BlockchainMock) {
 	validatedPool := blockchainMock.AddBlockCalls()
-	isTransactionsPoolValidated := len(validatedPool) == 3
-	test.Assert(t, isTransactionsPoolValidated, "Transactions pool should be validated only once.")
-	validatedTransactions := validatedPool[2].Transactions
+	expectedCallsCount := 7
+	isTransactionsPoolValidated := len(validatedPool) == expectedCallsCount
+	test.Assert(t, isTransactionsPoolValidated, fmt.Sprintf("AddBlock method should be called only %d times whereas it's called %d times", expectedCallsCount, len(validatedPool)))
+	validatedTransactions := validatedPool[expectedCallsCount-1].Transactions
 	isSingleTransaction := len(validatedTransactions) == 1
 	test.Assert(t, isSingleTransaction, "Validated transactions pool should contain only one transaction.")
 	transaction, _ := validation.NewTransactionFromResponse(validatedTransactions[0])
