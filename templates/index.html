@@ -120,14 +120,14 @@
             }
             let value = result.particles;
             let isConsolidationRequested = false
-            if ($("#utxo_consolidation").val() === "on") {
+            if (document.getElementById('utxo_consolidation').checked) {
                 isConsolidationRequested = true
             }
             let isIncomeUpdateRequested = false
-            if ($("#income_update").val() === "on") {
+            if (document.getElementById('income_update').checked) {
                 isIncomeUpdateRequested = true
             }
-            const data = {"address": senderAddress, "value": value, "consolidation": isConsolidationRequested, "income": isIncomeUpdateRequested};
+            const data = {"address": senderAddress, "value": value, "consolidation": isConsolidationRequested};
 
             function send(response) {
                 let inputs = [];
@@ -155,6 +155,7 @@
                     "has_income": false,
                     "value": value,
                 }
+                console.log(isIncomeUpdateRequested)
                 const rest = {
                     "address": senderAddress,
                     "has_reward": false,

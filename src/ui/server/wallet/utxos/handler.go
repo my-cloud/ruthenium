@@ -10,6 +10,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"net/http"
+	"sort"
 	"strconv"
 )
 
@@ -74,6 +75,13 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		now := handler.watch.Now().UnixNano()
 		nextBlockHeight := (now-genesisBlock.Timestamp)/handler.validationTimestamp + 1
 		nextBlockTimestamp := genesisBlock.Timestamp + nextBlockHeight*handler.validationTimestamp
+		sort.Slice(utxos, func(i, j int) bool {
+			firstOutput := validation.NewOutputFromUtxoResponse(utxos[i], handler.halfLifeInNanoseconds, handler.validationTimestamp, genesisBlock.Timestamp)
+			firstOutputValue := firstOutput.Value(int(nextBlockHeight), nextBlockTimestamp)
+			secondOutput := validation.NewOutputFromUtxoResponse(utxos[j], handler.halfLifeInNanoseconds, handler.validationTimestamp, genesisBlock.Timestamp)
+			secondOutputValue := secondOutput.Value(int(nextBlockHeight), nextBlockTimestamp)
+			return firstOutputValue < secondOutputValue
+		})
 		value := uint64(parsedValue)
 		for _, utxo := range utxos {
 			output := validation.NewOutputFromUtxoResponse(utxo, handler.halfLifeInNanoseconds, handler.validationTimestamp, genesisBlock.Timestamp)
@@ -83,6 +91,8 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			} else if inputsValue < value {
 				inputsValue += outputValue
 				selectedUtxos = append(selectedUtxos, utxo)
+			} else {
+				break
 			}
 		}
 		if inputsValue < value {

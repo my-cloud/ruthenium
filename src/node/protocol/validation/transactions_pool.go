@@ -66,11 +66,10 @@ func (pool *TransactionsPool) Transactions() []*network.TransactionResponse {
 }
 
 func (pool *TransactionsPool) Validate(timestamp int64) {
-	currentBlockchain := pool.blockchain.Copy()
-	blockResponses := currentBlockchain.Blocks()
-	nextBlockTimestamp := blockResponses[len(blockResponses)-1].Timestamp + pool.validationTimer.Nanoseconds()
+	blockchainCopy := pool.blockchain.Copy()
+	blockResponses := blockchainCopy.Blocks()
 	lastBlockResponse := blockResponses[len(blockResponses)-1]
-	err := currentBlockchain.AddBlock(nextBlockTimestamp, nil, nil)
+	err := blockchainCopy.AddBlock(timestamp, nil, nil)
 	if err != nil {
 		pool.logger.Error("failed to add temporary block")
 	}
@@ -84,8 +83,9 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	})
 	var reward uint64
 	var rejectedTransactions []*network.TransactionResponse
+	nextBlockTimestamp := timestamp + pool.validationTimer.Nanoseconds()
 	for i, transaction := range transactionResponses {
-		if timestamp+pool.validationTimer.Nanoseconds() < transaction.Timestamp {
+		if nextBlockTimestamp < transaction.Timestamp {
 			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too far in the future, transaction: %v", transaction))
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
@@ -108,7 +108,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			if skip {
 				continue
 			}
-			fee, err := currentBlockchain.FindFee(transaction, len(blockResponses), timestamp)
+			fee, err := blockchainCopy.FindFee(transaction, len(blockResponses), timestamp)
 			if err != nil {
 				pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to find fee, transaction: %v\n %w", transaction, err).Error())
 				rejectedTransactions = append(rejectedTransactions, transaction)
@@ -150,10 +150,20 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	}
 	rewardTransaction, err := NewRewardTransaction(pool.validatorAddress, timestamp, reward)
 	if err != nil {
-		pool.logger.Error(fmt.Errorf("failed to create reward transaction: %w", err).Error())
+		pool.logger.Error(fmt.Errorf("unable to create block, failed to create reward transaction: %w", err).Error())
 		return
 	}
 	transactionResponses = append(transactionResponses, rewardTransaction)
+	secondBlockchainCopy := pool.blockchain.Copy()
+	err = secondBlockchainCopy.AddBlock(timestamp, transactionResponses, newAddresses)
+	if err != nil {
+		pool.logger.Error(fmt.Errorf("next block creation would fail: %w", err).Error())
+	}
+	err = secondBlockchainCopy.AddBlock(nextBlockTimestamp, nil, nil)
+	if err != nil {
+		pool.logger.Error(fmt.Errorf("later block creation would fail: %w", err).Error())
+		return
+	}
 	err = pool.blockchain.AddBlock(timestamp, transactionResponses, newAddresses)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("unable to create block: %w", err).Error())
@@ -164,14 +174,14 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 }
 
 func (pool *TransactionsPool) addTransaction(transactionRequest *network.TransactionRequest) error {
-	currentBlockchain := pool.blockchain.Copy()
-	blocks := currentBlockchain.Blocks()
+	blockchainCopy := pool.blockchain.Copy()
+	blocks := blockchainCopy.Blocks()
 	if len(blocks) == 0 {
 		return errors.New("the blockchain is empty")
 	}
 	currentBlockResponse := blocks[len(blocks)-1]
 	nextBlockTimestamp := currentBlockResponse.Timestamp + pool.validationTimer.Nanoseconds()
-	err := currentBlockchain.AddBlock(nextBlockTimestamp, nil, nil)
+	err := blockchainCopy.AddBlock(nextBlockTimestamp, currentBlockResponse.Transactions, currentBlockResponse.AddedRegisteredAddresses)
 	if err != nil {
 		return errors.New("failed to add temporary block")
 	}
@@ -180,7 +190,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 		return fmt.Errorf("failed to instantiate transaction: %w", err)
 	}
 	transactionResponse := transaction.GetResponse()
-	fee, err := currentBlockchain.FindFee(transactionResponse, len(blocks), nextBlockTimestamp)
+	fee, err := blockchainCopy.FindFee(transactionResponse, len(blocks), nextBlockTimestamp)
 	if err != nil {
 		return fmt.Errorf("failed to find fee: %w", err)
 	}
@@ -209,6 +219,14 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	}
 	if err = transaction.VerifySignatures(); err != nil {
 		return fmt.Errorf("failed to verify transaction: %w", err)
+	}
+	err = blockchainCopy.AddBlock(nextBlockTimestamp+pool.validationTimer.Nanoseconds(), []*network.TransactionResponse{transactionResponse}, nil)
+	if err != nil {
+		return fmt.Errorf("next block creation would fail: %w", err)
+	}
+	err = blockchainCopy.AddBlock(nextBlockTimestamp+pool.validationTimer.Nanoseconds(), nil, nil)
+	if err != nil {
+		return fmt.Errorf("later block creation would fail: %w", err)
 	}
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
