@@ -1,10 +1,10 @@
-package address
+package info
 
 import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/node/network"
-	"github.com/my-cloud/ruthenium/src/ui/server/wallet/utxos"
+	"github.com/my-cloud/ruthenium/src/ui/server/transaction/info"
 	"github.com/my-cloud/ruthenium/test/node/clock/clocktest"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
 	"net/http"
@@ -23,7 +23,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 	watchMock := new(clocktest.WatchMock)
-	handler := utxos.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
+	handler := info.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	invalidHttpMethods := []string{http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
 	for _, method := range invalidHttpMethods {
@@ -45,7 +45,7 @@ func Test_ServeHTTP_InvalidAddress_ReturnsBadRequest(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 	watchMock := new(clocktest.WatchMock)
-	handler := utxos.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
+	handler := info.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, urlTarget, nil)
 
@@ -62,7 +62,7 @@ func Test_ServeHTTP_InvalidValue_ReturnsBadRequest(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 	watchMock := new(clocktest.WatchMock)
-	handler := utxos.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
+	handler := info.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address", urlTarget), nil)
 
@@ -79,7 +79,7 @@ func Test_ServeHTTP_IsRegisteredNotProvided_ReturnsBadRequest(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 	watchMock := new(clocktest.WatchMock)
-	handler := utxos.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
+	handler := info.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=0", urlTarget), nil)
 
@@ -97,7 +97,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	neighborMock := new(networktest.NeighborMock)
 	neighborMock.GetUtxosFunc = func(string) ([]*network.UtxoResponse, error) { return nil, errors.New("") }
 	watchMock := new(clocktest.WatchMock)
-	handler := utxos.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
+	handler := info.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=0&consolidation=false", urlTarget), nil)
 
@@ -118,7 +118,7 @@ func Test_ServeHTTP_GetBlockError_ReturnsInternalServerError(t *testing.T) {
 	neighborMock.GetUtxosFunc = func(string) ([]*network.UtxoResponse, error) { return nil, nil }
 	neighborMock.GetBlockFunc = func(uint64) (*network.BlockResponse, error) { return &network.BlockResponse{}, errors.New("") }
 	watchMock := new(clocktest.WatchMock)
-	handler := utxos.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
+	handler := info.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=0&consolidation=false", urlTarget), nil)
 
@@ -139,7 +139,7 @@ func Test_ServeHTTP_NilGenesisBlock_ReturnsInternalServerError(t *testing.T) {
 	neighborMock.GetUtxosFunc = func(string) ([]*network.UtxoResponse, error) { return nil, nil }
 	neighborMock.GetBlockFunc = func(uint64) (*network.BlockResponse, error) { return nil, nil }
 	watchMock := new(clocktest.WatchMock)
-	handler := utxos.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
+	handler := info.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=0&consolidation=false", urlTarget), nil)
 
@@ -161,7 +161,7 @@ func Test_ServeHTTP_ValidRequest_ReturnsUtxos(t *testing.T) {
 	neighborMock.GetBlockFunc = func(uint64) (*network.BlockResponse, error) { return &network.BlockResponse{}, nil }
 	watchMock := new(clocktest.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Now() }
-	handler := utxos.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
+	handler := info.NewHandler(neighborMock, 0, 1, 1, 1, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=0&consolidation=false", urlTarget), nil)
 

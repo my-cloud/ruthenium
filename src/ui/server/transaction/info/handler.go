@@ -1,4 +1,4 @@
-package utxos
+package info
 
 import (
 	"encoding/json"
@@ -105,7 +105,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			selectedUtxos = utxos
 		}
 		rest := inputsValue - value - handler.minimalTransactionFee
-		response := &Response{
+		response := &TransactionInfoResponse{
 			Rest:  rest,
 			Utxos: selectedUtxos,
 		}

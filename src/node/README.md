@@ -30,17 +30,24 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 
 ### Blockchain
 <details>
+<summary><b>Get block</b></summary>
+
+*Description*: Get the block having the given height.
+  * **request value:** [Block request](#block-request)
+  * **response value:** [Block response](#block-response)
+</details>
+<details>
 <summary><b>Get blocks</b></summary>
 
 *Description*: Get all the blocks.
-  * **request value:** `GET BLOCKS`  
+  * **request value:** `GET BLOCKS`
   * **response value:** Array of [block responses](#block-response)
 </details>
 <details>
 <summary><b>Get last blocks</b></summary>
 
 *Description*: Get the last blocks starting from the given index.
-  * **request value:** [last blocks request](#last-blocks-request)
+  * **request value:** [Last blocks request](#last-blocks-request)
   * **response value:** Array of [block responses](#block-response)
 </details>
 
@@ -58,7 +65,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 <summary><b>Add transaction</b></summary>
 
 *Description:* Add a transaction to the transactions pool.
-* **request value:** [TransactionRequest](#transaction-request)  
+* **request value:** [Transaction request](#transaction-request)  
 * **response value:** *none*
 </details>
 <details>
@@ -71,94 +78,16 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 
 ### Wallet
 <details>
-<summary><b>Get amount</b></summary>
+<summary><b>Get UTXOs</b></summary>
 
-*Description:* Get the amount for the given wallet address.
-* **request value:** [Amount request](#amount-request)  
-* **response value:** [Amount response](#amount-response)
+*Description:* Get all the UTXOs for the given wallet address.
+* **request value:** [UTXO request](#utxo-request)  
+* **response value:** Array of [UTXO response](#utxo-response)
 </details>
 
 ---
 <details open>
 <summary style="font-size:24px"><b>Schemas</b></summary>
-
-### Amount request
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-AmountRequest {
-  Address string
-}
-```
-</td>
-<td>
-
-```
-The amount data structure for request
-The wallet address for which to get the amount
-
-```
-</td>
-<td>
-
-```
-{
-  "Address": 0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
-}
-```
-</td>
-</tr>
-</table>
-
-### Amount response
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-AmountResponse {
-  Amount uint64
-}
-```
-</td>
-<td>
-
-```
-The amount data structure for response
-The amount
-
-```
-</td>
-<td>
-
-```
-{
-  "Amount": 100000000
-}
-```
-</td>
-</tr>
-</table>
 
 ### Last blocks request
 <table>
@@ -183,8 +112,8 @@ LastBlocksRequest {
 <td>
 
 ```
-The last blocks request data structure
-The height of the first of the last blocks
+The data structure for last blocks request
+  The height of the first of the last blocks
 
 ```
 </td>
@@ -193,6 +122,45 @@ The height of the first of the last blocks
 ```
 {
   "StartingBlockHeight": 0
+}
+```
+</td>
+</tr>
+</table>
+
+### Block request
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+BlockRequest {
+  BlockHeight uint64
+}
+```
+</td>
+<td>
+
+```
+The data structure for block request
+  The block height
+
+```
+</td>
+<td>
+
+```
+{
+  "BlockHeight": 0
 }
 ```
 </td>
@@ -215,21 +183,23 @@ Example
 
 ```
 BlockResponse {
-  Timestamp           int64
-  PreviousHash        [32]byte
-  Transactions        []TransactionResponse
-  RegisteredAddresses []string
+  Timestamp                  int64
+  PreviousHash               [32]byte
+  Transactions               []TransactionResponse
+  AddedRegisteredAddresses   []string
+  RemovedRegisteredAddresses []string
 }
 ```
 </td>
 <td>
 
 ```
-The block data structure for response
-The block timestamp
-The hash of the previous block in the chain
-The block transactions
-The addresses registered in the PoH registry
+The data structure for block response
+  The block timestamp
+  The hash of the previous block in the chain
+  The block transactions
+  The added addresses registered in the PoH registry compared to the previous block
+  The removed addresses registered in the PoH registry compared to the previous block
 
 ```
 </td>
@@ -237,10 +207,11 @@ The addresses registered in the PoH registry
 
 ```
 {
-  "Timestamp": 1667768884780639700
-  "PreviousHash": [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
-  "Transactions":        []
-  "RegisteredAddresses": [ 0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a ]
+  "Timestamp":                  1667768884780639700
+  "PreviousHash":               [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+  "Transactions":               []
+  "AddedRegisteredAddresses":   [ 0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a ]
+  "RemovedRegisteredAddresses": [ 0xb1477DcBBea001a339a92b031d14a011e36D008F ]
 }
 ```
 </td>
@@ -264,16 +235,14 @@ Example
 ```
 TargetRequest {
     Ip   string
-    Port uint16
 }
 ```
 </td>
 <td>
 
 ```
-The target data structure for request
-The IP
-The port
+The data structure for target request
+  The IP
 
 ```
 </td>
@@ -281,16 +250,110 @@ The port
 
 ```
 {
-  "Ip":   0.0.0.0
-  "Port": 10600
+  "Ip":   0.0.0.0:10600
 }
 ```
 </td>
 </tr>
 </table>
 
-### Transaction request
+#### Input
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
 
+```
+Input {
+  OutputIndex   uint16
+  TransactionId string
+  PublicKey     string
+  Signature     string
+}
+```
+</td>
+<td>
+
+```
+The input data structure
+  The output index
+  The ID of the transaction holding the output
+  The output recipient public key
+  The output signature
+
+```
+</td>
+<td>
+
+```
+{
+  "OutputIndex":   0
+  "TransactionId": 8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d
+  "PublicKey":     0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782
+  "Signature":     4f3b24cbb4d2c13aaf60518fce70409fd29e1668db1c2109c0eac58427c203df59788bade6d5f3eb9df161b4ed3de451bac64f4c54e74578d69caf8cd401a38f
+}
+```
+</td>
+</tr>
+</table>
+
+#### Output
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+Output {
+  Address   string
+  HasReward bool
+  HasIncome bool
+  Value     uint64
+}
+```
+</td>
+<td>
+
+```
+The output data structure
+  The address of this output recipient
+  Whether this output contains a reward
+  Whether this output should be used for income calculation
+  The value at the transaction timestamp
+
+```
+</td>
+<td>
+
+```
+{
+  "Address":   0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
+  "HasReward": false
+  "HasIncome": true
+  "Value":     0
+}
+```
+</td>
+</tr>
+</table>
+
+#### Transaction request
 <table>
 <th>
 Schema
@@ -306,29 +369,21 @@ Example
 
 ```
 TransactionRequest {
-  Fee                          uint64
-  RecipientAddress             string
-  SenderAddress                string
-  SenderPublicKey              string
-  Signature                    string
+  Inputs                       []InputRequest
+  Outputs                      []OutputRequest
   Timestamp                    int64
   TransactionBroadcasterTarget string
-  Value                        uint64
 }
 ```
 </td>
 <td>
 
 ```
-The fee
 The transaction data structure for request
-The recipient wallet address
-The sender wallet address
-The sender wallet public key
-The signature generated by both the private and public keys
-The timestamp
-The transaction broadcaster target
-The value
+  The inputs
+  The outputs
+  The timestamp
+  The transaction broadcaster target
 
 ```
 </td>
@@ -336,22 +391,17 @@ The value
 
 ```
 {
-  "Fee":                          1000
-  "RecipientAddress":             0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
-  "SenderAddress":                0x9C69443c3Ec0D660e257934ffc1754EB9aD039CB
-  "SenderPublicKey":              0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782
-  "Signature":                    4f3b24cbb4d2c13aaf60518fce70409fd29e1668db1c2109c0eac58427c203df59788bade6d5f3eb9df161b4ed3de451bac64f4c54e74578d69caf8cd401a38f
-  "Timestamp":                    1667768884780639700
+  "Inputs": []
+  "Outputs": []
+  "Timestamp":       1667768884780639700
   "TransactionBroadcasterTarget": 0.0.0.0:0000
-  "Value":                        100000000
 }
 ```
 </td>
 </tr>
 </table>
 
-### Transaction response
-
+#### Transaction response
 <table>
 <th>
 Schema
@@ -367,13 +417,10 @@ Example
 
 ```
 TransactionResponse {
-  RecipientAddress string
-  SenderAddress    string
-  SenderPublicKey  string
-  Signature        string
-  Timestamp        int64
-  Value            uint64
-  Fee              uint64
+  Id        string
+  Inputs    []*InputResponse
+  Outputs   []*OutputResponse
+  Timestamp int64
 }
 ```
 </td>
@@ -381,13 +428,10 @@ TransactionResponse {
 
 ```
 The transaction data structure for response
-The recipient wallet address
-The sender wallet address
-The sender wallet public key
-The signature generated by both the private and public keys
-The timestamp
-The value
-The fee
+  The ID
+  The inputs
+  The outputs
+  The timestamp
 
 ```
 </td>
@@ -395,13 +439,106 @@ The fee
 
 ```
 {
-  "RecipientAddress": 0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
-  "SenderAddress":    0x9C69443c3Ec0D660e257934ffc1754EB9aD039CB
-  "SenderPublicKey":  0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782
-  "Signature":        4f3b24cbb4d2c13aaf60518fce70409fd29e1668db1c2109c0eac58427c203df59788bade6d5f3eb9df161b4ed3de451bac64f4c54e74578d69caf8cd401a38f
-  "Timestamp":        1667768884780639700
-  "Value":            100000000
-  "Fee":              1000
+  "Id":            30148389df42b7cd0cb0d3ce951133da3f36ff4e1581d108da1ee05bacad64b7
+  "Inputs": []
+  "Outputs": []
+  "Timestamp":     1667768884780639700
+}
+```
+</td>
+</tr>
+</table>
+
+### UTXO request
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+UtxosRequest {
+  Address string
+}
+```
+</td>
+<td>
+
+```
+The data structure for UTXOs request
+  The wallet address for which to get the UTXOs
+
+```
+</td>
+<td>
+
+```
+{
+  "Address": 0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
+}
+```
+</td>
+</tr>
+</table>
+
+### UTXO response
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+type UtxoResponse struct {
+  Address       string
+  BlockHeight   int
+  HasReward     bool
+  HasIncome     bool
+  OutputIndex   uint16
+  TransactionId string
+  Value         uint64
+}
+```
+</td>
+<td>
+
+```
+The data structure for UTXO response
+  The address of the output recipient
+  The output transaction block height
+  Whether the output contains a reward
+  Whether the output should be used for income calculation
+  The output index
+  The ID of the transaction holding the output
+  The value at the transaction timestamp
+
+```
+</td>
+<td>
+
+```
+{
+  "Address":       0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
+  "BlockHeight":   0
+  "HasReward":     false
+  "HasIncome":     true
+  "OutputIndex":   0
+  "TransactionId": 8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d
+  "Value":         0
 }
 ```
 </td>
