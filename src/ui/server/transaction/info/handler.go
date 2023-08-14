@@ -9,8 +9,8 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/ui/server"
+	"math"
 	"net/http"
-	"sort"
 	"strconv"
 )
 
@@ -71,44 +71,53 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			return
 		}
 		var selectedUtxos []*UtxoResponse
-		var inputsValue uint64
 		now := handler.watch.Now().UnixNano()
 		nextBlockHeight := (now-genesisBlock.Timestamp)/handler.validationTimestamp + 1
 		nextBlockTimestamp := genesisBlock.Timestamp + nextBlockHeight*handler.validationTimestamp
-		// TODO avoid creating NewOutputFromUtxoResponse twice
-		sort.Slice(utxos, func(i, j int) bool {
-			firstOutput := validation.NewOutputFromUtxoResponse(utxos[i], handler.halfLifeInNanoseconds, handler.validationTimestamp, genesisBlock.Timestamp)
-			firstOutputValue := firstOutput.Value(int(nextBlockHeight), nextBlockTimestamp)
-			secondOutput := validation.NewOutputFromUtxoResponse(utxos[j], handler.halfLifeInNanoseconds, handler.validationTimestamp, genesisBlock.Timestamp)
-			secondOutputValue := secondOutput.Value(int(nextBlockHeight), nextBlockTimestamp)
-			return firstOutputValue < secondOutputValue
-		})
-		value := uint64(parsedValue)
+		utxosByValue := make(map[uint64][]*UtxoResponse)
+		var walletBalance uint64
+		var values []uint64
 		for _, utxo := range utxos {
 			output := validation.NewOutputFromUtxoResponse(utxo, handler.halfLifeInNanoseconds, handler.validationTimestamp, genesisBlock.Timestamp)
 			outputValue := output.Value(int(nextBlockHeight), nextBlockTimestamp)
+			utxoResponse := &UtxoResponse{
+				OutputIndex:   utxo.OutputIndex,
+				TransactionId: utxo.TransactionId,
+			}
+			walletBalance += outputValue
 			if isConsolidationRequired {
-				inputsValue += outputValue
-				selectedUtxos = append(selectedUtxos, &UtxoResponse{
-					OutputIndex:   utxo.OutputIndex,
-					TransactionId: utxo.TransactionId,
-				})
-			} else if inputsValue < value {
-				inputsValue += outputValue
-				selectedUtxos = append(selectedUtxos, &UtxoResponse{
-					OutputIndex:   utxo.OutputIndex,
-					TransactionId: utxo.TransactionId,
-				})
+				selectedUtxos = append(selectedUtxos, utxoResponse)
 			} else {
-				break
+				if _, ok := utxosByValue[outputValue]; !ok {
+					values = append(values, outputValue)
+				}
+				utxosByValue[outputValue] = append(utxosByValue[outputValue], utxoResponse)
 			}
 		}
-		if inputsValue < value {
+		value := uint64(parsedValue)
+		targetValue := value + handler.minimalTransactionFee
+		if walletBalance < targetValue {
 			errorMessage := "insufficient wallet balance"
 			handler.logger.Error(errors.New(errorMessage).Error())
 			writer.WriteHeader(http.StatusMethodNotAllowed)
 			jsonWriter.Write(errorMessage)
 			return
+		}
+
+		var inputsValue uint64
+		if isConsolidationRequired {
+			inputsValue = walletBalance
+		} else if values != nil {
+			for inputsValue < targetValue {
+				closestValueIndex := findClosestValueIndex(targetValue, values)
+				closestValue := values[closestValueIndex]
+				values[closestValueIndex] = 0
+				closestUtxos := utxosByValue[closestValue]
+				for i := 0; i < len(closestUtxos) && inputsValue < targetValue; i++ {
+					inputsValue += closestValue
+					selectedUtxos = append(selectedUtxos, closestUtxos[i])
+				}
+			}
 		}
 		rest := inputsValue - value - handler.minimalTransactionFee
 		response := &TransactionInfoResponse{
@@ -127,4 +136,27 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		handler.logger.Error("invalid HTTP method")
 		writer.WriteHeader(http.StatusBadRequest)
 	}
+}
+
+func findClosestValueIndex(target uint64, values []uint64) int {
+	closestValueIndex := 0
+	closestDifference := uint64(math.MaxUint64)
+	var isTargetSmaller bool
+	for i, value := range values {
+		if value < target && isTargetSmaller {
+			continue
+		}
+		var difference uint64
+		if value < target {
+			difference = target - value
+		} else {
+			isTargetSmaller = true
+			difference = value - target
+		}
+		if difference < closestDifference {
+			closestValueIndex = i
+			closestDifference = difference
+		}
+	}
+	return closestValueIndex
 }
