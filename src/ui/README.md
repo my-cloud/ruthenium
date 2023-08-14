@@ -47,8 +47,9 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
   |Code|Description|
       |---|---|
   |200|[Transaction info response](#transaction-info-response)|
-  |400|Bad request|
-  |500|Internal server error|
+  |400|Bad request, if any request argument is invalid|
+  |405|Method not allowed, if the value exceeds the wallet amount for the given address|
+  |500|Internal server error, if an unexpected condition occurred|
 </details>
 <details>
 <summary><b>Add transaction</b></summary>
@@ -64,8 +65,8 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
   |Code|Description|
     |---|---|
   |201|Transaction added|
-  |400|Bad request|
-  |500|Internal server error|
+  |400|Bad request, if any request argument is invalid|
+  |500|Internal server error, if an unexpected condition occurred|
 </details>
 <details>
 <summary><b>Get transactions</b></summary>
@@ -81,7 +82,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
   |Code|Description|
     |---|---|
   |200|Array of [transaction responses](#transaction-response)|
-  |500|Internal server error|
+  |500|Internal server error, if an unexpected condition occurred|
 </details>
 
 ### Wallet
@@ -103,7 +104,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
   |Code|Description|
     |---|---|
   |200|42 characters hexadecimal wallet address|
-  |500|Internal server error|
+  |500|Internal server error, if an unexpected condition occurred|
 </details>
 <details>
 <summary><b>Get wallet amount</b></summary>
@@ -123,8 +124,8 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
   |Code|Description|
     |---|---|
   |200|64 bits floating-point number amount|
-  |400|Bad request|
-  |500|Internal server error|
+  |400|Bad request, if any request argument is invalid|
+  |500|Internal server error, if an unexpected condition occurred|
 </details>
 
 ### Schemas
@@ -283,13 +284,8 @@ Example
 
 ```
 type UtxoResponse struct {
-  Address       string
-  BlockHeight   int
-  HasReward     bool
-  HasIncome     bool
   OutputIndex   uint16
   TransactionId string
-  Value         uint64
 }
 ```
 </td>
@@ -297,13 +293,8 @@ type UtxoResponse struct {
 
 ```
 The data structure for UTXO response
-  The address of the output recipient
-  The output transaction block height
-  Whether the output contains a reward
-  Whether the output should be used for income calculation
   The output index
   The ID of the transaction holding the output
-  The value at the transaction timestamp
 
 ```
 </td>
@@ -311,13 +302,8 @@ The data structure for UTXO response
 
 ```
 {
-  "Address":       0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
-  "BlockHeight":   0
-  "HasReward":     false
-  "HasIncome":     true
   "OutputIndex":   0
   "TransactionId": 8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d
-  "Value":         0
 }
 ```
 </td>

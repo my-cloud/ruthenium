@@ -35,7 +35,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		address := req.URL.Query().Get("address")
 		if address == "" {
 			errorMessage := "address is missing in amount request"
-			handler.logger.Error("address is missing in amount request")
+			handler.logger.Error(errorMessage)
 			writer.WriteHeader(http.StatusBadRequest)
 			jsonWriter.Write(errorMessage)
 			return
@@ -70,11 +70,12 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var selectedUtxos []*network.UtxoResponse
+		var selectedUtxos []*UtxoResponse
 		var inputsValue uint64
 		now := handler.watch.Now().UnixNano()
 		nextBlockHeight := (now-genesisBlock.Timestamp)/handler.validationTimestamp + 1
 		nextBlockTimestamp := genesisBlock.Timestamp + nextBlockHeight*handler.validationTimestamp
+		// TODO avoid creating NewOutputFromUtxoResponse twice
 		sort.Slice(utxos, func(i, j int) bool {
 			firstOutput := validation.NewOutputFromUtxoResponse(utxos[i], handler.halfLifeInNanoseconds, handler.validationTimestamp, genesisBlock.Timestamp)
 			firstOutputValue := firstOutput.Value(int(nextBlockHeight), nextBlockTimestamp)
@@ -88,21 +89,26 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			outputValue := output.Value(int(nextBlockHeight), nextBlockTimestamp)
 			if isConsolidationRequired {
 				inputsValue += outputValue
+				selectedUtxos = append(selectedUtxos, &UtxoResponse{
+					OutputIndex:   utxo.OutputIndex,
+					TransactionId: utxo.TransactionId,
+				})
 			} else if inputsValue < value {
 				inputsValue += outputValue
-				selectedUtxos = append(selectedUtxos, utxo)
+				selectedUtxos = append(selectedUtxos, &UtxoResponse{
+					OutputIndex:   utxo.OutputIndex,
+					TransactionId: utxo.TransactionId,
+				})
 			} else {
 				break
 			}
 		}
 		if inputsValue < value {
-			handler.logger.Error(errors.New("insufficient wallet balance to send transaction").Error())
-			writer.WriteHeader(http.StatusBadRequest)
-			jsonWriter.Write("insufficient wallet balance to send transaction")
+			errorMessage := "insufficient wallet balance"
+			handler.logger.Error(errors.New(errorMessage).Error())
+			writer.WriteHeader(http.StatusMethodNotAllowed)
+			jsonWriter.Write(errorMessage)
 			return
-		}
-		if isConsolidationRequired {
-			selectedUtxos = utxos
 		}
 		rest := inputsValue - value - handler.minimalTransactionFee
 		response := &TransactionInfoResponse{
