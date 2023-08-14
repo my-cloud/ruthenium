@@ -8,12 +8,12 @@
 [![Doc](https://img.shields.io/badge/doc-wiki-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
 [![Doc](https://img.shields.io/badge/doc-whitepaper-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki/Whitepaper)
 
-Golang implementation of the Ruthenium blockchain protocol.
+Golang implementation of Ruthenium cryptocurrency node.
 
 You will find a detailed description of the project in the [wiki](https://github.com/my-cloud/ruthenium/wiki/Home). To understand the motivations behind the creation of this blockchain, you can peruse the comprehensive details outlined in the Ruthenium [whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
 
 ## Quickstart
-There are two ways to use the Ruthenium blockchain. You can either use your own build from [sources](https://github.com/my-cloud/ruthenium/releases) (Option A) or use a docker image provided in the [repository packages](https://github.com/my-cloud/ruthenium/pkgs/container/ruthenium) (Option B).
+There are two ways to run a Ruthenium node. You can either use your own build from [sources](https://github.com/my-cloud/ruthenium/releases) (Option A) or use a docker image provided in the [repository packages](https://github.com/my-cloud/ruthenium/pkgs/container/ruthenium) (Option B).
 
 ### Prerequisites
 * Option A (using sources):
@@ -91,7 +91,7 @@ For a [tutorial to create a first blockchain in Go][1], thanks to [Yuko Sakai][2
 ![license.png](doc/license.png)
 
 ## Project status
-[![Commit activity](https://img.shields.io/github/commit-activity/m/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/commits/main)
+[![Commit activity](https://img.shields.io/github/commit-activity/y/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/commits/main)
 
 [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=sqale_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=sqale_rating)
 [![Security](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=security_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=security_rating)
