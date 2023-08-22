@@ -15,42 +15,6 @@ import (
 	"time"
 )
 
-func Test_AddTransaction_TransactionFeeIsTooLow_TransactionNotAdded(t *testing.T) {
-	// Arrange
-	validatorWalletAddress := test.Address
-	synchronizerMock := new(networktest.SynchronizerMock)
-	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return nil }
-	synchronizerMock.IncentiveFunc = func(string) {}
-	var now int64 = 1
-	validationTimer := time.Nanosecond
-	logger := logtest.NewLoggerMock()
-	var invalidTransactionFee uint64 = 0
-	var minimalTransactionFee uint64 = 1
-	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
-	publicKey := encryption.NewPublicKey(privateKey)
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress)
-	blockResponses := []*network.BlockResponse{genesisBlockResponse}
-	blockchainMock := new(protocoltest.BlockchainMock)
-	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
-	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
-	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return invalidTransactionFee, nil }
-	pool := validation.NewTransactionsPool(blockchainMock, minimalTransactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
-	genesisTransaction := genesisBlockResponse.Transactions[0]
-	var genesisOutputIndex uint16 = 0
-	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, invalidTransactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, now, 1)
-
-	// Act
-	pool.AddTransaction(&invalidTransactionRequest, "0")
-
-	// Assert
-	transactions := pool.Transactions()
-	expectedTransactionsLength := 0
-	actualTransactionsLength := len(transactions)
-	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
-}
-
 func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address

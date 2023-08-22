@@ -183,7 +183,7 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 	utxos := []*network.UtxoResponse{
 		{
 			Address:       "",
-			BlockHeight:   0,
+			BlockHeight:   1,
 			HasReward:     false,
 			HasIncome:     false,
 			OutputIndex:   0,
@@ -192,7 +192,7 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 		},
 		{
 			Address:       "",
-			BlockHeight:   0,
+			BlockHeight:   1,
 			HasReward:     false,
 			HasIncome:     false,
 			OutputIndex:   1,
@@ -201,7 +201,7 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 		},
 		{
 			Address:       "",
-			BlockHeight:   0,
+			BlockHeight:   1,
 			HasReward:     false,
 			HasIncome:     false,
 			OutputIndex:   1,
@@ -239,7 +239,7 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 	utxos := []*network.UtxoResponse{
 		{
 			Address:       "",
-			BlockHeight:   0,
+			BlockHeight:   1,
 			HasReward:     false,
 			HasIncome:     false,
 			OutputIndex:   0,
@@ -248,7 +248,7 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 		},
 		{
 			Address:       "",
-			BlockHeight:   0,
+			BlockHeight:   1,
 			HasReward:     false,
 			HasIncome:     false,
 			OutputIndex:   1,

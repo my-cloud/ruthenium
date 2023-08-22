@@ -73,7 +73,8 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 	var addedRegisteredAddresses []string
 	var removedRegisteredAddresses []string
 	for address := range registeredAddressesMap {
-		isPohValid, err := blockchain.registry.IsRegistered(address) // FIXME due to this call to the registry, this method cannot be used to create blockchain copies or temporary blocks
+		// FIXME due to this call to the registry, this method cannot be used to create blockchain copies or temporary blocks
+		isPohValid, err := blockchain.registry.IsRegistered(address)
 		if err != nil {
 			return fmt.Errorf("failed to get proof of humanity: %w", err)
 		}
