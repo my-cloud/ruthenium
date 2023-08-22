@@ -93,22 +93,39 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	blockchain := verification.NewBlockchain(0, nil, 1, 0, registry, 1, synchronizer, logger)
+	address := test.Address
+	genesisTransaction, _ := validation.NewGenesisTransaction(address, 0, 1)
+	blockchain := verification.NewBlockchain(0, genesisTransaction, 1, 0, registry, 1, synchronizer, logger)
 	_ = blockchain.AddBlock(1, nil, nil)
 	_ = blockchain.AddBlock(2, nil, nil)
-	blockResponse1 := protocoltest.NewRewardedBlockResponse(blockchain.LastBlocks(0)[0].PreviousHash, 0)
+	blocks := blockchain.LastBlocks(0)
+	genesisBlockHash := blocks[1].PreviousHash
+	blockResponse1 := protocoltest.NewRewardedBlockResponse(genesisBlockHash, 1)
 	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
 	hash1, _ := block1.Hash()
-	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, 1)
+	var transactionFee uint64 = 0
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
+	publicKey := encryption.NewPublicKey(privateKey)
+	var now int64 = 2
+	var genesisOutputIndex uint16 = 0
+	transactionRequest := protocoltest.NewSignedTransactionRequest(0, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 3, 0)
+	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
+	transactionResponse := transaction.GetResponse()
+	rewardTransaction, _ := validation.NewRewardTransaction(address, now, 0)
+	transactions := []*network.TransactionResponse{
+		transactionResponse,
+		rewardTransaction,
+	}
+	blockResponse2 := verification.NewBlockResponse(2, hash1, transactions, []string{address}, nil)
 	block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
 	hash2, _ := block2.Hash()
-	blockResponse3 := protocoltest.NewRewardedBlockResponse(hash2, 2)
+	blockResponse3 := protocoltest.NewRewardedBlockResponse(hash2, 3)
 	block3, _ := verification.NewBlockFromResponse(blockResponse3, nil)
 	hash3, _ := block3.Hash()
-	blockResponse4 := protocoltest.NewRewardedBlockResponse(hash3, 3)
-	lastBlocksResponses := []*network.BlockResponse{blockResponse3, blockResponse4}
+	blockResponse4 := protocoltest.NewRewardedBlockResponse(hash3, 4)
+	lastBlocksResponses := []*network.BlockResponse{blockResponse2, blockResponse3, blockResponse4}
 	neighborMock.GetLastBlocksFunc = func(uint64) ([]*network.BlockResponse, error) { return lastBlocksResponses, nil }
-	blockResponses := []*network.BlockResponse{blockResponse1, blockResponse2, blockResponse3, blockResponse4}
+	blockResponses := []*network.BlockResponse{blocks[0], blockResponse1, blockResponse2, blockResponse3, blockResponse4}
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) { return blockResponses, nil }
 
 	// Act
@@ -267,7 +284,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	genesisTransaction := blockResponse1.Transactions[0]
 	var genesisOutputIndex uint16 = 0
 	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, invalidTransactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 3, genesisValue)
+	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, invalidTransactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 3, 1)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
 	rewardTransaction, _ := validation.NewRewardTransaction(address, now, 0)
@@ -286,7 +303,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	var minimalTransactionFee uint64 = 1000000000
+	var minimalTransactionFee uint64 = 1
 	blockchain := verification.NewBlockchain(0, nil, 1, minimalTransactionFee, registry, 1, synchronizer, logger)
 
 	// Act
@@ -296,7 +313,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	var isKept bool
 	var isExplicitMessageLogged bool
 	for _, call := range logger.DebugCalls() {
-		expectedMessage := "a neighbor block transaction fee is too low"
+		expectedMessage := "fee is negative"
 		if call.Msg == blockchainKeptMessage {
 			isKept = true
 		} else if strings.Contains(call.Msg, expectedMessage) {
@@ -320,8 +337,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := blockResponse1.Transactions[0]
-	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 4, genesisValue)
+	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(2, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 4, 1)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
 	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
@@ -379,8 +395,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := blockResponse1.Transactions[0]
-	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 0, genesisValue)
+	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(2, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 0, 1)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
 	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)

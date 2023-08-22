@@ -19,10 +19,6 @@ type Output struct {
 	validationTimestamp   int64
 }
 
-func NewOutputFromResponse(response *network.OutputResponse, halfLifeInNanoseconds float64, validationTimestamp int64, genesisTimestamp int64) *Output {
-	return &Output{response.Address, response.HasReward, response.HasIncome, response.Value, genesisTimestamp, halfLifeInNanoseconds, validationTimestamp}
-}
-
 func NewOutputFromUtxoResponse(response *network.UtxoResponse, halfLifeInNanoseconds float64, validationTimestamp int64, genesisTimestamp int64) *Output {
 	return &Output{response.Address, response.HasReward, response.HasIncome, response.Value, genesisTimestamp, halfLifeInNanoseconds, validationTimestamp}
 }

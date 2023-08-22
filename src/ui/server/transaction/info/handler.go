@@ -79,7 +79,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		var values []uint64
 		for _, utxo := range utxos {
 			output := validation.NewOutputFromUtxoResponse(utxo, handler.halfLifeInNanoseconds, handler.validationTimestamp, genesisBlock.Timestamp)
-			outputValue := output.Value(int(nextBlockHeight), nextBlockTimestamp)
+			outputValue := output.Value(utxo.BlockHeight, nextBlockTimestamp)
 			utxoResponse := &UtxoResponse{
 				OutputIndex:   utxo.OutputIndex,
 				TransactionId: utxo.TransactionId,

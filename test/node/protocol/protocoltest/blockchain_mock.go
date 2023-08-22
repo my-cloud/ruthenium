@@ -31,7 +31,7 @@ var _ protocol.Blockchain = &BlockchainMock{}
 //			CopyFunc: func() Blockchain {
 //				panic("mock out the Copy method")
 //			},
-//			FindFeeFunc: func(transaction *network.TransactionResponse, blockHeight int, timestamp int64) (uint64, error) {
+//			FindFeeFunc: func(transaction *network.TransactionResponse, timestamp int64) (uint64, error) {
 //				panic("mock out the FindFee method")
 //			},
 //			LastBlocksFunc: func(startingBlockHeight uint64) []*network.BlockResponse {
@@ -60,7 +60,7 @@ type BlockchainMock struct {
 	CopyFunc func() protocol.Blockchain
 
 	// FindFeeFunc mocks the FindFee method.
-	FindFeeFunc func(transaction *network.TransactionResponse, blockHeight int, timestamp int64) (uint64, error)
+	FindFeeFunc func(transaction *network.TransactionResponse, timestamp int64) (uint64, error)
 
 	// LastBlocksFunc mocks the LastBlocks method.
 	LastBlocksFunc func(startingBlockHeight uint64) []*network.BlockResponse
@@ -94,8 +94,6 @@ type BlockchainMock struct {
 		FindFee []struct {
 			// Transaction is the transaction argument value.
 			Transaction *network.TransactionResponse
-			// BlockHeight is the blockHeight argument value.
-			BlockHeight int
 			// Timestamp is the timestamp argument value.
 			Timestamp int64
 		}
@@ -246,23 +244,21 @@ func (mock *BlockchainMock) CopyCalls() []struct {
 }
 
 // FindFee calls FindFeeFunc.
-func (mock *BlockchainMock) FindFee(transaction *network.TransactionResponse, blockHeight int, timestamp int64) (uint64, error) {
+func (mock *BlockchainMock) FindFee(transaction *network.TransactionResponse, timestamp int64) (uint64, error) {
 	if mock.FindFeeFunc == nil {
 		panic("BlockchainMock.FindFeeFunc: method is nil but Blockchain.FindFee was just called")
 	}
 	callInfo := struct {
 		Transaction *network.TransactionResponse
-		BlockHeight int
 		Timestamp   int64
 	}{
 		Transaction: transaction,
-		BlockHeight: blockHeight,
 		Timestamp:   timestamp,
 	}
 	mock.lockFindFee.Lock()
 	mock.calls.FindFee = append(mock.calls.FindFee, callInfo)
 	mock.lockFindFee.Unlock()
-	return mock.FindFeeFunc(transaction, blockHeight, timestamp)
+	return mock.FindFeeFunc(transaction, timestamp)
 }
 
 // FindFeeCalls gets all the calls that were made to FindFee.
@@ -271,12 +267,10 @@ func (mock *BlockchainMock) FindFee(transaction *network.TransactionResponse, bl
 //	len(mockedBlockchain.FindFeeCalls())
 func (mock *BlockchainMock) FindFeeCalls() []struct {
 	Transaction *network.TransactionResponse
-	BlockHeight int
 	Timestamp   int64
 } {
 	var calls []struct {
 		Transaction *network.TransactionResponse
-		BlockHeight int
 		Timestamp   int64
 	}
 	mock.lockFindFee.RLock()

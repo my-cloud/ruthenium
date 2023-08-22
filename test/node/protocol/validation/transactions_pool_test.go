@@ -34,7 +34,7 @@ func Test_AddTransaction_TransactionFeeIsTooLow_TransactionNotAdded(t *testing.T
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int, int64) (uint64, error) { return invalidTransactionFee, nil }
+	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return invalidTransactionFee, nil }
 	pool := validation.NewTransactionsPool(blockchainMock, minimalTransactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	genesisTransaction := genesisBlockResponse.Transactions[0]
 	var genesisOutputIndex uint16 = 0
@@ -71,7 +71,7 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int, int64) (uint64, error) { return transactionFee, nil }
+	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
 	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	genesisTransaction := genesisBlockResponse.Transactions[0]
 	var genesisOutputIndex uint16 = 0
@@ -106,7 +106,7 @@ func Test_AddTransaction_TransactionTimestampIsOlderThan1Blocks_TransactionNotAd
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int, int64) (uint64, error) { return transactionFee, nil }
+	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
 	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	genesisTransaction := genesisBlockResponse.Transactions[0]
 	var genesisOutputIndex uint16 = 0
@@ -140,7 +140,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int, int64) (uint64, error) { return transactionFee, nil }
+	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	privateKey2, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey2)
@@ -182,7 +182,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int, int64) (uint64, error) { return transactionFee, nil }
+	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
@@ -220,7 +220,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	blockResponses := []*network.BlockResponse{genesisBlockResponse}
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	var transactionFee uint64 = 0
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int, int64) (uint64, error) { return transactionFee, nil }
+	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	genesisTransaction := genesisBlockResponse.Transactions[0]
@@ -253,7 +253,7 @@ func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidate
 	blockResponses := []*network.BlockResponse{genesisBlockResponse}
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	var transactionFee uint64 = 0
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int, int64) (uint64, error) { return transactionFee, nil }
+	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	genesisTransaction := genesisBlockResponse.Transactions[0]
@@ -289,7 +289,7 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	blockResponses := []*network.BlockResponse{genesisBlockResponse}
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	var transactionFee uint64 = 0
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int, int64) (uint64, error) { return transactionFee, nil }
+	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	genesisTransaction := genesisBlockResponse.Transactions[0]
