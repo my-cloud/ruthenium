@@ -20,7 +20,6 @@ type TransactionsPool struct {
 
 	blockchain            protocol.Blockchain
 	minimalTransactionFee uint64
-	registry              protocol.Registry
 	synchronizer          network.Synchronizer
 	validatorAddress      string
 
@@ -30,11 +29,10 @@ type TransactionsPool struct {
 	logger log.Logger
 }
 
-func NewTransactionsPool(blockchain protocol.Blockchain, minimalTransactionFee uint64, registry protocol.Registry, synchronizer network.Synchronizer, validatorAddress string, validationTimer time.Duration, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain protocol.Blockchain, minimalTransactionFee uint64, synchronizer network.Synchronizer, validatorAddress string, validationTimer time.Duration, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blockchain = blockchain
 	pool.minimalTransactionFee = minimalTransactionFee
-	pool.registry = registry
 	pool.synchronizer = synchronizer
 	pool.validatorAddress = validatorAddress
 	pool.validationTimer = validationTimer
@@ -68,17 +66,26 @@ func (pool *TransactionsPool) Transactions() []*network.TransactionResponse {
 }
 
 func (pool *TransactionsPool) Validate(timestamp int64) {
-	currentBlockchain := pool.blockchain.Copy()
-	blockResponses := currentBlockchain.Blocks()
+	blockchainCopy := pool.blockchain.Copy()
+	blockResponses := blockchainCopy.Blocks()
 	lastBlockResponse := blockResponses[len(blockResponses)-1]
+	err := blockchainCopy.AddBlock(timestamp, nil, nil)
+	if err != nil {
+		pool.logger.Error("failed to add temporary block")
+	}
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
-	totalTransactionsValueBySenderAddress := make(map[string]uint64)
+	isAlreadySpentByOutputIdByTransactionIndex := make(map[string]map[uint16]bool)
 	transactionResponses := pool.transactionResponses
+	rand.Seed(pool.watch.Now().UnixNano())
+	rand.Shuffle(len(transactionResponses), func(i, j int) {
+		transactionResponses[i], transactionResponses[j] = transactionResponses[j], transactionResponses[i]
+	})
 	var reward uint64
 	var rejectedTransactions []*network.TransactionResponse
+	nextBlockTimestamp := timestamp + pool.validationTimer.Nanoseconds()
 	for i, transaction := range transactionResponses {
-		if timestamp+pool.validationTimer.Nanoseconds() < transaction.Timestamp {
+		if nextBlockTimestamp < transaction.Timestamp {
 			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too far in the future, transaction: %v", transaction))
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
@@ -89,59 +96,75 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 				rejectedTransactions = append(rejectedTransactions, transaction)
 				continue
 			}
+			var skip bool
 			for _, validatedTransaction := range blockResponses[len(blockResponses)-1].Transactions {
 				if pool.transactions[i].Equals(validatedTransaction) {
 					pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction is already in the blockchain, transaction: %v", transaction))
 					rejectedTransactions = append(rejectedTransactions, transaction)
-					continue
+					skip = true
+					break
 				}
 			}
+			if skip {
+				continue
+			}
+			fee, err := blockchainCopy.FindFee(transaction, timestamp)
+			if err != nil {
+				pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, transaction: %v\n %w", transaction, err).Error())
+				rejectedTransactions = append(rejectedTransactions, transaction)
+				continue
+			}
+			for _, input := range transaction.Inputs {
+				if isAlreadySpentByOutputIndex, ok := isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId]; ok {
+					if _, ok := isAlreadySpentByOutputIndex[input.OutputIndex]; ok {
+						pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, an input has already been spent, transaction: %v", transaction))
+						rejectedTransactions = append(rejectedTransactions, transaction)
+						skip = true
+						break
+					}
+				} else {
+					isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId] = make(map[uint16]bool)
+				}
+				isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId][input.OutputIndex] = true
+			}
+			if skip {
+				continue
+			}
+			reward += fee
 		}
 	}
 	for _, transaction := range rejectedTransactions {
 		transactionResponses = removeTransaction(transactionResponses, transaction)
 	}
-	for _, transaction := range transactionResponses {
-		fee := transaction.Fee
-		totalTransactionsValueBySenderAddress[transaction.SenderAddress] += transaction.Value + fee
-		reward += fee
-	}
 	var newAddresses []string
-	for senderAddress, totalTransactionsValue := range totalTransactionsValueBySenderAddress {
-		senderTotalAmount := currentBlockchain.CalculateTotalAmount(timestamp, senderAddress)
-		if totalTransactionsValue > senderTotalAmount {
-			rejectedTransactions = nil
-			rand.Seed(pool.watch.Now().UnixNano())
-			rand.Shuffle(len(transactionResponses), func(i, j int) {
-				transactionResponses[i], transactionResponses[j] = transactionResponses[j], transactionResponses[i]
-			})
-			for _, transaction := range transactionResponses {
-				if transaction.SenderAddress == senderAddress {
-					rejectedTransactions = append(rejectedTransactions, transaction)
-					fee := transaction.Fee
-					totalTransactionsValue -= transaction.Value + fee
-					reward -= fee
-					if totalTransactionsValue <= senderTotalAmount {
-						break
-					}
-				}
+	for _, transaction := range transactionResponses {
+		for _, output := range transaction.Outputs {
+			if output.HasIncome {
+				newAddresses = append(newAddresses, output.Address)
 			}
-			for _, transaction := range rejectedTransactions {
-				transactionResponses = removeTransaction(transactionResponses, transaction)
-				pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, total transactions value exceeds its sender wallet amount, transaction: %v", transaction))
-			}
-		}
-		if totalTransactionsValue > 0 {
-			newAddresses = append(newAddresses, senderAddress)
 		}
 	}
 	if lastBlockResponse.Timestamp == timestamp {
 		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
 		return
 	}
-	rewardTransaction := NewRewardTransaction(pool.validatorAddress, timestamp, reward)
+	rewardTransaction, err := NewRewardTransaction(pool.validatorAddress, timestamp, reward)
+	if err != nil {
+		pool.logger.Error(fmt.Errorf("unable to create block, failed to create reward transaction: %w", err).Error())
+		return
+	}
 	transactionResponses = append(transactionResponses, rewardTransaction)
-	err := pool.blockchain.AddBlock(timestamp, transactionResponses, newAddresses)
+	secondBlockchainCopy := pool.blockchain.Copy()
+	err = secondBlockchainCopy.AddBlock(timestamp, transactionResponses, nil)
+	if err != nil {
+		pool.logger.Error(fmt.Errorf("next block creation would fail: %w", err).Error())
+	}
+	err = secondBlockchainCopy.AddBlock(nextBlockTimestamp, nil, nil)
+	if err != nil {
+		pool.logger.Error(fmt.Errorf("later block creation would fail: %w", err).Error())
+		return
+	}
+	err = pool.blockchain.AddBlock(timestamp, transactionResponses, newAddresses)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("unable to create block: %w", err).Error())
 		return
@@ -151,27 +174,36 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 }
 
 func (pool *TransactionsPool) addTransaction(transactionRequest *network.TransactionRequest) error {
-	fee := *transactionRequest.Fee
-	if fee < pool.minimalTransactionFee {
-		return fmt.Errorf("the transaction fee is too low, fee: %d, minimal fee: %d", fee, pool.minimalTransactionFee)
+	blockchainCopy := pool.blockchain.Copy()
+	blocks := blockchainCopy.Blocks()
+	if len(blocks) == 0 {
+		return errors.New("the blockchain is empty")
+	}
+	currentBlockResponse := blocks[len(blocks)-1]
+	nextBlockTimestamp := currentBlockResponse.Timestamp + pool.validationTimer.Nanoseconds()
+	err := blockchainCopy.AddBlock(nextBlockTimestamp, currentBlockResponse.Transactions, nil)
+	if err != nil {
+		return errors.New("failed to add temporary block")
 	}
 	transaction, err := NewTransactionFromRequest(transactionRequest)
 	if err != nil {
 		return fmt.Errorf("failed to instantiate transaction: %w", err)
 	}
-	currentBlockchain := pool.blockchain.Copy()
-	blocks := currentBlockchain.Blocks()
+	transactionResponse := transaction.GetResponse()
+	_, err = blockchainCopy.FindFee(transactionResponse, nextBlockTimestamp)
+	if err != nil {
+		return fmt.Errorf("failed to verify fee: %w", err)
+	}
 	if len(blocks) > 1 {
 		timestamp := transaction.Timestamp()
-		nextBlockTimestamp := blocks[len(blocks)-1].Timestamp + 2*pool.validationTimer.Nanoseconds()
-		if nextBlockTimestamp < timestamp {
+		if nextBlockTimestamp+pool.validationTimer.Nanoseconds() < timestamp {
 			return fmt.Errorf("the transaction timestamp is too far in the future: %v, now: %v", time.Unix(0, timestamp), time.Unix(0, nextBlockTimestamp))
 		}
-		currentBlockTimestamp := blocks[len(blocks)-1].Timestamp
+		currentBlockTimestamp := currentBlockResponse.Timestamp
 		if timestamp < currentBlockTimestamp {
 			return fmt.Errorf("the transaction timestamp is too old: %v, current block timestamp: %v", time.Unix(0, timestamp), time.Unix(0, currentBlockTimestamp))
 		}
-		for _, validatedTransaction := range blocks[len(blocks)-1].Transactions {
+		for _, validatedTransaction := range currentBlockResponse.Transactions {
 			if transaction.Equals(validatedTransaction) {
 				return errors.New("the transaction is already in the blockchain")
 			}
@@ -182,21 +214,21 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 			return errors.New("the transaction is already in the transactions pool")
 		}
 	}
-	if err = transaction.VerifySignature(); err != nil {
-		return errors.New("failed to verify transaction")
+	if err = transaction.VerifySignatures(); err != nil {
+		return fmt.Errorf("failed to verify transaction: %w", err)
 	}
-	var senderWalletAmount uint64
-	if len(blocks) > 0 {
-		senderWalletAmount = currentBlockchain.CalculateTotalAmount(blocks[len(blocks)-1].Timestamp, transaction.SenderAddress())
+	err = blockchainCopy.AddBlock(nextBlockTimestamp+pool.validationTimer.Nanoseconds(), []*network.TransactionResponse{transactionResponse}, nil)
+	if err != nil {
+		return fmt.Errorf("next block creation would fail: %w", err)
 	}
-	insufficientBalance := senderWalletAmount < transaction.Value()+transaction.Fee()
-	if insufficientBalance {
-		return errors.New("not enough balance in the sender wallet")
+	err = blockchainCopy.AddBlock(nextBlockTimestamp+pool.validationTimer.Nanoseconds(), nil, nil)
+	if err != nil {
+		return fmt.Errorf("later block creation would fail: %w", err)
 	}
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 	pool.transactions = append(pool.transactions, transaction)
-	pool.transactionResponses = append(pool.transactionResponses, transaction.GetResponse())
+	pool.transactionResponses = append(pool.transactionResponses, transactionResponse)
 	return nil
 }
 

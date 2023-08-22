@@ -6,17 +6,20 @@ import (
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/file"
 	"github.com/my-cloud/ruthenium/src/log/console"
+	"github.com/my-cloud/ruthenium/src/node/clock/tick"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/net"
 	"github.com/my-cloud/ruthenium/src/ui/config"
 	"github.com/my-cloud/ruthenium/src/ui/server/index"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
+	"github.com/my-cloud/ruthenium/src/ui/server/transaction/info"
 	"github.com/my-cloud/ruthenium/src/ui/server/transactions"
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/address"
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/amount"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func main() {
@@ -42,11 +45,16 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
 	}
+	watch := tick.NewWatch()
+	hoursADay := 24.
+	halfLifeInNanoseconds := settings.HalfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
+	validationTimestamp := settings.ValidationIntervalInSeconds * time.Second.Nanoseconds()
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
 	http.Handle("/transaction", transaction.NewHandler(host, logger))
+	http.Handle("/transaction/info", info.NewHandler(host, halfLifeInNanoseconds, settings.MinimalTransactionFee, settings.ParticlesPerToken, validationTimestamp, watch, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/wallet/address", address.NewHandler(logger))
-	http.Handle("/wallet/amount", amount.NewHandler(host, settings.ParticlesPerToken, logger))
+	http.Handle("/wallet/amount", amount.NewHandler(host, halfLifeInNanoseconds, settings.ParticlesPerToken, validationTimestamp, watch, logger))
 	logger.Info("user interface server is running...")
 	logger.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(*port), nil).Error())
 }

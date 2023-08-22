@@ -13,6 +13,8 @@ import (
 	"testing"
 )
 
+const urlTarget = "/url-target"
+
 func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	neighborMock := new(networktest.NeighborMock)
@@ -22,7 +24,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	invalidHttpMethods := []string{http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
 	for _, method := range invalidHttpMethods {
 		t.Run(method, func(t *testing.T) {
-			request := httptest.NewRequest(method, "/transactions", nil)
+			request := httptest.NewRequest(method, urlTarget, nil)
 
 			// Act
 			handler.ServeHTTP(recorder, request)
@@ -43,7 +45,7 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	handler := transactions.NewHandler(neighborMock, logger)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("GET", "/transactions", nil)
+	request := httptest.NewRequest("GET", urlTarget, nil)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
@@ -62,7 +64,7 @@ func Test_ServeHTTP_ValidRequest_NeighborMethodCalled(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	handler := transactions.NewHandler(neighborMock, logger)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("GET", "/transactions", nil)
+	request := httptest.NewRequest("GET", urlTarget, nil)
 
 	// Act
 	handler.ServeHTTP(recorder, request)

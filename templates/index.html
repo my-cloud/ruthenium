@@ -3,45 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <title>Wallet</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
+          integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/elliptic-es@0.0.1/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/core.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/sha256.min.js"></script><body>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.0.0/sha256.min.js"></script>
+<body>
 <div>
     <h1>Wallet</h1>
-    <table>
-        <tr>
-            <td><label for="private_key">Private Key:</label></td>
-            <td><textarea id="private_key" rows="1" cols="80" name="private_key"></textarea></td>
-        </tr>
-        <tr>
-            <td><label for="public_key">Public Key:</label></td>
-            <td><textarea disabled id="public_key" rows="2" cols="80" name="public_key"></textarea></td>
-        </tr>
-        <tr>
-            <td><label for="sender_address">Address:</label></td>
-            <td><textarea disabled id="sender_address" rows="1" cols="80" name="sender_address"></textarea></td>
-        </tr>
-        <tr>
-            <td><div>Amount:</div></td>
-            <td><div id="wallet_amount"></div></td>
-        </tr>
-    </table>
+    <form>
+        <div class="password-field">
+            <label for="private_key" class="form-label">Private Key:</label>
+            <input type="password" placeholder="0x" id="private_key" class="form-field">
+            <div class="checkbox-container-anchor">
+                <div class="checkbox-container">
+                    <label>
+                        <input class="password-checkbox" type="checkbox" onchange="switchVisibility()">
+                        <span id="checked_eye" class="glyphicon glyphicon-eye-open checked eye"></span>
+                        <span id="unchecked_eye" class="glyphicon glyphicon-eye-close unchecked eye"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div>
+            <label for="public_key" class="form-label">Public Key:</label>
+            <textarea disabled id="public_key" name="public_key" rows="1" class="form-field"></textarea>
+        </div>
+        <div>
+            <label for="sender_address" class="form-label">Address:</label>
+            <input disabled id="sender_address" name="sender_address" class="form-field">
+        </div>
+        <div>
+            <label class="form-label">Amount:</label>
+            <span id="wallet_amount" class="form-field"></span>
+        </div>
+    </form>
 </div>
 
 <div>
-    <h1>Send Money</h1>
-    <table>
-        <tr>
-            <td><label for="recipient_address">To address:</label></td>
-            <td><textarea id="recipient_address" rows="1" cols="80" name="recipient_address"></textarea></td>
-        </tr>
-        <tr>
-            <td><label for="send_amount">Amount:</label></td>
-            <td><input id="send_amount" type="text" name="send_amount"></td>
-        </tr>
-    </table>
-    <button id="send_money_button">Send</button>
+    <h1>Send Tokens</h1>
+    <form>
+        <div>
+            <label for="recipient_address" class="form-label">To address:</label>
+            <input id="recipient_address" name="recipient_address" class="form-field">
+        </div>
+        <div>
+            <label for="send_amount" class="form-label">Amount:</label>
+            <input id="send_amount" type="text" name="send_amount" class="form-field">
+        </div>
+        <div>
+            <input id="utxo_consolidation" type="checkbox" name="utxo_consolidation" class="form-label" checked>
+            <label for="utxo_consolidation" class="form-field">Consolidate UTXOs</label>
+        </div>
+        <div>
+            <input id="income_update" type="checkbox" name="income_update" class="form-label" checked>
+            <label for="income_update" class="form-field">Update income (requires to be registered in <a href="https://proofofhumanity.id/">PoH</a>)</label>
+        </div>
+    </form>
+    <div>
+        <label class="form-label"></label>
+        <button id="send_tokens_button" class="form-field">Send</button>
+    </div>
 </div>
 
 <div>
@@ -82,63 +105,105 @@
     });
 
     $(function () {
-        $("#send_money_button").click(function () {
+        $("#send_tokens_button").click(function () {
             if (!keyPair) {
-                alert("The private key must be provided to send money")
+                alert("The private key must be provided to send tokens")
                 return
             }
 
-            if (!confirm("Are you sure to send?")) {
-                alert("Canceled")
-                return
-            }
-
+            const senderAddress = $("#sender_address").val();
             const atoms = $("#send_amount").val();
             const result = atomsToParticles(atoms, 100000000);
             if (result.err) {
-                alert(result.err)
+                alert(result.err);
                 return
             }
+            let value = result.particles;
+            let isConsolidationRequested = false
+            if (document.getElementById('utxo_consolidation').checked) {
+                isConsolidationRequested = true
+            }
+            let isIncomeUpdateRequested = false
+            if (document.getElementById('income_update').checked) {
+                isIncomeUpdateRequested = true
+            }
+            const data = {"address": senderAddress, "value": value, "consolidation": isConsolidationRequested};
 
-            const dateNow = Math.floor(Date.now() * 1000000);
-            const recipientAddress = $("#recipient_address").val();
-            const senderAddress = $("#sender_address").val();
-            const transactionData = {
-                "recipient_address": recipientAddress,
-                "sender_address": senderAddress,
-                "timestamp": dateNow,
-                "value": result.particles,
-                "fee": 1000,
-            };
+            function send(response) {
+                let inputs = [];
+                for (let i = 0; i < response.utxos.length; i++) {
+                    let utxo = response.utxos[i];
+                    const input = {
+                        "output_index": utxo.output_index,
+                        "transaction_id": utxo.transaction_id,
+                    }
+                    const hash = CryptoJS.SHA256(JSON.stringify(input)).toString(CryptoJS.enc.Hex);
+                    const signature = keyPair.sign(hash);
+                    const signatureHex = getSignatureHex(signature);
+                    inputs[i] = {
+                        "output_index": utxo.output_index,
+                        "transaction_id": utxo.transaction_id,
+                        "public_key": publicKeyString,
+                        "signature": signatureHex,
+                    };
+                }
 
-            const hash = CryptoJS.SHA256(JSON.stringify(transactionData)).toString(CryptoJS.enc.Hex);
-            const signature = keyPair.sign(hash);
-            const signatureHex = getSignatureHex(signature);
-            const transactionRequest = {
-                "recipient_address": recipientAddress,
-                "sender_address": senderAddress,
-                "sender_public_key": publicKeyString,
-                "signature": signatureHex,
-                "timestamp": dateNow,
-                "value": result.particles,
-                "fee": 1000,
-            };
+                const recipientAddress = $("#recipient_address").val();
+                const spend = {
+                    "address": recipientAddress,
+                    "has_reward": false,
+                    "has_income": false,
+                    "value": value,
+                }
+                console.log(isIncomeUpdateRequested)
+                const rest = {
+                    "address": senderAddress,
+                    "has_reward": false,
+                    "has_income": isIncomeUpdateRequested,
+                    "value": response.rest,
+                }
+                const dateNow = Math.floor(Date.now() * 1000000);
+                const transactionRequest = {
+                    "inputs": inputs,
+                    "outputs": [spend, rest],
+                    "timestamp": dateNow,
+                };
+
+                $.ajax({
+                    url: "/transaction",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(transactionRequest),
+                    success: function (response) {
+                        if (response === "success") {
+                            alert("Send success");
+                        } else {
+                            alert("Send failed: " + response)
+                        }
+                    },
+                    error: function (response) {
+                        console.error(response);
+                        alert("Send failed: " + response.responseText);
+                    }
+                })
+            }
 
             $.ajax({
-                url: "/transaction",
-                type: "POST",
+                url: "/transaction/info",
+                type: "GET",
                 contentType: "application/json",
-                data: JSON.stringify(transactionRequest),
+                dataType: 'json',
+                data: data,
                 success: function (response) {
-                    if (response === "success") {
-                        alert("Send success");
-                    } else {
-                        alert("Send failed: " + response)
+                    if (!confirm("Are you sure to send?")) {
+                        alert("Canceled");
+                        return
                     }
+                    send(response);
                 },
                 error: function (response) {
                     console.error(response);
-                    alert("Send failed");
+                    alert("Send failed: " + response.responseText);
                 }
             })
         })
@@ -256,5 +321,107 @@
         }
         return rHex + sHex;
     }
+
+    function switchVisibility() {
+        let password_field = document.getElementById("private_key");
+        if (password_field.type === "password") {
+            password_field.type = "text";
+        } else {
+            password_field.type = "password";
+        }
+    }
 </script>
 </html>
+<style>
+    .eye {
+        background-color: whitesmoke;
+        width: 35px;
+        height: 24px;
+        padding-top: 5px;
+        padding-left: 11px;
+    }
+
+    .eye:hover {
+        background-color: gainsboro;
+    }
+
+    .password-checkbox {
+        display: none;
+    }
+
+    .password-checkbox ~ .checked {
+        display: none;
+    }
+
+    .password-checkbox:checked ~ .checked {
+        display: inline-block;
+    }
+
+    .password-checkbox:checked ~ .unchecked {
+        display: none;
+    }
+
+    .checkbox-container {
+        top: -18px;
+        left: -40px;
+        position: absolute;
+    }
+
+    .checkbox-container-anchor {
+        position: relative;
+        display: inline-block;
+    }
+
+    div > textarea {
+        margin-top: 3px;
+        margin-bottom: -3px;
+        resize: vertical;
+    }
+
+    .form-label {
+        display: inline-block;
+        width: 90px;
+        text-align: right;
+    }
+
+    .form-field {
+        width: calc(100% - 110px);;
+    }
+
+    button {
+        background-color: white;
+        border: 1px solid lightgrey;
+        border-radius: 0.5rem;
+        box-sizing: border-box;
+        color: black;
+        font-family: "Inter var", ui-sans-serif, -apple-system, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        font-weight: 600;
+        line-height: 1.25rem;
+        padding: 0.75rem 1rem;
+        text-align: center;
+        text-decoration: none whitesmoke solid;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+    }
+
+    button:hover {
+        background-color: whitesmoke;
+    }
+
+    button:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+    }
+
+    button:focus-visible {
+        box-shadow: none;
+    }
+
+    table {
+        width: 50%;
+        margin-left: 90px;
+    }
+</style>

@@ -80,7 +80,7 @@ func (synchronizer *Synchronizer) Synchronize(int64) {
 	}
 	targetRequests = append(targetRequests, hostTargetRequest)
 	for target, score := range scoresByTarget {
-		if target != synchronizer.hostTarget.Value() {
+		if target != hostTargetValue {
 			neighborTarget, err := NewTargetFromValue(target)
 			if err != nil {
 				continue
