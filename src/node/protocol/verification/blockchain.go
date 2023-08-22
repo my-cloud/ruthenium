@@ -450,15 +450,10 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlockRespo
 			return nil, fmt.Errorf("a previous neighbor block hash is invalid: block height: %d, block previous hash: %v, previous block hash: %v", blockHeight, neighborBlockPreviousHash, previousNeighborBlockHash)
 		}
 		var isNewBlock bool
-		var neighborBlockHash [32]byte
 		if len(lastHostBlocks)-1 < i {
 			isNewBlock = true
-			neighborBlockHash, err = neighborBlock.Hash()
-			if err != nil {
-				return nil, fmt.Errorf("failed to calculate neighbor block hash: %w", err)
-			}
 		} else {
-			neighborBlockHash, err = neighborBlock.Hash()
+			neighborBlockHash, err := neighborBlock.Hash()
 			if err != nil {
 				return nil, fmt.Errorf("failed to calculate neighbor block hash: %w", err)
 			}
