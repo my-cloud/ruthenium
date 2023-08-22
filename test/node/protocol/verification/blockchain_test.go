@@ -10,6 +10,7 @@ import (
 	"github.com/my-cloud/ruthenium/test/log/logtest"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
 	"github.com/my-cloud/ruthenium/test/node/protocol/protocoltest"
+	"math"
 	"strings"
 	"testing"
 )
@@ -264,7 +265,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
 }
 
-func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing.T) {
+func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
@@ -275,7 +276,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	var now int64 = 2
-	blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
+	blockResponse1 := protocoltest.NewGenesisBlockResponse(address, 1)
 	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
 	hash1, _ := block1.Hash()
 	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, now-1)
@@ -284,10 +285,10 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	genesisTransaction := blockResponse1.Transactions[0]
 	var genesisOutputIndex uint16 = 0
 	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, invalidTransactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 3, 1)
+	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, invalidTransactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 3, genesisValue)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
-	rewardTransaction, _ := validation.NewRewardTransaction(address, now, 0)
+	rewardTransaction, _ := validation.NewRewardTransaction(address, now, 1)
 	transactions := []*network.TransactionResponse{
 		invalidTransactionResponse,
 		rewardTransaction,
@@ -313,7 +314,68 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	var isKept bool
 	var isExplicitMessageLogged bool
 	for _, call := range logger.DebugCalls() {
-		expectedMessage := "fee is negative"
+		expectedMessage := "transaction fee is negative"
+		if call.Msg == blockchainKeptMessage {
+			isKept = true
+		} else if strings.Contains(call.Msg, expectedMessage) {
+			isExplicitMessageLogged = true
+		}
+	}
+	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
+	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
+}
+
+func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	logger := logtest.NewLoggerMock()
+	neighborMock := new(networktest.NeighborMock)
+	address := test.Address
+	var invalidTransactionFee uint64 = 0
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
+	publicKey := encryption.NewPublicKey(privateKey)
+	var now int64 = 2
+	genesisValue := uint64(math.Pow(2, float64(now)))
+	blockResponse1 := protocoltest.NewGenesisBlockResponse(address, genesisValue)
+	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
+	hash1, _ := block1.Hash()
+	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, now-1)
+	block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
+	hash2, _ := block2.Hash()
+	genesisTransaction := blockResponse1.Transactions[0]
+	var genesisOutputIndex uint16 = 0
+	transactionValue := uint64(math.Pow(float64(genesisValue), -float64(now)))
+	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(transactionValue, invalidTransactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 3, transactionValue)
+	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
+	invalidTransactionResponse := invalidTransaction.GetResponse()
+	rewardTransaction, _ := validation.NewRewardTransaction(address, now, 1)
+	transactions := []*network.TransactionResponse{
+		invalidTransactionResponse,
+		rewardTransaction,
+	}
+	blockResponse3 := verification.NewBlockResponse(now, hash2, transactions, []string{address}, nil)
+	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
+		return []*network.BlockResponse{blockResponse1, blockResponse2, blockResponse3}, nil
+	}
+	neighborMock.TargetFunc = func() string {
+		return "neighbor"
+	}
+	synchronizer := new(networktest.SynchronizerMock)
+	synchronizer.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
+	}
+	var minimalTransactionFee uint64 = 1
+	blockchain := verification.NewBlockchain(0, nil, 1, minimalTransactionFee, registry, 1, synchronizer, logger)
+
+	// Act
+	blockchain.Update(now)
+
+	// Assert
+	var isKept bool
+	var isExplicitMessageLogged bool
+	for _, call := range logger.DebugCalls() {
+		expectedMessage := "transaction fee is too low"
 		if call.Msg == blockchainKeptMessage {
 			isKept = true
 		} else if strings.Contains(call.Msg, expectedMessage) {
@@ -334,24 +396,26 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
+	var now int64 = 2
+	genesisValue := uint64(math.Pow(2, float64(now)))
+	blockResponse1 := protocoltest.NewGenesisBlockResponse(address, genesisValue)
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := blockResponse1.Transactions[0]
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(2, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 4, 1)
+	transactionValue := uint64(math.Pow(float64(genesisValue), -float64(now)))
+	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(transactionValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 4, transactionValue)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
 	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
 	hash1, _ := block1.Hash()
-	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, 1)
+	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, now-1)
 	block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
 	hash2, _ := block2.Hash()
-	var block3Timestamp int64 = 2
-	rewardTransaction, _ := validation.NewRewardTransaction(address, block3Timestamp, 0)
+	rewardTransaction, _ := validation.NewRewardTransaction(address, now, 0)
 	transactions := []*network.TransactionResponse{
 		invalidTransactionResponse,
 		rewardTransaction,
 	}
-	blockResponse3 := verification.NewBlockResponse(block3Timestamp, hash2, transactions, []string{address}, nil)
+	blockResponse3 := verification.NewBlockResponse(now, hash2, transactions, []string{address}, nil)
 	neighborMock.GetBlocksFunc = func() ([]*network.BlockResponse, error) {
 		return []*network.BlockResponse{blockResponse1, blockResponse2, blockResponse3}, nil
 	}
@@ -365,7 +429,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	blockchain := verification.NewBlockchain(0, nil, 1, transactionFee, registry, 1, synchronizer, logger)
 
 	// Act
-	blockchain.Update(2)
+	blockchain.Update(now)
 
 	// Assert
 	var isKept bool
@@ -392,15 +456,18 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	blockResponse1 := protocoltest.NewGenesisBlockResponse(address)
+	var now int64 = 2
+	genesisValue := uint64(math.Pow(2, float64(now)))
+	blockResponse1 := protocoltest.NewGenesisBlockResponse(address, genesisValue)
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := blockResponse1.Transactions[0]
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(2, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 0, 1)
+	transactionValue := uint64(math.Pow(float64(genesisValue), -float64(now)))
+	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(transactionValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 0, transactionValue)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
 	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
 	hash1, _ := block1.Hash()
-	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, 1)
+	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, now-1)
 	block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
 	hash2, _ := block2.Hash()
 	var block3Timestamp int64 = 2
@@ -423,7 +490,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	blockchain := verification.NewBlockchain(0, nil, 1, transactionFee, registry, 1, synchronizer, logger)
 
 	// Act
-	blockchain.Update(2)
+	blockchain.Update(now)
 
 	// Assert
 	var isKept bool

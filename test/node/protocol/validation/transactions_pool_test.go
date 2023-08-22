@@ -29,7 +29,7 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress)
+	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
 	blockResponses := []*network.BlockResponse{genesisBlockResponse, protocoltest.NewEmptyBlockResponse(now - 1)}
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
@@ -64,7 +64,7 @@ func Test_AddTransaction_TransactionTimestampIsOlderThan1Blocks_TransactionNotAd
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress)
+	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
 	blockResponses := []*network.BlockResponse{genesisBlockResponse, protocoltest.NewEmptyBlockResponse(now - 1)}
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
@@ -98,7 +98,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	var transactionFee uint64 = 0
 	validationTimer := time.Nanosecond
 	logger := logtest.NewLoggerMock()
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress)
+	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
 	blockResponses := []*network.BlockResponse{genesisBlockResponse}
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
@@ -140,7 +140,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	var transactionFee uint64 = 0
 	validationTimer := time.Nanosecond
 	logger := logtest.NewLoggerMock()
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress)
+	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
 	blockResponses := []*network.BlockResponse{genesisBlockResponse}
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
@@ -180,7 +180,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress)
+	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
 	blockResponses := []*network.BlockResponse{genesisBlockResponse}
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	var transactionFee uint64 = 0
@@ -213,7 +213,7 @@ func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidate
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress)
+	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
 	blockResponses := []*network.BlockResponse{genesisBlockResponse}
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	var transactionFee uint64 = 0
@@ -249,7 +249,7 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress)
+	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
 	blockResponses := []*network.BlockResponse{genesisBlockResponse}
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	var transactionFee uint64 = 0

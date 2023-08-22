@@ -5,8 +5,8 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 )
 
-func NewGenesisBlockResponse(validatorWalletAddress string) *network.BlockResponse {
-	genesisTransaction, _ := validation.NewGenesisTransaction(validatorWalletAddress, 0, 1e13)
+func NewGenesisBlockResponse(validatorWalletAddress string, genesisValue uint64) *network.BlockResponse {
+	genesisTransaction, _ := validation.NewGenesisTransaction(validatorWalletAddress, 0, genesisValue)
 	return &network.BlockResponse{
 		Timestamp:                  0,
 		PreviousHash:               [32]byte{},
