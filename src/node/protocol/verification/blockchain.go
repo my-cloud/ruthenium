@@ -73,7 +73,6 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 	var addedRegisteredAddresses []string
 	var removedRegisteredAddresses []string
 	for address := range registeredAddressesMap {
-		// FIXME due to this call to the registry, this method cannot be used to create blockchain copies or temporary blocks
 		isPohValid, err := blockchain.registry.IsRegistered(address)
 		if err != nil {
 			return fmt.Errorf("failed to get proof of humanity: %w", err)
@@ -84,6 +83,10 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 			removedRegisteredAddresses = append(removedRegisteredAddresses, address)
 		}
 	}
+	return blockchain.addBlock(timestamp, transactions, previousHash, addedRegisteredAddresses, removedRegisteredAddresses, lastRegisteredAddresses)
+}
+
+func (blockchain *Blockchain) addBlock(timestamp int64, transactions []*network.TransactionResponse, previousHash [32]byte, addedRegisteredAddresses []string, removedRegisteredAddresses []string, lastRegisteredAddresses []string) error {
 	if !blockchain.isEmpty() {
 		blockHeight := len(blockchain.blockResponses) - 1
 		err := blockchain.updateUtxos(blockchain.blockResponses[blockHeight], blockHeight)
@@ -447,10 +450,15 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlockRespo
 			return nil, fmt.Errorf("a previous neighbor block hash is invalid: block height: %d, block previous hash: %v, previous block hash: %v", blockHeight, neighborBlockPreviousHash, previousNeighborBlockHash)
 		}
 		var isNewBlock bool
+		var neighborBlockHash [32]byte
 		if len(lastHostBlocks)-1 < i {
 			isNewBlock = true
+			neighborBlockHash, err = neighborBlock.Hash()
+			if err != nil {
+				return nil, fmt.Errorf("failed to calculate neighbor block hash: %w", err)
+			}
 		} else {
-			neighborBlockHash, err := neighborBlock.Hash()
+			neighborBlockHash, err = neighborBlock.Hash()
 			if err != nil {
 				return nil, fmt.Errorf("failed to calculate neighbor block hash: %w", err)
 			}
@@ -462,7 +470,8 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlockRespo
 				isNewBlock = true
 			}
 		}
-		err = neighborBlockchain.AddBlock(neighborBlockResponses[i-1].Timestamp, neighborBlockResponses[i-1].Transactions, neighborBlockResponses[i-1].AddedRegisteredAddresses)
+		currentNeighborBlockResponse := neighborBlockResponses[i-1]
+		err = neighborBlockchain.addBlock(currentNeighborBlockResponse.Timestamp, currentNeighborBlockResponse.Transactions, currentNeighborBlockResponse.PreviousHash, currentNeighborBlockResponse.AddedRegisteredAddresses, currentNeighborBlockResponse.RemovedRegisteredAddresses, neighborBlock.RegisteredAddresses())
 		if err != nil {
 			return nil, err
 		}
@@ -475,8 +484,9 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlockRespo
 		verifiedBlocks = append(verifiedBlocks, neighborBlock)
 		previousNeighborBlock = neighborBlock
 	}
-	currentBlockTimestamp := neighborBlockResponses[len(neighborBlockResponses)-1].Timestamp
-	err = neighborBlockchain.AddBlock(currentBlockTimestamp, neighborBlockResponses[len(neighborBlockResponses)-1].Transactions, neighborBlockResponses[len(neighborBlockResponses)-1].AddedRegisteredAddresses)
+	lastNeighborBlockResponse := neighborBlockResponses[len(neighborBlockResponses)-1]
+	currentBlockTimestamp := lastNeighborBlockResponse.Timestamp
+	err = neighborBlockchain.addBlock(currentBlockTimestamp, lastNeighborBlockResponse.Transactions, lastNeighborBlockResponse.PreviousHash, lastNeighborBlockResponse.AddedRegisteredAddresses, lastNeighborBlockResponse.RemovedRegisteredAddresses, previousNeighborBlock.RegisteredAddresses())
 	if err != nil {
 		return nil, err
 	}

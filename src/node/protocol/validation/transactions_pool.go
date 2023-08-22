@@ -155,7 +155,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	}
 	transactionResponses = append(transactionResponses, rewardTransaction)
 	secondBlockchainCopy := pool.blockchain.Copy()
-	err = secondBlockchainCopy.AddBlock(timestamp, transactionResponses, newAddresses)
+	err = secondBlockchainCopy.AddBlock(timestamp, transactionResponses, nil)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("next block creation would fail: %w", err).Error())
 	}
@@ -181,7 +181,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	}
 	currentBlockResponse := blocks[len(blocks)-1]
 	nextBlockTimestamp := currentBlockResponse.Timestamp + pool.validationTimer.Nanoseconds()
-	err := blockchainCopy.AddBlock(nextBlockTimestamp, currentBlockResponse.Transactions, currentBlockResponse.AddedRegisteredAddresses)
+	err := blockchainCopy.AddBlock(nextBlockTimestamp, currentBlockResponse.Transactions, nil)
 	if err != nil {
 		return errors.New("failed to add temporary block")
 	}
