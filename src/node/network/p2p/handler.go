@@ -60,14 +60,7 @@ func (handler *Handler) Handle(_ context.Context, req gp2p.Data) (res gp2p.Data,
 	} else if err = json.Unmarshal(data, &utxosRequest); err == nil && !utxosRequest.IsInvalid() {
 		res = handler.utxos(&utxosRequest)
 	} else if err = json.Unmarshal(data, &targetsRequest); err == nil {
-		for _, request := range targetsRequest {
-			if request.IsInvalid() {
-				unknownRequest = true
-			}
-		}
-		if !unknownRequest {
-			go handler.synchronizer.AddTargets(targetsRequest)
-		}
+		handler.addTargets(targetsRequest, unknownRequest)
 	} else {
 		unknownRequest = true
 	}
@@ -76,6 +69,18 @@ func (handler *Handler) Handle(_ context.Context, req gp2p.Data) (res gp2p.Data,
 		handler.logger.Debug("unknown request")
 	}
 	return
+}
+
+func (handler *Handler) addTargets(targetsRequest []network.TargetRequest, invalidRequest bool) {
+	for _, request := range targetsRequest {
+		if request.IsInvalid() {
+			invalidRequest = true
+			break
+		}
+	}
+	if !invalidRequest {
+		go handler.synchronizer.AddTargets(targetsRequest)
+	}
 }
 
 func (handler *Handler) utxos(request *network.UtxosRequest) (res gp2p.Data) {

@@ -147,7 +147,48 @@ func Test_Handle_UtxosRequest_UtxosByAddressCalled(t *testing.T) {
 	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
 }
 
-func Test_Handle_Blocks_BlocksCalled(t *testing.T) {
+func Test_Handle_InvalidBlockRequest_BlockNotCalled(t *testing.T) {
+	// Arrange
+	blockchainMock := new(protocoltest.BlockchainMock)
+	blockchainMock.BlockFunc = func(uint64) *network.BlockResponse { return nil }
+	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
+	data, err := json.Marshal(network.BlockRequest{})
+	if err != nil {
+		return
+	}
+	req := gp2p.Data{}
+	req.SetBytes(data)
+
+	// Act
+	_, _ = handler.Handle(context.TODO(), req)
+
+	// Assert
+	isMethodCalled := len(blockchainMock.BlockCalls()) != 0
+	test.Assert(t, !isMethodCalled, "Method is called whereas it should not.")
+}
+
+func Test_Handle_BlockRequest_BlockCalled(t *testing.T) {
+	// Arrange
+	blockchainMock := new(protocoltest.BlockchainMock)
+	blockchainMock.BlockFunc = func(uint64) *network.BlockResponse { return nil }
+	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
+	var blockHeight uint64 = 0
+	data, err := json.Marshal(network.BlockRequest{BlockHeight: &blockHeight})
+	if err != nil {
+		return
+	}
+	req := gp2p.Data{}
+	req.SetBytes(data)
+
+	// Act
+	_, _ = handler.Handle(context.TODO(), req)
+
+	// Assert
+	isMethodCalled := len(blockchainMock.BlockCalls()) == 1
+	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
+}
+
+func Test_Handle_BlocksRequest_BlocksCalled(t *testing.T) {
 	// Arrange
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return nil }
@@ -167,7 +208,7 @@ func Test_Handle_Blocks_BlocksCalled(t *testing.T) {
 	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
 }
 
-func Test_Handle_LastBlocks_LastBlocksCalled(t *testing.T) {
+func Test_Handle_LastBlocksRequest_LastBlocksCalled(t *testing.T) {
 	// Arrange
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.LastBlocksFunc = func(uint64) []*network.BlockResponse { return nil }
@@ -188,7 +229,7 @@ func Test_Handle_LastBlocks_LastBlocksCalled(t *testing.T) {
 	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
 }
 
-func Test_Handle_Transactions_TransactionsCalled(t *testing.T) {
+func Test_Handle_TransactionsRequest_TransactionsCalled(t *testing.T) {
 	// Arrange
 	transactionsPoolMock := new(protocoltest.TransactionsPoolMock)
 	transactionsPoolMock.TransactionsFunc = func() []*network.TransactionResponse { return nil }
