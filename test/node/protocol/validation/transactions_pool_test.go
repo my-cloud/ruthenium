@@ -243,14 +243,14 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	synchronizerMock := new(networktest.SynchronizerMock)
 	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return nil }
 	synchronizerMock.IncentiveFunc = func(string) {}
-	var now int64 = 1
+	var now int64 = 2
 	validationTimer := time.Nanosecond
 	logger := logtest.NewLoggerMock()
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
 	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
-	blockResponses := []*network.BlockResponse{genesisBlockResponse}
+	blockResponses := []*network.BlockResponse{genesisBlockResponse, protocoltest.NewEmptyBlockResponse(now - 1)}
 	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	var transactionFee uint64 = 0
 	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
