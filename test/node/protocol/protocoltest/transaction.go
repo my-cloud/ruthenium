@@ -6,40 +6,72 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 )
 
-func NewSignedTransactionRequest(fee uint64, recipientAddress string, senderAddress string, senderPrivateKey *encryption.PrivateKey, senderPublicKey *encryption.PublicKey, timestamp int64, value uint64) network.TransactionRequest {
-	marshaledTransaction, _ := json.Marshal(struct {
-		RecipientAddress string `json:"recipient_address"`
-		SenderAddress    string `json:"sender_address"`
-		Timestamp        int64  `json:"timestamp"`
-		Value            uint64 `json:"value"`
-		Fee              uint64 `json:"fee"`
+func NewSignedTransactionRequest(inputsValue uint64, fee uint64, recipientAddress string, utxoTransaction *network.TransactionResponse, utxoIndex uint16, senderPrivateKey *encryption.PrivateKey, senderPublicKey *encryption.PublicKey, timestamp int64, value uint64) network.TransactionRequest {
+	utxo := NewUtxoFromOutput(utxoTransaction, utxoIndex)
+	marshalledInput, _ := json.Marshal(struct {
+		OutputIndex   uint16 `json:"output_index"`
+		TransactionId string `json:"transaction_id"`
 	}{
-		RecipientAddress: recipientAddress,
-		SenderAddress:    senderAddress,
-		Timestamp:        timestamp,
-		Value:            value,
-		Fee:              fee,
+		OutputIndex:   utxo.OutputIndex,
+		TransactionId: utxo.TransactionId,
 	})
-	signature, _ := encryption.NewSignature(marshaledTransaction, senderPrivateKey)
-	encodedPublicKey := senderPublicKey.String()
-	encodedSignature := signature.String()
+	signature, _ := encryption.NewSignature(marshalledInput, senderPrivateKey)
+	hexPublicKey := senderPublicKey.String()
+	hexSignature := signature.String()
+	input := network.InputRequest{
+		OutputIndex:   &utxo.OutputIndex,
+		TransactionId: &utxo.TransactionId,
+		PublicKey:     &hexPublicKey,
+		Signature:     &hexSignature,
+	}
+	var b bool
+	sent := network.OutputRequest{
+		Address:   &recipientAddress,
+		HasReward: &b,
+		HasIncome: &b,
+		Value:     &value,
+	}
+	restValue := inputsValue - value - fee
+	rest := network.OutputRequest{
+		Address:   &recipientAddress,
+		HasReward: &b,
+		HasIncome: &b,
+		Value:     &restValue,
+	}
+	broadcasterTarget := "0"
 	return network.TransactionRequest{
-		RecipientAddress: &recipientAddress,
-		SenderAddress:    &senderAddress,
-		SenderPublicKey:  &encodedPublicKey,
-		Signature:        &encodedSignature,
-		Timestamp:        &timestamp,
-		Value:            &value,
-		Fee:              &fee,
+		Inputs:                       &[]network.InputRequest{input},
+		Outputs:                      &[]network.OutputRequest{sent, rest},
+		Timestamp:                    &timestamp,
+		TransactionBroadcasterTarget: &broadcasterTarget,
 	}
 }
 
-func NewTransactionRequest(fee uint64, recipientAddress string, senderAddress string, timestamp int64, value uint64) network.TransactionRequest {
-	return network.TransactionRequest{
-		RecipientAddress: &recipientAddress,
-		SenderAddress:    &senderAddress,
-		Timestamp:        &timestamp,
-		Value:            &value,
-		Fee:              &fee,
+func NewUtxoFromOutput(utxoTransaction *network.TransactionResponse, utxoIndex uint16) *network.UtxoResponse {
+	outputResponse := utxoTransaction.Outputs[utxoIndex]
+	return &network.UtxoResponse{
+		Address:       outputResponse.Address,
+		HasReward:     outputResponse.HasReward,
+		HasIncome:     outputResponse.HasIncome,
+		OutputIndex:   utxoIndex,
+		TransactionId: utxoTransaction.Id,
+		Value:         outputResponse.Value,
 	}
+}
+
+func NewTransactionRequest(address string, value uint64, timestamp int64, target string) network.TransactionRequest {
+	b := false
+	output := network.OutputRequest{
+		Address:   &address,
+		HasReward: &b,
+		HasIncome: &b,
+		Value:     &value,
+	}
+	transactionRequest := network.TransactionRequest{
+		Inputs:                       &[]network.InputRequest{},
+		Outputs:                      &[]network.OutputRequest{output},
+		Timestamp:                    &timestamp,
+		TransactionBroadcasterTarget: &target,
+	}
+	return transactionRequest
 }

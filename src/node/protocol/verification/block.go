@@ -3,6 +3,7 @@ package verification
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
@@ -30,6 +31,9 @@ func NewBlockResponse(timestamp int64, previousHash [32]byte, transactions []*ne
 func NewBlockFromResponse(block *network.BlockResponse, lastRegisteredAddresses []string) (*Block, error) {
 	var transactions []*validation.Transaction
 	for _, transactionResponse := range block.Transactions {
+		if transactionResponse == nil {
+			return nil, errors.New("a transaction is nil")
+		}
 		transaction, err := validation.NewTransactionFromResponse(transactionResponse)
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate transaction: %w", err)
@@ -90,15 +94,17 @@ func (block *Block) Hash() (hash [32]byte, err error) {
 
 func (block *Block) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Timestamp           int64                     `json:"timestamp"`
-		PreviousHash        string                    `json:"previous_hash"`
-		Transactions        []*validation.Transaction `json:"transactions"`
-		RegisteredAddresses []string                  `json:"registered_addresses"`
+		Timestamp                  int64                     `json:"timestamp"`
+		PreviousHash               string                    `json:"previous_hash"`
+		Transactions               []*validation.Transaction `json:"transactions"`
+		AddedRegisteredAddresses   []string                  `json:"added_registered_addresses"`
+		RemovedRegisteredAddresses []string                  `json:"removed_registered_addresses"`
 	}{
-		Timestamp:           block.timestamp,
-		PreviousHash:        fmt.Sprintf("%x", block.previousHash),
-		Transactions:        block.transactions,
-		RegisteredAddresses: block.registeredAddresses,
+		Timestamp:                  block.timestamp,
+		PreviousHash:               fmt.Sprintf("%x", block.previousHash),
+		Transactions:               block.transactions,
+		AddedRegisteredAddresses:   block.addedRegisteredAddresses,
+		RemovedRegisteredAddresses: block.removedRegisteredAddresses,
 	})
 }
 
@@ -125,8 +131,8 @@ func (block *Block) Transactions() []*validation.Transaction {
 func (block *Block) ValidatorAddress() string {
 	var validatorAddress string
 	for i := len(block.transactions) - 1; i >= 0; i-- {
-		if block.transactions[i].IsReward() {
-			validatorAddress = block.transactions[i].RecipientAddress()
+		if block.transactions[i].HasReward() {
+			validatorAddress = block.transactions[i].RewardRecipientAddress()
 			break
 		}
 	}

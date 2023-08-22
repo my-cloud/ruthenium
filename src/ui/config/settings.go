@@ -1,5 +1,8 @@
 package config
 
 type Settings struct {
-	ParticlesPerToken uint64
+	HalfLifeInDays              float64
+	MinimalTransactionFee       uint64
+	ParticlesPerToken           uint64
+	ValidationIntervalInSeconds int64
 }

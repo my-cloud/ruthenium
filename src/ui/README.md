@@ -29,6 +29,29 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 
 ### Transactions pool
 <details>
+<summary><b>Get transaction info</b></summary>
+
+![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
+![Transaction info](https://img.shields.io/badge//transaction/info-dimgray?style=flat-square)
+
+*Description:* Get the transaction data needed for a transaction request.
+* **parameters:**
+
+  |Name|Description|Example|
+      |---|---|---|
+  |`address`|42 characters hexadecimal sender wallet address|`0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a`|
+  |`value`|64 bits floating-point number value of the transaction|`0`|
+* **request body:** *none*
+* **responses:**
+
+  |Code|Description|
+      |---|---|
+  |200|[Transaction info response](#transaction-info-response)|
+  |400|Bad request, if any request argument is invalid|
+  |405|Method not allowed, if the value exceeds the wallet amount for the given address|
+  |500|Internal server error, if an unexpected condition occurred|
+</details>
+<details>
 <summary><b>Add transaction</b></summary>
 
 ![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
@@ -42,8 +65,8 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
   |Code|Description|
     |---|---|
   |201|Transaction added|
-  |400|Bad request|
-  |500|Internal server error|
+  |400|Bad request, if any request argument is invalid|
+  |500|Internal server error, if an unexpected condition occurred|
 </details>
 <details>
 <summary><b>Get transactions</b></summary>
@@ -59,7 +82,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
   |Code|Description|
     |---|---|
   |200|Array of [transaction responses](#transaction-response)|
-  |500|Internal server error|
+  |500|Internal server error, if an unexpected condition occurred|
 </details>
 
 ### Wallet
@@ -67,7 +90,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 <summary><b>Get wallet address</b></summary>
 
 ![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
-![Wallet](https://img.shields.io/badge//wallet-dimgray?style=flat-square)
+![Wallet address](https://img.shields.io/badge//wallet/address-dimgray?style=flat-square)
 
 *Description:* Get the wallet address depending on the given public key.
 * **parameters:** *none*
@@ -81,7 +104,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
   |Code|Description|
     |---|---|
   |200|42 characters hexadecimal wallet address|
-  |500|Internal server error|
+  |500|Internal server error, if an unexpected condition occurred|
 </details>
 <details>
 <summary><b>Get wallet amount</b></summary>
@@ -101,11 +124,191 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
   |Code|Description|
     |---|---|
   |200|64 bits floating-point number amount|
-  |400|Bad request|
-  |500|Internal server error|
+  |400|Bad request, if any request argument is invalid|
+  |500|Internal server error, if an unexpected condition occurred|
 </details>
 
 ### Schemas
+
+#### Input
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+Input {
+  OutputIndex   uint16
+  TransactionId string
+  PublicKey     string
+  Signature     string
+}
+```
+</td>
+<td>
+
+```
+The input data structure
+  The output index
+  The ID of the transaction holding the output
+  The output recipient public key
+  The output signature
+
+```
+</td>
+<td>
+
+```
+{
+  "OutputIndex":   0
+  "TransactionId": 8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d
+  "PublicKey":     0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782
+  "Signature":     4f3b24cbb4d2c13aaf60518fce70409fd29e1668db1c2109c0eac58427c203df59788bade6d5f3eb9df161b4ed3de451bac64f4c54e74578d69caf8cd401a38f
+}
+```
+</td>
+</tr>
+</table>
+
+#### Output
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+Output {
+  Address   string
+  HasReward bool
+  HasIncome bool
+  Value     uint64
+}
+```
+</td>
+<td>
+
+```
+The output data structure
+  The address of this output recipient
+  Whether this output contains a reward
+  Whether this output should be used for income calculation
+  The value at the transaction timestamp
+
+```
+</td>
+<td>
+
+```
+{
+  "Address":   0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
+  "HasReward": false
+  "HasIncome": true
+  "Value":     0
+}
+```
+</td>
+</tr>
+</table>
+
+#### Transaction info response
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+TransactionInfoResponse {
+  Rest  uint64
+  Utxos []UtxoResponse
+}
+```
+</td>
+<td>
+
+```
+The data structure for transaction info response
+  The remaining amount to be used as a value for the output with the sender address
+  The utxos to be used as inputs of the transaction
+
+```
+</td>
+<td>
+
+```
+{
+  "Rest":  0
+  "Utxos": []
+}
+```
+</td>
+</tr>
+</table>
+
+### UTXO response
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+type UtxoResponse struct {
+  OutputIndex   uint16
+  TransactionId string
+}
+```
+</td>
+<td>
+
+```
+The data structure for UTXO response
+  The output index
+  The ID of the transaction holding the output
+
+```
+</td>
+<td>
+
+```
+{
+  "OutputIndex":   0
+  "TransactionId": 8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d
+}
+```
+</td>
+</tr>
+</table>
 
 #### Transaction request
 <table>
@@ -123,27 +326,19 @@ Example
 
 ```
 TransactionRequest {
-  Fee                          uint64
-  RecipientAddress             string
-  SenderAddress                string
-  SenderPublicKey              string
-  Signature                    string
-  Timestamp                    int64
-  Value                        uint64
+  Inputs    []InputRequest
+  Outputs   []OutputRequest
+  Timestamp int64
 }
 ```
 </td>
 <td>
 
 ```
-The transaction data structure for request
-The fee
-The recipient wallet address
-The sender wallet address
-The sender public key
-The signature
-The timestamp
-The value
+The data structure for transaction request
+  The inputs
+  The outputs
+  The timestamp
 
 ```
 </td>
@@ -151,13 +346,9 @@ The value
 
 ```
 {
-  "Fee":              1000
-  "RecipientAddress": 0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
-  "SenderAddress":    0x9C69443c3Ec0D660e257934ffc1754EB9aD039CB
-  "SenderPublicKey":  0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782
-  "Signature":        4f3b24cbb4d2c13aaf60518fce70409fd29e1668db1c2109c0eac58427c203df59788bade6d5f3eb9df161b4ed3de451bac64f4c54e74578d69caf8cd401a38f
-  "Timestamp":        1667768884780639700
-  "Value":            100000000
+  "Inputs":    []
+  "Outputs":   []
+  "Timestamp": 1667768884780639700
 }
 ```
 </td>
@@ -180,27 +371,21 @@ Example
 
 ```
 TransactionResponse {
-  RecipientAddress string
-  SenderAddress    string
-  SenderPublicKey  string
-  Signature        string
-  Timestamp        int64
-  Value            uint64
-  Fee              uint64
+  Id        string
+  Inputs    []*InputResponse
+  Outputs   []*OutputResponse
+  Timestamp int64
 }
 ```
 </td>
 <td>
 
 ```
-The transaction data structure for response
-The recipient wallet address
-The sender wallet address
-The sender wallet public key
-The signature generated by both the private and public keys
-The timestamp
-The value
-The fee
+The data structure for transaction response
+  The ID
+  The inputs
+  The outputs
+  The timestamp
 
 ```
 </td>
@@ -208,13 +393,10 @@ The fee
 
 ```
 {
-  "RecipientAddress": 0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
-  "SenderAddress":    0x9C69443c3Ec0D660e257934ffc1754EB9aD039CB
-  "SenderPublicKey":  0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782
-  "Signature":        4f3b24cbb4d2c13aaf60518fce70409fd29e1668db1c2109c0eac58427c203df59788bade6d5f3eb9df161b4ed3de451bac64f4c54e74578d69caf8cd401a38f
-  "Timestamp":        1667768884780639700
-  "Value":            100000000
-  "Fee":              1000
+  "Id":        30148389df42b7cd0cb0d3ce951133da3f36ff4e1581d108da1ee05bacad64b7
+  "Inputs":    []
+  "Outputs":   []
+  "Timestamp": 1667768884780639700
 }
 ```
 </td>
