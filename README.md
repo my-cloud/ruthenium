@@ -8,7 +8,7 @@
 [![Doc](https://img.shields.io/badge/doc-wiki-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
 [![Doc](https://img.shields.io/badge/doc-whitepaper-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki/Whitepaper)
 
-Golang implementation of Ruthenium cryptocurrency node.
+Golang implementation of the Ruthenium protocol.
 
 You will find a detailed description of the project in the [wiki](https://github.com/my-cloud/ruthenium/wiki/Home). To understand the motivations behind the creation of this blockchain, you can peruse the comprehensive details outlined in the Ruthenium [whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper). 
 
