@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/log/logtest"
@@ -122,9 +123,10 @@ func Test_ServeHTTP_ValidRequest_ReturnsAmount(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.GetUtxosFunc = func(string) ([]*network.UtxoResponse, error) { return nil, nil }
+	neighborMock.GetUtxosFunc = func(string) ([]*network.UtxoResponse, error) { return []*network.UtxoResponse{{}}, nil }
 	neighborMock.GetBlockFunc = func(uint64) (*network.BlockResponse, error) { return &network.BlockResponse{}, nil }
 	watchMock := new(clocktest.WatchMock)
+	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	handler := amount.NewHandler(neighborMock, 0, 1, 1, 1, 1, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address", urlTarget), nil)
