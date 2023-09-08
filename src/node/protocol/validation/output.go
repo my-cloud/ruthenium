@@ -57,14 +57,26 @@ func (output *Output) Value(currentTimestamp int64) uint64 {
 
 func (output *Output) decay(newTimestamp int64) uint64 {
 	elapsedTimestamp := newTimestamp - output.timestamp
-	return uint64(math.Floor(float64(output.value) * math.Exp(-float64(elapsedTimestamp)*math.Log(2)/output.halfLifeInNanoseconds)))
+	return uint64(float64(output.value) * math.Exp(-float64(elapsedTimestamp)*math.Log(2)/output.halfLifeInNanoseconds))
 }
 
 func (output *Output) calculateValue(currentTimestamp int64) uint64 {
-	elapsedTimestamp := currentTimestamp - output.timestamp
-	g := output.g(float64(elapsedTimestamp), output.value)
-	v := uint64(g)
-	return v
+	x := float64(currentTimestamp - output.timestamp)
+	k := output.k
+	h := output.halfLifeInNanoseconds
+	y := output.value
+	incomeLimit := float64(output.incomeLimit)
+	var result float64
+	if y < output.incomeLimit {
+		exp := -math.Pow(x*math.Log(2)/(k*h)+math.Sqrt(-math.Log((incomeLimit-float64(y))/incomeLimit)), 2)
+		result = -incomeLimit*math.Exp(exp) + incomeLimit
+	} else if output.incomeLimit < y {
+		exp := -x * math.Log(2) / h
+		result = (float64(y)-incomeLimit)*math.Exp(exp) + incomeLimit
+	} else {
+		result = incomeLimit
+	}
+	return uint64(result)
 }
 
 func (output *Output) g(x float64, y uint64) float64 {
