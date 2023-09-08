@@ -17,8 +17,8 @@ import (
 type Handler struct {
 	host                  network.Neighbor
 	halfLifeInNanoseconds float64
+	incomeBase            uint64
 	incomeLimit           uint64
-	k                     float64
 	minimalTransactionFee uint64
 	particlesCount        uint64
 	validationTimestamp   int64
@@ -26,8 +26,8 @@ type Handler struct {
 	logger                log.Logger
 }
 
-func NewHandler(host network.Neighbor, halfLifeInNanoseconds float64, incomeLimit uint64, k float64, minimalTransactionFee uint64, particlesCount uint64, validationTimestamp int64, watch clock.Watch, logger log.Logger) *Handler {
-	return &Handler{host, halfLifeInNanoseconds, incomeLimit, k, minimalTransactionFee, particlesCount, validationTimestamp, watch, logger}
+func NewHandler(host network.Neighbor, halfLifeInNanoseconds float64, incomeBase uint64, incomeLimit uint64, minimalTransactionFee uint64, particlesCount uint64, validationTimestamp int64, watch clock.Watch, logger log.Logger) *Handler {
+	return &Handler{host, halfLifeInNanoseconds, incomeBase, incomeLimit, minimalTransactionFee, particlesCount, validationTimestamp, watch, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -80,7 +80,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		var walletBalance uint64
 		var values []uint64
 		for _, utxo := range utxos {
-			output := validation.NewOutputFromUtxoResponse(utxo, genesisBlock.Timestamp, handler.halfLifeInNanoseconds, handler.incomeLimit, handler.k, handler.validationTimestamp)
+			output := validation.NewOutputFromUtxoResponse(utxo, genesisBlock.Timestamp, handler.halfLifeInNanoseconds, handler.incomeBase, handler.incomeLimit, handler.validationTimestamp)
 			outputValue := output.Value(nextBlockTimestamp)
 			utxoResponse := &UtxoResponse{
 				OutputIndex:   utxo.OutputIndex,

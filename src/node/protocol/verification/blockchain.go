@@ -7,7 +7,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
-	"math"
 	"sort"
 	"sync"
 	"time"
@@ -18,8 +17,8 @@ type Blockchain struct {
 	blockResponses        []*network.BlockResponse
 	genesisTimestamp      int64
 	halfLifeInNanoseconds float64
+	incomeBase            uint64
 	incomeLimit           uint64
-	k                     float64
 	minimalTransactionFee uint64
 	mutex                 sync.RWMutex
 	registry              protocol.Registry
@@ -31,21 +30,20 @@ type Blockchain struct {
 }
 
 func NewBlockchain(genesisTimestamp int64, genesisTransaction *network.TransactionResponse, halfLifeInNanoseconds float64, incomeBase uint64, incomeLimit uint64, minimalTransactionFee uint64, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
-	k := math.Log(2) / math.Sqrt(-math.Log(1-float64(incomeBase)/float64(incomeLimit)))
 	utxosByAddress := make(map[string][]*network.UtxoResponse)
 	utxosById := make(map[string][]*network.UtxoResponse)
-	blockchain := newBlockchain(nil, genesisTimestamp, halfLifeInNanoseconds, incomeLimit, k, minimalTransactionFee, registry, synchronizer, utxosByAddress, utxosById, validationTimer.Nanoseconds(), logger)
+	blockchain := newBlockchain(nil, genesisTimestamp, halfLifeInNanoseconds, incomeBase, incomeLimit, minimalTransactionFee, registry, synchronizer, utxosByAddress, utxosById, validationTimer.Nanoseconds(), logger)
 	blockchain.addGenesisBlock(genesisTransaction)
 	return blockchain
 }
 
-func newBlockchain(blockResponses []*network.BlockResponse, genesisTimestamp int64, halfLifeInNanoseconds float64, incomeLimit uint64, k float64, minimalTransactionFee uint64, registry protocol.Registry, synchronizer network.Synchronizer, utxosByAddress map[string][]*network.UtxoResponse, utxosById map[string][]*network.UtxoResponse, validationTimestamp int64, logger log.Logger) *Blockchain {
+func newBlockchain(blockResponses []*network.BlockResponse, genesisTimestamp int64, halfLifeInNanoseconds float64, incomeBase uint64, incomeLimit uint64, minimalTransactionFee uint64, registry protocol.Registry, synchronizer network.Synchronizer, utxosByAddress map[string][]*network.UtxoResponse, utxosById map[string][]*network.UtxoResponse, validationTimestamp int64, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blockResponses = blockResponses
 	blockchain.genesisTimestamp = genesisTimestamp
 	blockchain.halfLifeInNanoseconds = halfLifeInNanoseconds
+	blockchain.incomeBase = incomeBase
 	blockchain.incomeLimit = incomeLimit
-	blockchain.k = k
 	blockchain.minimalTransactionFee = minimalTransactionFee
 	blockchain.registry = registry
 	blockchain.synchronizer = synchronizer
@@ -141,7 +139,7 @@ func (blockchain *Blockchain) Copy() protocol.Blockchain {
 	copy(blockResponses, blockchain.blockResponses)
 	utxosByAddress := copyUtxosMap(blockchain.utxosByAddress)
 	utxosById := copyUtxosMap(blockchain.utxosById)
-	blockchainCopy := newBlockchain(blockResponses, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, blockchain.incomeLimit, blockchain.k, blockchain.minimalTransactionFee, blockchain.registry, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.validationTimestamp, blockchain.logger)
+	blockchainCopy := newBlockchain(blockResponses, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, blockchain.incomeBase, blockchain.incomeLimit, blockchain.minimalTransactionFee, blockchain.registry, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.validationTimestamp, blockchain.logger)
 	blockchainCopy.blocks = blocks
 	return blockchainCopy
 }
@@ -438,7 +436,7 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlockRespo
 		utxosByAddress = copyUtxosMap(blockchain.utxosByAddress)
 		utxosById = copyUtxosMap(blockchain.utxosById)
 	}
-	neighborBlockchain := newBlockchain(oldHostBlockResponses, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, blockchain.incomeLimit, blockchain.k, blockchain.minimalTransactionFee, blockchain.registry, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.validationTimestamp, blockchain.logger)
+	neighborBlockchain := newBlockchain(oldHostBlockResponses, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, blockchain.incomeBase, blockchain.incomeLimit, blockchain.minimalTransactionFee, blockchain.registry, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.validationTimestamp, blockchain.logger)
 	for i := 1; i < len(neighborBlockResponses); i++ {
 		neighborBlockResponse := neighborBlockResponses[i]
 		neighborBlock, err := NewBlockFromResponse(neighborBlockResponse, previousNeighborBlock.RegisteredAddresses())
@@ -632,7 +630,7 @@ func (blockchain *Blockchain) FindFee(transaction *network.TransactionResponse, 
 		if utxo == nil {
 			return 0, fmt.Errorf("failed to find utxo, input: %v", input)
 		}
-		output := validation.NewOutputFromUtxoResponse(utxo, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, blockchain.incomeLimit, blockchain.k, blockchain.validationTimestamp)
+		output := validation.NewOutputFromUtxoResponse(utxo, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, blockchain.incomeBase, blockchain.incomeLimit, blockchain.validationTimestamp)
 		value := output.Value(timestamp)
 		inputsValue += value
 	}

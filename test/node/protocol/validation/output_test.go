@@ -10,10 +10,10 @@ import (
 )
 
 const (
+	base                uint64 = 50000000000
 	limit               uint64 = 10000000000000
 	genesisTimestamp           = 0
 	halfLife                   = 373.59 * 24 * 60 * 60 * 1e9
-	k                          = 9.790310290581342
 	validationTimestamp        = 60 * 1e9
 )
 
@@ -24,7 +24,7 @@ func Test_Value_ValueIsLimitAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 		HasIncome: true,
 		Value:     limit,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, base, limit, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
@@ -44,7 +44,7 @@ func Test_Value_ValueIs1AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 		HasIncome: true,
 		Value:     1,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, base, limit, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
@@ -64,7 +64,7 @@ func Test_Value_ValueIs50kAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 		HasIncome: true,
 		Value:     5000000000000,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, base, limit, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
@@ -84,7 +84,7 @@ func Test_Value_ValueIs200kAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 		HasIncome: true,
 		Value:     20000000000000,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, base, limit, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
@@ -105,7 +105,7 @@ func Test_Value_ValueIsLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.
 		HasIncome: false,
 		Value:     limit,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, base, limit, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
@@ -125,7 +125,7 @@ func Test_Value_ValueIs1AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 		HasIncome: false,
 		Value:     1,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, base, limit, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
@@ -146,7 +146,7 @@ func Test_Value_ValueIs50kAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T)
 		HasIncome: false,
 		Value:     value,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, base, limit, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
@@ -167,7 +167,7 @@ func Test_Value_ValueIs200kAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T
 		HasIncome: false,
 		Value:     20000000000000,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, base, limit, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act

@@ -18,7 +18,8 @@ type Output struct {
 	timestamp             int64
 }
 
-func NewOutputFromUtxoResponse(response *network.UtxoResponse, genesisTimestamp int64, halfLifeInNanoseconds float64, incomeLimit uint64, k float64, validationTimestamp int64) *Output {
+func NewOutputFromUtxoResponse(response *network.UtxoResponse, genesisTimestamp int64, halfLifeInNanoseconds float64, incomeBase uint64, incomeLimit uint64, validationTimestamp int64) *Output {
+	k := math.Log(2) / math.Sqrt(-math.Log(1-float64(incomeBase)/float64(incomeLimit)))
 	timestamp := genesisTimestamp + int64(response.BlockHeight)*validationTimestamp
 	return &Output{response.Address, response.HasReward, response.HasIncome, response.Value, halfLifeInNanoseconds, incomeLimit, k, timestamp}
 }
