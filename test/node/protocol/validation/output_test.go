@@ -9,28 +9,32 @@ import (
 	"time"
 )
 
+const (
+	limit               uint64 = 10000000000000
+	genesisTimestamp           = 0
+	halfLife                   = 373.59 * 24 * 60 * 60 * 1e9
+	k                          = 9.790310290581342
+	validationTimestamp        = 60 * 1e9
+)
+
 //////////////////////////////////// INCOME ////////////////////////////////////
-func Test_Value_ValueIsCeilAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
+func Test_Value_ValueIsLimitAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
-	var ceilValue uint64 = 10000000000000
 	utxo := &network.UtxoResponse{
 		HasIncome: true,
-		Value:     ceilValue,
+		Value:     limit,
 	}
-	halfLife := 373.59 * 24 * float64(time.Hour.Nanoseconds())
-	validationTimestamp := 60 * time.Second.Nanoseconds()
-	output := validation.NewOutputFromUtxoResponse(utxo, halfLife, validationTimestamp, 0)
-
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
-	actualValueAfterOneDay := output.Value(0, int64(oneDay))
-	actualValueAfterHalfLife := output.Value(0, int64(halfLife))
+	actualValueAfterOneDay := output.Value(int64(oneDay))
+	actualValueAfterHalfLife := output.Value(int64(halfLife))
 
 	// Assert
-	expectedValueAfterOneDay := ceilValue
+	expectedValueAfterOneDay := limit
 	test.Assert(t, actualValueAfterOneDay == expectedValueAfterOneDay, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterOneDay, actualValueAfterOneDay))
-	expectedValueAfterHalfLife := ceilValue
+	expectedValueAfterHalfLife := limit
 	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
 }
 
@@ -40,20 +44,17 @@ func Test_Value_ValueIs1AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 		HasIncome: true,
 		Value:     1,
 	}
-	halfLife := 373.59 * 24 * float64(time.Hour.Nanoseconds())
-	validationTimestamp := 60 * time.Second.Nanoseconds()
-	output := validation.NewOutputFromUtxoResponse(utxo, halfLife, validationTimestamp, 0)
-
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
-	actualValueAfterOneDay := output.Value(0, int64(oneDay))
-	actualValueAfterHalfLife := output.Value(0, int64(halfLife))
+	actualValueAfterOneDay := output.Value(int64(oneDay))
+	actualValueAfterHalfLife := output.Value(int64(halfLife))
 
 	// Assert
-	var expectedValueAfterOneDay uint64 = 14475
+	var expectedValueAfterOneDay uint64 = 360342
 	test.Assert(t, actualValueAfterOneDay == expectedValueAfterOneDay, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterOneDay, actualValueAfterOneDay))
-	var expectedValueAfterHalfLife uint64 = 11515831551
+	var expectedValueAfterHalfLife uint64 = 50000445605
 	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
 }
 
@@ -63,20 +64,17 @@ func Test_Value_ValueIs50kAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 		HasIncome: true,
 		Value:     5000000000000,
 	}
-	halfLife := 373.59 * 24 * float64(time.Hour.Nanoseconds())
-	validationTimestamp := 60 * time.Second.Nanoseconds()
-	output := validation.NewOutputFromUtxoResponse(utxo, halfLife, validationTimestamp, 0)
-
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
-	actualValueAfterOneDay := output.Value(0, int64(oneDay))
-	actualValueAfterHalfLife := output.Value(0, int64(halfLife))
+	actualValueAfterOneDay := output.Value(int64(oneDay))
+	actualValueAfterHalfLife := output.Value(int64(halfLife))
 
 	// Assert
-	var expectedValueAfterOneDay uint64 = 5001320433505
+	var expectedValueAfterOneDay uint64 = 5001577710768
 	test.Assert(t, actualValueAfterOneDay == expectedValueAfterOneDay, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterOneDay, actualValueAfterOneDay))
-	var expectedValueAfterHalfLife uint64 = 5487811894392
+	var expectedValueAfterHalfLife uint64 = 5578244486849
 	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
 }
 
@@ -86,15 +84,12 @@ func Test_Value_ValueIs200kAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 		HasIncome: true,
 		Value:     20000000000000,
 	}
-	halfLife := 373.59 * 24 * float64(time.Hour.Nanoseconds())
-	validationTimestamp := 60 * time.Second.Nanoseconds()
-	output := validation.NewOutputFromUtxoResponse(utxo, halfLife, validationTimestamp, 0)
-
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
-	actualValueAfterOneDay := output.Value(0, int64(oneDay))
-	actualValueAfterHalfLife := output.Value(0, int64(halfLife))
+	actualValueAfterOneDay := output.Value(int64(oneDay))
+	actualValueAfterHalfLife := output.Value(int64(halfLife))
 
 	// Assert
 	var expectedValueAfterOneDay uint64 = 19981463514647
@@ -104,27 +99,23 @@ func Test_Value_ValueIs200kAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 }
 
 //////////////////////////////////// NO INCOME ////////////////////////////////////
-func Test_Value_ValueIsCeilAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
+func Test_Value_ValueIsLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 	// Arrange
-	var ceilValue uint64 = 10000000000000
 	utxo := &network.UtxoResponse{
 		HasIncome: false,
-		Value:     ceilValue,
+		Value:     limit,
 	}
-	halfLife := 373.59 * 24 * float64(time.Hour.Nanoseconds())
-	validationTimestamp := 60 * time.Second.Nanoseconds()
-	output := validation.NewOutputFromUtxoResponse(utxo, halfLife, validationTimestamp, 0)
-
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
-	actualValueAfterOneDay := output.Value(0, int64(oneDay))
-	actualValueAfterHalfLife := output.Value(0, int64(halfLife))
+	actualValueAfterOneDay := output.Value(int64(oneDay))
+	actualValueAfterHalfLife := output.Value(int64(halfLife))
 
 	// Assert
 	var expectedValueAfterOneDay uint64 = 9981463514647
 	test.Assert(t, actualValueAfterOneDay == expectedValueAfterOneDay, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterOneDay, actualValueAfterOneDay))
-	expectedValueAfterHalfLife := ceilValue / 2
+	expectedValueAfterHalfLife := limit / 2
 	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
 }
 
@@ -134,15 +125,12 @@ func Test_Value_ValueIs1AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 		HasIncome: false,
 		Value:     1,
 	}
-	halfLife := 373.59 * 24 * float64(time.Hour.Nanoseconds())
-	validationTimestamp := 60 * time.Second.Nanoseconds()
-	output := validation.NewOutputFromUtxoResponse(utxo, halfLife, validationTimestamp, 0)
-
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
-	actualValueAfterOneDay := output.Value(0, int64(oneDay))
-	actualValueAfterHalfLife := output.Value(0, int64(halfLife))
+	actualValueAfterOneDay := output.Value(int64(oneDay))
+	actualValueAfterHalfLife := output.Value(int64(halfLife))
 
 	// Assert
 	var expectedValueAfterOneDay uint64 = 0
@@ -158,15 +146,12 @@ func Test_Value_ValueIs50kAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T)
 		HasIncome: false,
 		Value:     value,
 	}
-	halfLife := 373.59 * 24 * float64(time.Hour.Nanoseconds())
-	validationTimestamp := 60 * time.Second.Nanoseconds()
-	output := validation.NewOutputFromUtxoResponse(utxo, halfLife, validationTimestamp, 0)
-
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
-	actualValueAfterOneDay := output.Value(0, int64(oneDay))
-	actualValueAfterHalfLife := output.Value(0, int64(halfLife))
+	actualValueAfterOneDay := output.Value(int64(oneDay))
+	actualValueAfterHalfLife := output.Value(int64(halfLife))
 
 	// Assert
 	var expectedValueAfterOneDay uint64 = 4990731757323
@@ -182,15 +167,12 @@ func Test_Value_ValueIs200kAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T
 		HasIncome: false,
 		Value:     20000000000000,
 	}
-	halfLife := 373.59 * 24 * float64(time.Hour.Nanoseconds())
-	validationTimestamp := 60 * time.Second.Nanoseconds()
-	output := validation.NewOutputFromUtxoResponse(utxo, halfLife, validationTimestamp, 0)
-
+	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, limit, k, validationTimestamp)
 	oneDay := 24 * float64(time.Hour.Nanoseconds())
 
 	// Act
-	actualValueAfterOneDay := output.Value(0, int64(oneDay))
-	actualValueAfterHalfLife := output.Value(0, int64(halfLife))
+	actualValueAfterOneDay := output.Value(int64(oneDay))
+	actualValueAfterHalfLife := output.Value(int64(halfLife))
 
 	// Assert
 	var expectedValueAfterOneDay uint64 = 19962927029295
@@ -214,8 +196,8 @@ func Test_Value_ValueIs200kAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T
 //	//oneDay := 24 * float64(time.Hour.Nanoseconds())
 //
 //	// Act
-//	//actualValueAfterOneDay := output.Value(0, int64(oneDay))
-//	actualValueAfterHalfLife := output.Value(0, int64(halfLife+5))
+//	//actualValueAfterOneDay := output.Value(int64(oneDay))
+//	actualValueAfterHalfLife := output.Value(int64(halfLife+5))
 //
 //	// Assert
 //	//var expectedValueAfterOneDay uint64 = 19962927029295
@@ -238,8 +220,8 @@ func Test_Value_ValueIs200kAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T
 //	//oneDay := 24 * float64(time.Hour.Nanoseconds())
 //
 //	// Act
-//	//actualValueAfterOneDay := output.Value(0, int64(oneDay))
-//	actualValueAfterHalfLife := output.Value(0, int64(halfLife))
+//	//actualValueAfterOneDay := output.Value(int64(oneDay))
+//	actualValueAfterHalfLife := output.Value(int64(halfLife))
 //
 //	// Assert
 //	//var expectedValueAfterOneDay uint64 = 19962927029295
@@ -271,7 +253,7 @@ func Test_Value_ValueIs200kAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T
 //		output := validation.NewOutputFromUtxoResponse(utxo, halfLife, validationTimestamp, 0)
 //
 //		// Act
-//		actualValueAfterHalfLife := output.Value(0, int64(halfLife))
+//		actualValueAfterHalfLife := output.Value(int64(halfLife))
 //
 //		// Assert
 //		expectedValueAfterHalfLife := value / 2

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"math"
-	"time"
 )
 
 type Output struct {
@@ -12,15 +11,16 @@ type Output struct {
 	hasReward bool
 	hasIncome bool
 	value     uint64
-	// TODO add blockheight
 
-	genesisTimestamp      int64
 	halfLifeInNanoseconds float64
-	validationTimestamp   int64
+	incomeLimit           uint64
+	k                     float64
+	timestamp             int64
 }
 
-func NewOutputFromUtxoResponse(response *network.UtxoResponse, halfLifeInNanoseconds float64, validationTimestamp int64, genesisTimestamp int64) *Output {
-	return &Output{response.Address, response.HasReward, response.HasIncome, response.Value, genesisTimestamp, halfLifeInNanoseconds, validationTimestamp}
+func NewOutputFromUtxoResponse(response *network.UtxoResponse, genesisTimestamp int64, halfLifeInNanoseconds float64, incomeLimit uint64, k float64, validationTimestamp int64) *Output {
+	timestamp := genesisTimestamp + int64(response.BlockHeight)*validationTimestamp
+	return &Output{response.Address, response.HasReward, response.HasIncome, response.Value, halfLifeInNanoseconds, incomeLimit, k, timestamp}
 }
 
 func (output *Output) MarshalJSON() ([]byte, error) {
@@ -46,72 +46,37 @@ func (output *Output) GetResponse() *network.OutputResponse {
 	}
 }
 
-func (output *Output) Value(blockHeight int, currentTimestamp int64) uint64 {
+func (output *Output) Value(currentTimestamp int64) uint64 {
 	if output.hasIncome {
-		return output.calculateValue(blockHeight, currentTimestamp)
+		return output.calculateValue(currentTimestamp)
 	} else {
-		timestamp := output.genesisTimestamp + int64(blockHeight)*output.validationTimestamp
-		return output.decay(timestamp, currentTimestamp, output.value)
+		return output.decay(currentTimestamp)
 	}
 }
 
-func (output *Output) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
-	elapsedTimestamp := newTimestamp - lastTimestamp
-	return uint64(math.Floor(float64(amount) * math.Exp(-float64(elapsedTimestamp)*math.Log(2)/output.halfLifeInNanoseconds)))
+func (output *Output) decay(newTimestamp int64) uint64 {
+	elapsedTimestamp := newTimestamp - output.timestamp
+	return uint64(math.Floor(float64(output.value) * math.Exp(-float64(elapsedTimestamp)*math.Log(2)/output.halfLifeInNanoseconds)))
 }
 
-func (output *Output) calculateValue(blockHeight int, currentTimestamp int64) uint64 {
-	totalValue := output.value
-	blockTimestamp := output.genesisTimestamp + int64(blockHeight)*output.validationTimestamp
-	elapsedTimestamp := currentTimestamp - blockTimestamp
-	g := output.g(float64(elapsedTimestamp), float64(totalValue))
+func (output *Output) calculateValue(currentTimestamp int64) uint64 {
+	elapsedTimestamp := currentTimestamp - output.timestamp
+	g := output.g(float64(elapsedTimestamp), output.value)
 	v := uint64(g)
 	return v
 }
 
-func (output *Output) g(x, y float64) float64 {
-	//unit := 1.
-	unit := 24 * float64(time.Hour.Nanoseconds())
-	k := 2.3
-	R := output.halfLifeInNanoseconds / unit
-	var M float64 = 10000000000000
-	h := output.h(y, M, k, R)
-	x2 := x / unit
-	//a := x2/(R*r(M, y)+r(y, M)) + h
-	//b := k*r(M, y) + r(y, M)
-	//exp := -math.Pow(a, b)/R
-	//g := (r(y, M)*y-M)*math.Exp(exp) + M
-	//return g
-	if y < M {
-		a := x2*math.Log(2)/R + h
-		exp := -math.Pow(a, k) / R
-		return -M*math.Exp(exp) + M
-	} else if M < y {
-		exp := -x2 * math.Log(2) / R
-		return (y-M)*math.Exp(exp) + M
+func (output *Output) g(x float64, y uint64) float64 {
+	k := output.k
+	h := output.halfLifeInNanoseconds
+	incomeLimit := float64(output.incomeLimit)
+	if y < output.incomeLimit {
+		exp := -math.Pow(x*math.Log(2)/(k*h)+math.Sqrt(-math.Log((incomeLimit-float64(y))/incomeLimit)), 2)
+		return -incomeLimit*math.Exp(exp) + incomeLimit
+	} else if output.incomeLimit < y {
+		exp := -x * math.Log(2) / h
+		return (float64(y)-incomeLimit)*math.Exp(exp) + incomeLimit
 	} else {
-		return M
+		return incomeLimit
 	}
-}
-
-func (output *Output) h(y float64, M float64, k float64, R float64) float64 {
-	//l := c(M, y)/M + r(y, M)
-	//x := -R * math.Log(l)
-	//h := math.Pow(x, 1/k)
-	//return h
-	if y < M {
-		return math.Pow(-R*math.Log((M-y)/M), 1/k)
-	} else {
-		return 0
-	}
-}
-
-func r(x, y float64) float64 {
-	r := c(x, y) / (x - y)
-	return r
-}
-
-func c(x float64, y float64) float64 {
-	c := (math.Abs(x-y) + x - y) / 2
-	return c
 }
