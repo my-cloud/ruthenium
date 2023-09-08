@@ -57,7 +57,8 @@ func (output *Output) Value(currentTimestamp int64) uint64 {
 
 func (output *Output) decay(newTimestamp int64) uint64 {
 	elapsedTimestamp := newTimestamp - output.timestamp
-	return uint64(float64(output.value) * math.Exp(-float64(elapsedTimestamp)*math.Log(2)/output.halfLifeInNanoseconds))
+	f := float64(output.value) * math.Exp(-float64(elapsedTimestamp)*math.Log(2)/output.halfLifeInNanoseconds)
+	return uint64(f)
 }
 
 func (output *Output) calculateValue(currentTimestamp int64) uint64 {
