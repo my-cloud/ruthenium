@@ -35,7 +35,7 @@ func Test_Start_NotStarted_Started(t *testing.T) {
 	// Act
 	waitGroup.Add(1)
 	go engine.Start()
-	isFunctionCalled := waitTimeout(&waitGroup, time.Second)
+	isFunctionCalled := waitTimeout(&waitGroup, time.Second.Nanosecond())
 	engine.Stop()
 
 	// Assert
