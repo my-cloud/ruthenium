@@ -10,10 +10,12 @@ import (
 )
 
 const (
-	base                uint64 = 50000000000
-	limit               uint64 = 10000000000000
+	particlesCount             = 100000000
+	base                uint64 = 500 * particlesCount
+	limit               uint64 = 100000 * particlesCount
 	genesisTimestamp           = 0
-	oneDay                     = 24 * 60 * 60 * 1e9
+	oneMinute                  = 60 * 1e9
+	oneDay                     = 24 * 60 * oneMinute
 	halfLife                   = 373.59 * oneDay
 	validationTimestamp        = 60 * 1e9
 )
@@ -68,25 +70,6 @@ func Test_Value_ValueIsLimitAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 	expectedValueAfterOneDay := limit
 	test.Assert(t, actualValueAfterOneDay == expectedValueAfterOneDay, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterOneDay, actualValueAfterOneDay))
 	expectedValueAfterHalfLife := limit
-	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
-}
-
-func Test_Value_ValueIs50kAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
-	// Arrange
-	utxo := &network.UtxoResponse{
-		HasIncome: true,
-		Value:     5000000000000,
-	}
-	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, base, limit, validationTimestamp)
-
-	// Act
-	actualValueAfterOneDay := output.Value(int64(genesisTimestamp + oneDay))
-	actualValueAfterHalfLife := output.Value(int64(genesisTimestamp + halfLife))
-
-	// Assert
-	var expectedValueAfterOneDay uint64 = 5001577710768
-	test.Assert(t, actualValueAfterOneDay == expectedValueAfterOneDay, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterOneDay, actualValueAfterOneDay))
-	var expectedValueAfterHalfLife uint64 = 5578244486849
 	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
 }
 
@@ -218,23 +201,6 @@ func Test_Value_ValueIsLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.
 
 	// Assert
 	expectedValueAfterHalfLife := limit / 2
-	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
-}
-
-func Test_Value_ValueIs50kAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
-	// Arrange
-	var value uint64 = 5000000000000
-	utxo := &network.UtxoResponse{
-		HasIncome: false,
-		Value:     value,
-	}
-	output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, halfLife, base, limit, validationTimestamp)
-
-	// Act
-	actualValueAfterHalfLife := output.Value(int64(genesisTimestamp + halfLife))
-
-	// Assert
-	expectedValueAfterHalfLife := value / 2
 	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
 }
 

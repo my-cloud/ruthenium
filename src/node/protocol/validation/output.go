@@ -14,14 +14,23 @@ type Output struct {
 
 	halfLifeInNanoseconds float64
 	incomeLimit           uint64
-	k                     float64
+	k1                    float64
+	k2                    float64
 	timestamp             int64
 }
 
 func NewOutputFromUtxoResponse(response *network.UtxoResponse, genesisTimestamp int64, halfLifeInNanoseconds float64, incomeBase uint64, incomeLimit uint64, validationTimestamp int64) *Output {
-	k := math.Log(2) / math.Sqrt(-math.Log(1-float64(incomeBase)/float64(incomeLimit)))
+	var k1 float64
+	var k2 float64
+	if incomeLimit > incomeBase {
+		k1 = 3 - 2*math.Log(2*float64(incomeBase))/math.Log(float64(incomeLimit))
+		k2 = math.Log(2) / math.Pow(-math.Log(1-float64(incomeBase)/float64(incomeLimit)), 1/k1)
+	} else {
+		k1 = 1
+		k2 = 1
+	}
 	timestamp := genesisTimestamp + int64(response.BlockHeight)*validationTimestamp
-	return &Output{response.Address, response.HasReward, response.HasIncome, response.Value, halfLifeInNanoseconds, incomeLimit, k, timestamp}
+	return &Output{response.Address, response.HasReward, response.HasIncome, response.Value, halfLifeInNanoseconds, incomeLimit, k1, k2, timestamp}
 }
 
 func (output *Output) MarshalJSON() ([]byte, error) {
@@ -57,40 +66,26 @@ func (output *Output) Value(currentTimestamp int64) uint64 {
 
 func (output *Output) decay(newTimestamp int64) uint64 {
 	elapsedTimestamp := newTimestamp - output.timestamp
-	f := float64(output.value) * math.Exp(-float64(elapsedTimestamp)*math.Log(2)/output.halfLifeInNanoseconds)
-	return uint64(f)
+	result := float64(output.value) * math.Exp(-float64(elapsedTimestamp)*math.Log(2)/output.halfLifeInNanoseconds)
+	return uint64(result)
 }
 
 func (output *Output) calculateValue(currentTimestamp int64) uint64 {
 	x := float64(currentTimestamp - output.timestamp)
-	k := output.k
+	k1 := output.k1
+	k2 := output.k2
 	h := output.halfLifeInNanoseconds
-	y := output.value
-	incomeLimit := float64(output.incomeLimit)
-	var result float64
-	if y < output.incomeLimit {
-		exp := -math.Pow(x*math.Log(2)/(k*h)+math.Sqrt(-math.Log((incomeLimit-float64(y))/incomeLimit)), 2)
-		result = -incomeLimit*math.Exp(exp) + incomeLimit
-	} else if output.incomeLimit < y {
+	y := float64(output.value)
+	l := float64(output.incomeLimit)
+	if output.value < output.incomeLimit {
+		exp := -math.Pow(x*math.Log(2)/(k2*h)+math.Pow(-math.Log((l-y)/l), 1/k1), k1)
+		result := math.Floor(-l*math.Exp(exp)) + l
+		return uint64(result)
+	} else if output.incomeLimit < output.value {
 		exp := -x * math.Log(2) / h
-		result = (float64(y)-incomeLimit)*math.Exp(exp) + incomeLimit
+		result := math.Floor((y-l)*math.Exp(exp)) + l
+		return uint64(result)
 	} else {
-		result = incomeLimit
-	}
-	return uint64(result)
-}
-
-func (output *Output) g(x float64, y uint64) float64 {
-	k := output.k
-	h := output.halfLifeInNanoseconds
-	incomeLimit := float64(output.incomeLimit)
-	if y < output.incomeLimit {
-		exp := -math.Pow(x*math.Log(2)/(k*h)+math.Sqrt(-math.Log((incomeLimit-float64(y))/incomeLimit)), 2)
-		return -incomeLimit*math.Exp(exp) + incomeLimit
-	} else if output.incomeLimit < y {
-		exp := -x * math.Log(2) / h
-		return (float64(y)-incomeLimit)*math.Exp(exp) + incomeLimit
-	} else {
-		return incomeLimit
+		return output.incomeLimit
 	}
 }
