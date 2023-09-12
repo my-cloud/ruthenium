@@ -1,6 +1,8 @@
 {
   "genesisAmountInParticles": 10000000000000,
   "halfLifeInDays": 373.59,
+  "incomeBaseInParticles": 50000000000,
+  "incomeLimitInParticles": 10000000000000,
   "maxOutboundsCount": 8,
   "minimalTransactionFee": 1000,
   "particlesPerToken": 100000000,

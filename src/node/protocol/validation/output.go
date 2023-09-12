@@ -6,21 +6,31 @@ import (
 	"math"
 )
 
-const incomeExponent = 0.54692829
-
 type Output struct {
 	address   string
 	hasReward bool
 	hasIncome bool
 	value     uint64
 
-	genesisTimestamp      int64
 	halfLifeInNanoseconds float64
-	validationTimestamp   int64
+	incomeLimit           uint64
+	k1                    float64
+	k2                    float64
+	timestamp             int64
 }
 
-func NewOutputFromUtxoResponse(response *network.UtxoResponse, halfLifeInNanoseconds float64, validationTimestamp int64, genesisTimestamp int64) *Output {
-	return &Output{response.Address, response.HasReward, response.HasIncome, response.Value, genesisTimestamp, halfLifeInNanoseconds, validationTimestamp}
+func NewOutputFromUtxoResponse(response *network.UtxoResponse, genesisTimestamp int64, halfLifeInNanoseconds float64, incomeBase uint64, incomeLimit uint64, validationTimestamp int64) *Output {
+	var k1 float64
+	var k2 float64
+	if incomeLimit > incomeBase {
+		k1 = 3 - 2*math.Log(2*float64(incomeBase))/math.Log(float64(incomeLimit))
+		k2 = math.Log(2) / math.Pow(-math.Log(1-float64(incomeBase)/float64(incomeLimit)), 1/k1)
+	} else {
+		k1 = 1
+		k2 = 1
+	}
+	timestamp := genesisTimestamp + int64(response.BlockHeight)*validationTimestamp
+	return &Output{response.Address, response.HasReward, response.HasIncome, response.Value, halfLifeInNanoseconds, incomeLimit, k1, k2, timestamp}
 }
 
 func (output *Output) MarshalJSON() ([]byte, error) {
@@ -46,30 +56,36 @@ func (output *Output) GetResponse() *network.OutputResponse {
 	}
 }
 
-func (output *Output) Value(blockHeight int, currentTimestamp int64) uint64 {
+func (output *Output) Value(currentTimestamp int64) uint64 {
 	if output.hasIncome {
-		return output.calculateValue(blockHeight, currentTimestamp)
+		return output.calculateValue(currentTimestamp)
 	} else {
-		timestamp := output.genesisTimestamp + int64(blockHeight)*output.validationTimestamp
-		return output.decay(timestamp, currentTimestamp, output.value)
+		return output.decay(currentTimestamp)
 	}
 }
 
-func (output *Output) decay(lastTimestamp int64, newTimestamp int64, amount uint64) uint64 {
-	elapsedTimestamp := newTimestamp - lastTimestamp
-	return uint64(math.Floor(float64(amount) * math.Exp(-float64(elapsedTimestamp)/output.halfLifeInNanoseconds)))
+func (output *Output) decay(newTimestamp int64) uint64 {
+	elapsedTimestamp := newTimestamp - output.timestamp
+	result := float64(output.value) * math.Exp(-float64(elapsedTimestamp)*math.Log(2)/output.halfLifeInNanoseconds)
+	return uint64(result)
 }
 
-func (output *Output) calculateValue(blockHeight int, currentTimestamp int64) uint64 {
-	totalValue := output.value
-	var timestamp int64
-	blockTimestamp := output.genesisTimestamp + int64(blockHeight)*output.validationTimestamp
-	for timestamp = blockTimestamp; timestamp < currentTimestamp; timestamp += output.validationTimestamp {
-		if totalValue > 0 {
-			totalValue = output.decay(timestamp, timestamp+output.validationTimestamp, totalValue)
-			income := uint64(math.Round(math.Pow(float64(totalValue), incomeExponent)))
-			totalValue += income
-		}
+func (output *Output) calculateValue(currentTimestamp int64) uint64 {
+	x := float64(currentTimestamp - output.timestamp)
+	k1 := output.k1
+	k2 := output.k2
+	h := output.halfLifeInNanoseconds
+	y := float64(output.value)
+	l := float64(output.incomeLimit)
+	if output.value < output.incomeLimit {
+		exp := -math.Pow(x*math.Log(2)/(k2*h)+math.Pow(-math.Log((l-y)/l), 1/k1), k1)
+		result := math.Floor(-l*math.Exp(exp)) + l
+		return uint64(result)
+	} else if output.incomeLimit < output.value {
+		exp := -x * math.Log(2) / h
+		result := math.Floor((y-l)*math.Exp(exp)) + l
+		return uint64(result)
+	} else {
+		return output.incomeLimit
 	}
-	return output.decay(timestamp, currentTimestamp, totalValue)
 }

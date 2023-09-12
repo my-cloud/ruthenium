@@ -51,10 +51,10 @@ func main() {
 	validationTimestamp := settings.ValidationIntervalInSeconds * time.Second.Nanoseconds()
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
 	http.Handle("/transaction", transaction.NewHandler(host, logger))
-	http.Handle("/transaction/info", info.NewHandler(host, halfLifeInNanoseconds, settings.MinimalTransactionFee, settings.ParticlesPerToken, validationTimestamp, watch, logger))
+	http.Handle("/transaction/info", info.NewHandler(host, halfLifeInNanoseconds, settings.IncomeBaseInParticles, settings.IncomeLimitInParticles, settings.MinimalTransactionFee, settings.ParticlesPerToken, validationTimestamp, watch, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/wallet/address", address.NewHandler(logger))
-	http.Handle("/wallet/amount", amount.NewHandler(host, halfLifeInNanoseconds, settings.ParticlesPerToken, validationTimestamp, watch, logger))
+	http.Handle("/wallet/amount", amount.NewHandler(host, halfLifeInNanoseconds, settings.IncomeBaseInParticles, settings.IncomeLimitInParticles, settings.ParticlesPerToken, validationTimestamp, watch, logger))
 	logger.Info("user interface server is running...")
 	logger.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(*port), nil).Error())
 }
