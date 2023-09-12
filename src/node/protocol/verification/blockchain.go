@@ -30,12 +30,13 @@ type Blockchain struct {
 	logger                log.Logger
 }
 
-func NewBlockchain(genesisTimestamp int64, genesisTransaction *network.TransactionResponse, registry protocol.Registry, settings config.Settings, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+func NewBlockchain(genesisTimestamp int64, genesisTransaction *network.TransactionResponse, registry protocol.Registry, settings config.Settings, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+	validationTimestamp := settings.ValidationIntervalInSeconds * time.Second.Nanoseconds()
 	hoursADay := 24.
 	halfLifeInNanoseconds := settings.HalfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
 	utxosByAddress := make(map[string][]*network.UtxoResponse)
 	utxosById := make(map[string][]*network.UtxoResponse)
-	blockchain := newBlockchain(nil, genesisTimestamp, halfLifeInNanoseconds, settings.IncomeBaseInParticles, settings.IncomeLimitInParticles, settings.MinimalTransactionFee, registry, synchronizer, utxosByAddress, utxosById, validationTimer.Nanoseconds(), logger)
+	blockchain := newBlockchain(nil, genesisTimestamp, halfLifeInNanoseconds, settings.IncomeBaseInParticles, settings.IncomeLimitInParticles, settings.MinimalTransactionFee, registry, synchronizer, utxosByAddress, utxosById, validationTimestamp, logger)
 	blockchain.addGenesisBlock(genesisTransaction)
 	return blockchain
 }
