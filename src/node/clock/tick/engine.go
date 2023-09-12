@@ -19,9 +19,11 @@ type Engine struct {
 }
 
 func NewEngine(function func(timestamp int64), watch clock.Watch, timer time.Duration, occurrences int64, skippedOccurrences int) *Engine {
-	subTimer := timer
+	var subTimer time.Duration
 	if occurrences > 0 {
 		subTimer = time.Duration(timer.Nanoseconds() / occurrences)
+	} else {
+		subTimer = timer
 	}
 	ticker := time.NewTicker(subTimer)
 	return &Engine{function, watch, subTimer, ticker, occurrences, skippedOccurrences, false, false}
