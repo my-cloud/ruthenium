@@ -12,16 +12,16 @@ type Engine struct {
 	watch              clock.Watch
 	timer              time.Duration
 	ticker             *time.Ticker
-	occurrences        int
+	occurrences        int64
 	skippedOccurrences int
 	started            bool
 	requested          bool
 }
 
-func NewEngine(function func(timestamp int64), watch clock.Watch, timer time.Duration, occurrences int, skippedOccurrences int) *Engine {
+func NewEngine(function func(timestamp int64), watch clock.Watch, timer time.Duration, occurrences int64, skippedOccurrences int) *Engine {
 	subTimer := timer
 	if occurrences > 0 {
-		subTimer = time.Duration(timer.Nanoseconds() / int64(occurrences))
+		subTimer = time.Duration(timer.Nanoseconds() / occurrences)
 	}
 	ticker := time.NewTicker(subTimer)
 	return &Engine{function, watch, subTimer, ticker, occurrences, skippedOccurrences, false, false}
@@ -59,9 +59,10 @@ func (engine *Engine) Start() {
 	engine.ticker.Reset(deadline)
 	<-engine.ticker.C
 	engine.ticker.Reset(engine.timer)
+	occurrences := int(engine.occurrences)
 	for {
-		for i := 0; i < engine.occurrences; i++ {
-			if i < engine.occurrences-engine.skippedOccurrences {
+		for i := 0; i < occurrences; i++ {
+			if i < occurrences-engine.skippedOccurrences {
 				if !engine.started {
 					engine.ticker.Stop()
 					return
