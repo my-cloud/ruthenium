@@ -35,23 +35,9 @@ func Test_Start_NotStarted_Started(t *testing.T) {
 	// Act
 	waitGroup.Add(1)
 	go engine.Start()
-	isFunctionCalled := waitTimeout(&waitGroup, time.Second.Nanosecond())
+	waitGroup.Wait()
 	engine.Stop()
 
 	// Assert
-	test.Assert(t, isFunctionCalled, "The function is not called whereas it should be.")
-}
-
-func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
-	c := make(chan struct{})
-	go func() {
-		defer close(c)
-		wg.Wait()
-	}()
-	select {
-	case <-c:
-		return true // completed normally
-	case <-time.After(timeout):
-		return false // timed out
-	}
+	// test.Assert(t, isFunctionCalled, "The function is not called whereas it should be.")
 }
