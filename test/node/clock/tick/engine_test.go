@@ -35,8 +35,8 @@ func Test_Start_NotStarted_Started(t *testing.T) {
 	// Act
 	waitGroup.Add(1)
 	go engine.Start()
-	waitGroup.Wait()
 	engine.Stop()
+	waitGroup.Wait()
 
 	// Assert
 	// test.Assert(t, isFunctionCalled, "The function is not called whereas it should be.")
