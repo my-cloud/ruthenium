@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/config"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
@@ -17,35 +18,34 @@ type Blockchain struct {
 	blockResponses        []*network.BlockResponse
 	genesisTimestamp      int64
 	halfLifeInNanoseconds float64
-	incomeBase            uint64
-	incomeLimit           uint64
-	minimalTransactionFee uint64
 	mutex                 sync.RWMutex
 	registry              protocol.Registry
 	synchronizer          network.Synchronizer
+	settings              config.Settings
 	utxosByAddress        map[string][]*network.UtxoResponse
 	utxosById             map[string][]*network.UtxoResponse
 	validationTimestamp   int64
 	logger                log.Logger
 }
 
-func NewBlockchain(genesisTimestamp int64, genesisTransaction *network.TransactionResponse, halfLifeInNanoseconds float64, incomeBase uint64, incomeLimit uint64, minimalTransactionFee uint64, registry protocol.Registry, validationTimer time.Duration, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+func NewBlockchain(genesisTimestamp int64, genesisTransaction *network.TransactionResponse, registry protocol.Registry, settings config.Settings, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+	validationTimestamp := settings.ValidationIntervalInSeconds * time.Second.Nanoseconds()
+	hoursADay := 24.
+	halfLifeInNanoseconds := settings.HalfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
 	utxosByAddress := make(map[string][]*network.UtxoResponse)
 	utxosById := make(map[string][]*network.UtxoResponse)
-	blockchain := newBlockchain(nil, genesisTimestamp, halfLifeInNanoseconds, incomeBase, incomeLimit, minimalTransactionFee, registry, synchronizer, utxosByAddress, utxosById, validationTimer.Nanoseconds(), logger)
+	blockchain := newBlockchain(nil, genesisTimestamp, halfLifeInNanoseconds, registry, settings, synchronizer, utxosByAddress, utxosById, validationTimestamp, logger)
 	blockchain.addGenesisBlock(genesisTransaction)
 	return blockchain
 }
 
-func newBlockchain(blockResponses []*network.BlockResponse, genesisTimestamp int64, halfLifeInNanoseconds float64, incomeBase uint64, incomeLimit uint64, minimalTransactionFee uint64, registry protocol.Registry, synchronizer network.Synchronizer, utxosByAddress map[string][]*network.UtxoResponse, utxosById map[string][]*network.UtxoResponse, validationTimestamp int64, logger log.Logger) *Blockchain {
+func newBlockchain(blockResponses []*network.BlockResponse, genesisTimestamp int64, halfLifeInNanoseconds float64, registry protocol.Registry, settings config.Settings, synchronizer network.Synchronizer, utxosByAddress map[string][]*network.UtxoResponse, utxosById map[string][]*network.UtxoResponse, validationTimestamp int64, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blockResponses = blockResponses
 	blockchain.genesisTimestamp = genesisTimestamp
 	blockchain.halfLifeInNanoseconds = halfLifeInNanoseconds
-	blockchain.incomeBase = incomeBase
-	blockchain.incomeLimit = incomeLimit
-	blockchain.minimalTransactionFee = minimalTransactionFee
 	blockchain.registry = registry
+	blockchain.settings = settings
 	blockchain.synchronizer = synchronizer
 	blockchain.utxosByAddress = utxosByAddress
 	blockchain.utxosById = utxosById
@@ -139,7 +139,7 @@ func (blockchain *Blockchain) Copy() protocol.Blockchain {
 	copy(blockResponses, blockchain.blockResponses)
 	utxosByAddress := copyUtxosMap(blockchain.utxosByAddress)
 	utxosById := copyUtxosMap(blockchain.utxosById)
-	blockchainCopy := newBlockchain(blockResponses, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, blockchain.incomeBase, blockchain.incomeLimit, blockchain.minimalTransactionFee, blockchain.registry, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.validationTimestamp, blockchain.logger)
+	blockchainCopy := newBlockchain(blockResponses, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, blockchain.registry, blockchain.settings, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.validationTimestamp, blockchain.logger)
 	blockchainCopy.blocks = blocks
 	return blockchainCopy
 }
@@ -174,6 +174,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	hostBlocks := blockchain.blocks
 	var mutex sync.RWMutex
 	var waitGroup sync.WaitGroup
+	timeout := time.Duration(blockchain.validationTimestamp / 12)
 	if len(hostBlocks) > 2 {
 		hostBlockResponses := blockchain.blockResponses
 		var oldHostBlockResponses []*network.BlockResponse
@@ -191,14 +192,23 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-1])
 		lastRegisteredAddresses = oldHostBlocks[len(oldHostBlocks)-1].RegisteredAddresses()
 		for _, neighbor := range neighbors {
+			target := neighbor.Target()
 			waitGroup.Add(1)
+			c := make(chan []*network.BlockResponse)
 			go func(neighbor network.Neighbor) {
-				target := neighbor.Target()
+				defer close(c)
 				startingBlockHeight := uint64(len(hostBlocks) - 1)
 				lastNeighborBlockResponses, err := neighbor.GetLastBlocks(startingBlockHeight)
 				if err != nil || len(lastNeighborBlockResponses) == 0 || lastHostBlocks[0].PreviousHash() != lastNeighborBlockResponses[0].PreviousHash {
 					blockchain.logger.Debug(errors.New("neighbor's blockchain is a fork").Error())
+					c <- nil
 				} else {
+					c <- lastNeighborBlockResponses
+				}
+			}(neighbor)
+			select {
+			case lastNeighborBlockResponses := <-c:
+				if lastNeighborBlockResponses != nil {
 					verifiedBlocks, err := blockchain.verify(lastHostBlocks, lastNeighborBlockResponses, lastRegisteredAddresses, oldHostBlockResponses, timestamp)
 					if err != nil || verifiedBlocks == nil {
 						blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
@@ -210,23 +220,35 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 						mutex.Unlock()
 					}
 				}
-				waitGroup.Done()
-			}(neighbor)
+			case <-time.After(timeout):
+				blockchain.logger.Debug(errors.New("neighbor taken too much time to respond").Error())
+			}
+			waitGroup.Done()
 		}
 		waitGroup.Wait()
 	}
+	waitGroup.Wait()
 	var isFork bool
 	if len(hostBlocks) > 0 && len(selectedTargets) < 2 && len(neighbors) > 0 {
 		isFork = true
 		blockchain.logger.Debug("all neighbor blockchains are forks, verifying the whole blockchains")
 		for _, neighbor := range neighbors {
 			waitGroup.Add(1)
+			target := neighbor.Target()
+			c := make(chan []*network.BlockResponse)
 			go func(neighbor network.Neighbor) {
-				target := neighbor.Target()
+				defer close(c)
 				neighborBlockResponses, err := neighbor.GetBlocks()
 				if err != nil && len(neighborBlockResponses) < 2 {
 					blockchain.logger.Debug(errors.New("neighbor's blockchain is too short").Error())
+					c <- nil
 				} else {
+					c <- neighborBlockResponses
+				}
+			}(neighbor)
+			select {
+			case neighborBlockResponses := <-c:
+				if neighborBlockResponses != nil {
 					verifiedBlocks, err := blockchain.verify(hostBlocks, neighborBlockResponses, nil, nil, timestamp)
 					if err != nil || verifiedBlocks == nil {
 						blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
@@ -238,11 +260,13 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 						mutex.Unlock()
 					}
 				}
-				waitGroup.Done()
-			}(neighbor)
+			case <-time.After(timeout):
+				blockchain.logger.Debug(errors.New("neighbor taken too much time to respond").Error())
+			}
+			waitGroup.Done()
 		}
 	}
-	waitGroup.Wait() // FIXME waits indefinitely if a neighbor doesn't respond
+	waitGroup.Wait()
 	var selectedBlockResponses []*network.BlockResponse
 	var selectedBlocks []*Block
 	var isDifferent bool
@@ -436,7 +460,7 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlockRespo
 		utxosByAddress = copyUtxosMap(blockchain.utxosByAddress)
 		utxosById = copyUtxosMap(blockchain.utxosById)
 	}
-	neighborBlockchain := newBlockchain(oldHostBlockResponses, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, blockchain.incomeBase, blockchain.incomeLimit, blockchain.minimalTransactionFee, blockchain.registry, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.validationTimestamp, blockchain.logger)
+	neighborBlockchain := newBlockchain(oldHostBlockResponses, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, blockchain.registry, blockchain.settings, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.validationTimestamp, blockchain.logger)
 	for i := 1; i < len(neighborBlockResponses); i++ {
 		neighborBlockResponse := neighborBlockResponses[i]
 		neighborBlock, err := NewBlockFromResponse(neighborBlockResponse, previousNeighborBlock.RegisteredAddresses())
@@ -619,6 +643,8 @@ func (blockchain *Blockchain) updateUtxos(block *network.BlockResponse, blockHei
 }
 
 func (blockchain *Blockchain) FindFee(transaction *network.TransactionResponse, timestamp int64) (uint64, error) {
+	incomeBase := blockchain.settings.IncomeBaseInParticles
+	incomeLimit := blockchain.settings.IncomeLimitInParticles
 	var inputsValue uint64
 	var outputsValue uint64
 	for _, input := range transaction.Inputs {
@@ -630,7 +656,7 @@ func (blockchain *Blockchain) FindFee(transaction *network.TransactionResponse, 
 		if utxo == nil {
 			return 0, fmt.Errorf("failed to find utxo, input: %v", input)
 		}
-		output := validation.NewOutputFromUtxoResponse(utxo, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, blockchain.incomeBase, blockchain.incomeLimit, blockchain.validationTimestamp)
+		output := validation.NewOutputFromUtxoResponse(utxo, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, incomeBase, incomeLimit, blockchain.validationTimestamp)
 		value := output.Value(timestamp)
 		inputsValue += value
 	}
@@ -641,8 +667,9 @@ func (blockchain *Blockchain) FindFee(transaction *network.TransactionResponse, 
 		return 0, errors.New("transaction fee is negative")
 	}
 	fee := inputsValue - outputsValue
-	if fee < blockchain.minimalTransactionFee {
-		return 0, fmt.Errorf("transaction fee is too low, fee: %d, minimal fee: %d", fee, blockchain.minimalTransactionFee)
+	minimalTransactionFee := blockchain.settings.MinimalTransactionFee
+	if fee < minimalTransactionFee {
+		return 0, fmt.Errorf("transaction fee is too low, fee: %d, minimal fee: %d", fee, minimalTransactionFee)
 	}
 	return fee, nil
 }

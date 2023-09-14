@@ -2,7 +2,7 @@ package network
 
 type UtxoResponse struct {
 	Address       string
-	BlockHeight   int // TODO uint64
+	BlockHeight   int
 	HasReward     bool
 	HasIncome     bool
 	OutputIndex   uint16
