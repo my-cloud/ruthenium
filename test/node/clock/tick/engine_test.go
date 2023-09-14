@@ -2,7 +2,6 @@ package tick
 
 import (
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 
@@ -29,15 +28,36 @@ func Test_Start_NotStarted_Started(t *testing.T) {
 	// Arrange
 	watchMock := new(clocktest.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	var waitGroup sync.WaitGroup
-	engine := tick.NewEngine(func(int64) { waitGroup.Done() }, watchMock, 1, 1, 0)
+	caller := NewActionsCaller()
+	function := func(int64) { caller.CallActions() }
+	engine := tick.NewEngine(function, watchMock, 1, 1, 0)
+	var calls int
+	caller.AddAction(func() {
+		calls++
+		engine.Stop()
+	})
 
 	// Act
-	waitGroup.Add(1)
-	go engine.Start()
-	engine.Stop()
-	waitGroup.Wait()
+	engine.Start()
 
 	// Assert
-	// test.Assert(t, isFunctionCalled, "The function is not called whereas it should be.")
+	test.Assert(t, calls == 1, fmt.Sprintf("The function is called %d times whereas it should be called once.", calls))
+}
+
+type ActionsCaller struct {
+	actions []func()
+}
+
+func NewActionsCaller() *ActionsCaller {
+	return &ActionsCaller{}
+}
+
+func (actionsCaller *ActionsCaller) AddAction(action func()) {
+	actionsCaller.actions = append(actionsCaller.actions, action)
+}
+
+func (actionsCaller *ActionsCaller) CallActions() {
+	for _, action := range actionsCaller.actions {
+		action()
+	}
 }
