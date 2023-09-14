@@ -28,11 +28,11 @@ func Test_Start_NotStarted_Started(t *testing.T) {
 	// Arrange
 	watchMock := new(clocktest.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	caller := NewActionsCaller()
-	function := func(int64) { caller.CallActions() }
+	caller := NewActionCaller()
+	function := func(int64) { caller.CallAction() }
 	engine := tick.NewEngine(function, watchMock, 1, 1, 0)
 	var calls int
-	caller.AddAction(func() {
+	caller.SetAction(func() {
 		calls++
 		engine.Stop()
 	})
@@ -45,19 +45,17 @@ func Test_Start_NotStarted_Started(t *testing.T) {
 }
 
 type ActionsCaller struct {
-	actions []func()
+	action func()
 }
 
-func NewActionsCaller() *ActionsCaller {
+func NewActionCaller() *ActionsCaller {
 	return &ActionsCaller{}
 }
 
-func (actionsCaller *ActionsCaller) AddAction(action func()) {
-	actionsCaller.actions = append(actionsCaller.actions, action)
+func (actionsCaller *ActionsCaller) SetAction(action func()) {
+	actionsCaller.action = action
 }
 
-func (actionsCaller *ActionsCaller) CallActions() {
-	for _, action := range actionsCaller.actions {
-		action()
-	}
+func (actionsCaller *ActionsCaller) CallAction() {
+	actionsCaller.action()
 }
