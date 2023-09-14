@@ -9,5 +9,5 @@ type Settings struct {
 	MinimalTransactionFee            uint64
 	SynchronizationIntervalInSeconds int
 	ValidationIntervalInSeconds      int64
-	VerificationsCountPerValidation  int
+	VerificationsCountPerValidation  int64
 }
