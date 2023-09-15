@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/file"
 	"github.com/my-cloud/ruthenium/test"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -29,7 +28,7 @@ func Test_Parse_UnableToOpenFile_ReturnsError(t *testing.T) {
 
 func Test_Parse_UnableToUnmarshalBytes_ReturnsError(t *testing.T) {
 	// Arrange
-	jsonFile, _ := ioutil.TempFile("", "Test_Parse_UnableToUnmarshalBytes_ReturnsError.json")
+	jsonFile, _ := os.CreateTemp("", "Test_Parse_UnableToUnmarshalBytes_ReturnsError.json")
 	defer func() { _ = os.Remove(jsonFile.Name()) }()
 	jsonData := []byte(`{`)
 	_, _ = jsonFile.Write(jsonData)
@@ -51,7 +50,7 @@ func Test_Parse_UnableToUnmarshalBytes_ReturnsError(t *testing.T) {
 
 func Test_Parse_ValidFile_OutputFilled(t *testing.T) {
 	// Arrange
-	jsonFile, _ := ioutil.TempFile("", "Test_Parse_ValidFile_OutputFilled.json")
+	jsonFile, _ := os.CreateTemp("", "Test_Parse_ValidFile_OutputFilled.json")
 	defer func() { _ = os.Remove(jsonFile.Name()) }()
 	expectedPersonName := "John"
 	expectedPersonAge := 30
