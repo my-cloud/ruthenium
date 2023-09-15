@@ -8,10 +8,7 @@ import (
 	"time"
 )
 
-const (
-	initializationConnectionTimeoutInSeconds = 600
-	commonConnectionTimeoutInSeconds         = 5
-)
+const connectionTimeoutInSeconds = 5
 
 type Neighbor struct {
 	target   *Target
@@ -26,7 +23,7 @@ func NewNeighbor(target *Target, clientFactory ClientFactory) (*Neighbor, error)
 	}
 	settings := gp2p.NewClientSettings()
 	settings.SetRetry(1, time.Nanosecond)
-	settings.SetConnTimeout(commonConnectionTimeoutInSeconds * time.Second)
+	settings.SetConnTimeout(connectionTimeoutInSeconds * time.Second)
 	client.SetSettings(settings)
 	return &Neighbor{target, client, settings}, nil
 }
@@ -35,21 +32,18 @@ func (neighbor *Neighbor) Target() string {
 	return neighbor.target.Value()
 }
 
-func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, err error) {
-	neighbor.settings.SetConnTimeout(initializationConnectionTimeoutInSeconds * time.Second)
-	neighbor.client.SetSettings(neighbor.settings)
-	res, err := neighbor.sendRequest(GetBlocks)
+func (neighbor *Neighbor) GetBlock(blockHeight uint64) (blockResponse *network.BlockResponse, err error) {
+	request := network.BlockRequest{BlockHeight: &blockHeight}
+	res, err := neighbor.sendRequest(request)
 	if err == nil {
 		data := res.GetBytes()
-		err = json.Unmarshal(data, &blockResponses)
+		err = json.Unmarshal(data, &blockResponse)
 	}
-	neighbor.settings.SetConnTimeout(commonConnectionTimeoutInSeconds * time.Second)
-	neighbor.client.SetSettings(neighbor.settings)
 	return
 }
 
-func (neighbor *Neighbor) GetLastBlocks(startingBlockHeight uint64) (blockResponses []*network.BlockResponse, err error) {
-	request := network.LastBlocksRequest{StartingBlockHeight: &startingBlockHeight}
+func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) (blockResponses []*network.BlockResponse, err error) {
+	request := network.BlocksRequest{StartingBlockHeight: &startingBlockHeight}
 	res, err := neighbor.sendRequest(request)
 	if err == nil {
 		data := res.GetBytes()
@@ -81,19 +75,18 @@ func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.Tran
 	return
 }
 
-func (neighbor *Neighbor) GetAmount(address string) (amount uint64, err error) {
-	request := network.AmountRequest{Address: &address}
+func (neighbor *Neighbor) GetUtxos(address string) (utxos []*network.UtxoResponse, err error) {
+	request := network.UtxosRequest{Address: &address}
 	res, err := neighbor.sendRequest(request)
-	var amountResponse *network.AmountResponse
 	if err != nil {
 		return
 	}
 	data := res.GetBytes()
-	err = json.Unmarshal(data, &amountResponse)
+	err = json.Unmarshal(data, &utxos)
 	if err != nil {
 		return
 	}
-	return amountResponse.Amount, nil
+	return
 }
 
 func (neighbor *Neighbor) sendRequest(request interface{}) (res gp2p.Data, err error) {

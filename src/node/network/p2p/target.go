@@ -19,7 +19,7 @@ func NewTarget(ip string, port string) *Target {
 func NewTargetFromValue(value string) (*Target, error) {
 	ip, port, err := net.SplitHostPort(value)
 	if err != nil {
-		return nil, fmt.Errorf("seed target format is invalid: %w", err)
+		return nil, fmt.Errorf("target format is invalid: %w", err)
 	}
 	return &Target{ip, port, value}, nil
 }

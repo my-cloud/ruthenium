@@ -22,17 +22,23 @@ var _ protocol.Blockchain = &BlockchainMock{}
 //			AddBlockFunc: func(timestamp int64, transactions []*network.TransactionResponse, newRegisteredAddresses []string) error {
 //				panic("mock out the AddBlock method")
 //			},
-//			BlocksFunc: func() []*network.BlockResponse {
-//				panic("mock out the Blocks method")
+//			AllBlocksFunc: func() []*network.BlockResponse {
+//				panic("mock out the AllBlocks method")
 //			},
-//			CalculateTotalAmountFunc: func(currentTimestamp int64, blockchainAddress string) uint64 {
-//				panic("mock out the CalculateTotalAmount method")
+//			BlockFunc: func(blockHeight uint64) *network.BlockResponse {
+//				panic("mock out the Block method")
+//			},
+//			BlocksFunc: func(startingBlockHeight uint64) []*network.BlockResponse {
+//				panic("mock out the Blocks method")
 //			},
 //			CopyFunc: func() Blockchain {
 //				panic("mock out the Copy method")
 //			},
-//			LastBlocksFunc: func(startingBlockHeight uint64) []*network.BlockResponse {
-//				panic("mock out the LastBlocks method")
+//			FindFeeFunc: func(transaction *network.TransactionResponse, timestamp int64) (uint64, error) {
+//				panic("mock out the FindFee method")
+//			},
+//			UtxosByAddressFunc: func(address string) []*network.UtxoResponse {
+//				panic("mock out the UtxosByAddress method")
 //			},
 //		}
 //
@@ -44,17 +50,23 @@ type BlockchainMock struct {
 	// AddBlockFunc mocks the AddBlock method.
 	AddBlockFunc func(timestamp int64, transactions []*network.TransactionResponse, newRegisteredAddresses []string) error
 
-	// BlocksFunc mocks the Blocks method.
-	BlocksFunc func() []*network.BlockResponse
+	// AllBlocksFunc mocks the AllBlocks method.
+	AllBlocksFunc func() []*network.BlockResponse
 
-	// CalculateTotalAmountFunc mocks the CalculateTotalAmount method.
-	CalculateTotalAmountFunc func(currentTimestamp int64, blockchainAddress string) uint64
+	// BlockFunc mocks the Block method.
+	BlockFunc func(blockHeight uint64) *network.BlockResponse
+
+	// BlocksFunc mocks the Blocks method.
+	BlocksFunc func(startingBlockHeight uint64) []*network.BlockResponse
 
 	// CopyFunc mocks the Copy method.
 	CopyFunc func() protocol.Blockchain
 
-	// LastBlocksFunc mocks the LastBlocks method.
-	LastBlocksFunc func(startingBlockHeight uint64) []*network.BlockResponse
+	// FindFeeFunc mocks the FindFee method.
+	FindFeeFunc func(transaction *network.TransactionResponse, timestamp int64) (uint64, error)
+
+	// UtxosByAddressFunc mocks the UtxosByAddress method.
+	UtxosByAddressFunc func(address string) []*network.UtxoResponse
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -67,30 +79,42 @@ type BlockchainMock struct {
 			// NewRegisteredAddresses is the newRegisteredAddresses argument value.
 			NewRegisteredAddresses []string
 		}
+		// AllBlocks holds details about calls to the AllBlocks method.
+		AllBlocks []struct {
+		}
+		// Block holds details about calls to the Block method.
+		Block []struct {
+			// BlockHeight is the blockHeight argument value.
+			BlockHeight uint64
+		}
 		// Blocks holds details about calls to the Blocks method.
 		Blocks []struct {
-		}
-		// CalculateTotalAmount holds details about calls to the CalculateTotalAmount method.
-		CalculateTotalAmount []struct {
-			// CurrentTimestamp is the currentTimestamp argument value.
-			CurrentTimestamp int64
-			// BlockchainAddress is the blockchainAddress argument value.
-			BlockchainAddress string
+			// StartingBlockHeight is the startingBlockHeight argument value.
+			StartingBlockHeight uint64
 		}
 		// Copy holds details about calls to the Copy method.
 		Copy []struct {
 		}
-		// LastBlocks holds details about calls to the LastBlocks method.
-		LastBlocks []struct {
-			// StartingBlockHeight is the startingBlockHeight argument value.
-			StartingBlockHeight uint64
+		// FindFee holds details about calls to the FindFee method.
+		FindFee []struct {
+			// Transaction is the transaction argument value.
+			Transaction *network.TransactionResponse
+			// Timestamp is the timestamp argument value.
+			Timestamp int64
+		}
+		// UtxosByAddress holds details about calls to the UtxosByAddress method.
+		UtxosByAddress []struct {
+			// Address is the address argument value.
+			Address string
 		}
 	}
-	lockAddBlock             sync.RWMutex
-	lockBlocks               sync.RWMutex
-	lockCalculateTotalAmount sync.RWMutex
-	lockCopy                 sync.RWMutex
-	lockLastBlocks           sync.RWMutex
+	lockAddBlock       sync.RWMutex
+	lockAllBlocks      sync.RWMutex
+	lockBlock          sync.RWMutex
+	lockBlocks         sync.RWMutex
+	lockCopy           sync.RWMutex
+	lockFindFee        sync.RWMutex
+	lockUtxosByAddress sync.RWMutex
 }
 
 // AddBlock calls AddBlockFunc.
@@ -133,17 +157,79 @@ func (mock *BlockchainMock) AddBlockCalls() []struct {
 	return calls
 }
 
+// AllBlocks calls AllBlocksFunc.
+func (mock *BlockchainMock) AllBlocks() []*network.BlockResponse {
+	if mock.AllBlocksFunc == nil {
+		panic("BlockchainMock.AllBlocksFunc: method is nil but Blockchain.AllBlocks was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockAllBlocks.Lock()
+	mock.calls.AllBlocks = append(mock.calls.AllBlocks, callInfo)
+	mock.lockAllBlocks.Unlock()
+	return mock.AllBlocksFunc()
+}
+
+// AllBlocksCalls gets all the calls that were made to AllBlocks.
+// Check the length with:
+//
+//	len(mockedBlockchain.AllBlocksCalls())
+func (mock *BlockchainMock) AllBlocksCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockAllBlocks.RLock()
+	calls = mock.calls.AllBlocks
+	mock.lockAllBlocks.RUnlock()
+	return calls
+}
+
+// Block calls BlockFunc.
+func (mock *BlockchainMock) Block(blockHeight uint64) *network.BlockResponse {
+	if mock.BlockFunc == nil {
+		panic("BlockchainMock.BlockFunc: method is nil but Blockchain.Block was just called")
+	}
+	callInfo := struct {
+		BlockHeight uint64
+	}{
+		BlockHeight: blockHeight,
+	}
+	mock.lockBlock.Lock()
+	mock.calls.Block = append(mock.calls.Block, callInfo)
+	mock.lockBlock.Unlock()
+	return mock.BlockFunc(blockHeight)
+}
+
+// BlockCalls gets all the calls that were made to Block.
+// Check the length with:
+//
+//	len(mockedBlockchain.BlockCalls())
+func (mock *BlockchainMock) BlockCalls() []struct {
+	BlockHeight uint64
+} {
+	var calls []struct {
+		BlockHeight uint64
+	}
+	mock.lockBlock.RLock()
+	calls = mock.calls.Block
+	mock.lockBlock.RUnlock()
+	return calls
+}
+
 // Blocks calls BlocksFunc.
-func (mock *BlockchainMock) Blocks() []*network.BlockResponse {
+func (mock *BlockchainMock) Blocks(startingBlockHeight uint64) []*network.BlockResponse {
 	if mock.BlocksFunc == nil {
 		panic("BlockchainMock.BlocksFunc: method is nil but Blockchain.Blocks was just called")
 	}
 	callInfo := struct {
-	}{}
+		StartingBlockHeight uint64
+	}{
+		StartingBlockHeight: startingBlockHeight,
+	}
 	mock.lockBlocks.Lock()
 	mock.calls.Blocks = append(mock.calls.Blocks, callInfo)
 	mock.lockBlocks.Unlock()
-	return mock.BlocksFunc()
+	return mock.BlocksFunc(startingBlockHeight)
 }
 
 // BlocksCalls gets all the calls that were made to Blocks.
@@ -151,48 +237,14 @@ func (mock *BlockchainMock) Blocks() []*network.BlockResponse {
 //
 //	len(mockedBlockchain.BlocksCalls())
 func (mock *BlockchainMock) BlocksCalls() []struct {
+	StartingBlockHeight uint64
 } {
 	var calls []struct {
+		StartingBlockHeight uint64
 	}
 	mock.lockBlocks.RLock()
 	calls = mock.calls.Blocks
 	mock.lockBlocks.RUnlock()
-	return calls
-}
-
-// CalculateTotalAmount calls CalculateTotalAmountFunc.
-func (mock *BlockchainMock) CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64 {
-	if mock.CalculateTotalAmountFunc == nil {
-		panic("BlockchainMock.CalculateTotalAmountFunc: method is nil but Blockchain.CalculateTotalAmount was just called")
-	}
-	callInfo := struct {
-		CurrentTimestamp  int64
-		BlockchainAddress string
-	}{
-		CurrentTimestamp:  currentTimestamp,
-		BlockchainAddress: blockchainAddress,
-	}
-	mock.lockCalculateTotalAmount.Lock()
-	mock.calls.CalculateTotalAmount = append(mock.calls.CalculateTotalAmount, callInfo)
-	mock.lockCalculateTotalAmount.Unlock()
-	return mock.CalculateTotalAmountFunc(currentTimestamp, blockchainAddress)
-}
-
-// CalculateTotalAmountCalls gets all the calls that were made to CalculateTotalAmount.
-// Check the length with:
-//
-//	len(mockedBlockchain.CalculateTotalAmountCalls())
-func (mock *BlockchainMock) CalculateTotalAmountCalls() []struct {
-	CurrentTimestamp  int64
-	BlockchainAddress string
-} {
-	var calls []struct {
-		CurrentTimestamp  int64
-		BlockchainAddress string
-	}
-	mock.lockCalculateTotalAmount.RLock()
-	calls = mock.calls.CalculateTotalAmount
-	mock.lockCalculateTotalAmount.RUnlock()
 	return calls
 }
 
@@ -223,34 +275,70 @@ func (mock *BlockchainMock) CopyCalls() []struct {
 	return calls
 }
 
-// LastBlocks calls LastBlocksFunc.
-func (mock *BlockchainMock) LastBlocks(startingBlockHeight uint64) []*network.BlockResponse {
-	if mock.LastBlocksFunc == nil {
-		panic("BlockchainMock.LastBlocksFunc: method is nil but Blockchain.LastBlocks was just called")
+// FindFee calls FindFeeFunc.
+func (mock *BlockchainMock) FindFee(transaction *network.TransactionResponse, timestamp int64) (uint64, error) {
+	if mock.FindFeeFunc == nil {
+		panic("BlockchainMock.FindFeeFunc: method is nil but Blockchain.FindFee was just called")
 	}
 	callInfo := struct {
-		StartingBlockHeight uint64
+		Transaction *network.TransactionResponse
+		Timestamp   int64
 	}{
-		StartingBlockHeight: startingBlockHeight,
+		Transaction: transaction,
+		Timestamp:   timestamp,
 	}
-	mock.lockLastBlocks.Lock()
-	mock.calls.LastBlocks = append(mock.calls.LastBlocks, callInfo)
-	mock.lockLastBlocks.Unlock()
-	return mock.LastBlocksFunc(startingBlockHeight)
+	mock.lockFindFee.Lock()
+	mock.calls.FindFee = append(mock.calls.FindFee, callInfo)
+	mock.lockFindFee.Unlock()
+	return mock.FindFeeFunc(transaction, timestamp)
 }
 
-// LastBlocksCalls gets all the calls that were made to LastBlocks.
+// FindFeeCalls gets all the calls that were made to FindFee.
 // Check the length with:
 //
-//	len(mockedBlockchain.LastBlocksCalls())
-func (mock *BlockchainMock) LastBlocksCalls() []struct {
-	StartingBlockHeight uint64
+//	len(mockedBlockchain.FindFeeCalls())
+func (mock *BlockchainMock) FindFeeCalls() []struct {
+	Transaction *network.TransactionResponse
+	Timestamp   int64
 } {
 	var calls []struct {
-		StartingBlockHeight uint64
+		Transaction *network.TransactionResponse
+		Timestamp   int64
 	}
-	mock.lockLastBlocks.RLock()
-	calls = mock.calls.LastBlocks
-	mock.lockLastBlocks.RUnlock()
+	mock.lockFindFee.RLock()
+	calls = mock.calls.FindFee
+	mock.lockFindFee.RUnlock()
+	return calls
+}
+
+// UtxosByAddress calls UtxosByAddressFunc.
+func (mock *BlockchainMock) UtxosByAddress(address string) []*network.UtxoResponse {
+	if mock.UtxosByAddressFunc == nil {
+		panic("BlockchainMock.UtxosByAddressFunc: method is nil but Blockchain.UtxosByAddress was just called")
+	}
+	callInfo := struct {
+		Address string
+	}{
+		Address: address,
+	}
+	mock.lockUtxosByAddress.Lock()
+	mock.calls.UtxosByAddress = append(mock.calls.UtxosByAddress, callInfo)
+	mock.lockUtxosByAddress.Unlock()
+	return mock.UtxosByAddressFunc(address)
+}
+
+// UtxosByAddressCalls gets all the calls that were made to UtxosByAddress.
+// Check the length with:
+//
+//	len(mockedBlockchain.UtxosByAddressCalls())
+func (mock *BlockchainMock) UtxosByAddressCalls() []struct {
+	Address string
+} {
+	var calls []struct {
+		Address string
+	}
+	mock.lockUtxosByAddress.RLock()
+	calls = mock.calls.UtxosByAddress
+	mock.lockUtxosByAddress.RUnlock()
 	return calls
 }

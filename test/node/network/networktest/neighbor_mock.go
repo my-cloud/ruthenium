@@ -21,17 +21,17 @@ var _ network.Neighbor = &NeighborMock{}
 //			AddTransactionFunc: func(request TransactionRequest) error {
 //				panic("mock out the AddTransaction method")
 //			},
-//			GetAmountFunc: func(address string) (uint64, error) {
-//				panic("mock out the GetAmount method")
+//			GetBlockFunc: func(blockHeight uint64) (*BlockResponse, error) {
+//				panic("mock out the GetBlock method")
 //			},
-//			GetBlocksFunc: func() ([]*BlockResponse, error) {
+//			GetBlocksFunc: func(startingBlockHeight uint64) ([]*BlockResponse, error) {
 //				panic("mock out the GetBlocks method")
-//			},
-//			GetLastBlocksFunc: func(startingBlockHeight uint64) ([]*BlockResponse, error) {
-//				panic("mock out the GetLastBlocks method")
 //			},
 //			GetTransactionsFunc: func() ([]TransactionResponse, error) {
 //				panic("mock out the GetTransactions method")
+//			},
+//			GetUtxosFunc: func(address string) ([]*UtxoResponse, error) {
+//				panic("mock out the GetUtxos method")
 //			},
 //			SendTargetsFunc: func(request []TargetRequest) error {
 //				panic("mock out the SendTargets method")
@@ -49,17 +49,17 @@ type NeighborMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
 	AddTransactionFunc func(request network.TransactionRequest) error
 
-	// GetAmountFunc mocks the GetAmount method.
-	GetAmountFunc func(address string) (uint64, error)
+	// GetBlockFunc mocks the GetBlock method.
+	GetBlockFunc func(blockHeight uint64) (*network.BlockResponse, error)
 
 	// GetBlocksFunc mocks the GetBlocks method.
-	GetBlocksFunc func() ([]*network.BlockResponse, error)
-
-	// GetLastBlocksFunc mocks the GetLastBlocks method.
-	GetLastBlocksFunc func(startingBlockHeight uint64) ([]*network.BlockResponse, error)
+	GetBlocksFunc func(startingBlockHeight uint64) ([]*network.BlockResponse, error)
 
 	// GetTransactionsFunc mocks the GetTransactions method.
 	GetTransactionsFunc func() ([]network.TransactionResponse, error)
+
+	// GetUtxosFunc mocks the GetUtxos method.
+	GetUtxosFunc func(address string) ([]*network.UtxoResponse, error)
 
 	// SendTargetsFunc mocks the SendTargets method.
 	SendTargetsFunc func(request []network.TargetRequest) error
@@ -74,21 +74,23 @@ type NeighborMock struct {
 			// Request is the request argument value.
 			Request network.TransactionRequest
 		}
-		// GetAmount holds details about calls to the GetAmount method.
-		GetAmount []struct {
-			// Address is the address argument value.
-			Address string
+		// GetBlock holds details about calls to the GetBlock method.
+		GetBlock []struct {
+			// BlockHeight is the blockHeight argument value.
+			BlockHeight uint64
 		}
 		// GetBlocks holds details about calls to the GetBlocks method.
 		GetBlocks []struct {
-		}
-		// GetLastBlocks holds details about calls to the GetLastBlocks method.
-		GetLastBlocks []struct {
 			// StartingBlockHeight is the startingBlockHeight argument value.
 			StartingBlockHeight uint64
 		}
 		// GetTransactions holds details about calls to the GetTransactions method.
 		GetTransactions []struct {
+		}
+		// GetUtxos holds details about calls to the GetUtxos method.
+		GetUtxos []struct {
+			// Address is the address argument value.
+			Address string
 		}
 		// SendTargets holds details about calls to the SendTargets method.
 		SendTargets []struct {
@@ -100,10 +102,10 @@ type NeighborMock struct {
 		}
 	}
 	lockAddTransaction  sync.RWMutex
-	lockGetAmount       sync.RWMutex
+	lockGetBlock        sync.RWMutex
 	lockGetBlocks       sync.RWMutex
-	lockGetLastBlocks   sync.RWMutex
 	lockGetTransactions sync.RWMutex
+	lockGetUtxos        sync.RWMutex
 	lockSendTargets     sync.RWMutex
 	lockTarget          sync.RWMutex
 }
@@ -140,49 +142,52 @@ func (mock *NeighborMock) AddTransactionCalls() []struct {
 	return calls
 }
 
-// GetAmount calls GetAmountFunc.
-func (mock *NeighborMock) GetAmount(address string) (uint64, error) {
-	if mock.GetAmountFunc == nil {
-		panic("NeighborMock.GetAmountFunc: method is nil but Neighbor.GetAmount was just called")
+// GetBlock calls GetBlockFunc.
+func (mock *NeighborMock) GetBlock(blockHeight uint64) (*network.BlockResponse, error) {
+	if mock.GetBlockFunc == nil {
+		panic("NeighborMock.GetBlockFunc: method is nil but Neighbor.GetBlock was just called")
 	}
 	callInfo := struct {
-		Address string
+		BlockHeight uint64
 	}{
-		Address: address,
+		BlockHeight: blockHeight,
 	}
-	mock.lockGetAmount.Lock()
-	mock.calls.GetAmount = append(mock.calls.GetAmount, callInfo)
-	mock.lockGetAmount.Unlock()
-	return mock.GetAmountFunc(address)
+	mock.lockGetBlock.Lock()
+	mock.calls.GetBlock = append(mock.calls.GetBlock, callInfo)
+	mock.lockGetBlock.Unlock()
+	return mock.GetBlockFunc(blockHeight)
 }
 
-// GetAmountCalls gets all the calls that were made to GetAmount.
+// GetBlockCalls gets all the calls that were made to GetBlock.
 // Check the length with:
 //
-//	len(mockedNeighbor.GetAmountCalls())
-func (mock *NeighborMock) GetAmountCalls() []struct {
-	Address string
+//	len(mockedNeighbor.GetBlockCalls())
+func (mock *NeighborMock) GetBlockCalls() []struct {
+	BlockHeight uint64
 } {
 	var calls []struct {
-		Address string
+		BlockHeight uint64
 	}
-	mock.lockGetAmount.RLock()
-	calls = mock.calls.GetAmount
-	mock.lockGetAmount.RUnlock()
+	mock.lockGetBlock.RLock()
+	calls = mock.calls.GetBlock
+	mock.lockGetBlock.RUnlock()
 	return calls
 }
 
 // GetBlocks calls GetBlocksFunc.
-func (mock *NeighborMock) GetBlocks() ([]*network.BlockResponse, error) {
+func (mock *NeighborMock) GetBlocks(startingBlockHeight uint64) ([]*network.BlockResponse, error) {
 	if mock.GetBlocksFunc == nil {
 		panic("NeighborMock.GetBlocksFunc: method is nil but Neighbor.GetBlocks was just called")
 	}
 	callInfo := struct {
-	}{}
+		StartingBlockHeight uint64
+	}{
+		StartingBlockHeight: startingBlockHeight,
+	}
 	mock.lockGetBlocks.Lock()
 	mock.calls.GetBlocks = append(mock.calls.GetBlocks, callInfo)
 	mock.lockGetBlocks.Unlock()
-	return mock.GetBlocksFunc()
+	return mock.GetBlocksFunc(startingBlockHeight)
 }
 
 // GetBlocksCalls gets all the calls that were made to GetBlocks.
@@ -190,44 +195,14 @@ func (mock *NeighborMock) GetBlocks() ([]*network.BlockResponse, error) {
 //
 //	len(mockedNeighbor.GetBlocksCalls())
 func (mock *NeighborMock) GetBlocksCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockGetBlocks.RLock()
-	calls = mock.calls.GetBlocks
-	mock.lockGetBlocks.RUnlock()
-	return calls
-}
-
-// GetLastBlocks calls GetLastBlocksFunc.
-func (mock *NeighborMock) GetLastBlocks(startingBlockHeight uint64) ([]*network.BlockResponse, error) {
-	if mock.GetLastBlocksFunc == nil {
-		panic("NeighborMock.GetLastBlocksFunc: method is nil but Neighbor.GetLastBlocks was just called")
-	}
-	callInfo := struct {
-		StartingBlockHeight uint64
-	}{
-		StartingBlockHeight: startingBlockHeight,
-	}
-	mock.lockGetLastBlocks.Lock()
-	mock.calls.GetLastBlocks = append(mock.calls.GetLastBlocks, callInfo)
-	mock.lockGetLastBlocks.Unlock()
-	return mock.GetLastBlocksFunc(startingBlockHeight)
-}
-
-// GetLastBlocksCalls gets all the calls that were made to GetLastBlocks.
-// Check the length with:
-//
-//	len(mockedNeighbor.GetLastBlocksCalls())
-func (mock *NeighborMock) GetLastBlocksCalls() []struct {
 	StartingBlockHeight uint64
 } {
 	var calls []struct {
 		StartingBlockHeight uint64
 	}
-	mock.lockGetLastBlocks.RLock()
-	calls = mock.calls.GetLastBlocks
-	mock.lockGetLastBlocks.RUnlock()
+	mock.lockGetBlocks.RLock()
+	calls = mock.calls.GetBlocks
+	mock.lockGetBlocks.RUnlock()
 	return calls
 }
 
@@ -255,6 +230,38 @@ func (mock *NeighborMock) GetTransactionsCalls() []struct {
 	mock.lockGetTransactions.RLock()
 	calls = mock.calls.GetTransactions
 	mock.lockGetTransactions.RUnlock()
+	return calls
+}
+
+// GetUtxos calls GetUtxosFunc.
+func (mock *NeighborMock) GetUtxos(address string) ([]*network.UtxoResponse, error) {
+	if mock.GetUtxosFunc == nil {
+		panic("NeighborMock.GetUtxosFunc: method is nil but Neighbor.GetUtxos was just called")
+	}
+	callInfo := struct {
+		Address string
+	}{
+		Address: address,
+	}
+	mock.lockGetUtxos.Lock()
+	mock.calls.GetUtxos = append(mock.calls.GetUtxos, callInfo)
+	mock.lockGetUtxos.Unlock()
+	return mock.GetUtxosFunc(address)
+}
+
+// GetUtxosCalls gets all the calls that were made to GetUtxos.
+// Check the length with:
+//
+//	len(mockedNeighbor.GetUtxosCalls())
+func (mock *NeighborMock) GetUtxosCalls() []struct {
+	Address string
+} {
+	var calls []struct {
+		Address string
+	}
+	mock.lockGetUtxos.RLock()
+	calls = mock.calls.GetUtxos
+	mock.lockGetUtxos.RUnlock()
 	return calls
 }
 

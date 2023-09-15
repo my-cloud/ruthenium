@@ -4,40 +4,56 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"net/http"
 )
 
 type Handler struct {
-	host           network.Neighbor
-	particlesCount uint64
-	logger         log.Logger
+	host                  network.Neighbor
+	halfLifeInNanoseconds float64
+	incomeBase            uint64
+	incomeLimit           uint64
+	particlesCount        uint64
+	validationTimestamp   int64
+	watch                 clock.Watch
+	logger                log.Logger
 }
 
-func NewHandler(host network.Neighbor, particlesCount uint64, logger log.Logger) *Handler {
-	return &Handler{host, particlesCount, logger}
+func NewHandler(host network.Neighbor, halfLifeInNanoseconds float64, incomeBase uint64, incomeLimit uint64, particlesCount uint64, validationTimestamp int64, watch clock.Watch, logger log.Logger) *Handler {
+	return &Handler{host, halfLifeInNanoseconds, incomeBase, incomeLimit, particlesCount, validationTimestamp, watch, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 		address := req.URL.Query().Get("address")
-		amountRequest := network.AmountRequest{
-			Address: &address,
-		}
-		if amountRequest.IsInvalid() {
-			handler.logger.Error("field(s) are missing in amount request")
+		if address == "" {
+			handler.logger.Error("address is missing in amount request")
 			writer.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		amount, err := handler.host.GetAmount(*amountRequest.Address)
+		utxos, err := handler.host.GetUtxos(address)
 		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
+			handler.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		marshaledAmount, err := json.Marshal(float64(amount) / float64(handler.particlesCount))
+		genesisBlock, err := handler.host.GetBlock(0)
+		if err != nil || genesisBlock == nil {
+			handler.logger.Error(fmt.Errorf("failed to get genesis block: %w", err).Error())
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		var balance uint64
+		for _, utxo := range utxos {
+			now := handler.watch.Now().UnixNano()
+			output := validation.NewOutputFromUtxoResponse(utxo, genesisBlock.Timestamp, handler.halfLifeInNanoseconds, handler.incomeBase, handler.incomeLimit, handler.validationTimestamp)
+			balance += output.Value(now)
+		}
+		marshaledAmount, err := json.Marshal(float64(balance) / float64(handler.particlesCount))
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to marshal amount: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)

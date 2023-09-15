@@ -1,156 +1,177 @@
 package validation
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/node/network"
 )
 
-const rewardSenderAddress = "REWARD SENDER ADDRESS"
-
 type Transaction struct {
-	recipientAddress string
-	senderAddress    string
-	senderPublicKey  *encryption.PublicKey
-	signature        *encryption.Signature
-	timestamp        int64
-	value            uint64
-	fee              uint64
+	id                     string
+	inputs                 []*network.InputResponse
+	outputs                []*network.OutputResponse
+	timestamp              int64
+	hasReward              bool
+	rewardRecipientAddress string
+	rewardValue            uint64
 }
 
-func NewRewardTransaction(recipientAddress string, timestamp int64, value uint64) *network.TransactionResponse {
-	return &network.TransactionResponse{
-		RecipientAddress: recipientAddress,
-		SenderAddress:    rewardSenderAddress,
-		Timestamp:        timestamp,
-		Value:            value,
-		Fee:              0,
+func NewGenesisTransaction(address string, timestamp int64, value uint64) (*network.TransactionResponse, error) {
+	return newTransactionResponse(address, true, timestamp, value)
+}
+
+func NewRewardTransaction(address string, timestamp int64, value uint64) (*network.TransactionResponse, error) {
+	return newTransactionResponse(address, false, timestamp, value)
+}
+
+func newTransactionResponse(address string, hasIncome bool, timestamp int64, value uint64) (*network.TransactionResponse, error) {
+	outputs := []*network.OutputResponse{
+		{
+			Address:   address,
+			HasReward: true,
+			HasIncome: hasIncome,
+			Value:     value,
+		},
 	}
+	transaction, err := newTransaction([]*network.InputResponse{}, outputs, timestamp)
+	if err != nil {
+		return nil, err
+	}
+	return transaction.GetResponse(), nil
 }
 
 func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (*Transaction, error) {
-	senderPublicKey, err := encryption.NewPublicKeyFromHex(*transactionRequest.SenderPublicKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode transaction public key: %w", err)
+	if transactionRequest.IsInvalid() {
+		return nil, errors.New("transaction request is invalid")
 	}
-	signature, err := encryption.DecodeSignature(*transactionRequest.Signature)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode transaction signature: %w", err)
+	var inputs []*network.InputResponse
+	for _, input := range *transactionRequest.Inputs {
+		inputs = append(inputs, &network.InputResponse{OutputIndex: *input.OutputIndex, TransactionId: *input.TransactionId, PublicKey: *input.PublicKey, Signature: *input.Signature})
 	}
-	return &Transaction{
-		*transactionRequest.RecipientAddress,
-		*transactionRequest.SenderAddress,
-		senderPublicKey,
-		signature,
-		*transactionRequest.Timestamp,
-		*transactionRequest.Value,
-		*transactionRequest.Fee,
-	}, nil
+	var outputs []*network.OutputResponse
+	for _, output := range *transactionRequest.Outputs {
+		outputs = append(outputs, &network.OutputResponse{Address: *output.Address, HasReward: *output.HasReward, HasIncome: *output.HasIncome, Value: *output.Value})
+	}
+	transaction, err := newTransaction(inputs, outputs, *transactionRequest.Timestamp)
+	if err != nil {
+		return nil, err
+	}
+	return transaction, nil
 }
 
-func NewTransactionFromResponse(transactionResponse *network.TransactionResponse) (transaction *Transaction, err error) {
-	var senderPublicKey *encryption.PublicKey
-	if len(transactionResponse.SenderPublicKey) != 0 {
-		senderPublicKey, err = encryption.NewPublicKeyFromHex(transactionResponse.SenderPublicKey)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode transaction public key: %w", err)
-		}
+func newTransaction(inputs []*network.InputResponse, outputs []*network.OutputResponse, timestamp int64) (*Transaction, error) {
+	transaction := &Transaction{"", inputs, outputs, timestamp, false, "", 0}
+	if err := transaction.generateId(); err != nil {
+		return nil, fmt.Errorf("failed to generate id: %w", err)
 	}
-	var signature *encryption.Signature
-	if len(transactionResponse.SenderPublicKey) != 0 {
-		signature, err = encryption.DecodeSignature(transactionResponse.Signature)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode transaction signature: %w", err)
-		}
+	if err := transaction.findReward(); err != nil {
+		return nil, fmt.Errorf("failed to find reward: %w", err)
 	}
-	return &Transaction{
-		transactionResponse.RecipientAddress,
-		transactionResponse.SenderAddress,
-		senderPublicKey,
-		signature,
-		transactionResponse.Timestamp,
-		transactionResponse.Value,
-		transactionResponse.Fee,
-	}, nil
+	return transaction, nil
+}
+
+func NewTransactionFromResponse(transactionResponse *network.TransactionResponse) (*Transaction, error) {
+	transaction, err := newTransaction(transactionResponse.Inputs, transactionResponse.Outputs, transactionResponse.Timestamp)
+	if err != nil {
+		return nil, err
+	}
+	if !transaction.Equals(transactionResponse) {
+		return nil, fmt.Errorf("wrong transaction ID, provided: %s, calculated: %s", transactionResponse.Id, transaction.id)
+	}
+	return transaction, nil
 }
 
 func (transaction *Transaction) Equals(other *network.TransactionResponse) bool {
-	return transaction.recipientAddress == other.RecipientAddress &&
-		transaction.senderAddress == other.SenderAddress &&
-		transaction.timestamp == other.Timestamp &&
-		transaction.value == other.Value &&
-		transaction.fee == other.Fee
+	return transaction.id == other.Id
 }
 
 func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		RecipientAddress string `json:"recipient_address"`
-		SenderAddress    string `json:"sender_address"`
-		Timestamp        int64  `json:"timestamp"`
-		Value            uint64 `json:"value"`
-		Fee              uint64 `json:"fee"`
+		Inputs    []*network.InputResponse  `json:"inputs"`
+		Outputs   []*network.OutputResponse `json:"outputs"`
+		Timestamp int64                     `json:"timestamp"`
 	}{
-		Fee:              transaction.fee,
-		RecipientAddress: transaction.recipientAddress,
-		SenderAddress:    transaction.senderAddress,
-		Timestamp:        transaction.timestamp,
-		Value:            transaction.value,
+		Inputs:    transaction.inputs,
+		Outputs:   transaction.outputs,
+		Timestamp: transaction.timestamp,
 	})
 }
 
 func (transaction *Transaction) GetResponse() *network.TransactionResponse {
-	var encodedPublicKey string
-	if transaction.senderPublicKey != nil {
-		encodedPublicKey = transaction.senderPublicKey.String()
-	}
-	var encodedSignature string
-	if transaction.signature != nil {
-		encodedSignature = transaction.signature.String()
-	}
 	return &network.TransactionResponse{
-		RecipientAddress: transaction.recipientAddress,
-		SenderAddress:    transaction.senderAddress,
-		SenderPublicKey:  encodedPublicKey,
-		Signature:        encodedSignature,
-		Timestamp:        transaction.timestamp,
-		Value:            transaction.value,
-		Fee:              transaction.fee,
+		Id:        transaction.id,
+		Inputs:    transaction.inputs,
+		Outputs:   transaction.outputs,
+		Timestamp: transaction.timestamp,
 	}
 }
 
-func (transaction *Transaction) VerifySignature() error {
-	marshaledTransaction, err := transaction.MarshalJSON()
-	if err != nil {
-		return fmt.Errorf("failed to marshal transaction, %w", err)
-	}
-	if !transaction.signature.Verify(marshaledTransaction, transaction.senderPublicKey, transaction.senderAddress) {
-		return errors.New("failed to verify signature")
+func (transaction *Transaction) VerifySignatures() error {
+	for _, inputResponse := range transaction.inputs {
+		input, err := NewInputFromResponse(inputResponse)
+		if err != nil {
+			return fmt.Errorf("failed to instantiate input: %v\n %w", input, err)
+		}
+		if err = input.VerifySignature(); err != nil {
+			return fmt.Errorf("failed to verify signature for input: %v\n %w", input, err)
+		}
 	}
 	return nil
 }
 
-func (transaction *Transaction) IsReward() bool {
-	return transaction.SenderAddress() == rewardSenderAddress
+func (transaction *Transaction) Id() string {
+	return transaction.id
 }
 
-func (transaction *Transaction) RecipientAddress() string {
-	return transaction.recipientAddress
+func (transaction *Transaction) Inputs() []*network.InputResponse {
+	return transaction.inputs
 }
 
-func (transaction *Transaction) SenderAddress() string {
-	return transaction.senderAddress
+func (transaction *Transaction) Outputs() []*network.OutputResponse {
+	return transaction.outputs
+}
+
+func (transaction *Transaction) HasReward() bool {
+	return transaction.hasReward
+}
+
+func (transaction *Transaction) RewardRecipientAddress() string {
+	return transaction.rewardRecipientAddress
+}
+
+func (transaction *Transaction) RewardValue() uint64 {
+	return transaction.rewardValue
 }
 
 func (transaction *Transaction) Timestamp() int64 {
 	return transaction.timestamp
 }
 
-func (transaction *Transaction) Value() uint64 {
-	return transaction.value
+func (transaction *Transaction) generateId() error {
+	marshaledTransaction, err := transaction.MarshalJSON()
+	if err != nil {
+		return errors.New("failed to marshal transaction")
+	}
+	transactionHash := sha256.Sum256(marshaledTransaction)
+	transaction.id = fmt.Sprintf("%x", transactionHash)
+	return nil
 }
 
-func (transaction *Transaction) Fee() uint64 {
-	return transaction.fee
+func (transaction *Transaction) findReward() error {
+	for _, output := range transaction.outputs {
+		if output == nil {
+			return errors.New("an output is nil")
+		}
+		if output.HasReward {
+			if transaction.hasReward {
+				return errors.New("multiple rewards attempt for the same transaction")
+			}
+			transaction.hasReward = true
+			transaction.rewardRecipientAddress = output.Address
+			transaction.rewardValue = output.Value
+		}
+	}
+	return nil
 }

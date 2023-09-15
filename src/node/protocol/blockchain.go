@@ -6,8 +6,10 @@ import (
 
 type Blockchain interface {
 	AddBlock(timestamp int64, transactions []*network.TransactionResponse, newRegisteredAddresses []string) error
-	Blocks() []*network.BlockResponse
-	CalculateTotalAmount(currentTimestamp int64, blockchainAddress string) uint64
+	AllBlocks() []*network.BlockResponse
+	Block(blockHeight uint64) *network.BlockResponse
+	Blocks(startingBlockHeight uint64) []*network.BlockResponse
 	Copy() Blockchain
-	LastBlocks(startingBlockHeight uint64) []*network.BlockResponse
+	FindFee(transaction *network.TransactionResponse, timestamp int64) (uint64, error)
+	UtxosByAddress(address string) []*network.UtxoResponse
 }

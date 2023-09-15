@@ -57,8 +57,7 @@ func decodeAddress(mnemonic *string, derivationPath *string, password *string, p
 		logger.Fatal(fmt.Errorf("failed to create private key: %w", err).Error())
 	}
 	publicKey := encryption.NewPublicKey(privateKey)
-	wallet := encryption.NewWallet(publicKey)
-	return wallet.Address()
+	return publicKey.Address()
 }
 
 func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *string, port *int, address string, logger *console.Logger) *p2p.Host {
@@ -74,10 +73,13 @@ func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *
 	validationTimer := time.Duration(settings.ValidationIntervalInSeconds) * time.Second
 	now := watch.Now()
 	genesisTimestamp := now.Truncate(validationTimer).Add(validationTimer).UnixNano()
-	genesisTransaction := validation.NewRewardTransaction(address, genesisTimestamp, settings.GenesisAmountInParticles)
-	blockchain := verification.NewBlockchain(genesisTimestamp, genesisTransaction, settings.MinimalTransactionFee, registry, validationTimer, synchronizer, logger)
-	transactionsPool := validation.NewTransactionsPool(blockchain, settings.MinimalTransactionFee, registry, synchronizer, address, validationTimer, logger)
-	synchronizationTimer := time.Second * time.Duration(settings.SynchronizationIntervalInSeconds)
+	genesisTransaction, err := validation.NewGenesisTransaction(address, genesisTimestamp, settings.GenesisAmountInParticles)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("failed to create genesis transaction: %w", err).Error())
+	}
+	blockchain := verification.NewBlockchain(genesisTimestamp, genesisTransaction, registry, settings, synchronizer, logger)
+	transactionsPool := validation.NewTransactionsPool(blockchain, settings.MinimalTransactionFee, synchronizer, address, validationTimer, logger)
+	synchronizationTimer := time.Duration(settings.SynchronizationIntervalInSeconds) * time.Second
 	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, synchronizationTimer, 1, 0)
 	validationEngine := tick.NewEngine(transactionsPool.Validate, watch, validationTimer, 1, 0)
 	verificationEngine := tick.NewEngine(blockchain.Update, watch, validationTimer, settings.VerificationsCountPerValidation, 1)

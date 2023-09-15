@@ -20,11 +20,14 @@ func NewHandler(logger log.Logger) *Handler {
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
+		jsonWriter := server.NewIoWriter(writer, handler.logger)
 		publicKeyString := req.URL.Query().Get("publicKey")
 		publicKey, err := encryption.NewPublicKeyFromHex(publicKeyString)
 		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to decode public key: %w", err).Error())
+			errorMessage := "failed to decode public key"
+			handler.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
 			writer.WriteHeader(http.StatusBadRequest)
+			jsonWriter.Write(errorMessage)
 			return
 		}
 		address := publicKey.Address()

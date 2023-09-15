@@ -20,8 +20,8 @@ type Signature struct {
 	s *big.Int
 }
 
-func NewSignature(marshaledTransaction []byte, privateKey *PrivateKey) (*Signature, error) {
-	hash := sha256.Sum256(marshaledTransaction)
+func NewSignature(bytes []byte, privateKey *PrivateKey) (*Signature, error) {
+	hash := sha256.Sum256(bytes)
 	r, s, err := ecdsa.Sign(rand.Reader, privateKey.PrivateKey, hash[:])
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign transaction: %w", err)
@@ -41,15 +41,9 @@ func (signature *Signature) String() string {
 	return fmt.Sprintf("%064x%064x", signature.r, signature.s)
 }
 
-func (signature *Signature) Verify(marshaledTransaction []byte, publicKey *PublicKey, transactionSenderAddress string) bool {
+func (signature *Signature) Verify(marshaledTransaction []byte, publicKey *PublicKey) bool {
 	hash := sha256.Sum256(marshaledTransaction)
-	isSignatureValid := ecdsa.Verify(publicKey.PublicKey, hash[:], signature.r, signature.s)
-	var isTransactionValid bool
-	if isSignatureValid {
-		publicKeyAddress := publicKey.Address()
-		isTransactionValid = transactionSenderAddress == publicKeyAddress
-	}
-	return isTransactionValid
+	return ecdsa.Verify(publicKey.PublicKey, hash[:], signature.r, signature.s)
 }
 
 func string2BigIntTuple(s string) (big.Int, big.Int, error) {
