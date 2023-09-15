@@ -1,6 +1,7 @@
 package config
 
 type Settings struct {
+	BlocksCountLimit                 uint64
 	GenesisAmountInParticles         uint64
 	HalfLifeInDays                   float64
 	IncomeBaseInParticles            uint64
