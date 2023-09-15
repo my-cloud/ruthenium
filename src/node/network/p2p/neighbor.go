@@ -8,10 +8,7 @@ import (
 	"time"
 )
 
-const (
-	initializationConnectionTimeoutInSeconds = 600
-	commonConnectionTimeoutInSeconds         = 5
-)
+const connectionTimeoutInSeconds = 5
 
 type Neighbor struct {
 	target   *Target
@@ -26,7 +23,7 @@ func NewNeighbor(target *Target, clientFactory ClientFactory) (*Neighbor, error)
 	}
 	settings := gp2p.NewClientSettings()
 	settings.SetRetry(1, time.Nanosecond)
-	settings.SetConnTimeout(commonConnectionTimeoutInSeconds * time.Second)
+	settings.SetConnTimeout(connectionTimeoutInSeconds * time.Second)
 	client.SetSettings(settings)
 	return &Neighbor{target, client, settings}, nil
 }
@@ -45,21 +42,8 @@ func (neighbor *Neighbor) GetBlock(blockHeight uint64) (blockResponse *network.B
 	return
 }
 
-func (neighbor *Neighbor) GetBlocks() (blockResponses []*network.BlockResponse, err error) {
-	neighbor.settings.SetConnTimeout(initializationConnectionTimeoutInSeconds * time.Second)
-	neighbor.client.SetSettings(neighbor.settings)
-	res, err := neighbor.sendRequest(GetBlocks)
-	if err == nil {
-		data := res.GetBytes()
-		err = json.Unmarshal(data, &blockResponses)
-	}
-	neighbor.settings.SetConnTimeout(commonConnectionTimeoutInSeconds * time.Second)
-	neighbor.client.SetSettings(neighbor.settings)
-	return
-}
-
-func (neighbor *Neighbor) GetLastBlocks(startingBlockHeight uint64) (blockResponses []*network.BlockResponse, err error) {
-	request := network.LastBlocksRequest{StartingBlockHeight: &startingBlockHeight}
+func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) (blockResponses []*network.BlockResponse, err error) {
+	request := network.BlocksRequest{StartingBlockHeight: &startingBlockHeight}
 	res, err := neighbor.sendRequest(request)
 	if err == nil {
 		data := res.GetBytes()

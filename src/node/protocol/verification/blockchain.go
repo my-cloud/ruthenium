@@ -124,7 +124,7 @@ func (blockchain *Blockchain) Block(blockHeight uint64) *network.BlockResponse {
 	return blockchain.blockResponses[blockHeight]
 }
 
-func (blockchain *Blockchain) Blocks() []*network.BlockResponse {
+func (blockchain *Blockchain) AllBlocks() []*network.BlockResponse {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
 	return blockchain.blockResponses
@@ -154,14 +154,22 @@ func copyUtxosMap(utxosMap map[string][]*network.UtxoResponse) map[string][]*net
 	return utxosMapCopy
 }
 
-func (blockchain *Blockchain) LastBlocks(startingBlockHeight uint64) []*network.BlockResponse {
+func (blockchain *Blockchain) Blocks(startingBlockHeight uint64) []*network.BlockResponse {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
+	var endingBlockHeight uint64
+	var blocksCount uint64
 	if startingBlockHeight > uint64(len(blockchain.blockResponses)) {
 		return nil
+	} else if startingBlockHeight+1440 < uint64(len(blockchain.blockResponses)) {
+		endingBlockHeight = startingBlockHeight + 1440
+		blocksCount = 1440
+	} else {
+		endingBlockHeight = uint64(len(blockchain.blockResponses))
+		blocksCount = uint64(len(blockchain.blockResponses)) - startingBlockHeight
 	}
-	lastBlocks := make([]*network.BlockResponse, uint64(len(blockchain.blockResponses))-startingBlockHeight)
-	copy(lastBlocks, blockchain.blockResponses[startingBlockHeight:])
+	lastBlocks := make([]*network.BlockResponse, blocksCount)
+	copy(lastBlocks, blockchain.blockResponses[startingBlockHeight:endingBlockHeight])
 	return lastBlocks
 }
 
@@ -198,7 +206,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			go func(neighbor network.Neighbor) {
 				defer close(c)
 				startingBlockHeight := uint64(len(hostBlocks) - 1)
-				lastNeighborBlockResponses, err := neighbor.GetLastBlocks(startingBlockHeight)
+				lastNeighborBlockResponses, err := neighbor.GetBlocks(startingBlockHeight)
 				if err != nil || len(lastNeighborBlockResponses) == 0 || lastHostBlocks[0].PreviousHash() != lastNeighborBlockResponses[0].PreviousHash {
 					blockchain.logger.Debug(errors.New("neighbor's blockchain is a fork").Error())
 					c <- nil
@@ -238,7 +246,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			c := make(chan []*network.BlockResponse)
 			go func(neighbor network.Neighbor) {
 				defer close(c)
-				neighborBlockResponses, err := neighbor.GetBlocks()
+				neighborBlockResponses, err := neighbor.GetBlocks(0)
 				if err != nil && len(neighborBlockResponses) < 2 {
 					blockchain.logger.Debug(errors.New("neighbor's blockchain is too short").Error())
 					c <- nil
