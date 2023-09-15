@@ -67,7 +67,7 @@ func (pool *TransactionsPool) Transactions() []*network.TransactionResponse {
 
 func (pool *TransactionsPool) Validate(timestamp int64) {
 	blockchainCopy := pool.blockchain.Copy()
-	blockResponses := blockchainCopy.Blocks()
+	blockResponses := blockchainCopy.AllBlocks()
 	lastBlockResponse := blockResponses[len(blockResponses)-1]
 	err := blockchainCopy.AddBlock(timestamp, nil, nil)
 	if err != nil {
@@ -175,7 +175,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 
 func (pool *TransactionsPool) addTransaction(transactionRequest *network.TransactionRequest) error {
 	blockchainCopy := pool.blockchain.Copy()
-	blocks := blockchainCopy.Blocks()
+	blocks := blockchainCopy.AllBlocks()
 	if len(blocks) == 0 {
 		return errors.New("the blockchain is empty")
 	}

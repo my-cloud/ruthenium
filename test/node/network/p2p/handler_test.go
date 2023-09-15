@@ -188,12 +188,13 @@ func Test_Handle_BlockRequest_BlockCalled(t *testing.T) {
 	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
 }
 
-func Test_Handle_BlocksRequest_BlocksCalled(t *testing.T) {
+func Test_Handle_BlocksRequest_LastBlocksCalled(t *testing.T) {
 	// Arrange
 	blockchainMock := new(protocoltest.BlockchainMock)
-	blockchainMock.BlocksFunc = func() []*network.BlockResponse { return nil }
+	blockchainMock.BlocksFunc = func(uint64) []*network.BlockResponse { return nil }
 	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
-	data, err := json.Marshal(p2p.GetBlocks)
+	var index uint64 = 0
+	data, err := json.Marshal(network.BlocksRequest{StartingBlockHeight: &index})
 	if err != nil {
 		return
 	}
@@ -205,27 +206,6 @@ func Test_Handle_BlocksRequest_BlocksCalled(t *testing.T) {
 
 	// Assert
 	isMethodCalled := len(blockchainMock.BlocksCalls()) == 1
-	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
-}
-
-func Test_Handle_LastBlocksRequest_LastBlocksCalled(t *testing.T) {
-	// Arrange
-	blockchainMock := new(protocoltest.BlockchainMock)
-	blockchainMock.LastBlocksFunc = func(uint64) []*network.BlockResponse { return nil }
-	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
-	var index uint64 = 0
-	data, err := json.Marshal(network.LastBlocksRequest{StartingBlockHeight: &index})
-	if err != nil {
-		return
-	}
-	req := gp2p.Data{}
-	req.SetBytes(data)
-
-	// Act
-	_, _ = handler.Handle(context.TODO(), req)
-
-	// Assert
-	isMethodCalled := len(blockchainMock.LastBlocksCalls()) == 1
 	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
 }
 

@@ -24,11 +24,8 @@ var _ network.Neighbor = &NeighborMock{}
 //			GetBlockFunc: func(blockHeight uint64) (*BlockResponse, error) {
 //				panic("mock out the GetBlock method")
 //			},
-//			GetBlocksFunc: func() ([]*BlockResponse, error) {
+//			GetBlocksFunc: func(startingBlockHeight uint64) ([]*BlockResponse, error) {
 //				panic("mock out the GetBlocks method")
-//			},
-//			GetLastBlocksFunc: func(startingBlockHeight uint64) ([]*BlockResponse, error) {
-//				panic("mock out the GetLastBlocks method")
 //			},
 //			GetTransactionsFunc: func() ([]TransactionResponse, error) {
 //				panic("mock out the GetTransactions method")
@@ -56,10 +53,7 @@ type NeighborMock struct {
 	GetBlockFunc func(blockHeight uint64) (*network.BlockResponse, error)
 
 	// GetBlocksFunc mocks the GetBlocks method.
-	GetBlocksFunc func() ([]*network.BlockResponse, error)
-
-	// GetLastBlocksFunc mocks the GetLastBlocks method.
-	GetLastBlocksFunc func(startingBlockHeight uint64) ([]*network.BlockResponse, error)
+	GetBlocksFunc func(startingBlockHeight uint64) ([]*network.BlockResponse, error)
 
 	// GetTransactionsFunc mocks the GetTransactions method.
 	GetTransactionsFunc func() ([]network.TransactionResponse, error)
@@ -87,9 +81,6 @@ type NeighborMock struct {
 		}
 		// GetBlocks holds details about calls to the GetBlocks method.
 		GetBlocks []struct {
-		}
-		// GetLastBlocks holds details about calls to the GetLastBlocks method.
-		GetLastBlocks []struct {
 			// StartingBlockHeight is the startingBlockHeight argument value.
 			StartingBlockHeight uint64
 		}
@@ -113,7 +104,6 @@ type NeighborMock struct {
 	lockAddTransaction  sync.RWMutex
 	lockGetBlock        sync.RWMutex
 	lockGetBlocks       sync.RWMutex
-	lockGetLastBlocks   sync.RWMutex
 	lockGetTransactions sync.RWMutex
 	lockGetUtxos        sync.RWMutex
 	lockSendTargets     sync.RWMutex
@@ -185,16 +175,19 @@ func (mock *NeighborMock) GetBlockCalls() []struct {
 }
 
 // GetBlocks calls GetBlocksFunc.
-func (mock *NeighborMock) GetBlocks() ([]*network.BlockResponse, error) {
+func (mock *NeighborMock) GetBlocks(startingBlockHeight uint64) ([]*network.BlockResponse, error) {
 	if mock.GetBlocksFunc == nil {
 		panic("NeighborMock.GetBlocksFunc: method is nil but Neighbor.GetBlocks was just called")
 	}
 	callInfo := struct {
-	}{}
+		StartingBlockHeight uint64
+	}{
+		StartingBlockHeight: startingBlockHeight,
+	}
 	mock.lockGetBlocks.Lock()
 	mock.calls.GetBlocks = append(mock.calls.GetBlocks, callInfo)
 	mock.lockGetBlocks.Unlock()
-	return mock.GetBlocksFunc()
+	return mock.GetBlocksFunc(startingBlockHeight)
 }
 
 // GetBlocksCalls gets all the calls that were made to GetBlocks.
@@ -202,44 +195,14 @@ func (mock *NeighborMock) GetBlocks() ([]*network.BlockResponse, error) {
 //
 //	len(mockedNeighbor.GetBlocksCalls())
 func (mock *NeighborMock) GetBlocksCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockGetBlocks.RLock()
-	calls = mock.calls.GetBlocks
-	mock.lockGetBlocks.RUnlock()
-	return calls
-}
-
-// GetLastBlocks calls GetLastBlocksFunc.
-func (mock *NeighborMock) GetLastBlocks(startingBlockHeight uint64) ([]*network.BlockResponse, error) {
-	if mock.GetLastBlocksFunc == nil {
-		panic("NeighborMock.GetLastBlocksFunc: method is nil but Neighbor.GetLastBlocks was just called")
-	}
-	callInfo := struct {
-		StartingBlockHeight uint64
-	}{
-		StartingBlockHeight: startingBlockHeight,
-	}
-	mock.lockGetLastBlocks.Lock()
-	mock.calls.GetLastBlocks = append(mock.calls.GetLastBlocks, callInfo)
-	mock.lockGetLastBlocks.Unlock()
-	return mock.GetLastBlocksFunc(startingBlockHeight)
-}
-
-// GetLastBlocksCalls gets all the calls that were made to GetLastBlocks.
-// Check the length with:
-//
-//	len(mockedNeighbor.GetLastBlocksCalls())
-func (mock *NeighborMock) GetLastBlocksCalls() []struct {
 	StartingBlockHeight uint64
 } {
 	var calls []struct {
 		StartingBlockHeight uint64
 	}
-	mock.lockGetLastBlocks.RLock()
-	calls = mock.calls.GetLastBlocks
-	mock.lockGetLastBlocks.RUnlock()
+	mock.lockGetBlocks.RLock()
+	calls = mock.calls.GetBlocks
+	mock.lockGetBlocks.RUnlock()
 	return calls
 }
 

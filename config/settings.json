@@ -1,4 +1,5 @@
 {
+  "blocksCountLimit": 1440,
   "genesisAmountInParticles": 10000000000000,
   "halfLifeInDays": 373.59,
   "incomeBaseInParticles": 50000000000,

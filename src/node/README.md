@@ -39,15 +39,8 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 <details>
 <summary><b>Get blocks</b></summary>
 
-*Description*: Get all the blocks.
-  * **request value:** `GET BLOCKS`
-  * **response value:** Array of [block responses](#block-response)
-</details>
-<details>
-<summary><b>Get last blocks</b></summary>
-
-*Description*: Get the last blocks starting from the given index.
-  * **request value:** [Last blocks request](#last-blocks-request)
+*Description*: Get the blocks starting from the given index (blocks count is limited).
+  * **request value:** [Blocks request](#blocks-request)
   * **response value:** Array of [block responses](#block-response)
 </details>
 
@@ -89,7 +82,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 <details open>
 <summary style="font-size:24px"><b>Schemas</b></summary>
 
-### Last blocks request
+### Blocks request
 <table>
 <th>
 Schema
@@ -104,7 +97,7 @@ Example
 <td>
 
 ```
-LastBlocksRequest {
+BlocksRequest {
   StartingBlockHeight uint64
 }
 ```
@@ -112,8 +105,8 @@ LastBlocksRequest {
 <td>
 
 ```
-The data structure for last blocks request
-  The height of the first of the last blocks
+The data structure for blocks request
+  The blocks first block height
 
 ```
 </td>
