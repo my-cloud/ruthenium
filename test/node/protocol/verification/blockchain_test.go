@@ -43,7 +43,75 @@ func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 	test.Assert(t, err == nil, "error is returned whereas it should not")
 }
 
-func Test_Blocks_ValidParameters_NoErrorLogged(t *testing.T) {
+func Test_Blocks_BlocksCountLimitSetToZero_ReturnsNil(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	settings := config.Settings{
+		GenesisAmountInParticles:    1,
+		HalfLifeInDays:              1,
+		IncomeBaseInParticles:       1,
+		IncomeLimitInParticles:      1,
+		MinimalTransactionFee:       0,
+		ValidationIntervalInSeconds: 1,
+	}
+	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
+
+	// Act
+	blocks := blockchain.Blocks(0)
+
+	// Assert
+	test.Assert(t, len(blocks) == 0, "blocks should be nil")
+}
+
+func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	settings := config.Settings{
+		BlocksCountLimit:            1,
+		GenesisAmountInParticles:    1,
+		HalfLifeInDays:              1,
+		IncomeBaseInParticles:       1,
+		IncomeLimitInParticles:      1,
+		MinimalTransactionFee:       0,
+		ValidationIntervalInSeconds: 1,
+	}
+	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
+
+	// Act
+	blocks := blockchain.Blocks(0)
+
+	// Assert
+	test.Assert(t, len(blocks) == 1, "blocks should contain a single block")
+}
+
+func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsOneBlock(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	settings := config.Settings{
+		BlocksCountLimit:            2,
+		GenesisAmountInParticles:    1,
+		HalfLifeInDays:              1,
+		IncomeBaseInParticles:       1,
+		IncomeLimitInParticles:      1,
+		MinimalTransactionFee:       0,
+		ValidationIntervalInSeconds: 1,
+	}
+	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
+
+	// Act
+	blocks := blockchain.Blocks(0)
+
+	// Assert
+	test.Assert(t, len(blocks) == 1, "blocks should contain a single block")
+}
+
+func Test_AllBlocks_ValidParameters_NoErrorLogged(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	logger := logtest.NewLoggerMock()
@@ -62,7 +130,7 @@ func Test_Blocks_ValidParameters_NoErrorLogged(t *testing.T) {
 	blocks := blockchain.AllBlocks()
 
 	// Assert
-	test.Assert(t, len(blocks) == 1, "blocks don't contain a single block")
+	test.Assert(t, len(blocks) == 1, "blocks should contain a single block")
 }
 
 func Test_UtxosByAddress_UnknownAddress_ReturnsNil(t *testing.T) {

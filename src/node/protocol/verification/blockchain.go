@@ -160,10 +160,10 @@ func (blockchain *Blockchain) Blocks(startingBlockHeight uint64) []*network.Bloc
 	var endingBlockHeight uint64
 	var blocksCount uint64
 	blocksCountLimit := blockchain.settings.BlocksCountLimit
-	if startingBlockHeight > uint64(len(blockchain.blockResponses)) {
+	if startingBlockHeight > uint64(len(blockchain.blockResponses)) || blocksCountLimit == 0 {
 		return nil
-	} else if startingBlockHeight+blocksCountLimit < uint64(len(blockchain.blockResponses)) {
-		endingBlockHeight = startingBlockHeight + blocksCountLimit
+	} else if startingBlockHeight+blocksCountLimit <= uint64(len(blockchain.blockResponses)) {
+		endingBlockHeight = startingBlockHeight + blocksCountLimit - 1
 		blocksCount = blocksCountLimit
 	} else {
 		endingBlockHeight = uint64(len(blockchain.blockResponses))
