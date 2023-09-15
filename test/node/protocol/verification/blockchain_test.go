@@ -146,7 +146,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	blockchain := verification.NewBlockchain(0, genesisTransaction, registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(now-4*validationTimestamp, nil, nil)
 	_ = blockchain.AddBlock(now-3*validationTimestamp, nil, nil)
-	blocks := blockchain.Blocks(0)
+	blocks := blockchain.AllBlocks()
 	genesisBlockHash := blocks[1].PreviousHash
 	blockResponse1 := protocoltest.NewRewardedBlockResponse(genesisBlockHash, now-4*validationTimestamp)
 	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)

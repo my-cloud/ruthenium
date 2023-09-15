@@ -159,11 +159,12 @@ func (blockchain *Blockchain) Blocks(startingBlockHeight uint64) []*network.Bloc
 	defer blockchain.mutex.RUnlock()
 	var endingBlockHeight uint64
 	var blocksCount uint64
+	blocksCountLimit := blockchain.settings.BlocksCountLimit
 	if startingBlockHeight > uint64(len(blockchain.blockResponses)) {
 		return nil
-	} else if startingBlockHeight+1440 < uint64(len(blockchain.blockResponses)) {
-		endingBlockHeight = startingBlockHeight + 1440
-		blocksCount = 1440
+	} else if startingBlockHeight+blocksCountLimit < uint64(len(blockchain.blockResponses)) {
+		endingBlockHeight = startingBlockHeight + blocksCountLimit
+		blocksCount = blocksCountLimit
 	} else {
 		endingBlockHeight = uint64(len(blockchain.blockResponses))
 		blocksCount = uint64(len(blockchain.blockResponses)) - startingBlockHeight
