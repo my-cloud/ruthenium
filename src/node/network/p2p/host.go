@@ -28,7 +28,12 @@ func NewHost(
 
 func (host *Host) Run() error {
 	host.startBlockchain()
-	host.server.SetHandle("dialog", host.handler.Handle)
+	host.server.SetHandle("block", host.handler.HandleBlockRequest)
+	host.server.SetHandle("blocks", host.handler.HandleBlocksRequest)
+	host.server.SetHandle("targets", host.handler.HandleTargetsRequest)
+	host.server.SetHandle("transaction", host.handler.HandleTransactionRequest)
+	host.server.SetHandle("transactions", host.handler.HandleTransactionsRequest)
+	host.server.SetHandle("utxos", host.handler.HandleUtxosRequest)
 	return host.startServer()
 }
 
