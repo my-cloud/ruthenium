@@ -3,7 +3,7 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
@@ -34,7 +34,13 @@ func (handler *Handler) HandleBlockRequest(_ context.Context, req gp2p.Data) (re
 	res = gp2p.Data{}
 	data := req.GetBytes()
 	if err = json.Unmarshal(data, &blockHeight); err == nil {
-		res = handler.block(blockHeight)
+		blockResponse := handler.blockchain.Block(blockHeight)
+		marshaledBlock, err := json.Marshal(blockResponse)
+		if err != nil {
+			handler.logger.Error(err.Error())
+			return
+		}
+		res.SetBytes(marshaledBlock)
 	} else {
 		handler.logger.Debug(BadRequest)
 	}
@@ -46,7 +52,13 @@ func (handler *Handler) HandleBlocksRequest(_ context.Context, req gp2p.Data) (r
 	res = gp2p.Data{}
 	data := req.GetBytes()
 	if err = json.Unmarshal(data, &startingBlockHeight); err == nil {
-		res = handler.blocks(startingBlockHeight)
+		blockResponses := handler.blockchain.Blocks(startingBlockHeight)
+		marshaledBlocks, err := json.Marshal(blockResponses)
+		if err != nil {
+			handler.logger.Error(err.Error())
+			return
+		}
+		res.SetBytes(marshaledBlocks)
 	} else {
 		handler.logger.Debug(BadRequest)
 	}
@@ -58,7 +70,14 @@ func (handler *Handler) HandleTargetsRequest(_ context.Context, req gp2p.Data) (
 	res = gp2p.Data{}
 	data := req.GetBytes()
 	if err = json.Unmarshal(data, &targetsRequest); err == nil {
-		handler.addTargets(targetsRequest)
+		for _, request := range targetsRequest {
+			if request.IsInvalid() {
+				err = errors.New("invalid targets request")
+				handler.logger.Error(err.Error())
+				return
+			}
+		}
+		go handler.synchronizer.AddTargets(targetsRequest)
 	} else {
 		handler.logger.Debug(BadRequest)
 	}
@@ -81,7 +100,7 @@ func (handler *Handler) HandleTransactionsRequest(_ context.Context, _ gp2p.Data
 	transactionResponses := handler.transactionsPool.Transactions()
 	data, err := json.Marshal(transactionResponses)
 	if err != nil {
-		handler.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
+		handler.logger.Error(err.Error())
 		return
 	}
 	res.SetBytes(data)
@@ -93,52 +112,15 @@ func (handler *Handler) HandleUtxosRequest(_ context.Context, req gp2p.Data) (re
 	var address string
 	data := req.GetBytes()
 	if err = json.Unmarshal(data, &address); err == nil {
-		res = handler.utxos(address)
+		utxosByAddress := handler.blockchain.UtxosByAddress(address)
+		marshaledUtxos, err := json.Marshal(utxosByAddress)
+		if err != nil {
+			handler.logger.Error(err.Error())
+			return
+		}
+		res.SetBytes(marshaledUtxos)
 	} else {
 		handler.logger.Debug(BadRequest)
 	}
-	return
-}
-
-func (handler *Handler) addTargets(targetsRequest []network.TargetRequest) {
-	for _, request := range targetsRequest {
-		if request.IsInvalid() {
-			handler.logger.Error("invalid targets request")
-			return
-		}
-	}
-	go handler.synchronizer.AddTargets(targetsRequest)
-}
-
-func (handler *Handler) utxos(address string) (res gp2p.Data) {
-	utxosByAddress := handler.blockchain.UtxosByAddress(address)
-	data, err := json.Marshal(utxosByAddress)
-	if err != nil {
-		handler.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
-		return
-	}
-	res.SetBytes(data)
-	return
-}
-
-func (handler *Handler) block(blockHeight uint64) (res gp2p.Data) {
-	blockResponse := handler.blockchain.Block(blockHeight)
-	data, err := json.Marshal(blockResponse)
-	if err != nil {
-		handler.logger.Error(fmt.Errorf("failed to get block: %w", err).Error())
-		return
-	}
-	res.SetBytes(data)
-	return
-}
-
-func (handler *Handler) blocks(startingBlockHeight uint64) (res gp2p.Data) {
-	blockResponses := handler.blockchain.Blocks(startingBlockHeight)
-	data, err := json.Marshal(blockResponses)
-	if err != nil {
-		handler.logger.Error(fmt.Errorf("failed to get last blocks: %w", err).Error())
-		return
-	}
-	res.SetBytes(data)
 	return
 }
