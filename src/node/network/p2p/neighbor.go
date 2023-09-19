@@ -33,8 +33,7 @@ func (neighbor *Neighbor) Target() string {
 }
 
 func (neighbor *Neighbor) GetBlock(blockHeight uint64) (blockResponse *network.BlockResponse, err error) {
-	request := network.BlockRequest{BlockHeight: &blockHeight}
-	res, err := neighbor.sendRequest("block", request)
+	res, err := neighbor.sendRequest("block", blockHeight)
 	if err == nil {
 		data := res.GetBytes()
 		err = json.Unmarshal(data, &blockResponse)
@@ -43,8 +42,7 @@ func (neighbor *Neighbor) GetBlock(blockHeight uint64) (blockResponse *network.B
 }
 
 func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) (blockResponses []*network.BlockResponse, err error) {
-	request := network.BlocksRequest{StartingBlockHeight: &startingBlockHeight}
-	res, err := neighbor.sendRequest("blocks", request)
+	res, err := neighbor.sendRequest("blocks", startingBlockHeight)
 	if err == nil {
 		data := res.GetBytes()
 		err = json.Unmarshal(data, &blockResponses)
@@ -63,7 +61,7 @@ func (neighbor *Neighbor) AddTransaction(request network.TransactionRequest) (er
 }
 
 func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.TransactionResponse, err error) {
-	res, err := neighbor.sendRequest("transactions", GetTransactions)
+	res, err := neighbor.client.Send("transactions", gp2p.Data{})
 	if err != nil {
 		return
 	}
@@ -76,8 +74,7 @@ func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.Tran
 }
 
 func (neighbor *Neighbor) GetUtxos(address string) (utxos []*network.UtxoResponse, err error) {
-	request := network.UtxosRequest{Address: &address}
-	res, err := neighbor.sendRequest("utxos", request)
+	res, err := neighbor.sendRequest("utxos", address)
 	if err != nil {
 		return
 	}

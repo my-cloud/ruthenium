@@ -11,10 +11,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 )
 
-const (
-	GetTransactions = "GET TRANSACTIONS"
-	BadRequest      = "bad request"
-)
+const BadRequest = "bad request"
 
 type Handler struct {
 	blockchain       protocol.Blockchain
@@ -33,11 +30,11 @@ func NewHandler(blockchain protocol.Blockchain,
 }
 
 func (handler *Handler) HandleBlockRequest(_ context.Context, req gp2p.Data) (res gp2p.Data, err error) {
-	var blockRequest network.BlockRequest
+	var blockHeight uint64
 	res = gp2p.Data{}
 	data := req.GetBytes()
-	if err = json.Unmarshal(data, &blockRequest); err == nil && !blockRequest.IsInvalid() {
-		res = handler.block(&blockRequest)
+	if err = json.Unmarshal(data, &blockHeight); err == nil {
+		res = handler.block(blockHeight)
 	} else {
 		handler.logger.Debug(BadRequest)
 	}
@@ -45,11 +42,11 @@ func (handler *Handler) HandleBlockRequest(_ context.Context, req gp2p.Data) (re
 }
 
 func (handler *Handler) HandleBlocksRequest(_ context.Context, req gp2p.Data) (res gp2p.Data, err error) {
-	var blocksRequest network.BlocksRequest
+	var startingBlockHeight uint64
 	res = gp2p.Data{}
 	data := req.GetBytes()
-	if err = json.Unmarshal(data, &blocksRequest); err == nil && !blocksRequest.IsInvalid() {
-		res = handler.blocks(&blocksRequest)
+	if err = json.Unmarshal(data, &startingBlockHeight); err == nil {
+		res = handler.blocks(startingBlockHeight)
 	} else {
 		handler.logger.Debug(BadRequest)
 	}
@@ -80,25 +77,23 @@ func (handler *Handler) HandleTransactionRequest(_ context.Context, req gp2p.Dat
 	return
 }
 
-func (handler *Handler) HandleTransactionsRequest(_ context.Context, req gp2p.Data) (res gp2p.Data, err error) {
-	var requestString string
-	res = gp2p.Data{}
-	data := req.GetBytes()
-	err = json.Unmarshal(data, &requestString) // TODO remove useless request string
-	if err == nil && requestString == GetTransactions {
-		res = handler.transactions()
-	} else {
-		handler.logger.Debug(BadRequest)
+func (handler *Handler) HandleTransactionsRequest(_ context.Context, _ gp2p.Data) (res gp2p.Data, err error) {
+	transactionResponses := handler.transactionsPool.Transactions()
+	data, err := json.Marshal(transactionResponses)
+	if err != nil {
+		handler.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
+		return
 	}
+	res.SetBytes(data)
 	return
 }
 
 func (handler *Handler) HandleUtxosRequest(_ context.Context, req gp2p.Data) (res gp2p.Data, err error) {
-	var utxosRequest network.UtxosRequest
 	res = gp2p.Data{}
+	var address string
 	data := req.GetBytes()
-	if err = json.Unmarshal(data, &utxosRequest); err == nil && !utxosRequest.IsInvalid() {
-		res = handler.utxos(&utxosRequest)
+	if err = json.Unmarshal(data, &address); err == nil {
+		res = handler.utxos(address)
 	} else {
 		handler.logger.Debug(BadRequest)
 	}
@@ -115,8 +110,8 @@ func (handler *Handler) addTargets(targetsRequest []network.TargetRequest) {
 	go handler.synchronizer.AddTargets(targetsRequest)
 }
 
-func (handler *Handler) utxos(request *network.UtxosRequest) (res gp2p.Data) {
-	utxosByAddress := handler.blockchain.UtxosByAddress(*request.Address)
+func (handler *Handler) utxos(address string) (res gp2p.Data) {
+	utxosByAddress := handler.blockchain.UtxosByAddress(address)
 	data, err := json.Marshal(utxosByAddress)
 	if err != nil {
 		handler.logger.Error(fmt.Errorf("failed to get amount: %w", err).Error())
@@ -126,8 +121,8 @@ func (handler *Handler) utxos(request *network.UtxosRequest) (res gp2p.Data) {
 	return
 }
 
-func (handler *Handler) block(request *network.BlockRequest) (res gp2p.Data) {
-	blockResponse := handler.blockchain.Block(*request.BlockHeight)
+func (handler *Handler) block(blockHeight uint64) (res gp2p.Data) {
+	blockResponse := handler.blockchain.Block(blockHeight)
 	data, err := json.Marshal(blockResponse)
 	if err != nil {
 		handler.logger.Error(fmt.Errorf("failed to get block: %w", err).Error())
@@ -137,22 +132,11 @@ func (handler *Handler) block(request *network.BlockRequest) (res gp2p.Data) {
 	return
 }
 
-func (handler *Handler) blocks(request *network.BlocksRequest) (res gp2p.Data) {
-	blockResponses := handler.blockchain.Blocks(*request.StartingBlockHeight)
+func (handler *Handler) blocks(startingBlockHeight uint64) (res gp2p.Data) {
+	blockResponses := handler.blockchain.Blocks(startingBlockHeight)
 	data, err := json.Marshal(blockResponses)
 	if err != nil {
 		handler.logger.Error(fmt.Errorf("failed to get last blocks: %w", err).Error())
-		return
-	}
-	res.SetBytes(data)
-	return
-}
-
-func (handler *Handler) transactions() (res gp2p.Data) {
-	transactionResponses := handler.transactionsPool.Transactions()
-	data, err := json.Marshal(transactionResponses)
-	if err != nil {
-		handler.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
 		return
 	}
 	res.SetBytes(data)
