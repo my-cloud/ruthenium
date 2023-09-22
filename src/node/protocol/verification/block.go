@@ -15,7 +15,6 @@ type Block struct {
 	transactions               []*validation.Transaction
 	addedRegisteredAddresses   []string
 	removedRegisteredAddresses []string
-	registeredAddresses        []string
 }
 
 func NewBlockResponse(timestamp int64, previousHash [32]byte, transactions []*network.TransactionResponse, addedRegisteredAddresses []string, removedRegisteredAddresses []string) *network.BlockResponse {
@@ -28,7 +27,7 @@ func NewBlockResponse(timestamp int64, previousHash [32]byte, transactions []*ne
 	}
 }
 
-func NewBlockFromResponse(block *network.BlockResponse, lastRegisteredAddresses []string) (*Block, error) {
+func NewBlockFromResponse(block *network.BlockResponse) (*Block, error) {
 	var transactions []*validation.Transaction
 	for _, transactionResponse := range block.Transactions {
 		if transactionResponse == nil {
@@ -40,27 +39,12 @@ func NewBlockFromResponse(block *network.BlockResponse, lastRegisteredAddresses 
 		}
 		transactions = append(transactions, transaction)
 	}
-	cleanedAddresses := lastRegisteredAddresses
-	for _, address := range block.RemovedRegisteredAddresses {
-		removeAddress(cleanedAddresses, address)
-	}
-	registeredAddressesMap := make(map[string]bool)
-	for _, address := range append(lastRegisteredAddresses, block.AddedRegisteredAddresses...) {
-		if _, ok := registeredAddressesMap[address]; !ok {
-			registeredAddressesMap[address] = false
-		}
-	}
-	var registeredAddresses []string
-	for address := range registeredAddressesMap {
-		registeredAddresses = append(registeredAddresses, address)
-	}
 	return &Block{
 		block.Timestamp,
 		block.PreviousHash,
 		transactions,
 		block.AddedRegisteredAddresses,
 		block.RemovedRegisteredAddresses,
-		registeredAddresses,
 	}, nil
 }
 
@@ -77,8 +61,8 @@ func (block *Block) GetResponse() *network.BlockResponse {
 		Timestamp:                  block.timestamp,
 		PreviousHash:               block.previousHash,
 		Transactions:               transactions,
-		AddedRegisteredAddresses:   block.registeredAddresses,
-		RemovedRegisteredAddresses: block.registeredAddresses,
+		AddedRegisteredAddresses:   block.addedRegisteredAddresses,
+		RemovedRegisteredAddresses: block.removedRegisteredAddresses,
 	}
 }
 
@@ -110,10 +94,6 @@ func (block *Block) MarshalJSON() ([]byte, error) {
 
 func (block *Block) PreviousHash() [32]byte {
 	return block.previousHash
-}
-
-func (block *Block) RegisteredAddresses() []string {
-	return block.registeredAddresses
 }
 
 func (block *Block) RemovedRegisteredAddresses() []string {
