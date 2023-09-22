@@ -29,15 +29,14 @@ type Blockchain struct {
 	logger                log.Logger
 }
 
-func NewBlockchain(genesisTimestamp int64, genesisTransaction *network.TransactionResponse, registry protocol.Registry, settings config.Settings, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+func NewBlockchain(registry protocol.Registry, settings config.Settings, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
 	validationTimestamp := settings.ValidationIntervalInSeconds * time.Second.Nanoseconds()
 	hoursADay := 24.
 	halfLifeInNanoseconds := settings.HalfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
 	utxosByAddress := make(map[string][]*network.UtxoResponse)
 	utxosById := make(map[string][]*network.UtxoResponse)
 	registeredAddresses := make(map[string]bool)
-	blockchain := newBlockchain(nil, genesisTimestamp, halfLifeInNanoseconds, registeredAddresses, registry, settings, synchronizer, utxosByAddress, utxosById, validationTimestamp, logger)
-	blockchain.addGenesisBlock(genesisTransaction)
+	blockchain := newBlockchain(nil, 0, halfLifeInNanoseconds, registeredAddresses, registry, settings, synchronizer, utxosByAddress, utxosById, validationTimestamp, logger)
 	return blockchain
 }
 
@@ -434,25 +433,26 @@ func (blockchain *Blockchain) updateRegisteredAddresses(addedRegisteredAddresses
 	}
 }
 
-func (blockchain *Blockchain) addGenesisBlock(genesisTransaction *network.TransactionResponse) {
-	var transactions []*network.TransactionResponse
-	var addedAddresses []string
-	if genesisTransaction != nil {
-		transactions = []*network.TransactionResponse{genesisTransaction}
-		addedAddresses = []string{genesisTransaction.Outputs[0].Address}
-	}
-	blockResponse := NewBlockResponse(blockchain.genesisTimestamp, [32]byte{}, transactions, addedAddresses, nil)
-	block, err := NewBlockFromResponse(blockResponse)
-	if err != nil {
-		blockchain.logger.Error(fmt.Errorf("unable to instantiate block: %w", err).Error())
-		return
-	}
-	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
-	blockchain.blocks = append(blockchain.blocks, block)
-}
+//
+//func (blockchain *Blockchain) addGenesisBlock(genesisTransaction *network.TransactionResponse) {
+//	var transactions []*network.TransactionResponse
+//	var addedAddresses []string
+//	if genesisTransaction != nil {
+//		transactions = []*network.TransactionResponse{genesisTransaction}
+//		addedAddresses = []string{genesisTransaction.Outputs[0].Address}
+//	}
+//	blockResponse := NewBlockResponse(blockchain.genesisTimestamp, [32]byte{}, transactions, addedAddresses, nil)
+//	block, err := NewBlockFromResponse(blockResponse)
+//	if err != nil {
+//		blockchain.logger.Error(fmt.Errorf("unable to instantiate block: %w", err).Error())
+//		return
+//	}
+//	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
+//	blockchain.blocks = append(blockchain.blocks, block)
+//}
 
 func (blockchain *Blockchain) isEmpty() bool {
-	return blockchain.blocks == nil
+	return len(blockchain.blocks) == 0
 }
 
 func (blockchain *Blockchain) sortByBlocksLength(selectedTargets []string, blocksByTarget map[string][]*Block) {

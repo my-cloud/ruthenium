@@ -138,7 +138,7 @@ func Test_UtxosByAddress_UnknownAddress_ReturnsNil(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	genesisValidatorAddress := ""
 	var genesisAmount uint64 = 0
-	genesisTransaction, _ := validation.NewGenesisTransaction(genesisValidatorAddress, 0, genesisAmount)
+	genesisTransaction, _ := validation.NewRewardTransaction(genesisValidatorAddress, 0, genesisAmount)
 	settings := config.Settings{
 		GenesisAmountInParticles:    genesisAmount,
 		HalfLifeInDays:              1,
@@ -164,7 +164,7 @@ func Test_UtxosByAddress_GenesisValidator_ReturnsGenesisUtxo(t *testing.T) {
 	synchronizer := new(networktest.SynchronizerMock)
 	var genesisAmount uint64 = 1
 	genesisValidatorAddress := ""
-	genesisTransaction, _ := validation.NewGenesisTransaction(genesisValidatorAddress, 0, genesisAmount)
+	genesisTransaction, _ := validation.NewRewardTransaction(genesisValidatorAddress, 0, genesisAmount)
 	settings := config.Settings{
 		GenesisAmountInParticles:    genesisAmount,
 		HalfLifeInDays:              1,
@@ -198,7 +198,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	}
 	address := test.Address
 	var genesisAmount uint64 = 1
-	genesisTransaction, _ := validation.NewGenesisTransaction(address, 0, genesisAmount)
+	genesisTransaction, _ := validation.NewRewardTransaction(address, 0, genesisAmount)
 	var transactionFee uint64 = 0
 	var validationIntervalInSeconds int64 = 1
 	settings := config.Settings{

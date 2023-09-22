@@ -71,14 +71,8 @@ func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *
 	watch := tick.NewWatch()
 	synchronizer := createSynchronizer(parser, *seedsPath, *ip, *port, settings.MaxOutboundsCount, watch, logger)
 	validationTimer := time.Duration(settings.ValidationIntervalInSeconds) * time.Second
-	now := watch.Now()
-	genesisTimestamp := now.Truncate(validationTimer).Add(validationTimer).UnixNano()
-	genesisTransaction, err := validation.NewGenesisTransaction(address, genesisTimestamp, settings.GenesisAmountInParticles)
-	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to create genesis transaction: %w", err).Error())
-	}
-	blockchain := verification.NewBlockchain(genesisTimestamp, genesisTransaction, registry, settings, synchronizer, logger)
-	transactionsPool := validation.NewTransactionsPool(blockchain, settings.MinimalTransactionFee, synchronizer, address, validationTimer, logger)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	transactionsPool := validation.NewTransactionsPool(blockchain, settings.GenesisAmountInParticles, settings.MinimalTransactionFee, synchronizer, address, validationTimer, logger)
 	synchronizationTimer := time.Duration(settings.SynchronizationIntervalInSeconds) * time.Second
 	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, synchronizationTimer, 1, 0)
 	validationEngine := tick.NewEngine(transactionsPool.Validate, watch, validationTimer, 1, 0)

@@ -18,10 +18,6 @@ type Transaction struct {
 	rewardValue            uint64
 }
 
-func NewGenesisTransaction(address string, timestamp int64, value uint64) (*network.TransactionResponse, error) {
-	return newTransactionResponse(address, true, timestamp, value)
-}
-
 func NewRewardTransaction(address string, timestamp int64, value uint64) (*network.TransactionResponse, error) {
 	return newTransactionResponse(address, false, timestamp, value)
 }

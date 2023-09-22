@@ -42,9 +42,7 @@ func (host *Host) startBlockchain() {
 	host.logger.Info("neighbors are synchronized, updating the blockchain...")
 	go host.synchronizationEngine.Start()
 	host.verificationEngine.Do()
-	host.logger.Info("the blockchain is now up to date, waiting for validating the next block...")
-	host.validationEngine.Do()
-	host.logger.Info("first block validation done, the node is now fully operational")
+	host.logger.Info("the blockchain is now up to date, starting validation...")
 	go host.validationEngine.Start()
 	go host.verificationEngine.Start()
 }

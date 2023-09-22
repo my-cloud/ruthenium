@@ -19,6 +19,7 @@ type TransactionsPool struct {
 	mutex                sync.RWMutex
 
 	blockchain            protocol.Blockchain
+	genesisAmount         uint64
 	minimalTransactionFee uint64
 	synchronizer          network.Synchronizer
 	validatorAddress      string
@@ -29,9 +30,10 @@ type TransactionsPool struct {
 	logger log.Logger
 }
 
-func NewTransactionsPool(blockchain protocol.Blockchain, minimalTransactionFee uint64, synchronizer network.Synchronizer, validatorAddress string, validationTimer time.Duration, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain protocol.Blockchain, genesisAmount uint64, minimalTransactionFee uint64, synchronizer network.Synchronizer, validatorAddress string, validationTimer time.Duration, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blockchain = blockchain
+	pool.genesisAmount = genesisAmount
 	pool.minimalTransactionFee = minimalTransactionFee
 	pool.synchronizer = synchronizer
 	pool.validatorAddress = validatorAddress
@@ -68,7 +70,6 @@ func (pool *TransactionsPool) Transactions() []*network.TransactionResponse {
 func (pool *TransactionsPool) Validate(timestamp int64) {
 	blockchainCopy := pool.blockchain.Copy()
 	blockResponses := blockchainCopy.AllBlocks()
-	lastBlockResponse := blockResponses[len(blockResponses)-1]
 	err := blockchainCopy.AddBlock(timestamp, nil, nil)
 	if err != nil {
 		pool.logger.Error("failed to add temporary block")
@@ -144,7 +145,10 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			}
 		}
 	}
-	if lastBlockResponse.Timestamp == timestamp {
+	if len(blockResponses) == 0 {
+		reward += pool.genesisAmount
+		newAddresses = append(newAddresses, pool.validatorAddress)
+	} else if blockResponses[len(blockResponses)-1].Timestamp == timestamp {
 		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
 		return
 	}
@@ -170,6 +174,9 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		return
 	}
 	pool.clear()
+	if len(blockResponses) == 0 {
+		pool.logger.Info("first block validation done, the node is now fully operational")
+	}
 	pool.logger.Debug(fmt.Sprintf("reward: %d", reward))
 }
 

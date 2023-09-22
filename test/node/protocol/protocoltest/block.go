@@ -6,7 +6,7 @@ import (
 )
 
 func NewGenesisBlockResponse(validatorWalletAddress string, genesisValue uint64) *network.BlockResponse {
-	genesisTransaction, _ := validation.NewGenesisTransaction(validatorWalletAddress, 0, genesisValue)
+	genesisTransaction, _ := validation.NewRewardTransaction(validatorWalletAddress, 0, genesisValue)
 	return &network.BlockResponse{
 		Timestamp:                  0,
 		PreviousHash:               [32]byte{},
