@@ -162,11 +162,10 @@
                     "has_income": isIncomeUpdateRequested,
                     "value": response.rest,
                 }
-                const dateNow = Math.floor(Date.now() * 1000000);
                 const transactionRequest = {
                     "inputs": inputs,
                     "outputs": [spend, rest],
-                    "timestamp": dateNow,
+                    "timestamp": response.timestamp,
                 };
 
                 $.ajax({

@@ -121,10 +121,11 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 				}
 			}
 		}
-		rest := inputsValue - value - handler.minimalTransactionFee
+		rest := inputsValue - targetValue
 		response := &TransactionInfoResponse{
-			Rest:  rest,
-			Utxos: selectedUtxos,
+			Rest:      rest,
+			Utxos:     selectedUtxos,
+			Timestamp: now,
 		}
 		marshaledResponse, err := json.Marshal(response)
 		if err != nil {

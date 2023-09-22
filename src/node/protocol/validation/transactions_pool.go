@@ -145,14 +145,16 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			}
 		}
 	}
+	var hasIncome bool
 	if len(blockResponses) == 0 {
 		reward += pool.genesisAmount
 		newAddresses = append(newAddresses, pool.validatorAddress)
+		hasIncome = true
 	} else if blockResponses[len(blockResponses)-1].Timestamp == timestamp {
 		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
 		return
 	}
-	rewardTransaction, err := NewRewardTransaction(pool.validatorAddress, timestamp, reward)
+	rewardTransaction, err := NewRewardTransaction(pool.validatorAddress, hasIncome, timestamp, reward)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("unable to create block, failed to create reward transaction: %w", err).Error())
 		return

@@ -4,18 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
+	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"net/http"
+	"time"
 )
 
 type Handler struct {
-	host   network.Neighbor
-	logger log.Logger
+	host                network.Neighbor
+	validationTimestamp int64
+	watch               clock.Watch
+	logger              log.Logger
 }
 
-func NewHandler(host network.Neighbor, logger log.Logger) *Handler {
-	return &Handler{host, logger}
+func NewHandler(host network.Neighbor, validationTimestamp int64, watch clock.Watch, logger log.Logger) *Handler {
+	return &Handler{host, validationTimestamp, watch, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -38,6 +42,23 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			handler.logger.Error(errorMessage)
 			writer.WriteHeader(http.StatusBadRequest)
 			jsonWriter.Write(errorMessage)
+			return
+		}
+		genesisBlock, err := handler.host.GetBlock(0)
+		if err != nil || genesisBlock == nil {
+			handler.logger.Error(fmt.Errorf("failed to get genesis block: %w", err).Error())
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		transactionTimestamp := *transactionRequest.Timestamp
+		expectedNextBlockHeight := (transactionTimestamp-genesisBlock.Timestamp)/handler.validationTimestamp + 1
+		expectedNextBlockTimestamp := genesisBlock.Timestamp + expectedNextBlockHeight*handler.validationTimestamp
+		transactionReceptionTimestamp := handler.watch.Now().UnixNano() + time.Second.Nanoseconds()
+		nextBlockHeight := (transactionReceptionTimestamp-genesisBlock.Timestamp)/handler.validationTimestamp + 1
+		nextBlockTimestamp := genesisBlock.Timestamp + nextBlockHeight*handler.validationTimestamp
+		if nextBlockTimestamp > expectedNextBlockTimestamp {
+			handler.logger.Error("a new block was created during the transaction")
+			writer.WriteHeader(http.StatusConflict)
 			return
 		}
 		err = handler.host.AddTransaction(transactionRequest)
