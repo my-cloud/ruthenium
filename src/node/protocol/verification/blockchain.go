@@ -19,6 +19,7 @@ type Blockchain struct {
 	genesisTimestamp      int64
 	halfLifeInNanoseconds float64
 	mutex                 sync.RWMutex
+	registeredAddresses   map[string]bool
 	registry              protocol.Registry
 	synchronizer          network.Synchronizer
 	settings              config.Settings
@@ -34,16 +35,18 @@ func NewBlockchain(genesisTimestamp int64, genesisTransaction *network.Transacti
 	halfLifeInNanoseconds := settings.HalfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
 	utxosByAddress := make(map[string][]*network.UtxoResponse)
 	utxosById := make(map[string][]*network.UtxoResponse)
-	blockchain := newBlockchain(nil, genesisTimestamp, halfLifeInNanoseconds, registry, settings, synchronizer, utxosByAddress, utxosById, validationTimestamp, logger)
+	registeredAddresses := make(map[string]bool)
+	blockchain := newBlockchain(nil, genesisTimestamp, halfLifeInNanoseconds, registeredAddresses, registry, settings, synchronizer, utxosByAddress, utxosById, validationTimestamp, logger)
 	blockchain.addGenesisBlock(genesisTransaction)
 	return blockchain
 }
 
-func newBlockchain(blockResponses []*network.BlockResponse, genesisTimestamp int64, halfLifeInNanoseconds float64, registry protocol.Registry, settings config.Settings, synchronizer network.Synchronizer, utxosByAddress map[string][]*network.UtxoResponse, utxosById map[string][]*network.UtxoResponse, validationTimestamp int64, logger log.Logger) *Blockchain {
+func newBlockchain(blockResponses []*network.BlockResponse, genesisTimestamp int64, halfLifeInNanoseconds float64, registeredAddresses map[string]bool, registry protocol.Registry, settings config.Settings, synchronizer network.Synchronizer, utxosByAddress map[string][]*network.UtxoResponse, utxosById map[string][]*network.UtxoResponse, validationTimestamp int64, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blockResponses = blockResponses
 	blockchain.genesisTimestamp = genesisTimestamp
 	blockchain.halfLifeInNanoseconds = halfLifeInNanoseconds
+	blockchain.registeredAddresses = registeredAddresses
 	blockchain.registry = registry
 	blockchain.settings = settings
 	blockchain.synchronizer = synchronizer
@@ -67,6 +70,10 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*network.
 			return fmt.Errorf("unable to calculate last block hash: %w", err)
 		}
 		lastRegisteredAddresses = previousBlock.RegisteredAddresses()
+		err = blockchain.verifyRegisteredAddresses(previousBlock)
+		if err != nil {
+			return fmt.Errorf("failed to verify registered addresses: %w", err)
+		}
 	}
 	registeredAddressesMap := make(map[string]bool)
 	for _, address := range append(lastRegisteredAddresses, newAddresses...) {
@@ -134,7 +141,8 @@ func (blockchain *Blockchain) Copy() protocol.Blockchain {
 	copy(blockResponses, blockchain.blockResponses)
 	utxosByAddress := copyUtxosMap(blockchain.utxosByAddress)
 	utxosById := copyUtxosMap(blockchain.utxosById)
-	blockchainCopy := newBlockchain(blockResponses, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, blockchain.registry, blockchain.settings, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.validationTimestamp, blockchain.logger)
+	registeredAddresses := copyRegisteredAddressesMap(blockchain.registeredAddresses)
+	blockchainCopy := newBlockchain(blockResponses, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, registeredAddresses, blockchain.registry, blockchain.settings, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.validationTimestamp, blockchain.logger)
 	blockchainCopy.blocks = blocks
 	return blockchainCopy
 }
@@ -366,6 +374,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		defer blockchain.mutex.Unlock()
 		var newBlocks []*network.BlockResponse
 		if isFork {
+			blockchain.registeredAddresses = make(map[string]bool)
 			blockchain.utxosById = make(map[string][]*network.UtxoResponse)
 			blockchain.utxosByAddress = make(map[string][]*network.UtxoResponse)
 			blockchain.genesisTimestamp = selectedBlockResponses[0].Timestamp
@@ -381,6 +390,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 				blockchain.logger.Debug("verification done: blockchain kept")
 				return
 			}
+			blockchain.updateRegisteredAddresses(newBlock.RemovedRegisteredAddresses, newBlock.AddedRegisteredAddresses)
 		}
 		blockchain.blockResponses = selectedBlockResponses
 		blockchain.blocks = selectedBlocks
@@ -404,6 +414,7 @@ func (blockchain *Blockchain) addBlock(timestamp int64, transactions []*network.
 		if err != nil {
 			return fmt.Errorf("failed to add UTXO: %w", err)
 		}
+		blockchain.updateRegisteredAddresses(blockchain.blockResponses[blockHeight].RemovedRegisteredAddresses, blockchain.blockResponses[blockHeight].AddedRegisteredAddresses)
 	}
 	blockResponse := NewBlockResponse(timestamp, previousHash, transactions, addedRegisteredAddresses, removedRegisteredAddresses)
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
@@ -413,6 +424,15 @@ func (blockchain *Blockchain) addBlock(timestamp int64, transactions []*network.
 	}
 	blockchain.blocks = append(blockchain.blocks, block)
 	return nil
+}
+
+func (blockchain *Blockchain) updateRegisteredAddresses(removedRegisteredAddresses []string, addedRegisteredAddresses []string) {
+	for _, address := range removedRegisteredAddresses {
+		delete(blockchain.registeredAddresses, address)
+	}
+	for _, address := range addedRegisteredAddresses {
+		blockchain.registeredAddresses[address] = true
+	}
 }
 
 func (blockchain *Blockchain) addGenesisBlock(genesisTransaction *network.TransactionResponse) {
@@ -498,9 +518,11 @@ func (blockchain *Blockchain) updateUtxos(block *network.BlockResponse, blockHei
 }
 
 func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlockResponses []*network.BlockResponse, lastRegisteredAddresses []string, oldHostBlockResponses []*network.BlockResponse, timestamp int64) ([]*Block, error) {
-	err := blockchain.verifyLastBlock(lastHostBlocks, neighborBlockResponses)
-	if err != nil {
-		return nil, err
+	if neighborBlockResponses[len(neighborBlockResponses)-1].Timestamp == timestamp {
+		err := blockchain.verifyLastBlock(lastHostBlocks, neighborBlockResponses)
+		if err != nil {
+			return nil, err
+		}
 	}
 	previousNeighborBlock, err := NewBlockFromResponse(neighborBlockResponses[0], lastRegisteredAddresses)
 	if err != nil {
@@ -509,14 +531,17 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlockRespo
 	verifiedBlocks := []*Block{previousNeighborBlock}
 	var utxosByAddress map[string][]*network.UtxoResponse
 	var utxosById map[string][]*network.UtxoResponse
+	var registeredAddresses map[string]bool
 	if oldHostBlockResponses == nil {
 		utxosByAddress = make(map[string][]*network.UtxoResponse)
 		utxosById = make(map[string][]*network.UtxoResponse)
+		registeredAddresses = make(map[string]bool)
 	} else {
 		utxosByAddress = copyUtxosMap(blockchain.utxosByAddress)
 		utxosById = copyUtxosMap(blockchain.utxosById)
+		registeredAddresses = copyRegisteredAddressesMap(blockchain.registeredAddresses)
 	}
-	neighborBlockchain := newBlockchain(oldHostBlockResponses, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, blockchain.registry, blockchain.settings, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.validationTimestamp, blockchain.logger)
+	neighborBlockchain := newBlockchain(oldHostBlockResponses, blockchain.genesisTimestamp, blockchain.halfLifeInNanoseconds, registeredAddresses, blockchain.registry, blockchain.settings, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.validationTimestamp, blockchain.logger)
 	for i := 1; i < len(neighborBlockResponses); i++ {
 		neighborBlockResponse := neighborBlockResponses[i]
 		neighborBlock, err := NewBlockFromResponse(neighborBlockResponse, previousNeighborBlock.RegisteredAddresses())
@@ -656,6 +681,36 @@ func (blockchain *Blockchain) verifyLastBlock(lastHostBlocks []*Block, lastNeigh
 		return fmt.Errorf("validator address is not registered in Proof of Humanity registry")
 	}
 	return nil
+}
+
+func (blockchain *Blockchain) verifyRegisteredAddresses(block *Block) error {
+	for _, address := range block.removedRegisteredAddresses {
+		isPohValid, err := blockchain.registry.IsRegistered(address)
+		if err != nil {
+			blockchain.logger.Debug(fmt.Errorf("failed to get proof of humanity for address %s: %w", address, err).Error())
+		}
+		if isPohValid {
+			return fmt.Errorf("a removed address is registered")
+		}
+	}
+	for _, address := range block.removedRegisteredAddresses {
+		isPohValid, err := blockchain.registry.IsRegistered(address)
+		if err != nil {
+			blockchain.logger.Debug(fmt.Errorf("failed to get proof of humanity for address %s: %w", address, err).Error())
+		}
+		if !isPohValid {
+			return fmt.Errorf("an added address is not registered")
+		}
+	}
+	return nil
+}
+
+func copyRegisteredAddressesMap(registeredAddresses map[string]bool) map[string]bool {
+	registeredAddressesCopy := make(map[string]bool, len(registeredAddresses))
+	for address := range registeredAddresses {
+		registeredAddressesCopy[address] = true
+	}
+	return registeredAddressesCopy
 }
 
 func copyUtxosMap(utxosMap map[string][]*network.UtxoResponse) map[string][]*network.UtxoResponse {
