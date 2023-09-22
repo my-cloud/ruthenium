@@ -50,7 +50,7 @@ func main() {
 	halfLifeInNanoseconds := settings.HalfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
 	validationTimestamp := settings.ValidationIntervalInSeconds * time.Second.Nanoseconds()
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
-	http.Handle("/transaction", transaction.NewHandler(host, validationTimestamp, watch, logger))
+	http.Handle("/transaction", transaction.NewHandler(host, logger))
 	http.Handle("/transaction/info", info.NewHandler(host, halfLifeInNanoseconds, settings.IncomeBaseInParticles, settings.IncomeLimitInParticles, settings.MinimalTransactionFee, settings.ParticlesPerToken, validationTimestamp, watch, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/wallet/address", address.NewHandler(logger))
