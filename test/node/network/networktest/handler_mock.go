@@ -20,8 +20,23 @@ var _ network.Handler = &HandlerMock{}
 //
 //		// make and configure a mocked Handler
 //		mockedHandler := &HandlerMock{
-//			HandleFunc: func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
-//				panic("mock out the Handle method")
+//			HandleBlockRequestFunc: func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+//				panic("mock out the HandleBlockRequest method")
+//			},
+//			HandleBlocksRequestFunc: func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+//				panic("mock out the HandleBlocksRequest method")
+//			},
+//			HandleTargetsRequestFunc: func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+//				panic("mock out the HandleTargetsRequest method")
+//			},
+//			HandleTransactionRequestFunc: func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+//				panic("mock out the HandleTransactionRequest method")
+//			},
+//			HandleTransactionsRequestFunc: func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+//				panic("mock out the HandleTransactionsRequest method")
+//			},
+//			HandleUtxosRequestFunc: func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+//				panic("mock out the HandleUtxosRequest method")
 //			},
 //		}
 //
@@ -30,26 +45,81 @@ var _ network.Handler = &HandlerMock{}
 //
 //	}
 type HandlerMock struct {
-	// HandleFunc mocks the Handle method.
-	HandleFunc func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error)
+	// HandleBlockRequestFunc mocks the HandleBlockRequest method.
+	HandleBlockRequestFunc func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error)
+
+	// HandleBlocksRequestFunc mocks the HandleBlocksRequest method.
+	HandleBlocksRequestFunc func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error)
+
+	// HandleTargetsRequestFunc mocks the HandleTargetsRequest method.
+	HandleTargetsRequestFunc func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error)
+
+	// HandleTransactionRequestFunc mocks the HandleTransactionRequest method.
+	HandleTransactionRequestFunc func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error)
+
+	// HandleTransactionsRequestFunc mocks the HandleTransactionsRequest method.
+	HandleTransactionsRequestFunc func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error)
+
+	// HandleUtxosRequestFunc mocks the HandleUtxosRequest method.
+	HandleUtxosRequestFunc func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// Handle holds details about calls to the Handle method.
-		Handle []struct {
+		// HandleBlockRequest holds details about calls to the HandleBlockRequest method.
+		HandleBlockRequest []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// Req is the req argument value.
+			Req gp2p.Data
+		}
+		// HandleBlocksRequest holds details about calls to the HandleBlocksRequest method.
+		HandleBlocksRequest []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// Req is the req argument value.
+			Req gp2p.Data
+		}
+		// HandleTargetsRequest holds details about calls to the HandleTargetsRequest method.
+		HandleTargetsRequest []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// Req is the req argument value.
+			Req gp2p.Data
+		}
+		// HandleTransactionRequest holds details about calls to the HandleTransactionRequest method.
+		HandleTransactionRequest []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// Req is the req argument value.
+			Req gp2p.Data
+		}
+		// HandleTransactionsRequest holds details about calls to the HandleTransactionsRequest method.
+		HandleTransactionsRequest []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// Req is the req argument value.
+			Req gp2p.Data
+		}
+		// HandleUtxosRequest holds details about calls to the HandleUtxosRequest method.
+		HandleUtxosRequest []struct {
 			// ContextMoqParam is the contextMoqParam argument value.
 			ContextMoqParam context.Context
 			// Req is the req argument value.
 			Req gp2p.Data
 		}
 	}
-	lockHandle sync.RWMutex
+	lockHandleBlockRequest        sync.RWMutex
+	lockHandleBlocksRequest       sync.RWMutex
+	lockHandleTargetsRequest      sync.RWMutex
+	lockHandleTransactionRequest  sync.RWMutex
+	lockHandleTransactionsRequest sync.RWMutex
+	lockHandleUtxosRequest        sync.RWMutex
 }
 
-// Handle calls HandleFunc.
-func (mock *HandlerMock) Handle(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
-	if mock.HandleFunc == nil {
-		panic("HandlerMock.HandleFunc: method is nil but Handler.Handle was just called")
+// HandleBlockRequest calls HandleBlockRequestFunc.
+func (mock *HandlerMock) HandleBlockRequest(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+	if mock.HandleBlockRequestFunc == nil {
+		panic("HandlerMock.HandleBlockRequestFunc: method is nil but Handler.HandleBlockRequest was just called")
 	}
 	callInfo := struct {
 		ContextMoqParam context.Context
@@ -58,17 +128,17 @@ func (mock *HandlerMock) Handle(contextMoqParam context.Context, req gp2p.Data) 
 		ContextMoqParam: contextMoqParam,
 		Req:             req,
 	}
-	mock.lockHandle.Lock()
-	mock.calls.Handle = append(mock.calls.Handle, callInfo)
-	mock.lockHandle.Unlock()
-	return mock.HandleFunc(contextMoqParam, req)
+	mock.lockHandleBlockRequest.Lock()
+	mock.calls.HandleBlockRequest = append(mock.calls.HandleBlockRequest, callInfo)
+	mock.lockHandleBlockRequest.Unlock()
+	return mock.HandleBlockRequestFunc(contextMoqParam, req)
 }
 
-// HandleCalls gets all the calls that were made to Handle.
+// HandleBlockRequestCalls gets all the calls that were made to HandleBlockRequest.
 // Check the length with:
 //
-//	len(mockedHandler.HandleCalls())
-func (mock *HandlerMock) HandleCalls() []struct {
+//	len(mockedHandler.HandleBlockRequestCalls())
+func (mock *HandlerMock) HandleBlockRequestCalls() []struct {
 	ContextMoqParam context.Context
 	Req             gp2p.Data
 } {
@@ -76,8 +146,188 @@ func (mock *HandlerMock) HandleCalls() []struct {
 		ContextMoqParam context.Context
 		Req             gp2p.Data
 	}
-	mock.lockHandle.RLock()
-	calls = mock.calls.Handle
-	mock.lockHandle.RUnlock()
+	mock.lockHandleBlockRequest.RLock()
+	calls = mock.calls.HandleBlockRequest
+	mock.lockHandleBlockRequest.RUnlock()
+	return calls
+}
+
+// HandleBlocksRequest calls HandleBlocksRequestFunc.
+func (mock *HandlerMock) HandleBlocksRequest(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+	if mock.HandleBlocksRequestFunc == nil {
+		panic("HandlerMock.HandleBlocksRequestFunc: method is nil but Handler.HandleBlocksRequest was just called")
+	}
+	callInfo := struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}{
+		ContextMoqParam: contextMoqParam,
+		Req:             req,
+	}
+	mock.lockHandleBlocksRequest.Lock()
+	mock.calls.HandleBlocksRequest = append(mock.calls.HandleBlocksRequest, callInfo)
+	mock.lockHandleBlocksRequest.Unlock()
+	return mock.HandleBlocksRequestFunc(contextMoqParam, req)
+}
+
+// HandleBlocksRequestCalls gets all the calls that were made to HandleBlocksRequest.
+// Check the length with:
+//
+//	len(mockedHandler.HandleBlocksRequestCalls())
+func (mock *HandlerMock) HandleBlocksRequestCalls() []struct {
+	ContextMoqParam context.Context
+	Req             gp2p.Data
+} {
+	var calls []struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}
+	mock.lockHandleBlocksRequest.RLock()
+	calls = mock.calls.HandleBlocksRequest
+	mock.lockHandleBlocksRequest.RUnlock()
+	return calls
+}
+
+// HandleTargetsRequest calls HandleTargetsRequestFunc.
+func (mock *HandlerMock) HandleTargetsRequest(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+	if mock.HandleTargetsRequestFunc == nil {
+		panic("HandlerMock.HandleTargetsRequestFunc: method is nil but Handler.HandleTargetsRequest was just called")
+	}
+	callInfo := struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}{
+		ContextMoqParam: contextMoqParam,
+		Req:             req,
+	}
+	mock.lockHandleTargetsRequest.Lock()
+	mock.calls.HandleTargetsRequest = append(mock.calls.HandleTargetsRequest, callInfo)
+	mock.lockHandleTargetsRequest.Unlock()
+	return mock.HandleTargetsRequestFunc(contextMoqParam, req)
+}
+
+// HandleTargetsRequestCalls gets all the calls that were made to HandleTargetsRequest.
+// Check the length with:
+//
+//	len(mockedHandler.HandleTargetsRequestCalls())
+func (mock *HandlerMock) HandleTargetsRequestCalls() []struct {
+	ContextMoqParam context.Context
+	Req             gp2p.Data
+} {
+	var calls []struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}
+	mock.lockHandleTargetsRequest.RLock()
+	calls = mock.calls.HandleTargetsRequest
+	mock.lockHandleTargetsRequest.RUnlock()
+	return calls
+}
+
+// HandleTransactionRequest calls HandleTransactionRequestFunc.
+func (mock *HandlerMock) HandleTransactionRequest(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+	if mock.HandleTransactionRequestFunc == nil {
+		panic("HandlerMock.HandleTransactionRequestFunc: method is nil but Handler.HandleTransactionRequest was just called")
+	}
+	callInfo := struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}{
+		ContextMoqParam: contextMoqParam,
+		Req:             req,
+	}
+	mock.lockHandleTransactionRequest.Lock()
+	mock.calls.HandleTransactionRequest = append(mock.calls.HandleTransactionRequest, callInfo)
+	mock.lockHandleTransactionRequest.Unlock()
+	return mock.HandleTransactionRequestFunc(contextMoqParam, req)
+}
+
+// HandleTransactionRequestCalls gets all the calls that were made to HandleTransactionRequest.
+// Check the length with:
+//
+//	len(mockedHandler.HandleTransactionRequestCalls())
+func (mock *HandlerMock) HandleTransactionRequestCalls() []struct {
+	ContextMoqParam context.Context
+	Req             gp2p.Data
+} {
+	var calls []struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}
+	mock.lockHandleTransactionRequest.RLock()
+	calls = mock.calls.HandleTransactionRequest
+	mock.lockHandleTransactionRequest.RUnlock()
+	return calls
+}
+
+// HandleTransactionsRequest calls HandleTransactionsRequestFunc.
+func (mock *HandlerMock) HandleTransactionsRequest(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+	if mock.HandleTransactionsRequestFunc == nil {
+		panic("HandlerMock.HandleTransactionsRequestFunc: method is nil but Handler.HandleTransactionsRequest was just called")
+	}
+	callInfo := struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}{
+		ContextMoqParam: contextMoqParam,
+		Req:             req,
+	}
+	mock.lockHandleTransactionsRequest.Lock()
+	mock.calls.HandleTransactionsRequest = append(mock.calls.HandleTransactionsRequest, callInfo)
+	mock.lockHandleTransactionsRequest.Unlock()
+	return mock.HandleTransactionsRequestFunc(contextMoqParam, req)
+}
+
+// HandleTransactionsRequestCalls gets all the calls that were made to HandleTransactionsRequest.
+// Check the length with:
+//
+//	len(mockedHandler.HandleTransactionsRequestCalls())
+func (mock *HandlerMock) HandleTransactionsRequestCalls() []struct {
+	ContextMoqParam context.Context
+	Req             gp2p.Data
+} {
+	var calls []struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}
+	mock.lockHandleTransactionsRequest.RLock()
+	calls = mock.calls.HandleTransactionsRequest
+	mock.lockHandleTransactionsRequest.RUnlock()
+	return calls
+}
+
+// HandleUtxosRequest calls HandleUtxosRequestFunc.
+func (mock *HandlerMock) HandleUtxosRequest(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+	if mock.HandleUtxosRequestFunc == nil {
+		panic("HandlerMock.HandleUtxosRequestFunc: method is nil but Handler.HandleUtxosRequest was just called")
+	}
+	callInfo := struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}{
+		ContextMoqParam: contextMoqParam,
+		Req:             req,
+	}
+	mock.lockHandleUtxosRequest.Lock()
+	mock.calls.HandleUtxosRequest = append(mock.calls.HandleUtxosRequest, callInfo)
+	mock.lockHandleUtxosRequest.Unlock()
+	return mock.HandleUtxosRequestFunc(contextMoqParam, req)
+}
+
+// HandleUtxosRequestCalls gets all the calls that were made to HandleUtxosRequest.
+// Check the length with:
+//
+//	len(mockedHandler.HandleUtxosRequestCalls())
+func (mock *HandlerMock) HandleUtxosRequestCalls() []struct {
+	ContextMoqParam context.Context
+	Req             gp2p.Data
+} {
+	var calls []struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}
+	mock.lockHandleUtxosRequest.RLock()
+	calls = mock.calls.HandleUtxosRequest
+	mock.lockHandleUtxosRequest.RUnlock()
 	return calls
 }

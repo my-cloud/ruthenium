@@ -72,6 +72,7 @@ func newTransaction(inputs []*network.InputResponse, outputs []*network.OutputRe
 	return transaction, nil
 }
 
+// TODO remove
 func NewTransactionFromResponse(transactionResponse *network.TransactionResponse) (*Transaction, error) {
 	transaction, err := newTransaction(transactionResponse.Inputs, transactionResponse.Outputs, transactionResponse.Timestamp)
 	if err != nil {
@@ -87,12 +88,46 @@ func (transaction *Transaction) Equals(other *network.TransactionResponse) bool 
 	return transaction.id == other.Id
 }
 
-func (transaction *Transaction) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
+func (transaction *Transaction) UnmarshalJSON(data []byte) error {
+	var transactionResponse *network.TransactionResponse
+	err := json.Unmarshal(data, &transactionResponse)
+	if err != nil {
+		return err
+	}
+	transaction.inputs = transactionResponse.Inputs
+	transaction.outputs = transactionResponse.Outputs
+	transaction.timestamp = transactionResponse.Timestamp
+	marshaledTransaction, err := json.Marshal(struct {
 		Inputs    []*network.InputResponse  `json:"inputs"`
 		Outputs   []*network.OutputResponse `json:"outputs"`
 		Timestamp int64                     `json:"timestamp"`
 	}{
+		Inputs:    transaction.inputs,
+		Outputs:   transaction.outputs,
+		Timestamp: transaction.timestamp,
+	})
+	if err != nil {
+		return err
+	}
+	transactionHash := sha256.Sum256(marshaledTransaction)
+	transaction.id = fmt.Sprintf("%x", transactionHash)
+	if err = transaction.findReward(); err != nil {
+		return fmt.Errorf("failed to find reward: %w", err)
+	}
+	if !transaction.Equals(transactionResponse) {
+		return fmt.Errorf("wrong transaction ID, provided: %s, calculated: %s", transactionResponse.Id, transaction.id)
+	}
+	return nil
+}
+
+func (transaction *Transaction) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Id        string                    `json:"id"`
+		Inputs    []*network.InputResponse  `json:"inputs"`
+		Outputs   []*network.OutputResponse `json:"outputs"`
+		Timestamp int64                     `json:"timestamp"`
+	}{
+		Id:        transaction.id,
 		Inputs:    transaction.inputs,
 		Outputs:   transaction.outputs,
 		Timestamp: transaction.timestamp,
