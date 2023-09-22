@@ -6,7 +6,7 @@ import (
 )
 
 func NewGenesisBlockResponse(validatorWalletAddress string, genesisValue uint64) *network.BlockResponse {
-	genesisTransaction, _ := validation.NewRewardTransaction(validatorWalletAddress, 0, genesisValue)
+	genesisTransaction, _ := validation.NewRewardTransaction(validatorWalletAddress, true, 0, genesisValue)
 	return &network.BlockResponse{
 		Timestamp:                  0,
 		PreviousHash:               [32]byte{},
@@ -17,7 +17,7 @@ func NewGenesisBlockResponse(validatorWalletAddress string, genesisValue uint64)
 }
 
 func NewRewardedBlockResponse(previousHash [32]byte, timestamp int64) *network.BlockResponse {
-	rewardTransaction, _ := validation.NewRewardTransaction("recipient", 0, 0)
+	rewardTransaction, _ := validation.NewRewardTransaction("recipient", false, 0, 0)
 	return &network.BlockResponse{
 		Timestamp:                  timestamp,
 		PreviousHash:               previousHash,

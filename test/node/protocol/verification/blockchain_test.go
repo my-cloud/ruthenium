@@ -34,7 +34,7 @@ func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 		MinimalTransactionFee:       0,
 		ValidationIntervalInSeconds: 1,
 	}
-	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 
 	// Act
 	err := blockchain.AddBlock(0, nil, nil)
@@ -56,7 +56,7 @@ func Test_Blocks_BlocksCountLimitSetToZero_ReturnsNil(t *testing.T) {
 		MinimalTransactionFee:       0,
 		ValidationIntervalInSeconds: 1,
 	}
-	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 
 	// Act
 	blocks := blockchain.Blocks(0)
@@ -70,6 +70,63 @@ func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
 	registry := new(protocoltest.RegistryMock)
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
+	var expectedBlocksCount uint64 = 1
+	var validationInterval int64 = 1
+	settings := config.Settings{
+		BlocksCountLimit:            expectedBlocksCount,
+		GenesisAmountInParticles:    1,
+		HalfLifeInDays:              1,
+		IncomeBaseInParticles:       1,
+		IncomeLimitInParticles:      1,
+		MinimalTransactionFee:       0,
+		ValidationIntervalInSeconds: validationInterval,
+	}
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	var genesisTimestamp int64 = 0
+	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
+	_ = blockchain.AddBlock(genesisTimestamp+validationInterval, nil, nil)
+
+	// Act
+	blocks := blockchain.Blocks(0)
+
+	// Assert
+	test.Assert(t, len(blocks) == int(expectedBlocksCount), fmt.Sprintf("should return %d blocks", expectedBlocksCount))
+}
+
+func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	var expectedBlocksCount uint64 = 2
+	var validationInterval int64 = 1
+	settings := config.Settings{
+		BlocksCountLimit:            expectedBlocksCount,
+		GenesisAmountInParticles:    1,
+		HalfLifeInDays:              1,
+		IncomeBaseInParticles:       1,
+		IncomeLimitInParticles:      1,
+		MinimalTransactionFee:       0,
+		ValidationIntervalInSeconds: validationInterval,
+	}
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	var genesisTimestamp int64 = 0
+	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
+	_ = blockchain.AddBlock(genesisTimestamp+validationInterval, nil, nil)
+
+	// Act
+	blocks := blockchain.Blocks(0)
+
+	// Assert
+	test.Assert(t, len(blocks) == int(expectedBlocksCount), fmt.Sprintf("should return %d blocks", expectedBlocksCount))
+}
+
+func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsNil(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	var validationInterval int64 = 1
 	settings := config.Settings{
 		BlocksCountLimit:            1,
 		GenesisAmountInParticles:    1,
@@ -77,38 +134,16 @@ func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       0,
-		ValidationIntervalInSeconds: 1,
+		ValidationIntervalInSeconds: validationInterval,
 	}
-	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 
 	// Act
-	blocks := blockchain.Blocks(0)
+	blocks := blockchain.Blocks(1)
 
 	// Assert
-	test.Assert(t, len(blocks) == 1, "blocks should contain a single block")
-}
-
-func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsOneBlock(t *testing.T) {
-	// Arrange
-	registry := new(protocoltest.RegistryMock)
-	logger := logtest.NewLoggerMock()
-	synchronizer := new(networktest.SynchronizerMock)
-	settings := config.Settings{
-		BlocksCountLimit:            2,
-		GenesisAmountInParticles:    1,
-		HalfLifeInDays:              1,
-		IncomeBaseInParticles:       1,
-		IncomeLimitInParticles:      1,
-		MinimalTransactionFee:       0,
-		ValidationIntervalInSeconds: 1,
-	}
-	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
-
-	// Act
-	blocks := blockchain.Blocks(0)
-
-	// Assert
-	test.Assert(t, len(blocks) == 1, "blocks should contain a single block")
+	expectedBlocksCount := 0
+	test.Assert(t, len(blocks) == expectedBlocksCount, fmt.Sprintf("should return %d blocks", expectedBlocksCount))
 }
 
 func Test_AllBlocks_ValidParameters_NoErrorLogged(t *testing.T) {
@@ -124,7 +159,8 @@ func Test_AllBlocks_ValidParameters_NoErrorLogged(t *testing.T) {
 		MinimalTransactionFee:       0,
 		ValidationIntervalInSeconds: 1,
 	}
-	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
 	blocks := blockchain.AllBlocks()
@@ -138,7 +174,6 @@ func Test_UtxosByAddress_UnknownAddress_ReturnsNil(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	genesisValidatorAddress := ""
 	var genesisAmount uint64 = 0
-	genesisTransaction, _ := validation.NewRewardTransaction(genesisValidatorAddress, 0, genesisAmount)
 	settings := config.Settings{
 		GenesisAmountInParticles:    genesisAmount,
 		HalfLifeInDays:              1,
@@ -147,7 +182,7 @@ func Test_UtxosByAddress_UnknownAddress_ReturnsNil(t *testing.T) {
 		MinimalTransactionFee:       0,
 		ValidationIntervalInSeconds: 1,
 	}
-	blockchain := verification.NewBlockchain(0, genesisTransaction, nil, settings, nil, logger)
+	blockchain := verification.NewBlockchain(nil, settings, nil, logger)
 
 	// Act
 	utxos := blockchain.UtxosByAddress(genesisValidatorAddress)
@@ -162,25 +197,37 @@ func Test_UtxosByAddress_GenesisValidator_ReturnsGenesisUtxo(t *testing.T) {
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
-	var genesisAmount uint64 = 1
-	genesisValidatorAddress := ""
-	genesisTransaction, _ := validation.NewRewardTransaction(genesisValidatorAddress, 0, genesisAmount)
+	var validationInterval int64 = 1
 	settings := config.Settings{
-		GenesisAmountInParticles:    genesisAmount,
+		GenesisAmountInParticles:    1,
 		HalfLifeInDays:              1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       0,
-		ValidationIntervalInSeconds: 1,
+		ValidationIntervalInSeconds: validationInterval,
 	}
-	blockchain := verification.NewBlockchain(0, genesisTransaction, registry, settings, synchronizer, logger)
-	_ = blockchain.AddBlock(0, nil, nil)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	registeredAddress := ""
+	var expectedValue uint64 = 1
+	transaction := &network.TransactionResponse{
+		Outputs: []*network.OutputResponse{{
+			Address:   registeredAddress,
+			HasReward: false,
+			HasIncome: true,
+			Value:     expectedValue,
+		}},
+	}
+	var genesisTimestamp int64 = 0
+	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
+	_ = blockchain.AddBlock(genesisTimestamp+validationInterval, []*network.TransactionResponse{transaction}, []string{registeredAddress})
+	_ = blockchain.AddBlock(genesisTimestamp+2*validationInterval, nil, nil)
 
 	// Act
-	utxos := blockchain.UtxosByAddress(genesisValidatorAddress)
+	utxos := blockchain.UtxosByAddress(registeredAddress)
 
 	// Assert
-	test.Assert(t, utxos[0].Value == genesisAmount, "utxo amount is not the genesis amount whereas it should be")
+	actualValue := utxos[0].Value
+	test.Assert(t, actualValue == expectedValue, fmt.Sprintf("utxo amount is %d whereas it should be %d", actualValue, expectedValue))
 }
 
 func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
@@ -196,45 +243,30 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	address := test.Address
-	var genesisAmount uint64 = 1
-	genesisTransaction, _ := validation.NewRewardTransaction(address, 0, genesisAmount)
-	var transactionFee uint64 = 0
 	var validationIntervalInSeconds int64 = 1
 	settings := config.Settings{
-		GenesisAmountInParticles:    genesisAmount,
+		GenesisAmountInParticles:    1,
 		HalfLifeInDays:              1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
-		MinimalTransactionFee:       transactionFee,
+		MinimalTransactionFee:       0,
 		ValidationIntervalInSeconds: 1,
 	}
 	validationTimestamp := validationIntervalInSeconds * time.Second.Nanoseconds()
 	now := 5 * validationTimestamp
-	blockchain := verification.NewBlockchain(0, genesisTransaction, registry, settings, synchronizer, logger)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	_ = blockchain.AddBlock(now-5*validationTimestamp, nil, nil)
 	_ = blockchain.AddBlock(now-4*validationTimestamp, nil, nil)
-	_ = blockchain.AddBlock(now-3*validationTimestamp, nil, nil)
 	blocks := blockchain.AllBlocks()
 	genesisBlockHash := blocks[1].PreviousHash
 	blockResponse1 := protocoltest.NewRewardedBlockResponse(genesisBlockHash, now-4*validationTimestamp)
-	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
+	block1, _ := verification.NewBlockFromResponse(blockResponse1)
 	hash1, _ := block1.Hash()
-	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
-	publicKey := encryption.NewPublicKey(privateKey)
-	var genesisOutputIndex uint16 = 0
-	transactionRequest := protocoltest.NewSignedTransactionRequest(0, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, now-2*validationTimestamp, 0)
-	transaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
-	transactionResponse := transaction.GetResponse()
-	rewardTransaction, _ := validation.NewRewardTransaction(address, now-3*validationTimestamp, 0)
-	transactions := []*network.TransactionResponse{
-		transactionResponse,
-		rewardTransaction,
-	}
-	blockResponse2 := verification.NewBlockResponse(now-3*validationTimestamp, hash1, transactions, []string{address}, nil)
-	block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
+	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, now-3*validationTimestamp)
+	block2, _ := verification.NewBlockFromResponse(blockResponse2)
 	hash2, _ := block2.Hash()
 	blockResponse3 := protocoltest.NewRewardedBlockResponse(hash2, now-2*validationTimestamp)
-	block3, _ := verification.NewBlockFromResponse(blockResponse3, nil)
+	block3, _ := verification.NewBlockFromResponse(blockResponse3)
 	hash3, _ := block3.Hash()
 	blockResponse4 := protocoltest.NewRewardedBlockResponse(hash3, now-validationTimestamp)
 	blockResponses := []*network.BlockResponse{blocks[0], blockResponse1, blockResponse2, blockResponse3, blockResponse4}
@@ -274,7 +306,8 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 		MinimalTransactionFee:       0,
 		ValidationIntervalInSeconds: 1,
 	}
-	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	_ = blockchain.AddBlock(0, nil, nil)
 
 	type args struct {
 		firstBlockTimestamp  int64
@@ -318,7 +351,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 		t.Run(tt.name, func(t *testing.T) {
 			neighborMock.GetBlocksFunc = func(uint64) ([]*network.BlockResponse, error) {
 				blockResponse1 := protocoltest.NewRewardedBlockResponse([32]byte{}, tt.args.firstBlockTimestamp)
-				block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
+				block1, _ := verification.NewBlockFromResponse(blockResponse1)
 				hash, _ := block1.Hash()
 				blockResponse2 := protocoltest.NewRewardedBlockResponse(hash, tt.args.secondBlockTimestamp)
 				return []*network.BlockResponse{blockResponse1, blockResponse2}, nil
@@ -355,7 +388,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	now := validationTimestamp
 	neighborMock.GetBlocksFunc = func(uint64) ([]*network.BlockResponse, error) {
 		blockResponse1 := protocoltest.NewRewardedBlockResponse([32]byte{}, now)
-		block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
+		block1, _ := verification.NewBlockFromResponse(blockResponse1)
 		hash, _ := block1.Hash()
 		blockResponse2 := protocoltest.NewRewardedBlockResponse(hash, now+validationTimestamp)
 		return []*network.BlockResponse{blockResponse1, blockResponse2}, nil
@@ -375,7 +408,8 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 		MinimalTransactionFee:       0,
 		ValidationIntervalInSeconds: validationIntervalInSeconds,
 	}
-	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
 	blockchain.Update(now)
@@ -411,17 +445,17 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	var incomeLimit uint64 = 1
 	genesisAmount := 2 * incomeLimit
 	blockResponse1 := protocoltest.NewGenesisBlockResponse(address, genesisAmount)
-	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
+	block1, _ := verification.NewBlockFromResponse(blockResponse1)
 	hash1, _ := block1.Hash()
 	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, now-validationTimestamp)
-	block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
+	block2, _ := verification.NewBlockFromResponse(blockResponse2)
 	hash2, _ := block2.Hash()
 	genesisTransaction := blockResponse1.Transactions[0]
 	var genesisOutputIndex uint16 = 0
 	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisAmount, invalidTransactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, now+validationTimestamp, genesisAmount)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
-	rewardTransaction, _ := validation.NewRewardTransaction(address, now, 1)
+	rewardTransaction, _ := validation.NewRewardTransaction(address, false, now, 1)
 	transactions := []*network.TransactionResponse{
 		invalidTransactionResponse,
 		rewardTransaction,
@@ -448,7 +482,8 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 		ValidationIntervalInSeconds:      1,
 		VerificationsCountPerValidation:  1,
 	}
-	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
 	blockchain.Update(now)
@@ -483,17 +518,17 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
 	blockResponse1 := protocoltest.NewGenesisBlockResponse(address, genesisAmount)
-	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
+	block1, _ := verification.NewBlockFromResponse(blockResponse1)
 	hash1, _ := block1.Hash()
 	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, now-validationTimestamp)
-	block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
+	block2, _ := verification.NewBlockFromResponse(blockResponse2)
 	hash2, _ := block2.Hash()
 	genesisTransaction := blockResponse1.Transactions[0]
 	var genesisOutputIndex uint16 = 0
 	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisAmount, invalidTransactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, now+validationTimestamp, genesisAmount)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
-	rewardTransaction, _ := validation.NewRewardTransaction(address, now, 1)
+	rewardTransaction, _ := validation.NewRewardTransaction(address, false, now, 1)
 	transactions := []*network.TransactionResponse{
 		invalidTransactionResponse,
 		rewardTransaction,
@@ -517,7 +552,8 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 		MinimalTransactionFee:       1,
 		ValidationIntervalInSeconds: 1,
 	}
-	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
 	blockchain.Update(now)
@@ -557,12 +593,12 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisAmount, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, now+2*validationTimestamp, genesisAmount)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
-	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
+	block1, _ := verification.NewBlockFromResponse(blockResponse1)
 	hash1, _ := block1.Hash()
 	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, now-validationTimestamp)
-	block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
+	block2, _ := verification.NewBlockFromResponse(blockResponse2)
 	hash2, _ := block2.Hash()
-	rewardTransaction, _ := validation.NewRewardTransaction(address, now, 0)
+	rewardTransaction, _ := validation.NewRewardTransaction(address, false, now, 0)
 	transactions := []*network.TransactionResponse{
 		invalidTransactionResponse,
 		rewardTransaction,
@@ -586,7 +622,8 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 		MinimalTransactionFee:       transactionFee,
 		ValidationIntervalInSeconds: 1,
 	}
-	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
 	blockchain.Update(now)
@@ -626,12 +663,12 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisAmount, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, 0, genesisAmount)
 	invalidTransaction, _ := validation.NewTransactionFromRequest(&invalidTransactionRequest)
 	invalidTransactionResponse := invalidTransaction.GetResponse()
-	block1, _ := verification.NewBlockFromResponse(blockResponse1, nil)
+	block1, _ := verification.NewBlockFromResponse(blockResponse1)
 	hash1, _ := block1.Hash()
 	blockResponse2 := protocoltest.NewRewardedBlockResponse(hash1, now-validationTimestamp)
-	block2, _ := verification.NewBlockFromResponse(blockResponse2, nil)
+	block2, _ := verification.NewBlockFromResponse(blockResponse2)
 	hash2, _ := block2.Hash()
-	rewardTransaction, _ := validation.NewRewardTransaction(address, now, 0)
+	rewardTransaction, _ := validation.NewRewardTransaction(address, false, now, 0)
 	transactions := []*network.TransactionResponse{
 		invalidTransactionResponse,
 		rewardTransaction,
@@ -655,7 +692,8 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 		MinimalTransactionFee:       transactionFee,
 		ValidationIntervalInSeconds: 1,
 	}
-	blockchain := verification.NewBlockchain(0, nil, registry, settings, synchronizer, logger)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
 	blockchain.Update(now)

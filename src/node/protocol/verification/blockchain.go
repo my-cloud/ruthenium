@@ -120,7 +120,7 @@ func (blockchain *Blockchain) Blocks(startingBlockHeight uint64) []*network.Bloc
 	blocksCountLimit := blockchain.settings.BlocksCountLimit
 	if startingBlockHeight > uint64(len(blockchain.blockResponses)) || blocksCountLimit == 0 {
 		return nil
-	} else if startingBlockHeight+blocksCountLimit <= uint64(len(blockchain.blockResponses)) {
+	} else if startingBlockHeight+blocksCountLimit < uint64(len(blockchain.blockResponses)) {
 		endingBlockHeight = startingBlockHeight + blocksCountLimit - 1
 		blocksCount = blocksCountLimit
 	} else {
@@ -412,8 +412,8 @@ func (blockchain *Blockchain) addBlock(timestamp int64, transactions []*network.
 		if err != nil {
 			return fmt.Errorf("failed to add UTXO: %w", err)
 		}
-		blockchain.updateRegisteredAddresses(addedRegisteredAddresses, removedRegisteredAddresses)
 	}
+	blockchain.updateRegisteredAddresses(addedRegisteredAddresses, removedRegisteredAddresses)
 	blockResponse := NewBlockResponse(timestamp, previousHash, transactions, addedRegisteredAddresses, removedRegisteredAddresses)
 	blockchain.blockResponses = append(blockchain.blockResponses, blockResponse)
 	block, err := NewBlockFromResponse(blockResponse)

@@ -18,8 +18,8 @@ type Transaction struct {
 	rewardValue            uint64
 }
 
-func NewRewardTransaction(address string, timestamp int64, value uint64) (*network.TransactionResponse, error) {
-	return newTransactionResponse(address, false, timestamp, value)
+func NewRewardTransaction(address string, hasIncome bool, timestamp int64, value uint64) (*network.TransactionResponse, error) {
+	return newTransactionResponse(address, hasIncome, timestamp, value)
 }
 
 func newTransactionResponse(address string, hasIncome bool, timestamp int64, value uint64) (*network.TransactionResponse, error) {
