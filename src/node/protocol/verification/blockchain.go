@@ -688,8 +688,7 @@ func (blockchain *Blockchain) verifyRegisteredAddresses(block *Block) error {
 		isPohValid, err := blockchain.registry.IsRegistered(address)
 		if err != nil {
 			blockchain.logger.Debug(fmt.Errorf("failed to get proof of humanity for address %s: %w", address, err).Error())
-		}
-		if isPohValid {
+		} else if isPohValid {
 			return fmt.Errorf("a removed address is registered")
 		}
 	}
@@ -697,8 +696,7 @@ func (blockchain *Blockchain) verifyRegisteredAddresses(block *Block) error {
 		isPohValid, err := blockchain.registry.IsRegistered(address)
 		if err != nil {
 			blockchain.logger.Debug(fmt.Errorf("failed to get proof of humanity for address %s: %w", address, err).Error())
-		}
-		if !isPohValid {
+		} else if !isPohValid {
 			return fmt.Errorf("an added address is not registered")
 		}
 	}
