@@ -80,8 +80,8 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		var walletBalance uint64
 		var values []uint64
 		for _, utxo := range utxos {
-			output := validation.NewOutputFromUtxoResponse(utxo, genesisBlock.Timestamp, handler.halfLifeInNanoseconds, handler.incomeBase, handler.incomeLimit, handler.validationTimestamp)
-			outputValue := output.Value(nextBlockTimestamp)
+			output := validation.NewOutputFromUtxoResponse(utxo)
+			outputValue := output.Value(nextBlockTimestamp, genesisBlock.Timestamp, handler.halfLifeInNanoseconds, handler.incomeBase, handler.incomeLimit, handler.validationTimestamp)
 			utxoResponse := &UtxoResponse{
 				OutputIndex:   utxo.OutputIndex,
 				TransactionId: utxo.TransactionId,

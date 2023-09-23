@@ -50,8 +50,8 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		var balance uint64
 		for _, utxo := range utxos {
 			now := handler.watch.Now().UnixNano()
-			output := validation.NewOutputFromUtxoResponse(utxo, genesisBlock.Timestamp, handler.halfLifeInNanoseconds, handler.incomeBase, handler.incomeLimit, handler.validationTimestamp)
-			balance += output.Value(now)
+			output := validation.NewOutputFromUtxoResponse(utxo)
+			balance += output.Value(now, genesisBlock.Timestamp, handler.halfLifeInNanoseconds, handler.incomeBase, handler.incomeLimit, handler.validationTimestamp)
 		}
 		marshaledAmount, err := json.Marshal(float64(balance) / float64(handler.particlesCount))
 		if err != nil {

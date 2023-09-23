@@ -160,8 +160,8 @@ func (blockchain *Blockchain) FindFee(transaction *network.TransactionResponse, 
 			return 0, fmt.Errorf("failed to find utxo, input: %v", input)
 		}
 		genesisTimestamp := blockchain.blockResponses[0].Timestamp
-		output := validation.NewOutputFromUtxoResponse(utxo, genesisTimestamp, blockchain.halfLifeInNanoseconds, incomeBase, incomeLimit, blockchain.validationTimestamp)
-		value := output.Value(timestamp)
+		output := validation.NewOutputFromUtxoResponse(utxo)
+		value := output.Value(timestamp, genesisTimestamp, blockchain.halfLifeInNanoseconds, incomeBase, incomeLimit, blockchain.validationTimestamp)
 		inputsValue += value
 	}
 	for _, output := range transaction.Outputs {
