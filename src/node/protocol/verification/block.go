@@ -76,6 +76,31 @@ func (block *Block) Hash() (hash [32]byte, err error) {
 	return
 }
 
+func (block *Block) UnmarshalJSON(data []byte) error {
+	blockResponse := struct {
+		Timestamp                  int64                     `json:"timestamp"`
+		PreviousHash               string                    `json:"previous_hash"`
+		Transactions               []*validation.Transaction `json:"transactions"`
+		AddedRegisteredAddresses   []string                  `json:"added_registered_addresses"`
+		RemovedRegisteredAddresses []string                  `json:"removed_registered_addresses"`
+	}{}
+	err := json.Unmarshal(data, &blockResponse)
+	if err != nil {
+		return err
+	}
+	var previousHash [32]byte
+	_, err = fmt.Sscanf(blockResponse.PreviousHash, "%x", &previousHash)
+	if err != nil {
+		return err
+	}
+	block.timestamp = blockResponse.Timestamp
+	block.previousHash = previousHash
+	block.transactions = blockResponse.Transactions
+	block.addedRegisteredAddresses = blockResponse.AddedRegisteredAddresses
+	block.removedRegisteredAddresses = blockResponse.RemovedRegisteredAddresses
+	return nil
+}
+
 func (block *Block) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Timestamp                  int64                     `json:"timestamp"`
