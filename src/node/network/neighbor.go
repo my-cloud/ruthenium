@@ -2,7 +2,7 @@ package network
 
 type Neighbor interface {
 	Target() string
-	GetBlock(blockHeight uint64) (blockResponse *BlockResponse, err error)
+	GetBlock(blockHeight uint64) (block []byte, err error)
 	GetBlocks(startingBlockHeight uint64) ([]*BlockResponse, error)
 	SendTargets(request []TargetRequest) (err error)
 	AddTransaction(request TransactionRequest) (err error)

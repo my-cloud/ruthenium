@@ -32,11 +32,10 @@ func (neighbor *Neighbor) Target() string {
 	return neighbor.target.Value()
 }
 
-func (neighbor *Neighbor) GetBlock(blockHeight uint64) (blockResponse *network.BlockResponse, err error) {
+func (neighbor *Neighbor) GetBlock(blockHeight uint64) (block []byte, err error) {
 	res, err := neighbor.sendRequest("block", blockHeight)
 	if err == nil {
-		data := res.GetBytes()
-		err = json.Unmarshal(data, &blockResponse)
+		return res.GetBytes(), nil
 	}
 	return
 }

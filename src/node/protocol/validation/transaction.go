@@ -93,15 +93,7 @@ func (transaction *Transaction) UnmarshalJSON(data []byte) error {
 	transaction.inputs = transactionResponse.Inputs
 	transaction.outputs = transactionResponse.Outputs
 	transaction.timestamp = transactionResponse.Timestamp
-	marshaledTransaction, err := json.Marshal(struct {
-		Inputs    []*network.InputResponse  `json:"inputs"`
-		Outputs   []*network.OutputResponse `json:"outputs"`
-		Timestamp int64                     `json:"timestamp"`
-	}{
-		Inputs:    transaction.inputs,
-		Outputs:   transaction.outputs,
-		Timestamp: transaction.timestamp,
-	})
+	marshaledTransaction, err := transaction.marshalJSONWithoutId()
 	if err != nil {
 		return err
 	}
@@ -124,6 +116,18 @@ func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 		Timestamp int64                     `json:"timestamp"`
 	}{
 		Id:        transaction.id,
+		Inputs:    transaction.inputs,
+		Outputs:   transaction.outputs,
+		Timestamp: transaction.timestamp,
+	})
+}
+
+func (transaction *Transaction) marshalJSONWithoutId() ([]byte, error) {
+	return json.Marshal(struct {
+		Inputs    []*network.InputResponse  `json:"inputs"`
+		Outputs   []*network.OutputResponse `json:"outputs"`
+		Timestamp int64                     `json:"timestamp"`
+	}{
 		Inputs:    transaction.inputs,
 		Outputs:   transaction.outputs,
 		Timestamp: transaction.timestamp,
@@ -181,7 +185,7 @@ func (transaction *Transaction) Timestamp() int64 {
 }
 
 func (transaction *Transaction) generateId() error {
-	marshaledTransaction, err := transaction.MarshalJSON()
+	marshaledTransaction, err := transaction.marshalJSONWithoutId()
 	if err != nil {
 		return errors.New("failed to marshal transaction")
 	}

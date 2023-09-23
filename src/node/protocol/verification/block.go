@@ -89,9 +89,13 @@ func (block *Block) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	var previousHash [32]byte
-	_, err = fmt.Sscanf(blockResponse.PreviousHash, "%x", &previousHash)
-	if err != nil {
-		return err
+	if blockResponse.PreviousHash == "" {
+		previousHash = [32]byte{}
+	} else {
+		_, err = fmt.Sscanf(blockResponse.PreviousHash, "%x", &previousHash)
+		if err != nil {
+			return err
+		}
 	}
 	block.timestamp = blockResponse.Timestamp
 	block.previousHash = previousHash
