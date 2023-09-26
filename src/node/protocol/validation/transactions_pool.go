@@ -91,7 +91,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	var reward uint64
 	var rejectedTransactions []*Transaction
 	for _, transaction := range transactions {
-		if nextBlockTimestamp < transaction.Timestamp() {
+		if timestamp < transaction.Timestamp() {
 			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too far in the future, transaction: %v", transaction))
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
@@ -199,7 +199,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 		return fmt.Errorf("failed to verify fee: %w", err)
 	}
 	timestamp := transaction.Timestamp()
-	if nextBlockTimestamp+pool.validationTimestamp < timestamp {
+	if nextBlockTimestamp < timestamp {
 		return fmt.Errorf("the transaction timestamp is too far in the future: %v, now: %v", time.Unix(0, timestamp), time.Unix(0, nextBlockTimestamp))
 	}
 	currentBlockTimestamp := lastBlockTimestamp
