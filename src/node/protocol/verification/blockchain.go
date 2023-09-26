@@ -65,10 +65,6 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactionsBytes []byte
 		if err != nil {
 			return fmt.Errorf("unable to calculate last block hash: %w", err)
 		}
-		err = blockchain.verifyRegisteredAddresses(previousBlock)
-		if err != nil {
-			return fmt.Errorf("failed to verify registered addresses: %w", err)
-		}
 	}
 	var addedRegisteredAddresses []string
 	var removedRegisteredAddresses []string
@@ -327,14 +323,14 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		for _, blocks := range blocksByTarget {
 			var rewardRecipientAddressAge uint64
 			var lastBlockRewardRecipientAddress string
-			for _, transaction := range blocks[len(blocks)-1].transactions {
+			for _, transaction := range blocks[len(blocks)-1].Transactions() {
 				if transaction.HasReward() {
 					lastBlockRewardRecipientAddress = transaction.RewardRecipientAddress()
 				}
 			}
 			var isAgeCalculated bool
 			for i := len(blocks) - 2; i >= 0; i-- {
-				for _, transaction := range blocks[i].transactions {
+				for _, transaction := range blocks[i].Transactions() {
 					if transaction.HasReward() {
 						if transaction.RewardRecipientAddress() == lastBlockRewardRecipientAddress {
 							isAgeCalculated = true
@@ -409,12 +405,13 @@ func (blockchain *Blockchain) UtxosByAddress(address string) []*network.UtxoResp
 func (blockchain *Blockchain) addBlock(block *Block) error {
 	if !blockchain.isEmpty() {
 		lastBlockHeight := len(blockchain.blocks) - 1
-		err := blockchain.updateUtxos(blockchain.blocks[lastBlockHeight], lastBlockHeight)
+		lastBlock := blockchain.blocks[lastBlockHeight]
+		err := blockchain.updateUtxos(lastBlock, lastBlockHeight)
 		if err != nil {
 			return fmt.Errorf("failed to add UTXO: %w", err)
 		}
+		blockchain.updateRegisteredAddresses(lastBlock.AddedRegisteredAddresses(), lastBlock.RemovedRegisteredAddresses())
 	}
-	blockchain.updateRegisteredAddresses(block.AddedRegisteredAddresses(), block.RemovedRegisteredAddresses())
 	blockchain.blocks = append(blockchain.blocks, block)
 	return nil
 }
@@ -430,6 +427,30 @@ func (blockchain *Blockchain) updateRegisteredAddresses(addedRegisteredAddresses
 
 func (blockchain *Blockchain) isEmpty() bool {
 	return len(blockchain.blocks) == 0
+}
+
+func (blockchain *Blockchain) isRegistered(address string, addedRegisteredAddresses []string, removedRegisteredAddresses []string) error {
+	var isRegistered bool
+	for _, addedAddress := range addedRegisteredAddresses {
+		isRegistered = addedAddress == address
+		if isRegistered {
+			break
+		}
+	}
+	if !isRegistered {
+		for _, addedAddress := range removedRegisteredAddresses {
+			isRegistered = addedAddress != address
+			if !isRegistered {
+				break
+			}
+		}
+		if !isRegistered {
+			if _, ok := blockchain.registeredAddresses[address]; !ok {
+				return fmt.Errorf("an incomed output address is not registered")
+			}
+		}
+	}
+	return nil
 }
 
 func (blockchain *Blockchain) sortByBlocksLength(selectedTargets []string, blocksByTarget map[string][]*Block) {
@@ -569,17 +590,18 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlocks []*
 		}
 		if i == 0 {
 			neighborBlockchain.blocks = append(neighborBlockchain.blocks, neighborBlock)
-			//neighborBlockchain.updateRegisteredAddresses(neighborBlock.AddedRegisteredAddresses(), neighborBlock.RemovedRegisteredAddresses())
 		} else if err := neighborBlockchain.addBlock(neighborBlock); err != nil {
 			return nil, err
 		}
 		verifiedBlocks = append(verifiedBlocks, neighborBlock)
 	}
 	lastNeighborBlock := neighborBlocks[len(neighborBlocks)-1]
+	if err := blockchain.verifyRegisteredAddresses(lastNeighborBlock); err != nil {
+		return nil, fmt.Errorf("failed to verify registered addresses: %w", err)
+	}
 	currentBlockTimestamp := lastNeighborBlock.Timestamp()
 	nextBlockTimestamp := currentBlockTimestamp + blockchain.validationTimestamp
-	err := neighborBlockchain.AddBlock(nextBlockTimestamp, nil, nil)
-	if err != nil {
+	if err := neighborBlockchain.AddBlock(nextBlockTimestamp, nil, nil); err != nil {
 		return nil, err
 	}
 	return verifiedBlocks, nil
@@ -601,6 +623,8 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlockTim
 	}
 	var reward uint64
 	var totalTransactionsFees uint64
+	addedRegisteredAddresses := neighborBlock.AddedRegisteredAddresses()
+	removedRegisteredAddresses := neighborBlock.RemovedRegisteredAddresses()
 	for _, transaction := range neighborBlock.Transactions() {
 		if transaction.HasReward() {
 			// Check that there is only one reward by block
@@ -624,6 +648,13 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlockTim
 			}
 			if transaction.Timestamp() < previousBlockTimestamp {
 				return fmt.Errorf("a neighbor block transaction timestamp is too old: transaction timestamp: %d, id: %s", transaction.Timestamp(), transaction.Id())
+			}
+			for _, output := range transaction.Outputs() {
+				if output.HasIncome {
+					if err := blockchain.isRegistered(output.Address, addedRegisteredAddresses, removedRegisteredAddresses); err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}
@@ -664,7 +695,7 @@ func (blockchain *Blockchain) verifyLastBlock(lastNeighborBlocks []*Block) error
 }
 
 func (blockchain *Blockchain) verifyRegisteredAddresses(block *Block) error {
-	for _, address := range block.removedRegisteredAddresses {
+	for _, address := range block.RemovedRegisteredAddresses() {
 		isPohValid, err := blockchain.registry.IsRegistered(address)
 		if err != nil {
 			blockchain.logger.Debug(fmt.Errorf("failed to get proof of humanity for address %s: %w", address, err).Error())
@@ -672,7 +703,7 @@ func (blockchain *Blockchain) verifyRegisteredAddresses(block *Block) error {
 			return fmt.Errorf("a removed address is registered")
 		}
 	}
-	for _, address := range block.removedRegisteredAddresses {
+	for _, address := range block.RemovedRegisteredAddresses() {
 		isPohValid, err := blockchain.registry.IsRegistered(address)
 		if err != nil {
 			blockchain.logger.Debug(fmt.Errorf("failed to get proof of humanity for address %s: %w", address, err).Error())
