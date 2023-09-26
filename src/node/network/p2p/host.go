@@ -9,7 +9,6 @@ import (
 const (
 	blocksEndpoint              = "blocks"
 	firstBlockTimestampEndpoint = "first-block-timestamp"
-	lastBlockTimestampEndpoint  = "last-block-timestamp"
 	targetsEndpoint             = "targets"
 	transactionEndpoint         = "transaction"
 	transactionsEndpoint        = "transactions"
@@ -40,7 +39,6 @@ func (host *Host) Run() error {
 	host.startBlockchain()
 	host.server.SetHandle(blocksEndpoint, host.handler.HandleBlocksRequest)
 	host.server.SetHandle(firstBlockTimestampEndpoint, host.handler.HandleFirstBlockTimestampRequest)
-	host.server.SetHandle(lastBlockTimestampEndpoint, host.handler.HandleLastBlockTimestampRequest)
 	host.server.SetHandle(targetsEndpoint, host.handler.HandleTargetsRequest)
 	host.server.SetHandle(transactionEndpoint, host.handler.HandleTransactionRequest)
 	host.server.SetHandle(transactionsEndpoint, host.handler.HandleTransactionsRequest)

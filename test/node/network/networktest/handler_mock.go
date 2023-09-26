@@ -20,11 +20,14 @@ var _ network.Handler = &HandlerMock{}
 //
 //		// make and configure a mocked Handler
 //		mockedHandler := &HandlerMock{
-//			HandleBlockRequestFunc: func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
-//				panic("mock out the HandleBlockRequest method")
-//			},
 //			HandleBlocksRequestFunc: func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
 //				panic("mock out the HandleBlocksRequest method")
+//			},
+//			HandleFirstBlockTimestampRequestFunc: func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+//				panic("mock out the HandleFirstBlockTimestampRequest method")
+//			},
+//			HandleLastBlockTimestampRequestFunc: func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+//				panic("mock out the HandleLastBlockTimestampRequest method")
 //			},
 //			HandleTargetsRequestFunc: func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
 //				panic("mock out the HandleTargetsRequest method")
@@ -45,11 +48,14 @@ var _ network.Handler = &HandlerMock{}
 //
 //	}
 type HandlerMock struct {
-	// HandleBlockRequestFunc mocks the HandleBlockRequest method.
-	HandleBlockRequestFunc func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error)
-
 	// HandleBlocksRequestFunc mocks the HandleBlocksRequest method.
 	HandleBlocksRequestFunc func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error)
+
+	// HandleFirstBlockTimestampRequestFunc mocks the HandleFirstBlockTimestampRequest method.
+	HandleFirstBlockTimestampRequestFunc func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error)
+
+	// HandleLastBlockTimestampRequestFunc mocks the HandleLastBlockTimestampRequest method.
+	HandleLastBlockTimestampRequestFunc func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error)
 
 	// HandleTargetsRequestFunc mocks the HandleTargetsRequest method.
 	HandleTargetsRequestFunc func(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error)
@@ -65,15 +71,22 @@ type HandlerMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// HandleBlockRequest holds details about calls to the HandleBlockRequest method.
-		HandleBlockRequest []struct {
+		// HandleBlocksRequest holds details about calls to the HandleBlocksRequest method.
+		HandleBlocksRequest []struct {
 			// ContextMoqParam is the contextMoqParam argument value.
 			ContextMoqParam context.Context
 			// Req is the req argument value.
 			Req gp2p.Data
 		}
-		// HandleBlocksRequest holds details about calls to the HandleBlocksRequest method.
-		HandleBlocksRequest []struct {
+		// HandleFirstBlockTimestampRequest holds details about calls to the HandleFirstBlockTimestampRequest method.
+		HandleFirstBlockTimestampRequest []struct {
+			// ContextMoqParam is the contextMoqParam argument value.
+			ContextMoqParam context.Context
+			// Req is the req argument value.
+			Req gp2p.Data
+		}
+		// HandleLastBlockTimestampRequest holds details about calls to the HandleLastBlockTimestampRequest method.
+		HandleLastBlockTimestampRequest []struct {
 			// ContextMoqParam is the contextMoqParam argument value.
 			ContextMoqParam context.Context
 			// Req is the req argument value.
@@ -108,48 +121,13 @@ type HandlerMock struct {
 			Req gp2p.Data
 		}
 	}
-	lockHandleBlockRequest        sync.RWMutex
-	lockHandleBlocksRequest       sync.RWMutex
-	lockHandleTargetsRequest      sync.RWMutex
-	lockHandleTransactionRequest  sync.RWMutex
-	lockHandleTransactionsRequest sync.RWMutex
-	lockHandleUtxosRequest        sync.RWMutex
-}
-
-// HandleBlockRequest calls HandleBlockRequestFunc.
-func (mock *HandlerMock) HandleBlockRequest(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
-	if mock.HandleBlockRequestFunc == nil {
-		panic("HandlerMock.HandleBlockRequestFunc: method is nil but Handler.HandleBlockRequest was just called")
-	}
-	callInfo := struct {
-		ContextMoqParam context.Context
-		Req             gp2p.Data
-	}{
-		ContextMoqParam: contextMoqParam,
-		Req:             req,
-	}
-	mock.lockHandleBlockRequest.Lock()
-	mock.calls.HandleBlockRequest = append(mock.calls.HandleBlockRequest, callInfo)
-	mock.lockHandleBlockRequest.Unlock()
-	return mock.HandleBlockRequestFunc(contextMoqParam, req)
-}
-
-// HandleBlockRequestCalls gets all the calls that were made to HandleBlockRequest.
-// Check the length with:
-//
-//	len(mockedHandler.HandleBlockRequestCalls())
-func (mock *HandlerMock) HandleBlockRequestCalls() []struct {
-	ContextMoqParam context.Context
-	Req             gp2p.Data
-} {
-	var calls []struct {
-		ContextMoqParam context.Context
-		Req             gp2p.Data
-	}
-	mock.lockHandleBlockRequest.RLock()
-	calls = mock.calls.HandleBlockRequest
-	mock.lockHandleBlockRequest.RUnlock()
-	return calls
+	lockHandleBlocksRequest              sync.RWMutex
+	lockHandleFirstBlockTimestampRequest sync.RWMutex
+	lockHandleLastBlockTimestampRequest  sync.RWMutex
+	lockHandleTargetsRequest             sync.RWMutex
+	lockHandleTransactionRequest         sync.RWMutex
+	lockHandleTransactionsRequest        sync.RWMutex
+	lockHandleUtxosRequest               sync.RWMutex
 }
 
 // HandleBlocksRequest calls HandleBlocksRequestFunc.
@@ -185,6 +163,78 @@ func (mock *HandlerMock) HandleBlocksRequestCalls() []struct {
 	mock.lockHandleBlocksRequest.RLock()
 	calls = mock.calls.HandleBlocksRequest
 	mock.lockHandleBlocksRequest.RUnlock()
+	return calls
+}
+
+// HandleFirstBlockTimestampRequest calls HandleFirstBlockTimestampRequestFunc.
+func (mock *HandlerMock) HandleFirstBlockTimestampRequest(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+	if mock.HandleFirstBlockTimestampRequestFunc == nil {
+		panic("HandlerMock.HandleFirstBlockTimestampRequestFunc: method is nil but Handler.HandleFirstBlockTimestampRequest was just called")
+	}
+	callInfo := struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}{
+		ContextMoqParam: contextMoqParam,
+		Req:             req,
+	}
+	mock.lockHandleFirstBlockTimestampRequest.Lock()
+	mock.calls.HandleFirstBlockTimestampRequest = append(mock.calls.HandleFirstBlockTimestampRequest, callInfo)
+	mock.lockHandleFirstBlockTimestampRequest.Unlock()
+	return mock.HandleFirstBlockTimestampRequestFunc(contextMoqParam, req)
+}
+
+// HandleFirstBlockTimestampRequestCalls gets all the calls that were made to HandleFirstBlockTimestampRequest.
+// Check the length with:
+//
+//	len(mockedHandler.HandleFirstBlockTimestampRequestCalls())
+func (mock *HandlerMock) HandleFirstBlockTimestampRequestCalls() []struct {
+	ContextMoqParam context.Context
+	Req             gp2p.Data
+} {
+	var calls []struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}
+	mock.lockHandleFirstBlockTimestampRequest.RLock()
+	calls = mock.calls.HandleFirstBlockTimestampRequest
+	mock.lockHandleFirstBlockTimestampRequest.RUnlock()
+	return calls
+}
+
+// HandleLastBlockTimestampRequest calls HandleLastBlockTimestampRequestFunc.
+func (mock *HandlerMock) HandleLastBlockTimestampRequest(contextMoqParam context.Context, req gp2p.Data) (gp2p.Data, error) {
+	if mock.HandleLastBlockTimestampRequestFunc == nil {
+		panic("HandlerMock.HandleLastBlockTimestampRequestFunc: method is nil but Handler.HandleLastBlockTimestampRequest was just called")
+	}
+	callInfo := struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}{
+		ContextMoqParam: contextMoqParam,
+		Req:             req,
+	}
+	mock.lockHandleLastBlockTimestampRequest.Lock()
+	mock.calls.HandleLastBlockTimestampRequest = append(mock.calls.HandleLastBlockTimestampRequest, callInfo)
+	mock.lockHandleLastBlockTimestampRequest.Unlock()
+	return mock.HandleLastBlockTimestampRequestFunc(contextMoqParam, req)
+}
+
+// HandleLastBlockTimestampRequestCalls gets all the calls that were made to HandleLastBlockTimestampRequest.
+// Check the length with:
+//
+//	len(mockedHandler.HandleLastBlockTimestampRequestCalls())
+func (mock *HandlerMock) HandleLastBlockTimestampRequestCalls() []struct {
+	ContextMoqParam context.Context
+	Req             gp2p.Data
+} {
+	var calls []struct {
+		ContextMoqParam context.Context
+		Req             gp2p.Data
+	}
+	mock.lockHandleLastBlockTimestampRequest.RLock()
+	calls = mock.calls.HandleLastBlockTimestampRequest
+	mock.lockHandleLastBlockTimestampRequest.RUnlock()
 	return calls
 }
 

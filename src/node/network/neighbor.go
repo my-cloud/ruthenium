@@ -3,7 +3,6 @@ package network
 type Neighbor interface {
 	Target() string
 	GetFirstBlockTimestamp() (int64, error)
-	GetLastBlockTimestamp() (int64, error)
 	GetBlocks(startingBlockHeight uint64) ([]byte, error)
 	SendTargets(request []TargetRequest) (err error)
 	AddTransaction(request TransactionRequest) (err error)

@@ -22,7 +22,7 @@ var _ protocol.TransactionsPool = &TransactionsPoolMock{}
 //			AddTransactionFunc: func(transactionRequest *network.TransactionRequest, hostTarget string)  {
 //				panic("mock out the AddTransaction method")
 //			},
-//			TransactionsFunc: func() []*network.TransactionResponse {
+//			TransactionsFunc: func() []byte {
 //				panic("mock out the Transactions method")
 //			},
 //		}
@@ -36,7 +36,7 @@ type TransactionsPoolMock struct {
 	AddTransactionFunc func(transactionRequest *network.TransactionRequest, hostTarget string)
 
 	// TransactionsFunc mocks the Transactions method.
-	TransactionsFunc func() []*network.TransactionResponse
+	TransactionsFunc func() []byte
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -92,7 +92,7 @@ func (mock *TransactionsPoolMock) AddTransactionCalls() []struct {
 }
 
 // Transactions calls TransactionsFunc.
-func (mock *TransactionsPoolMock) Transactions() []*network.TransactionResponse {
+func (mock *TransactionsPoolMock) Transactions() []byte {
 	if mock.TransactionsFunc == nil {
 		panic("TransactionsPoolMock.TransactionsFunc: method is nil but TransactionsPool.Transactions was just called")
 	}

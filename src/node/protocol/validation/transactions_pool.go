@@ -217,7 +217,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	transactions := []*Transaction{transaction}
 	transactionsBytes, err := json.Marshal(transactions)
 	if err != nil {
-		pool.logger.Error(fmt.Errorf("failed to marshal transactions: %w", err).Error())
+		return fmt.Errorf("failed to marshal transactions: %w", err)
 	}
 	err = blockchainCopy.AddBlock(nextBlockTimestamp+pool.validationTimestamp, transactionsBytes, nil)
 	if err != nil {

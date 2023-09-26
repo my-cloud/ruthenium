@@ -44,18 +44,6 @@ func (neighbor *Neighbor) GetFirstBlockTimestamp() (timestamp int64, err error) 
 	return
 }
 
-func (neighbor *Neighbor) GetLastBlockTimestamp() (timestamp int64, err error) {
-	res, err := neighbor.client.Send(lastBlockTimestampEndpoint, gp2p.Data{})
-	if err == nil {
-		timestampBytes := res.GetBytes()
-		err = json.Unmarshal(timestampBytes, &timestamp)
-		if err != nil {
-			return
-		}
-	}
-	return
-}
-
 func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) (blocks []byte, err error) {
 	res, err := neighbor.sendRequest(blocksEndpoint, startingBlockHeight)
 	if err == nil {

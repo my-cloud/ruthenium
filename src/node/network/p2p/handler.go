@@ -53,17 +53,6 @@ func (handler *Handler) HandleFirstBlockTimestampRequest(_ context.Context, _ gp
 	return res, nil
 }
 
-func (handler *Handler) HandleLastBlockTimestampRequest(_ context.Context, _ gp2p.Data) (gp2p.Data, error) {
-	res := gp2p.Data{}
-	timestamp := handler.blockchain.LastBlockTimestamp()
-	timestampBytes, err := json.Marshal(timestamp)
-	if err != nil {
-		return res, err
-	}
-	res.SetBytes(timestampBytes)
-	return res, nil
-}
-
 func (handler *Handler) HandleTargetsRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
 	var targetsRequest []network.TargetRequest
 	res := gp2p.Data{}
