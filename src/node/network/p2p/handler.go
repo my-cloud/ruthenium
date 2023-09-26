@@ -29,24 +29,6 @@ func NewHandler(blockchain protocol.Blockchain,
 	return &Handler{blockchain, synchronizer, transactionsPool, watch, logger}
 }
 
-func (handler *Handler) HandleBlockRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
-	var blockHeight uint64
-	res := gp2p.Data{}
-	data := req.GetBytes()
-	if err := json.Unmarshal(data, &blockHeight); err != nil {
-		handler.logger.Debug(BadRequest)
-		return res, err
-	}
-	blockResponse := handler.blockchain.Block(blockHeight)
-	marshaledBlock, err := json.Marshal(blockResponse)
-	if err != nil {
-		handler.logger.Error(err.Error())
-		return res, err
-	}
-	res.SetBytes(marshaledBlock)
-	return res, nil
-}
-
 func (handler *Handler) HandleBlocksRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
 	var startingBlockHeight uint64
 	res := gp2p.Data{}
@@ -55,13 +37,30 @@ func (handler *Handler) HandleBlocksRequest(_ context.Context, req gp2p.Data) (g
 		handler.logger.Debug(BadRequest)
 		return res, err
 	}
-	blockResponses := handler.blockchain.Blocks(startingBlockHeight)
-	marshaledBlocks, err := json.Marshal(blockResponses)
+	blocks := handler.blockchain.Blocks(startingBlockHeight)
+	res.SetBytes(blocks)
+	return res, nil
+}
+
+func (handler *Handler) HandleFirstBlockTimestampRequest(_ context.Context, _ gp2p.Data) (gp2p.Data, error) {
+	res := gp2p.Data{}
+	timestamp := handler.blockchain.FirstBlockTimestamp()
+	timestampBytes, err := json.Marshal(timestamp)
 	if err != nil {
-		handler.logger.Error(err.Error())
 		return res, err
 	}
-	res.SetBytes(marshaledBlocks)
+	res.SetBytes(timestampBytes)
+	return res, nil
+}
+
+func (handler *Handler) HandleLastBlockTimestampRequest(_ context.Context, _ gp2p.Data) (gp2p.Data, error) {
+	res := gp2p.Data{}
+	timestamp := handler.blockchain.LastBlockTimestamp()
+	timestampBytes, err := json.Marshal(timestamp)
+	if err != nil {
+		return res, err
+	}
+	res.SetBytes(timestampBytes)
 	return res, nil
 }
 
@@ -103,13 +102,8 @@ func (handler *Handler) HandleTransactionRequest(_ context.Context, req gp2p.Dat
 
 func (handler *Handler) HandleTransactionsRequest(_ context.Context, _ gp2p.Data) (gp2p.Data, error) {
 	res := gp2p.Data{}
-	transactionResponses := handler.transactionsPool.Transactions()
-	data, err := json.Marshal(transactionResponses)
-	if err != nil {
-		handler.logger.Error(err.Error())
-		return res, err
-	}
-	res.SetBytes(data)
+	transactions := handler.transactionsPool.Transactions()
+	res.SetBytes(transactions)
 	return res, nil
 }
 

@@ -6,6 +6,16 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 )
 
+const (
+	blocksEndpoint              = "blocks"
+	firstBlockTimestampEndpoint = "first-block-timestamp"
+	lastBlockTimestampEndpoint  = "last-block-timestamp"
+	targetsEndpoint             = "targets"
+	transactionEndpoint         = "transaction"
+	transactionsEndpoint        = "transactions"
+	utxosEndpoint               = "utxos"
+)
+
 type Host struct {
 	handler               network.Handler
 	server                Server
@@ -28,12 +38,13 @@ func NewHost(
 
 func (host *Host) Run() error {
 	host.startBlockchain()
-	host.server.SetHandle("block", host.handler.HandleBlockRequest)
-	host.server.SetHandle("blocks", host.handler.HandleBlocksRequest)
-	host.server.SetHandle("targets", host.handler.HandleTargetsRequest)
-	host.server.SetHandle("transaction", host.handler.HandleTransactionRequest)
-	host.server.SetHandle("transactions", host.handler.HandleTransactionsRequest)
-	host.server.SetHandle("utxos", host.handler.HandleUtxosRequest)
+	host.server.SetHandle(blocksEndpoint, host.handler.HandleBlocksRequest)
+	host.server.SetHandle(firstBlockTimestampEndpoint, host.handler.HandleFirstBlockTimestampRequest)
+	host.server.SetHandle(lastBlockTimestampEndpoint, host.handler.HandleLastBlockTimestampRequest)
+	host.server.SetHandle(targetsEndpoint, host.handler.HandleTargetsRequest)
+	host.server.SetHandle(transactionEndpoint, host.handler.HandleTransactionRequest)
+	host.server.SetHandle(transactionsEndpoint, host.handler.HandleTransactionsRequest)
+	host.server.SetHandle(utxosEndpoint, host.handler.HandleUtxosRequest)
 	return host.startServer()
 }
 

@@ -32,48 +32,58 @@ func (neighbor *Neighbor) Target() string {
 	return neighbor.target.Value()
 }
 
-func (neighbor *Neighbor) GetBlock(blockHeight uint64) (block []byte, err error) {
-	res, err := neighbor.sendRequest("block", blockHeight)
+func (neighbor *Neighbor) GetFirstBlockTimestamp() (timestamp int64, err error) {
+	res, err := neighbor.client.Send(firstBlockTimestampEndpoint, gp2p.Data{})
+	if err == nil {
+		timestampBytes := res.GetBytes()
+		err = json.Unmarshal(timestampBytes, &timestamp)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+func (neighbor *Neighbor) GetLastBlockTimestamp() (timestamp int64, err error) {
+	res, err := neighbor.client.Send(lastBlockTimestampEndpoint, gp2p.Data{})
+	if err == nil {
+		timestampBytes := res.GetBytes()
+		err = json.Unmarshal(timestampBytes, &timestamp)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) (blocks []byte, err error) {
+	res, err := neighbor.sendRequest(blocksEndpoint, startingBlockHeight)
 	if err == nil {
 		return res.GetBytes(), nil
 	}
 	return
 }
 
-func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) (blockResponses []*network.BlockResponse, err error) {
-	res, err := neighbor.sendRequest("blocks", startingBlockHeight)
-	if err == nil {
-		data := res.GetBytes()
-		err = json.Unmarshal(data, &blockResponses)
-	}
-	return
-}
-
 func (neighbor *Neighbor) SendTargets(request []network.TargetRequest) (err error) {
-	_, err = neighbor.sendRequest("targets", request)
+	_, err = neighbor.sendRequest(targetsEndpoint, request)
 	return
 }
 
 func (neighbor *Neighbor) AddTransaction(request network.TransactionRequest) (err error) {
-	_, err = neighbor.sendRequest("transaction", request)
+	_, err = neighbor.sendRequest(transactionEndpoint, request)
 	return
 }
 
-func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.TransactionResponse, err error) {
-	res, err := neighbor.client.Send("transactions", gp2p.Data{})
-	if err != nil {
-		return
-	}
-	data := res.GetBytes()
-	err = json.Unmarshal(data, &transactionResponses)
-	if transactionResponses == nil {
-		return []network.TransactionResponse{}, err
+func (neighbor *Neighbor) GetTransactions() (transactionResponses []byte, err error) {
+	res, err := neighbor.client.Send(transactionsEndpoint, gp2p.Data{})
+	if err == nil {
+		return res.GetBytes(), nil
 	}
 	return
 }
 
 func (neighbor *Neighbor) GetUtxos(address string) (utxos []*network.UtxoResponse, err error) {
-	res, err := neighbor.sendRequest("utxos", address)
+	res, err := neighbor.sendRequest(utxosEndpoint, address)
 	if err != nil {
 		return
 	}

@@ -18,11 +18,7 @@ type Transaction struct {
 	rewardValue            uint64
 }
 
-func NewRewardTransaction(address string, hasIncome bool, timestamp int64, value uint64) (*network.TransactionResponse, error) {
-	return newTransactionResponse(address, hasIncome, timestamp, value)
-}
-
-func newTransactionResponse(address string, hasIncome bool, timestamp int64, value uint64) (*network.TransactionResponse, error) {
+func NewRewardTransaction(address string, hasIncome bool, timestamp int64, value uint64) (*Transaction, error) {
 	outputs := []*network.OutputResponse{
 		{
 			Address:   address,
@@ -31,11 +27,7 @@ func newTransactionResponse(address string, hasIncome bool, timestamp int64, val
 			Value:     value,
 		},
 	}
-	transaction, err := newTransaction([]*network.InputResponse{}, outputs, timestamp)
-	if err != nil {
-		return nil, err
-	}
-	return transaction.GetResponse(), nil
+	return newTransaction([]*network.InputResponse{}, outputs, timestamp)
 }
 
 func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (*Transaction, error) {
@@ -68,31 +60,24 @@ func newTransaction(inputs []*network.InputResponse, outputs []*network.OutputRe
 	return transaction, nil
 }
 
-// TODO remove
-func NewTransactionFromResponse(transactionResponse *network.TransactionResponse) (*Transaction, error) {
-	transaction, err := newTransaction(transactionResponse.Inputs, transactionResponse.Outputs, transactionResponse.Timestamp)
-	if err != nil {
-		return nil, err
-	}
-	if !transaction.Equals(transactionResponse) {
-		return nil, fmt.Errorf("wrong transaction ID, provided: %s, calculated: %s", transactionResponse.Id, transaction.id)
-	}
-	return transaction, nil
-}
-
-func (transaction *Transaction) Equals(other *network.TransactionResponse) bool {
-	return transaction.id == other.Id
+func (transaction *Transaction) Equals(other *Transaction) bool {
+	return transaction.id == other.Id()
 }
 
 func (transaction *Transaction) UnmarshalJSON(data []byte) error {
-	var transactionResponse *network.TransactionResponse
-	err := json.Unmarshal(data, &transactionResponse)
+	transactionDto := struct {
+		Id        string                    `json:"id"`
+		Inputs    []*network.InputResponse  `json:"inputs"`
+		Outputs   []*network.OutputResponse `json:"outputs"`
+		Timestamp int64                     `json:"timestamp"`
+	}{}
+	err := json.Unmarshal(data, &transactionDto)
 	if err != nil {
 		return err
 	}
-	transaction.inputs = transactionResponse.Inputs
-	transaction.outputs = transactionResponse.Outputs
-	transaction.timestamp = transactionResponse.Timestamp
+	transaction.inputs = transactionDto.Inputs
+	transaction.outputs = transactionDto.Outputs
+	transaction.timestamp = transactionDto.Timestamp
 	marshaledTransaction, err := transaction.marshalJSONWithoutId()
 	if err != nil {
 		return err
@@ -102,8 +87,8 @@ func (transaction *Transaction) UnmarshalJSON(data []byte) error {
 	if err = transaction.findReward(); err != nil {
 		return fmt.Errorf("failed to find reward: %w", err)
 	}
-	if !transaction.Equals(transactionResponse) {
-		return fmt.Errorf("wrong transaction ID, provided: %s, calculated: %s", transactionResponse.Id, transaction.id)
+	if transaction.id != transactionDto.Id {
+		return fmt.Errorf("wrong transaction ID, provided: %s, calculated: %s", transactionDto.Id, transaction.id)
 	}
 	return nil
 }
@@ -132,15 +117,6 @@ func (transaction *Transaction) marshalJSONWithoutId() ([]byte, error) {
 		Outputs:   transaction.outputs,
 		Timestamp: transaction.timestamp,
 	})
-}
-
-func (transaction *Transaction) GetResponse() *network.TransactionResponse {
-	return &network.TransactionResponse{
-		Id:        transaction.id,
-		Inputs:    transaction.inputs,
-		Outputs:   transaction.outputs,
-		Timestamp: transaction.timestamp,
-	}
 }
 
 func (transaction *Transaction) VerifySignatures() error {

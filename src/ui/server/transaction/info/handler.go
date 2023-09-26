@@ -8,7 +8,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
-	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"math"
 	"net/http"
@@ -67,29 +66,22 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		genesisBlockBytes, err := handler.host.GetBlock(0)
+		genesisTimestamp, err := handler.host.GetFirstBlockTimestamp()
 		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to get genesis block: %w", err).Error())
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		var genesisBlock *verification.Block
-		err = json.Unmarshal(genesisBlockBytes, &genesisBlock)
-		if err != nil || genesisBlock == nil {
-			handler.logger.Error(fmt.Errorf("failed to get genesis block: %w", err).Error())
+			handler.logger.Error(fmt.Errorf("failed to get genesis timestamp: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		var selectedUtxos []*UtxoResponse
 		now := handler.watch.Now().UnixNano()
-		nextBlockHeight := (now-genesisBlock.Timestamp())/handler.validationTimestamp + 1
-		nextBlockTimestamp := genesisBlock.Timestamp() + nextBlockHeight*handler.validationTimestamp
+		nextBlockHeight := (now-genesisTimestamp)/handler.validationTimestamp + 1
+		nextBlockTimestamp := genesisTimestamp + nextBlockHeight*handler.validationTimestamp
 		utxosByValue := make(map[uint64][]*UtxoResponse)
 		var walletBalance uint64
 		var values []uint64
 		for _, utxo := range utxos {
 			output := validation.NewOutputFromUtxoResponse(utxo)
-			outputValue := output.Value(nextBlockTimestamp, genesisBlock.Timestamp(), handler.halfLifeInNanoseconds, handler.incomeBase, handler.incomeLimit, handler.validationTimestamp)
+			outputValue := output.Value(nextBlockTimestamp, genesisTimestamp, handler.halfLifeInNanoseconds, handler.incomeBase, handler.incomeLimit, handler.validationTimestamp)
 			utxoResponse := &UtxoResponse{
 				OutputIndex:   utxo.OutputIndex,
 				TransactionId: utxo.TransactionId,

@@ -3,6 +3,7 @@ package protocoltest
 import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
+	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 )
 
 func NewGenesisBlockResponse(validatorWalletAddress string, genesisValue uint64) *network.BlockResponse {
@@ -10,7 +11,7 @@ func NewGenesisBlockResponse(validatorWalletAddress string, genesisValue uint64)
 	return &network.BlockResponse{
 		Timestamp:                  0,
 		PreviousHash:               [32]byte{},
-		Transactions:               []*network.TransactionResponse{genesisTransaction},
+		Transactions:               []*validation.Transaction{genesisTransaction},
 		AddedRegisteredAddresses:   nil,
 		RemovedRegisteredAddresses: nil,
 	}

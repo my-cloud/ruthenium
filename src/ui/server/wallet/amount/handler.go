@@ -7,7 +7,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
-	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"net/http"
 )
@@ -42,16 +41,9 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		genesisBlockBytes, err := handler.host.GetBlock(0)
+		genesisTimestamp, err := handler.host.GetFirstBlockTimestamp()
 		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to get genesis block: %w", err).Error())
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		var genesisBlock *verification.Block
-		err = json.Unmarshal(genesisBlockBytes, &genesisBlock)
-		if err != nil || genesisBlock == nil {
-			handler.logger.Error(fmt.Errorf("failed to get genesis block: %w", err).Error())
+			handler.logger.Error(fmt.Errorf("failed to get genesis timestamp: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -59,7 +51,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		for _, utxo := range utxos {
 			now := handler.watch.Now().UnixNano()
 			output := validation.NewOutputFromUtxoResponse(utxo)
-			balance += output.Value(now, genesisBlock.Timestamp(), handler.halfLifeInNanoseconds, handler.incomeBase, handler.incomeLimit, handler.validationTimestamp)
+			balance += output.Value(now, genesisTimestamp, handler.halfLifeInNanoseconds, handler.incomeBase, handler.incomeLimit, handler.validationTimestamp)
 		}
 		marshaledAmount, err := json.Marshal(float64(balance) / float64(handler.particlesCount))
 		if err != nil {
