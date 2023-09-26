@@ -109,7 +109,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		var inputsValue uint64
 		if isConsolidationRequired {
 			inputsValue = walletBalance
-		} else if values != nil {
+		} else if len(values) != 0 {
 			for inputsValue < targetValue {
 				closestValueIndex := findClosestValueIndex(targetValue, values)
 				closestValue := values[closestValueIndex]

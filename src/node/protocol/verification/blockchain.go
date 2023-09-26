@@ -161,7 +161,7 @@ func (blockchain *Blockchain) FindFee(inputs []*network.InputResponse, outputs [
 	var outputsValue uint64
 	for _, input := range inputs {
 		utxos := blockchain.utxosById[input.TransactionId]
-		if utxos == nil {
+		if len(utxos) == 0 {
 			return 0, fmt.Errorf("failed to find utxo, input: %v", input)
 		}
 		utxo := utxos[input.OutputIndex]
@@ -196,14 +196,12 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	var waitGroup sync.WaitGroup
 	timeout := time.Duration(blockchain.validationTimestamp / 12)
 	if len(hostBlocks) > 2 {
-		var oldHostBlocks []*Block
-		var lastHostBlocks []*Block
 		hostTarget := "host"
-		blocksByTarget[hostTarget] = hostBlocks
 		selectedTargets = append(selectedTargets, hostTarget)
-		oldHostBlocks = make([]*Block, len(hostBlocks)-1)
-		lastHostBlocks = []*Block{hostBlocks[len(hostBlocks)-1]}
+		blocksByTarget[hostTarget] = hostBlocks
+		oldHostBlocks := make([]*Block, len(hostBlocks)-1)
 		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-1])
+		lastHostBlocks := []*Block{hostBlocks[len(hostBlocks)-1]}
 		for _, neighbor := range neighbors {
 			target := neighbor.Target()
 			waitGroup.Add(1)
@@ -228,7 +226,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			case lastNeighborBlocks := <-c:
 				if len(lastNeighborBlocks) > 0 {
 					verifiedBlocks, err := blockchain.verify(lastHostBlocks, lastNeighborBlocks, oldHostBlocks, timestamp)
-					if err != nil || verifiedBlocks == nil {
+					if err != nil || len(verifiedBlocks) == 0 {
 						blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 					} else {
 						mutex.Lock()
@@ -272,7 +270,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			case neighborBlocks := <-c:
 				if len(neighborBlocks) > 0 {
 					verifiedBlocks, err := blockchain.verify(hostBlocks, neighborBlocks, nil, timestamp)
-					if err != nil || verifiedBlocks == nil {
+					if err != nil || len(verifiedBlocks) == 0 {
 						blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 					} else {
 						mutex.Lock()
@@ -290,7 +288,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	waitGroup.Wait()
 	var selectedBlocks []*Block
 	var isDifferent bool
-	if selectedTargets != nil {
+	if len(selectedTargets) != 0 {
 		// Keep blockchains with consensus for the previous hash (prevent forks)
 		blockchain.sortByBlocksLength(selectedTargets, blocksByTarget)
 		halfNeighborsCount := len(blocksByTarget) / 2
@@ -372,7 +370,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			}
 		}
 	}
-	if isDifferent && selectedBlocks != nil {
+	if isDifferent && len(selectedBlocks) != 0 {
 		blockchain.mutex.Lock()
 		defer blockchain.mutex.Unlock()
 		var newBlocks []*Block
@@ -388,7 +386,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		for i, newBlock := range newBlocks {
 			err = blockchain.updateUtxos(newBlock, i)
 			if err != nil {
-				blockchain.logger.Error(fmt.Errorf("verification failed: faild to add UTXO: %w", err).Error())
+				blockchain.logger.Error(fmt.Errorf("verification failed: failed to add UTXO: %w", err).Error())
 				blockchain.logger.Debug("verification done: blockchain kept")
 				return
 			}
@@ -410,8 +408,8 @@ func (blockchain *Blockchain) UtxosByAddress(address string) []*network.UtxoResp
 
 func (blockchain *Blockchain) addBlock(block *Block) error {
 	if !blockchain.isEmpty() {
-		blockHeight := len(blockchain.blocks) - 1
-		err := blockchain.updateUtxos(blockchain.blocks[blockHeight], blockHeight)
+		lastBlockHeight := len(blockchain.blocks) - 1
+		err := blockchain.updateUtxos(blockchain.blocks[lastBlockHeight], lastBlockHeight)
 		if err != nil {
 			return fmt.Errorf("failed to add UTXO: %w", err)
 		}
@@ -464,7 +462,7 @@ func (blockchain *Blockchain) updateUtxos(block *Block, blockHeight int) error {
 		}
 		for _, input := range transaction.Inputs() {
 			utxos := utxosById[input.TransactionId]
-			if utxos == nil {
+			if len(utxos) == 0 {
 				return fmt.Errorf("failed to find transaction ID, input: %v", input)
 			}
 			utxo := utxos[input.OutputIndex]
@@ -506,7 +504,7 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlocks []*
 	var utxosByAddress map[string][]*network.UtxoResponse
 	var utxosById map[string][]*network.UtxoResponse
 	var registeredAddresses map[string]bool
-	if oldHostBlocks == nil {
+	if len(oldHostBlocks) == 0 {
 		utxosByAddress = make(map[string][]*network.UtxoResponse)
 		utxosById = make(map[string][]*network.UtxoResponse)
 		registeredAddresses = make(map[string]bool)
@@ -565,13 +563,14 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlocks []*
 			}
 		}
 		if isNewBlock && !isGenesisBlock {
-			err := blockchain.verifyBlock(neighborBlock, previousBlockTimestamp, timestamp, neighborBlockchain)
-			if err != nil {
+			if err := blockchain.verifyBlock(neighborBlock, previousBlockTimestamp, timestamp, neighborBlockchain); err != nil {
 				return nil, err
 			}
 		}
-		err := neighborBlockchain.addBlock(neighborBlock)
-		if err != nil {
+		if i == 0 {
+			neighborBlockchain.blocks = append(neighborBlockchain.blocks, neighborBlock)
+			//neighborBlockchain.updateRegisteredAddresses(neighborBlock.AddedRegisteredAddresses(), neighborBlock.RemovedRegisteredAddresses())
+		} else if err := neighborBlockchain.addBlock(neighborBlock); err != nil {
 			return nil, err
 		}
 		verifiedBlocks = append(verifiedBlocks, neighborBlock)

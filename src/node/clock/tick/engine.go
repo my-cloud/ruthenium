@@ -11,6 +11,7 @@ type Engine struct {
 
 	watch              clock.Watch
 	timer              time.Duration
+	subTimer           time.Duration
 	ticker             *time.Ticker
 	occurrences        int64
 	skippedOccurrences int
@@ -25,8 +26,8 @@ func NewEngine(function func(timestamp int64), watch clock.Watch, timer time.Dur
 	} else {
 		subTimer = timer
 	}
-	ticker := time.NewTicker(subTimer)
-	return &Engine{function, watch, subTimer, ticker, occurrences, skippedOccurrences, false, false}
+	ticker := time.NewTicker(timer)
+	return &Engine{function, watch, timer, subTimer, ticker, occurrences, skippedOccurrences, false, false}
 }
 
 func (engine *Engine) Do() {
@@ -56,11 +57,11 @@ func (engine *Engine) Start() {
 	}
 	engine.started = true
 	initialTime := engine.watch.Now()
-	startTime := initialTime.Truncate(engine.timer).Add(engine.timer)
+	startTime := initialTime.Truncate(engine.subTimer).Add(engine.subTimer)
 	deadline := startTime.Sub(initialTime)
 	engine.ticker.Reset(deadline)
 	<-engine.ticker.C
-	engine.ticker.Reset(engine.timer)
+	engine.ticker.Reset(engine.subTimer)
 	occurrences := int(engine.occurrences)
 	for {
 		for i := 0; i < occurrences; i++ {
@@ -69,7 +70,7 @@ func (engine *Engine) Start() {
 					engine.ticker.Stop()
 					return
 				}
-				now := engine.watch.Now().Round(engine.timer)
+				now := engine.watch.Now().Round(engine.subTimer)
 				engine.function(now.UnixNano())
 			}
 			<-engine.ticker.C

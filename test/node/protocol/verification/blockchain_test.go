@@ -188,7 +188,7 @@ func Test_UtxosByAddress_UnknownAddress_ReturnsNil(t *testing.T) {
 	utxos := blockchain.UtxosByAddress(genesisValidatorAddress)
 
 	// Assert
-	test.Assert(t, utxos == nil, "utxos list is not nil whereas it should be")
+	test.Assert(t, len(utxos) == 0, "utxos should be empty")
 }
 
 func Test_UtxosByAddress_GenesisValidator_ReturnsGenesisUtxo(t *testing.T) {
