@@ -26,36 +26,46 @@ go run src/node/main.go -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0
 ```
   
 ## API
+`base-url`: `<node IP>:<node port>` (example: seed-styx.ruthenium.my-cloud.me:10600)
+
 Each request value or response value shall be marshaled to bytes or un-marshaled from bytes. All fields are required.
 
 ### Blockchain
 <details>
-<summary><b>Get block</b></summary>
-
-*Description*: Get the block having the given height.
-  * **request value:** [Block request](#block-request)
-  * **response value:** [Block response](#block-response)
-</details>
-<details>
 <summary><b>Get blocks</b></summary>
 
-*Description*: Get the blocks starting from the given index (blocks count is limited).
-  * **request value:** [Blocks request](#blocks-request)
+*Route*: `base-url/blocks`
+
+*Description*: Get the blocks starting from the given height (returned blocks array size is limited).
+  * **request value:** 64 bits unsigned integer block height
   * **response value:** Array of [block responses](#block-response)
+</details>
+<details>
+<summary><b>Get first block timestamp</b></summary>
+
+*Route*: `base-url/first-block-timestamp`
+
+*Description*: Get the first block timestamp.
+  * **request value:** *none*
+  * **response value:** 64 bits integer timestamp in nanoseconds
 </details>
 
 ### Network
 <details>
 <summary><b>Share targets</b></summary>
 
+*Route*: `base-url/targets`
+
 *Description:* Share known validator node targets (IP and port).
 * **request value:** Array of [target requests](#target-request)  
-* **response value:** no response
+* **response value:** *none*
 </details>
 
 ### Transactions pool
 <details>
 <summary><b>Add transaction</b></summary>
+
+*Route*: `base-url/transaction`
 
 *Description:* Add a transaction to the transactions pool.
 * **request value:** [Transaction request](#transaction-request)  
@@ -63,6 +73,8 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 </details>
 <details>
 <summary><b>Get transactions</b></summary>
+
+*Route*: `base-url/transactions`
 
 *Description:* Get all the transactions of the current transactions pool.
 * **request value:** `GET TRANSACTIONS`  
@@ -73,6 +85,8 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 <details>
 <summary><b>Get UTXOs</b></summary>
 
+*Route*: `base-url/utxos`
+
 *Description:* Get all the UTXOs for the given wallet address.
 * **request value:** [UTXO request](#utxo-request)  
 * **response value:** Array of [UTXO response](#utxo-response)
@@ -81,84 +95,6 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 ---
 
 ### Schemas
-
-#### Blocks request
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-BlocksRequest {
-  StartingBlockHeight uint64
-}
-```
-</td>
-<td>
-
-```
-The data structure for blocks request
-  The blocks first block height
-
-```
-</td>
-<td>
-
-```
-{
-  "StartingBlockHeight": 0
-}
-```
-</td>
-</tr>
-</table>
-
-#### Block request
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-BlockRequest {
-  BlockHeight uint64
-}
-```
-</td>
-<td>
-
-```
-The data structure for block request
-  The block height
-
-```
-</td>
-<td>
-
-```
-{
-  "BlockHeight": 0
-}
-```
-</td>
-</tr>
-</table>
 
 #### Block response
 <table>
