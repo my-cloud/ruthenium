@@ -128,6 +128,8 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
   |500|Internal server error, if an unexpected condition occurred|
 </details>
 
+---
+
 ### Schemas
 
 #### Input
