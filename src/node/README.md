@@ -79,10 +79,10 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 </details>
 
 ---
-<details open>
-<summary style="font-size:24px"><b>Schemas</b></summary>
 
-### Blocks request
+### Schemas
+
+#### Blocks request
 <table>
 <th>
 Schema
@@ -121,7 +121,7 @@ The data structure for blocks request
 </tr>
 </table>
 
-### Block request
+#### Block request
 <table>
 <th>
 Schema
@@ -160,7 +160,7 @@ The data structure for block request
 </tr>
 </table>
 
-### Block response
+#### Block response
 <table>
 <th>
 Schema
@@ -211,7 +211,7 @@ The data structure for block response
 </tr>
 </table>
 
-### Target request
+#### Target request
 <table>
 <th>
 Schema
@@ -442,7 +442,7 @@ The transaction data structure for response
 </tr>
 </table>
 
-### UTXO request
+#### UTXO request
 <table>
 <th>
 Schema
@@ -481,7 +481,7 @@ The data structure for UTXOs request
 </tr>
 </table>
 
-### UTXO response
+#### UTXO response
 <table>
 <th>
 Schema
@@ -537,6 +537,5 @@ The data structure for UTXO response
 </td>
 </tr>
 </table>
-</details>
 
 [1]: https://go.dev/blog/gob "Gobs official documentation"
