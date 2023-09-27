@@ -38,14 +38,14 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 * **parameters:**
 
   |Name|Description|Example|
-      |---|---|---|
+    |---|---|---|
   |`address`|42 characters hexadecimal sender wallet address|`0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a`|
   |`value`|64 bits floating-point number value of the transaction|`0`|
 * **request body:** *none*
 * **responses:**
 
   |Code|Description|
-      |---|---|
+    |---|---|
   |200|[Transaction info response](#transaction-info-response)|
   |400|Bad request, if any request argument is invalid|
   |405|Method not allowed, if the value exceeds the wallet amount for the given address|
@@ -96,7 +96,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 * **parameters:** *none*
 
   |Name|Description|Example|
-      |---|---|---|
+    |---|---|---|
   |`publicKey`|132 characters hexadecimal public key|`0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782`|
 * **request body:** *none*
 * **responses:**
@@ -268,7 +268,7 @@ The data structure for transaction info response
 </tr>
 </table>
 
-### UTXO response
+#### UTXO response
 <table>
 <th>
 Schema
