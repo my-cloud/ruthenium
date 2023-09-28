@@ -1,219 +1,213 @@
 package verification
 
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/my-cloud/ruthenium/src/node/config"
+	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
+	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
+	"github.com/my-cloud/ruthenium/test"
+	"github.com/my-cloud/ruthenium/test/log/logtest"
+	"github.com/my-cloud/ruthenium/test/node/network/networktest"
+	"github.com/my-cloud/ruthenium/test/node/protocol/protocoltest"
+	"testing"
+)
+
 const (
 	blockchainReplacedMessage = "verification done: blockchain replaced"
 	blockchainKeptMessage     = "verification done: blockchain kept"
 )
 
-//
-//func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
-//	// Arrange
-//	registry := new(protocoltest.RegistryMock)
-//	logger := logtest.NewLoggerMock()
-//	synchronizer := new(networktest.SynchronizerMock)
-//	settings := config.Settings{
-//		GenesisAmountInParticles:    1,
-//		HalfLifeInDays:              1,
-//		IncomeBaseInParticles:       1,
-//		IncomeLimitInParticles:      1,
-//		MinimalTransactionFee:       0,
-//		ValidationIntervalInSeconds: 1,
-//	}
-//	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
-//
-//	// Act
-//	err := blockchain.AddBlock(0, nil, nil)
-//
-//	// Assert
-//	test.Assert(t, err == nil, "error is returned whereas it should not")
-//}
-//
-//func Test_Blocks_BlocksCountLimitSetToZero_ReturnsNil(t *testing.T) {
-//	// Arrange
-//	registry := new(protocoltest.RegistryMock)
-//	logger := logtest.NewLoggerMock()
-//	synchronizer := new(networktest.SynchronizerMock)
-//	settings := config.Settings{
-//		GenesisAmountInParticles:    1,
-//		HalfLifeInDays:              1,
-//		IncomeBaseInParticles:       1,
-//		IncomeLimitInParticles:      1,
-//		MinimalTransactionFee:       0,
-//		ValidationIntervalInSeconds: 1,
-//	}
-//	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
-//
-//	// Act
-//	blocks := blockchain.Blocks(0)
-//
-//	// Assert
-//	test.Assert(t, len(blocks) == 0, "blocks should be nil")
-//}
-//
-//func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
-//	// Arrange
-//	registry := new(protocoltest.RegistryMock)
-//	logger := logtest.NewLoggerMock()
-//	synchronizer := new(networktest.SynchronizerMock)
-//	var expectedBlocksCount uint64 = 1
-//	var validationInterval int64 = 1
-//	settings := config.Settings{
-//		BlocksCountLimit:            expectedBlocksCount,
-//		GenesisAmountInParticles:    1,
-//		HalfLifeInDays:              1,
-//		IncomeBaseInParticles:       1,
-//		IncomeLimitInParticles:      1,
-//		MinimalTransactionFee:       0,
-//		ValidationIntervalInSeconds: validationInterval,
-//	}
-//	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
-//	var genesisTimestamp int64 = 0
-//	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
-//	_ = blockchain.AddBlock(genesisTimestamp+validationInterval, nil, nil)
-//
-//	// Act
-//	blocks := blockchain.Blocks(0)
-//
-//	// Assert
-//	test.Assert(t, len(blocks) == int(expectedBlocksCount), fmt.Sprintf("should return %d blocks", expectedBlocksCount))
-//}
-//
-//func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
-//	// Arrange
-//	registry := new(protocoltest.RegistryMock)
-//	logger := logtest.NewLoggerMock()
-//	synchronizer := new(networktest.SynchronizerMock)
-//	var expectedBlocksCount uint64 = 2
-//	var validationInterval int64 = 1
-//	settings := config.Settings{
-//		BlocksCountLimit:            expectedBlocksCount,
-//		GenesisAmountInParticles:    1,
-//		HalfLifeInDays:              1,
-//		IncomeBaseInParticles:       1,
-//		IncomeLimitInParticles:      1,
-//		MinimalTransactionFee:       0,
-//		ValidationIntervalInSeconds: validationInterval,
-//	}
-//	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
-//	var genesisTimestamp int64 = 0
-//	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
-//	_ = blockchain.AddBlock(genesisTimestamp+validationInterval, nil, nil)
-//
-//	// Act
-//	blocks := blockchain.Blocks(0)
-//
-//	// Assert
-//	test.Assert(t, len(blocks) == int(expectedBlocksCount), fmt.Sprintf("should return %d blocks", expectedBlocksCount))
-//}
-//
-//func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsNil(t *testing.T) {
-//	// Arrange
-//	registry := new(protocoltest.RegistryMock)
-//	logger := logtest.NewLoggerMock()
-//	synchronizer := new(networktest.SynchronizerMock)
-//	var validationInterval int64 = 1
-//	settings := config.Settings{
-//		BlocksCountLimit:            1,
-//		GenesisAmountInParticles:    1,
-//		HalfLifeInDays:              1,
-//		IncomeBaseInParticles:       1,
-//		IncomeLimitInParticles:      1,
-//		MinimalTransactionFee:       0,
-//		ValidationIntervalInSeconds: validationInterval,
-//	}
-//	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
-//
-//	// Act
-//	blocks := blockchain.Blocks(1)
-//
-//	// Assert
-//	expectedBlocksCount := 0
-//	test.Assert(t, len(blocks) == expectedBlocksCount, fmt.Sprintf("should return %d blocks", expectedBlocksCount))
-//}
-//
-//func Test_AllBlocks_ValidParameters_NoErrorLogged(t *testing.T) {
-//	// Arrange
-//	registry := new(protocoltest.RegistryMock)
-//	logger := logtest.NewLoggerMock()
-//	synchronizer := new(networktest.SynchronizerMock)
-//	settings := config.Settings{
-//		GenesisAmountInParticles:    1,
-//		HalfLifeInDays:              1,
-//		IncomeBaseInParticles:       1,
-//		IncomeLimitInParticles:      1,
-//		MinimalTransactionFee:       0,
-//		ValidationIntervalInSeconds: 1,
-//	}
-//	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
-//	_ = blockchain.AddBlock(0, nil, nil)
-//
-//	// Act
-//	blocks := blockchain.AllBlocks()
-//
-//	// Assert
-//	test.Assert(t, len(blocks) == 1, "blocks should contain a single block")
-//}
-//
-//func Test_UtxosByAddress_UnknownAddress_ReturnsNil(t *testing.T) {
-//	// Arrange
-//	logger := logtest.NewLoggerMock()
-//	genesisValidatorAddress := ""
-//	var genesisAmount uint64 = 0
-//	settings := config.Settings{
-//		GenesisAmountInParticles:    genesisAmount,
-//		HalfLifeInDays:              1,
-//		IncomeBaseInParticles:       1,
-//		IncomeLimitInParticles:      1,
-//		MinimalTransactionFee:       0,
-//		ValidationIntervalInSeconds: 1,
-//	}
-//	blockchain := verification.NewBlockchain(nil, settings, nil, logger)
-//
-//	// Act
-//	utxos := blockchain.UtxosByAddress(genesisValidatorAddress)
-//
-//	// Assert
-//	test.Assert(t, len(utxos) == 0, "utxos should be empty")
-//}
-//
-//func Test_UtxosByAddress_GenesisValidator_ReturnsGenesisUtxo(t *testing.T) {
-//	// Arrange
-//	registry := new(protocoltest.RegistryMock)
-//	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
-//	logger := logtest.NewLoggerMock()
-//	synchronizer := new(networktest.SynchronizerMock)
-//	var validationInterval int64 = 1
-//	settings := config.Settings{
-//		GenesisAmountInParticles:    1,
-//		HalfLifeInDays:              1,
-//		IncomeBaseInParticles:       1,
-//		IncomeLimitInParticles:      1,
-//		MinimalTransactionFee:       0,
-//		ValidationIntervalInSeconds: validationInterval,
-//	}
-//	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
-//	registeredAddress := ""
-//	var expectedValue uint64 = 1
-//	transaction := &network.TransactionResponse{
-//		Outputs: []*network.OutputResponse{{
-//			Address:   registeredAddress,
-//			HasReward: false,
-//			HasIncome: true,
-//			Value:     expectedValue,
-//		}},
-//	}
-//	var genesisTimestamp int64 = 0
-//	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
-//	_ = blockchain.AddBlock(genesisTimestamp+validationInterval, []*network.TransactionResponse{transaction}, []string{registeredAddress})
-//	_ = blockchain.AddBlock(genesisTimestamp+2*validationInterval, nil, nil)
-//
-//	// Act
-//	utxos := blockchain.UtxosByAddress(registeredAddress)
-//
-//	// Assert
-//	actualValue := utxos[0].Value
-//	test.Assert(t, actualValue == expectedValue, fmt.Sprintf("utxo amount is %d whereas it should be %d", actualValue, expectedValue))
-//}
+func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	settings := config.Settings{
+		GenesisAmountInParticles:    1,
+		HalfLifeInDays:              1,
+		IncomeBaseInParticles:       1,
+		IncomeLimitInParticles:      1,
+		MinimalTransactionFee:       0,
+		ValidationIntervalInSeconds: 1,
+	}
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+
+	// Act
+	err := blockchain.AddBlock(0, nil, nil)
+
+	// Assert
+	test.Assert(t, err == nil, "error is returned whereas it should not")
+}
+
+func Test_Blocks_BlocksCountLimitSetToZero_ReturnsNil(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	settings := config.Settings{
+		GenesisAmountInParticles:    1,
+		HalfLifeInDays:              1,
+		IncomeBaseInParticles:       1,
+		IncomeLimitInParticles:      1,
+		MinimalTransactionFee:       0,
+		ValidationIntervalInSeconds: 1,
+	}
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+
+	// Act
+	blocks := blockchain.Blocks(0)
+
+	// Assert
+	test.Assert(t, len(blocks) == 0, "blocks should be empty")
+}
+
+func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	var expectedBlocksCount uint64 = 1
+	var validationInterval int64 = 1
+	settings := config.Settings{
+		BlocksCountLimit:            expectedBlocksCount,
+		GenesisAmountInParticles:    1,
+		HalfLifeInDays:              1,
+		IncomeBaseInParticles:       1,
+		IncomeLimitInParticles:      1,
+		MinimalTransactionFee:       0,
+		ValidationIntervalInSeconds: validationInterval,
+	}
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	var genesisTimestamp int64 = 0
+	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
+	_ = blockchain.AddBlock(genesisTimestamp+validationInterval, nil, nil)
+
+	// Act
+	blocksBytes := blockchain.Blocks(0)
+
+	// Assert
+	var blocks []*verification.Block
+	_ = json.Unmarshal(blocksBytes, &blocks)
+	actualBlocksCount := uint64(len(blocks))
+	test.Assert(t, actualBlocksCount == expectedBlocksCount, fmt.Sprintf("blocks count is %d whereas it should be %d", actualBlocksCount, expectedBlocksCount))
+}
+
+func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	var expectedBlocksCount uint64 = 2
+	var validationInterval int64 = 1
+	settings := config.Settings{
+		BlocksCountLimit:            expectedBlocksCount,
+		GenesisAmountInParticles:    1,
+		HalfLifeInDays:              1,
+		IncomeBaseInParticles:       1,
+		IncomeLimitInParticles:      1,
+		MinimalTransactionFee:       0,
+		ValidationIntervalInSeconds: validationInterval,
+	}
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	var genesisTimestamp int64 = 0
+	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
+	_ = blockchain.AddBlock(genesisTimestamp+validationInterval, nil, nil)
+
+	// Act
+	blocksBytes := blockchain.Blocks(0)
+
+	// Assert
+	var blocks []*verification.Block
+	_ = json.Unmarshal(blocksBytes, &blocks)
+	actualBlocksCount := uint64(len(blocks))
+	test.Assert(t, actualBlocksCount == expectedBlocksCount, fmt.Sprintf("blocks count is %d whereas it should be %d", actualBlocksCount, expectedBlocksCount))
+}
+
+func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsNil(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	var validationInterval int64 = 1
+	settings := config.Settings{
+		BlocksCountLimit:            1,
+		GenesisAmountInParticles:    1,
+		HalfLifeInDays:              1,
+		IncomeBaseInParticles:       1,
+		IncomeLimitInParticles:      1,
+		MinimalTransactionFee:       0,
+		ValidationIntervalInSeconds: validationInterval,
+	}
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	var genesisTimestamp int64 = 0
+	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
+
+	// Act
+	blocks := blockchain.Blocks(1)
+
+	// Assert
+	expectedBlocksCount := 0
+	actualBlocksCount := len(blocks)
+	test.Assert(t, actualBlocksCount == expectedBlocksCount, fmt.Sprintf("blocks count is %d whereas it should be %d", actualBlocksCount, expectedBlocksCount))
+}
+
+func Test_UtxosByAddress_UnknownAddress_ReturnsNil(t *testing.T) {
+	// Arrange
+	logger := logtest.NewLoggerMock()
+	genesisValidatorAddress := ""
+	var genesisAmount uint64 = 0
+	settings := config.Settings{
+		GenesisAmountInParticles:    genesisAmount,
+		HalfLifeInDays:              1,
+		IncomeBaseInParticles:       1,
+		IncomeLimitInParticles:      1,
+		MinimalTransactionFee:       0,
+		ValidationIntervalInSeconds: 1,
+	}
+	blockchain := verification.NewBlockchain(nil, settings, nil, logger)
+
+	// Act
+	utxos := blockchain.UtxosByAddress(genesisValidatorAddress)
+
+	// Assert
+	test.Assert(t, len(utxos) == 0, "utxos should be empty")
+}
+
+func Test_UtxosByAddress_UtxoExists_ReturnsUtxo(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	var validationInterval int64 = 1
+	settings := config.Settings{
+		GenesisAmountInParticles:    1,
+		HalfLifeInDays:              1,
+		IncomeBaseInParticles:       1,
+		IncomeLimitInParticles:      1,
+		MinimalTransactionFee:       0,
+		ValidationIntervalInSeconds: validationInterval,
+	}
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	registeredAddress := ""
+	var expectedValue uint64 = 1
+	var genesisTimestamp int64 = 0
+	transaction, _ := validation.NewRewardTransaction(registeredAddress, true, genesisTimestamp+validationInterval, expectedValue)
+	transactions := []*validation.Transaction{transaction}
+	transactionsBytes, _ := json.Marshal(transactions)
+	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
+	_ = blockchain.AddBlock(genesisTimestamp+validationInterval, transactionsBytes, []string{registeredAddress})
+	_ = blockchain.AddBlock(genesisTimestamp+2*validationInterval, nil, nil)
+
+	// Act
+	utxos := blockchain.UtxosByAddress(registeredAddress)
+
+	// Assert
+	actualValue := utxos[0].Value
+	test.Assert(t, actualValue == expectedValue, fmt.Sprintf("utxo amount is %d whereas it should be %d", actualValue, expectedValue))
+}
+
 //
 //func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 //	// Arrange

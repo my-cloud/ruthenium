@@ -105,10 +105,10 @@ func (blockchain *Blockchain) Blocks(startingBlockHeight uint64) []byte {
 	var endingBlockHeight uint64
 	blocksCountLimit := blockchain.settings.BlocksCountLimit
 	blocksCount := len(blockchain.blocks)
-	if blockchain.isEmpty() || startingBlockHeight > uint64(blocksCount) || blocksCountLimit == 0 {
-		return nil
+	if blockchain.isEmpty() || startingBlockHeight > uint64(blocksCount)-1 || blocksCountLimit == 0 {
+		return []byte{}
 	} else if startingBlockHeight+blocksCountLimit < uint64(blocksCount) {
-		endingBlockHeight = startingBlockHeight + blocksCountLimit - 1
+		endingBlockHeight = startingBlockHeight + blocksCountLimit
 	} else {
 		endingBlockHeight = uint64(blocksCount)
 	}
@@ -116,7 +116,7 @@ func (blockchain *Blockchain) Blocks(startingBlockHeight uint64) []byte {
 	blocksBytes, err := json.Marshal(blocks)
 	if err != nil {
 		blockchain.logger.Error(err.Error())
-		return nil
+		return []byte{}
 	}
 	return blocksBytes
 }
@@ -642,8 +642,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlockTim
 				return fmt.Errorf("failed to verify a neighbor block transaction fee: %w", err)
 			}
 			totalTransactionsFees += fee
-			nextBlockTimestamp := currentBlockTimestamp + blockchain.validationTimestamp
-			if nextBlockTimestamp < transaction.Timestamp() {
+			if currentBlockTimestamp < transaction.Timestamp() {
 				return fmt.Errorf("a neighbor block transaction timestamp is too far in the future: transaction timestamp: %d, id: %s", transaction.Timestamp(), transaction.Id())
 			}
 			if transaction.Timestamp() < previousBlockTimestamp {
