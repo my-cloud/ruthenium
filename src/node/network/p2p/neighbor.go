@@ -32,6 +32,14 @@ func (neighbor *Neighbor) Target() string {
 	return neighbor.target.Value()
 }
 
+func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) (blocks []byte, err error) {
+	res, err := neighbor.sendRequest(blocksEndpoint, startingBlockHeight)
+	if err == nil {
+		return res.GetBytes(), nil
+	}
+	return
+}
+
 func (neighbor *Neighbor) GetFirstBlockTimestamp() (timestamp int64, err error) {
 	res, err := neighbor.client.Send(firstBlockTimestampEndpoint, gp2p.Data{})
 	if err == nil {
@@ -40,14 +48,6 @@ func (neighbor *Neighbor) GetFirstBlockTimestamp() (timestamp int64, err error) 
 		if err != nil {
 			return
 		}
-	}
-	return
-}
-
-func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) (blocks []byte, err error) {
-	res, err := neighbor.sendRequest(blocksEndpoint, startingBlockHeight)
-	if err == nil {
-		return res.GetBytes(), nil
 	}
 	return
 }

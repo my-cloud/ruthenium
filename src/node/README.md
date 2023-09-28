@@ -57,7 +57,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 *Route*: `base-url/targets`
 
 *Description:* Share known validator node targets (IP and port).
-* **request value:** Array of [target requests](#target-request)  
+* **request value:** Array of [target requests](#target-request)
 * **response value:** *none*
 </details>
 
@@ -68,7 +68,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 *Route*: `base-url/transaction`
 
 *Description:* Add a transaction to the transactions pool.
-* **request value:** [Transaction request](#transaction-request)  
+* **request value:** [Transaction request](#transaction-request)
 * **response value:** *none*
 </details>
 <details>
@@ -77,7 +77,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 *Route*: `base-url/transactions`
 
 *Description:* Get all the transactions of the current transactions pool.
-* **request value:** `GET TRANSACTIONS`  
+* **request value:** `GET TRANSACTIONS`
 * **response value:** Array of [transaction responses](#transaction-response)
 </details>
 
@@ -88,7 +88,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 *Route*: `base-url/utxos`
 
 *Description:* Get all the UTXOs for the given wallet address.
-* **request value:** [UTXO request](#utxo-request)  
+* **request value:** string wallet address
 * **response value:** Array of [UTXO response](#utxo-response)
 </details>
 
@@ -372,45 +372,6 @@ The transaction data structure for response
   "Inputs": []
   "Outputs": []
   "Timestamp":     1667768884780639700
-}
-```
-</td>
-</tr>
-</table>
-
-#### UTXO request
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-UtxosRequest {
-  Address string
-}
-```
-</td>
-<td>
-
-```
-The data structure for UTXOs request
-  The wallet address for which to get the UTXOs
-
-```
-</td>
-<td>
-
-```
-{
-  "Address": 0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
 }
 ```
 </td>

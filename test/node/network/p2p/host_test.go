@@ -15,7 +15,12 @@ import (
 func Test_Run_NoError_ServerStarted(t *testing.T) {
 	// Arrange
 	handlerMock := new(networktest.HandlerMock)
-	handlerMock.HandleFunc = func(context.Context, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
+	handlerMock.HandleBlocksRequestFunc = func(context.Context, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
+	handlerMock.HandleFirstBlockTimestampRequestFunc = func(context.Context, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
+	handlerMock.HandleTargetsRequestFunc = func(context.Context, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
+	handlerMock.HandleTransactionRequestFunc = func(context.Context, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
+	handlerMock.HandleTransactionsRequestFunc = func(context.Context, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
+	handlerMock.HandleUtxosRequestFunc = func(context.Context, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	serverMock := new(p2ptest.ServerMock)
 	serverMock.ServeFunc = func() error { return nil }
 	serverMock.SetHandleFunc = func(topic string, handler gp2p.Handler) {}
