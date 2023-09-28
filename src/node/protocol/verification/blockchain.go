@@ -206,6 +206,10 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 				defer close(c)
 				startingBlockHeight := uint64(len(hostBlocks) - 1)
 				lastNeighborBlocksBytes, err := neighbor.GetBlocks(startingBlockHeight)
+				if err != nil {
+					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
+					c <- nil
+				}
 				var lastNeighborBlocks []*Block
 				err = json.Unmarshal(lastNeighborBlocksBytes, &lastNeighborBlocks)
 				if err != nil {
@@ -250,6 +254,10 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			go func(neighbor network.Neighbor) {
 				defer close(c)
 				neighborBlocksBytes, err := neighbor.GetBlocks(0)
+				if err != nil {
+					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
+					c <- nil
+				}
 				var lastNeighborBlocks []*Block
 				err = json.Unmarshal(neighborBlocksBytes, &lastNeighborBlocks)
 				if err != nil {
