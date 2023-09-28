@@ -58,17 +58,6 @@ func NewUtxo(address string, outputIndex uint16, transactionId string, value uin
 	}
 }
 
-func NewUtxoFromOutput(output *network.OutputResponse, transactionId string, utxoIndex uint16) *network.UtxoResponse {
-	return &network.UtxoResponse{
-		Address:       output.Address,
-		HasReward:     output.HasReward,
-		HasIncome:     output.HasIncome,
-		OutputIndex:   utxoIndex,
-		TransactionId: transactionId,
-		Value:         output.Value,
-	}
-}
-
 func NewTransactionRequest(address string, value uint64, timestamp int64, target string) network.TransactionRequest {
 	b := false
 	output := network.OutputRequest{
