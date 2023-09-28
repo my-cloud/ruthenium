@@ -58,6 +58,21 @@ func Test_HandleTargetsRequest_AddInvalidTargets_AddTargetsNotCalled(t *testing.
 //	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
 //}
 
+func Test_HandleFirstBlockTimestampRequest_ValidRequest_FirstBlockTimestampCalled(t *testing.T) {
+	// Arrange
+	blockchainMock := new(protocoltest.BlockchainMock)
+	blockchainMock.FirstBlockTimestampFunc = func() int64 { return 0 }
+	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
+	req := gp2p.Data{}
+
+	// Act
+	_, _ = handler.HandleFirstBlockTimestampRequest(context.TODO(), req)
+
+	// Assert
+	isMethodCalled := len(blockchainMock.FirstBlockTimestampCalls()) != 0
+	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
+}
+
 func Test_HandleTransactionRequest_AddInvalidTransaction_AddTransactionNotCalled(t *testing.T) {
 	// Arrange
 	transactionsPoolMock := new(protocoltest.TransactionsPoolMock)

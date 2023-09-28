@@ -57,6 +57,29 @@ func Test_GetBlocks_NoError_ClientCalled(t *testing.T) {
 	test.Assert(t, err == nil, "Error is not nil whereas it should be.")
 }
 
+func Test_GetFirstBlockTimestamp_NoError_ClientCalled(t *testing.T) {
+	// Arrange
+	clientMock := new(p2ptest.ClientMock)
+	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
+	responseData, _ := json.Marshal(0)
+	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{Bytes: responseData}, nil }
+	clientFactoryMock := new(p2ptest.ClientFactoryMock)
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
+	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
+
+	// Act
+	_, err := neighbor.GetFirstBlockTimestamp()
+
+	// Assert
+	sendCalls := clientMock.SendCalls()
+	isSendCalledOnce := len(sendCalls) == 1
+	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
+	req := sendCalls[0].Req
+	expectedReq := gp2p.Data{}
+	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
+	test.Assert(t, err == nil, "Error is not nil whereas it should be.")
+}
+
 func Test_GetLastBlocks_Error_ReturnsError(t *testing.T) {
 	// Arrange
 	clientMock := new(p2ptest.ClientMock)
