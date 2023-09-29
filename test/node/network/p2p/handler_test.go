@@ -19,9 +19,9 @@ import (
 func Test_HandleTargetsRequest_AddInvalidTargets_AddTargetsNotCalled(t *testing.T) {
 	// Arrange
 	synchronizerMock := new(networktest.SynchronizerMock)
-	synchronizerMock.AddTargetsFunc = func([]network.TargetRequest) {}
+	synchronizerMock.AddTargetsFunc = func([]string) {}
 	handler := p2p.NewHandler(new(protocoltest.BlockchainMock), synchronizerMock, new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
-	data, err := json.Marshal([]network.TargetRequest{{}})
+	data, err := json.Marshal("")
 	if err != nil {
 		return
 	}

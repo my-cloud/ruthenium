@@ -76,7 +76,14 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	blockchainCopy := pool.blockchain.Copy()
 	lastBlockTimestamp := blockchainCopy.LastBlockTimestamp()
 	nextBlockTimestamp := lastBlockTimestamp + pool.validationTimestamp
-	if lastBlockTimestamp == timestamp {
+	var reward uint64
+	var newAddresses []string
+	var hasIncome bool
+	if lastBlockTimestamp == 0 {
+		reward = pool.genesisAmount
+		newAddresses = []string{pool.validatorAddress}
+		hasIncome = true
+	} else if lastBlockTimestamp == timestamp {
 		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
 		return
 	} else if timestamp > nextBlockTimestamp {
@@ -95,7 +102,6 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	rand.Shuffle(len(transactions), func(i, j int) {
 		transactions[i], transactions[j] = transactions[j], transactions[i]
 	})
-	var reward uint64
 	var rejectedTransactions []*Transaction
 	for _, transaction := range transactions {
 		if timestamp < transaction.Timestamp() {
@@ -134,19 +140,12 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	for _, transaction := range rejectedTransactions {
 		transactions = removeTransaction(transactions, transaction)
 	}
-	var newAddresses []string
 	for _, transaction := range transactions {
 		for _, output := range transaction.Outputs() {
 			if output.HasIncome {
 				newAddresses = append(newAddresses, output.Address)
 			}
 		}
-	}
-	var hasIncome bool
-	if lastBlockTimestamp == 0 {
-		reward += pool.genesisAmount
-		newAddresses = append(newAddresses, pool.validatorAddress)
-		hasIncome = true
 	}
 	rewardTransaction, err := NewRewardTransaction(pool.validatorAddress, hasIncome, timestamp, reward)
 	if err != nil {

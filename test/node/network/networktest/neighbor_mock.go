@@ -33,7 +33,7 @@ var _ network.Neighbor = &NeighborMock{}
 //			GetUtxosFunc: func(address string) ([]*UtxoResponse, error) {
 //				panic("mock out the GetUtxos method")
 //			},
-//			SendTargetsFunc: func(request []TargetRequest) error {
+//			SendTargetsFunc: func(targets []string) error {
 //				panic("mock out the SendTargets method")
 //			},
 //			TargetFunc: func() string {
@@ -62,7 +62,7 @@ type NeighborMock struct {
 	GetUtxosFunc func(address string) ([]*network.UtxoResponse, error)
 
 	// SendTargetsFunc mocks the SendTargets method.
-	SendTargetsFunc func(request []network.TargetRequest) error
+	SendTargetsFunc func(targets []string) error
 
 	// TargetFunc mocks the Target method.
 	TargetFunc func() string
@@ -92,8 +92,8 @@ type NeighborMock struct {
 		}
 		// SendTargets holds details about calls to the SendTargets method.
 		SendTargets []struct {
-			// Request is the request argument value.
-			Request []network.TargetRequest
+			// Targets is the targets argument value.
+			Targets []string
 		}
 		// Target holds details about calls to the Target method.
 		Target []struct {
@@ -259,19 +259,19 @@ func (mock *NeighborMock) GetUtxosCalls() []struct {
 }
 
 // SendTargets calls SendTargetsFunc.
-func (mock *NeighborMock) SendTargets(request []network.TargetRequest) error {
+func (mock *NeighborMock) SendTargets(targets []string) error {
 	if mock.SendTargetsFunc == nil {
 		panic("NeighborMock.SendTargetsFunc: method is nil but Neighbor.SendTargets was just called")
 	}
 	callInfo := struct {
-		Request []network.TargetRequest
+		Targets []string
 	}{
-		Request: request,
+		Targets: targets,
 	}
 	mock.lockSendTargets.Lock()
 	mock.calls.SendTargets = append(mock.calls.SendTargets, callInfo)
 	mock.lockSendTargets.Unlock()
-	return mock.SendTargetsFunc(request)
+	return mock.SendTargetsFunc(targets)
 }
 
 // SendTargetsCalls gets all the calls that were made to SendTargets.
@@ -279,10 +279,10 @@ func (mock *NeighborMock) SendTargets(request []network.TargetRequest) error {
 //
 //	len(mockedNeighbor.SendTargetsCalls())
 func (mock *NeighborMock) SendTargetsCalls() []struct {
-	Request []network.TargetRequest
+	Targets []string
 } {
 	var calls []struct {
-		Request []network.TargetRequest
+		Targets []string
 	}
 	mock.lockSendTargets.RLock()
 	calls = mock.calls.SendTargets

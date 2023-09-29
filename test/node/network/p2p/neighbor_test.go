@@ -115,7 +115,7 @@ func Test_SendTargets_NoError_ClientCalled(t *testing.T) {
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
-	err := neighbor.SendTargets([]network.TargetRequest{})
+	err := neighbor.SendTargets([]string{})
 
 	// Assert
 	sendCalls := clientMock.SendCalls()
@@ -123,7 +123,7 @@ func Test_SendTargets_NoError_ClientCalled(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	data, _ := json.Marshal([]network.TargetRequest{})
+	data, _ := json.Marshal([]string{})
 	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 	test.Assert(t, err == nil, "Error is not nil whereas it should be.")
@@ -139,7 +139,7 @@ func Test_SendTargets_Error_ReturnsError(t *testing.T) {
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
-	err := neighbor.SendTargets([]network.TargetRequest{})
+	err := neighbor.SendTargets([]string{})
 
 	// Assert
 	sendCalls := clientMock.SendCalls()
@@ -147,7 +147,7 @@ func Test_SendTargets_Error_ReturnsError(t *testing.T) {
 	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
-	data, _ := json.Marshal([]network.TargetRequest{})
+	data, _ := json.Marshal([]string{})
 	expectedReq.SetBytes(data)
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
 	test.Assert(t, err != nil, "Error is nil whereas it should not.")

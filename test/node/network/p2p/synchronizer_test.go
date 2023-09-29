@@ -3,7 +3,6 @@ package p2p
 import (
 	"fmt"
 	gp2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/node/clock/clocktest"
@@ -25,7 +24,7 @@ func Test_AddTargets_MoreThanOneTarget_IncentiveTargetsSender(t *testing.T) {
 	synchronizer := p2p.NewSynchronizer(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
 	target1 := "0.0.0.0:1"
 	target2 := "0.0.0.0:0"
-	targetRequests := []network.TargetRequest{{Target: &target1}, {Target: &target2}}
+	targetRequests := []string{target1, target2}
 
 	// Act
 	synchronizer.AddTargets(targetRequests)

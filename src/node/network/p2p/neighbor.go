@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const connectionTimeoutInSeconds = 5
+const connectionTimeoutInSeconds = 5 // TODO calculate from validation timestamp
 
 type Neighbor struct {
 	target   *Target
@@ -52,8 +52,8 @@ func (neighbor *Neighbor) GetFirstBlockTimestamp() (timestamp int64, err error) 
 	return
 }
 
-func (neighbor *Neighbor) SendTargets(request []network.TargetRequest) (err error) {
-	_, err = neighbor.sendRequest(targetsEndpoint, request)
+func (neighbor *Neighbor) SendTargets(targets []string) (err error) {
+	_, err = neighbor.sendRequest(targetsEndpoint, targets)
 	return
 }
 

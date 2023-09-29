@@ -54,21 +54,14 @@ func (handler *Handler) HandleFirstBlockTimestampRequest(_ context.Context, _ gp
 }
 
 func (handler *Handler) HandleTargetsRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
-	var targetsRequest []network.TargetRequest
+	var targets []string
 	res := gp2p.Data{}
 	data := req.GetBytes()
-	if err := json.Unmarshal(data, &targetsRequest); err != nil {
+	if err := json.Unmarshal(data, &targets); err != nil {
 		handler.logger.Debug(BadRequest)
 		return res, err
 	}
-	for _, request := range targetsRequest {
-		if request.IsInvalid() {
-			err := errors.New(BadRequest)
-			handler.logger.Error(err.Error())
-			return res, err
-		}
-	}
-	go handler.synchronizer.AddTargets(targetsRequest)
+	go handler.synchronizer.AddTargets(targets)
 	return res, nil
 }
 

@@ -56,8 +56,8 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 
 *Route*: `base-url/targets`
 
-*Description:* Share known validator node targets (IP and port).
-* **request value:** Array of [target requests](#target-request)
+*Description:* Share known validator node targets.
+* **request value:** Array of string targets (IP and port, *e.g.* 0.0.0.0:0000)
 * **response value:** *none*
 </details>
 
@@ -141,45 +141,6 @@ The data structure for block response
   "Transactions":               []
   "AddedRegisteredAddresses":   [ 0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a ]
   "RemovedRegisteredAddresses": [ 0xb1477DcBBea001a339a92b031d14a011e36D008F ]
-}
-```
-</td>
-</tr>
-</table>
-
-#### Target request
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-TargetRequest {
-    Ip   string
-}
-```
-</td>
-<td>
-
-```
-The data structure for target request
-  The IP
-
-```
-</td>
-<td>
-
-```
-{
-  "Ip":   0.0.0.0:10600
 }
 ```
 </td>
