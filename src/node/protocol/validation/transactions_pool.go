@@ -10,13 +10,14 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/config"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
+	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"math/rand"
 	"sync"
 	"time"
 )
 
 type TransactionsPool struct {
-	transactions []*Transaction
+	transactions []*verification.Transaction
 	mutex        sync.RWMutex
 
 	blockchain       protocol.Blockchain
@@ -102,8 +103,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		transactions[i], transactions[j] = transactions[j], transactions[i]
 	})
 	firstBlockTimestamp := blockchainCopy.FirstBlockTimestamp()
-	utxosById := blockchainCopy.UtxosById()
-	var rejectedTransactions []*Transaction
+	var rejectedTransactions []*verification.Transaction
 	for _, transaction := range transactions {
 		if timestamp < transaction.Timestamp() {
 			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too far in the future, transaction: %v", transaction))
@@ -115,7 +115,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		fee, err := transaction.FindFee(firstBlockTimestamp, pool.settings, timestamp, pool.validationTimestamp, utxosById)
+		fee, err := transaction.FindFee(firstBlockTimestamp, pool.settings, timestamp, pool.validationTimestamp, blockchainCopy)
 		if err != nil {
 			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, transaction: %v\n %w", transaction, err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
@@ -148,7 +148,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			}
 		}
 	}
-	rewardTransaction, err := NewRewardTransaction(pool.validatorAddress, hasIncome, timestamp, reward)
+	rewardTransaction, err := verification.NewRewardTransaction(pool.validatorAddress, hasIncome, timestamp, reward)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("unable to create block, failed to create reward transaction: %w", err).Error())
 		return
@@ -191,13 +191,12 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	if err != nil {
 		return errors.New("failed to add temporary block")
 	}
-	transaction, err := NewTransactionFromRequest(transactionRequest)
+	transaction, err := verification.NewTransactionFromRequest(transactionRequest)
 	if err != nil {
 		return fmt.Errorf("failed to instantiate transaction: %w", err)
 	}
 	firstBlockTimestamp := blockchainCopy.FirstBlockTimestamp()
-	utxosById := blockchainCopy.UtxosById()
-	_, err = transaction.FindFee(firstBlockTimestamp, pool.settings, nextBlockTimestamp, pool.validationTimestamp, utxosById)
+	_, err = transaction.FindFee(firstBlockTimestamp, pool.settings, nextBlockTimestamp, pool.validationTimestamp, blockchainCopy)
 	if err != nil {
 		return fmt.Errorf("failed to verify fee: %w", err)
 	}
@@ -217,7 +216,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	if err = transaction.VerifySignatures(); err != nil {
 		return fmt.Errorf("failed to verify transaction: %w", err)
 	}
-	transactions := []*Transaction{transaction}
+	transactions := []*verification.Transaction{transaction}
 	transactionsBytes, err := json.Marshal(transactions)
 	if err != nil {
 		return fmt.Errorf("failed to marshal transactions: %w", err)
@@ -240,7 +239,7 @@ func (pool *TransactionsPool) clear() {
 	pool.transactions = nil
 }
 
-func removeTransaction(transactions []*Transaction, removedTransaction *Transaction) []*Transaction {
+func removeTransaction(transactions []*verification.Transaction, removedTransaction *verification.Transaction) []*verification.Transaction {
 	for i := 0; i < len(transactions); i++ {
 		if transactions[i] == removedTransaction {
 			transactions = append(transactions[:i], transactions[i+1:]...)

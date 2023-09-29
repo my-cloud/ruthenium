@@ -4,18 +4,17 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 )
 
 type Block struct {
 	timestamp                  int64
 	previousHash               [32]byte
-	transactions               []*validation.Transaction
+	transactions               []*Transaction
 	addedRegisteredAddresses   []string
 	removedRegisteredAddresses []string
 }
 
-func NewBlock(timestamp int64, previousHash [32]byte, transactions []*validation.Transaction, addedRegisteredAddresses []string, removedRegisteredAddresses []string) *Block {
+func NewBlock(timestamp int64, previousHash [32]byte, transactions []*Transaction, addedRegisteredAddresses []string, removedRegisteredAddresses []string) *Block {
 	return &Block{timestamp, previousHash, transactions, addedRegisteredAddresses, removedRegisteredAddresses}
 }
 
@@ -35,11 +34,11 @@ func (block *Block) Hash() (hash [32]byte, err error) {
 
 func (block *Block) UnmarshalJSON(data []byte) error {
 	blockDto := struct {
-		Timestamp                  int64                     `json:"timestamp"`
-		PreviousHash               [32]byte                  `json:"previous_hash"`
-		Transactions               []*validation.Transaction `json:"transactions"`
-		AddedRegisteredAddresses   []string                  `json:"added_registered_addresses"`
-		RemovedRegisteredAddresses []string                  `json:"removed_registered_addresses"`
+		Timestamp                  int64          `json:"timestamp"`
+		PreviousHash               [32]byte       `json:"previous_hash"`
+		Transactions               []*Transaction `json:"transactions"`
+		AddedRegisteredAddresses   []string       `json:"added_registered_addresses"`
+		RemovedRegisteredAddresses []string       `json:"removed_registered_addresses"`
 	}{}
 	err := json.Unmarshal(data, &blockDto)
 	if err != nil {
@@ -55,11 +54,11 @@ func (block *Block) UnmarshalJSON(data []byte) error {
 
 func (block *Block) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Timestamp                  int64                     `json:"timestamp"`
-		PreviousHash               [32]byte                  `json:"previous_hash"`
-		Transactions               []*validation.Transaction `json:"transactions"`
-		AddedRegisteredAddresses   []string                  `json:"added_registered_addresses"`
-		RemovedRegisteredAddresses []string                  `json:"removed_registered_addresses"`
+		Timestamp                  int64          `json:"timestamp"`
+		PreviousHash               [32]byte       `json:"previous_hash"`
+		Transactions               []*Transaction `json:"transactions"`
+		AddedRegisteredAddresses   []string       `json:"added_registered_addresses"`
+		RemovedRegisteredAddresses []string       `json:"removed_registered_addresses"`
 	}{
 		Timestamp:                  block.timestamp,
 		PreviousHash:               block.previousHash,
@@ -81,7 +80,7 @@ func (block *Block) Timestamp() int64 {
 	return block.timestamp
 }
 
-func (block *Block) Transactions() []*validation.Transaction {
+func (block *Block) Transactions() []*Transaction {
 	return block.transactions
 }
 

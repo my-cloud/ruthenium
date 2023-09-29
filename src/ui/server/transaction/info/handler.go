@@ -7,7 +7,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
-	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
+	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"math"
 	"net/http"
@@ -66,7 +66,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var utxos []*network.UtxoResponse
+		var utxos []*verification.Utxo
 		err = json.Unmarshal(utxosBytes, &utxos)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to unmarshal UTXOs: %w", err).Error())
@@ -87,20 +87,19 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		var walletBalance uint64
 		var values []uint64
 		for _, utxo := range utxos {
-			output := validation.NewUtxoFromUtxoResponse(utxo)
-			outputValue := output.Value(nextBlockTimestamp, genesisTimestamp, handler.halfLifeInNanoseconds, handler.incomeBase, handler.incomeLimit, handler.validationTimestamp)
+			utxoValue := utxo.Value(nextBlockTimestamp, genesisTimestamp, handler.halfLifeInNanoseconds, handler.incomeBase, handler.incomeLimit, handler.validationTimestamp)
 			utxoResponse := &UtxoResponse{
-				OutputIndex:   utxo.OutputIndex,
-				TransactionId: utxo.TransactionId,
+				OutputIndex:   utxo.OutputIndex(),
+				TransactionId: utxo.TransactionId(),
 			}
-			walletBalance += outputValue
+			walletBalance += utxoValue
 			if isConsolidationRequired {
 				selectedUtxos = append(selectedUtxos, utxoResponse)
 			} else {
-				if _, ok := utxosByValue[outputValue]; !ok {
-					values = append(values, outputValue)
+				if _, ok := utxosByValue[utxoValue]; !ok {
+					values = append(values, utxoValue)
 				}
-				utxosByValue[outputValue] = append(utxosByValue[outputValue], utxoResponse)
+				utxosByValue[utxoValue] = append(utxosByValue[utxoValue], utxoResponse)
 			}
 		}
 		value := uint64(parsedValue)

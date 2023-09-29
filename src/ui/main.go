@@ -46,8 +46,7 @@ func main() {
 		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
 	}
 	watch := tick.NewWatch()
-	hoursADay := 24.
-	halfLifeInNanoseconds := settings.HalfLifeInNanoseconds * hoursADay * float64(time.Hour.Nanoseconds())
+	halfLifeInNanoseconds := settings.HalfLifeInNanoseconds
 	validationTimestamp := settings.ValidationIntervalInSeconds * time.Second.Nanoseconds()
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
 	http.Handle("/transaction", transaction.NewHandler(host, logger))

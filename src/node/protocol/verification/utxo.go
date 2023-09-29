@@ -1,4 +1,4 @@
-package validation
+package verification
 
 import (
 	"encoding/json"
@@ -13,8 +13,8 @@ type Utxo struct {
 	transactionId string
 }
 
-func NewUtxoFromUtxoResponse(response *network.UtxoResponse) *Utxo {
-	return &Utxo{Output: NewOutput(response.Address, response.HasIncome, response.HasReward, response.Value)}
+func NewUtxo(output *Output, blockHeight int, outputIndex uint16, transactionId string) *Utxo {
+	return &Utxo{output, blockHeight, outputIndex, transactionId}
 }
 
 func (utxo *Utxo) MarshalJSON() ([]byte, error) {
@@ -40,6 +40,14 @@ func (utxo *Utxo) UnmarshalJSON(data []byte) error {
 	utxo.outputIndex = utxoDto.OutputIndex
 	utxo.transactionId = utxoDto.TransactionId
 	return nil
+}
+
+func (utxo *Utxo) OutputIndex() uint16 {
+	return utxo.outputIndex
+}
+
+func (utxo *Utxo) TransactionId() string {
+	return utxo.transactionId
 }
 
 func (utxo *Utxo) Value(currentTimestamp int64, genesisTimestamp int64, halfLifeInNanoseconds float64, incomeBase uint64, incomeLimit uint64, validationTimestamp int64) uint64 {

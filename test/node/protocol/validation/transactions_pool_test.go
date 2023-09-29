@@ -7,6 +7,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
+	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/log/logtest"
 	"github.com/my-cloud/ruthenium/test/node/clock/clocktest"
@@ -46,7 +47,7 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 
 	// Assert
 	transactionsBytes := pool.Transactions()
-	var transactions []*validation.Transaction
+	var transactions []*verification.Transaction
 	_ = json.Unmarshal(transactionsBytes, &transactions)
 	expectedTransactionsLength := 0
 	actualTransactionsLength := len(transactions)
@@ -82,7 +83,7 @@ func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *tes
 
 	// Assert
 	transactionsBytes := pool.Transactions()
-	var transactions []*validation.Transaction
+	var transactions []*verification.Transaction
 	_ = json.Unmarshal(transactionsBytes, &transactions)
 	expectedTransactionsLength := 0
 	actualTransactionsLength := len(transactions)
@@ -119,7 +120,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 
 	// Assert
 	transactionsBytes := pool.Transactions()
-	var transactions []*validation.Transaction
+	var transactions []*verification.Transaction
 	_ = json.Unmarshal(transactionsBytes, &transactions)
 	expectedTransactionsLength := 0
 	actualTransactionsLength := len(transactions)
@@ -174,7 +175,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 
 	// Assert
 	transactionsBytes := pool.Transactions()
-	var transactions []*validation.Transaction
+	var transactions []*verification.Transaction
 	_ = json.Unmarshal(transactionsBytes, &transactions)
 	expectedTransactionsLength := 1
 	actualTransactionsLength := len(transactions)
@@ -278,12 +279,12 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	isTransactionsPoolValidated := len(validatedPool) == expectedCallsCount
 	test.Assert(t, isTransactionsPoolValidated, fmt.Sprintf("AddBlock method should be called only %d times whereas it's called %d times", expectedCallsCount, len(validatedPool)))
 	transactionsBytes := validatedPool[expectedCallsCount-1].Transactions
-	var transactions []*validation.Transaction
+	var transactions []*verification.Transaction
 	_ = json.Unmarshal(transactionsBytes, &transactions)
 	isTwoTransactions := len(transactions) == 2
 	test.Assert(t, isTwoTransactions, "Validated transactions pool should contain exactly 2 transactions.")
 	actualTransaction := transactions[0]
-	expectedTransaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
+	expectedTransaction, _ := verification.NewTransactionFromRequest(&transactionRequest)
 	test.Assert(t, expectedTransaction.Equals(actualTransaction), "The first validated transaction is not the expected one.")
 	rewardTransaction := transactions[1]
 	isRewardTransaction := rewardTransaction.HasReward()

@@ -1,4 +1,4 @@
-package validation
+package verification
 
 import (
 	"crypto/sha256"
@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/node/config"
 	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/protocol"
 )
 
 type Transaction struct {
@@ -126,22 +127,17 @@ func (transaction *Transaction) VerifySignatures() error {
 	return nil
 }
 
-func (transaction *Transaction) FindFee(genesisTimestamp int64, settings config.Settings, timestamp int64, validationTimestamp int64, utxosById map[string][]*network.UtxoResponse) (uint64, error) {
+func (transaction *Transaction) FindFee(genesisTimestamp int64, settings config.Settings, timestamp int64, validationTimestamp int64, blockchain protocol.Blockchain) (uint64, error) {
 	incomeBase := settings.IncomeBaseInParticles
 	incomeLimit := settings.IncomeLimitInParticles
 	var inputsValue uint64
 	var outputsValue uint64
 	for _, input := range transaction.inputs {
-		utxos := utxosById[input.TransactionId()]
-		if len(utxos) == 0 {
-			return 0, fmt.Errorf("failed to find utxo, input: %v", input)
+		utxo, err := blockchain.Utxo(input)
+		if err != nil {
+			return 0, err
 		}
-		utxo := utxos[input.OutputIndex()]
-		if utxo == nil {
-			return 0, fmt.Errorf("failed to find utxo, input: %v", input)
-		}
-		output := NewUtxoFromUtxoResponse(utxo)
-		value := output.Value(timestamp, genesisTimestamp, settings.HalfLifeInNanoseconds, incomeBase, incomeLimit, validationTimestamp)
+		value := utxo.Value(timestamp, genesisTimestamp, settings.HalfLifeInNanoseconds, incomeBase, incomeLimit, validationTimestamp)
 		inputsValue += value
 	}
 	for _, output := range transaction.outputs {
