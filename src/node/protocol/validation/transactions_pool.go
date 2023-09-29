@@ -115,7 +115,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		fee, err := transaction.FindFee(firstBlockTimestamp, pool.settings, timestamp, pool.validationTimestamp, blockchainCopy)
+		fee, err := transaction.FindFee(firstBlockTimestamp, pool.settings, timestamp, pool.validationTimestamp, blockchainCopy.Utxo)
 		if err != nil {
 			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, transaction: %v\n %w", transaction, err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
@@ -196,7 +196,7 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 		return fmt.Errorf("failed to instantiate transaction: %w", err)
 	}
 	firstBlockTimestamp := blockchainCopy.FirstBlockTimestamp()
-	_, err = transaction.FindFee(firstBlockTimestamp, pool.settings, nextBlockTimestamp, pool.validationTimestamp, blockchainCopy)
+	_, err = transaction.FindFee(firstBlockTimestamp, pool.settings, nextBlockTimestamp, pool.validationTimestamp, blockchainCopy.Utxo)
 	if err != nil {
 		return fmt.Errorf("failed to verify fee: %w", err)
 	}

@@ -127,13 +127,13 @@ func (transaction *Transaction) VerifySignatures() error {
 	return nil
 }
 
-func (transaction *Transaction) FindFee(genesisTimestamp int64, settings config.Settings, timestamp int64, validationTimestamp int64, blockchain protocol.Blockchain) (uint64, error) {
+func (transaction *Transaction) FindFee(genesisTimestamp int64, settings config.Settings, timestamp int64, validationTimestamp int64, utxoFinder protocol.UtxoFinder) (uint64, error) {
 	incomeBase := settings.IncomeBaseInParticles
 	incomeLimit := settings.IncomeLimitInParticles
 	var inputsValue uint64
 	var outputsValue uint64
 	for _, input := range transaction.inputs {
-		utxo, err := blockchain.Utxo(input)
+		utxo, err := utxoFinder(input)
 		if err != nil {
 			return 0, err
 		}
