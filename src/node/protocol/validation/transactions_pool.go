@@ -75,7 +75,14 @@ func (pool *TransactionsPool) Transactions() []byte {
 func (pool *TransactionsPool) Validate(timestamp int64) {
 	blockchainCopy := pool.blockchain.Copy()
 	lastBlockTimestamp := blockchainCopy.LastBlockTimestamp()
-	nextBlockTimestamp := timestamp + pool.validationTimestamp
+	nextBlockTimestamp := lastBlockTimestamp + pool.validationTimestamp
+	if lastBlockTimestamp == timestamp {
+		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
+		return
+	} else if timestamp > nextBlockTimestamp {
+		pool.logger.Error("unable to create block, a block is missing in the blockchain")
+		return
+	}
 	err := blockchainCopy.AddBlock(timestamp, nil, nil)
 	if err != nil {
 		pool.logger.Error("failed to add temporary block")
@@ -140,12 +147,6 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		reward += pool.genesisAmount
 		newAddresses = append(newAddresses, pool.validatorAddress)
 		hasIncome = true
-	} else if lastBlockTimestamp == timestamp {
-		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
-		return
-	} else if timestamp > lastBlockTimestamp+pool.validationTimestamp {
-		pool.logger.Error("unable to create block, a block is missing in the blockchain")
-		return
 	}
 	rewardTransaction, err := NewRewardTransaction(pool.validatorAddress, hasIncome, timestamp, reward)
 	if err != nil {
