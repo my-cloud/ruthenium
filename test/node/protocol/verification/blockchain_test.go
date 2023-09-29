@@ -12,7 +12,6 @@ import (
 	"github.com/my-cloud/ruthenium/test/log/logtest"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
 	"github.com/my-cloud/ruthenium/test/node/protocol/protocoltest"
-	"strings"
 	"testing"
 	"time"
 )
@@ -261,13 +260,10 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	blockchain.Update(now)
 
 	// Assert
-	var isReplaced bool
-	for _, call := range logger.DebugCalls() {
-		if call.Msg == blockchainReplacedMessage {
-			isReplaced = true
-		}
+	expectedMessages := []string{
+		blockchainReplacedMessage,
 	}
-	test.Assert(t, isReplaced, "blockchain is kept whereas it should be replaced")
+	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
 }
 
 func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) {
@@ -347,18 +343,11 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 			blockchain.Update(1)
 
 			// Assert
-			var isKept bool
-			var isExplicitMessageLogged bool
-			for _, call := range logger.DebugCalls() {
-				expectedMessage := "neighbor block timestamp is invalid"
-				if call.Msg == blockchainKeptMessage {
-					isKept = true
-				} else if strings.Contains(call.Msg, expectedMessage) {
-					isExplicitMessageLogged = true
-				}
+			expectedMessages := []string{
+				"neighbor block timestamp is invalid",
+				blockchainKeptMessage,
 			}
-			test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
-			test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
+			test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
 		})
 	}
 }
@@ -402,18 +391,11 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	blockchain.Update(now)
 
 	// Assert
-	var isKept bool
-	var isExplicitMessageLogged bool
-	for _, call := range logger.DebugCalls() {
-		expectedMessage := "neighbor block timestamp is in the future"
-		if call.Msg == blockchainKeptMessage {
-			isKept = true
-		} else if strings.Contains(call.Msg, expectedMessage) {
-			isExplicitMessageLogged = true
-		}
+	expectedMessages := []string{
+		"neighbor block timestamp is in the future",
+		blockchainKeptMessage,
 	}
-	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
-	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
+	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
 }
 
 func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testing.T) {
@@ -475,18 +457,11 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	blockchain.Update(now)
 
 	// Assert
-	var isKept bool
-	var isExplicitMessageLogged bool
-	for _, call := range logger.DebugCalls() {
-		expectedMessage := "transaction fee is negative"
-		if call.Msg == blockchainKeptMessage {
-			isKept = true
-		} else if strings.Contains(call.Msg, expectedMessage) {
-			isExplicitMessageLogged = true
-		}
+	expectedMessages := []string{
+		"transaction fee is negative",
+		blockchainKeptMessage,
 	}
-	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
-	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
+	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
 }
 
 func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing.T) {
@@ -544,18 +519,11 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	blockchain.Update(now)
 
 	// Assert
-	var isKept bool
-	var isExplicitMessageLogged bool
-	for _, call := range logger.DebugCalls() {
-		expectedMessage := "transaction fee is too low"
-		if call.Msg == blockchainKeptMessage {
-			isKept = true
-		} else if strings.Contains(call.Msg, expectedMessage) {
-			isExplicitMessageLogged = true
-		}
+	expectedMessages := []string{
+		"transaction fee is too low",
+		blockchainKeptMessage,
 	}
-	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
-	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
+	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
 }
 
 func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
@@ -613,18 +581,11 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	blockchain.Update(now)
 
 	// Assert
-	var isKept bool
-	var isExplicitMessageLogged bool
-	for _, call := range logger.DebugCalls() {
-		expectedMessage := fmt.Sprintf("a neighbor block transaction timestamp is too far in the future: transaction timestamp: %d, id: %s", invalidTransaction.Timestamp(), invalidTransaction.Id())
-		if call.Msg == blockchainKeptMessage {
-			isKept = true
-		} else if strings.Contains(call.Msg, expectedMessage) {
-			isExplicitMessageLogged = true
-		}
+	expectedMessages := []string{
+		fmt.Sprintf("a neighbor block transaction timestamp is too far in the future: transaction timestamp: %d, id: %s", invalidTransaction.Timestamp(), invalidTransaction.Id()),
+		blockchainKeptMessage,
 	}
-	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
-	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
+	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
 }
 
 func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
@@ -682,16 +643,9 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	blockchain.Update(now)
 
 	// Assert
-	var isKept bool
-	var isExplicitMessageLogged bool
-	for _, call := range logger.DebugCalls() {
-		expectedMessage := fmt.Sprintf("a neighbor block transaction timestamp is too old: transaction timestamp: %d, id: %s", invalidTransaction.Timestamp(), invalidTransaction.Id())
-		if call.Msg == blockchainKeptMessage {
-			isKept = true
-		} else if strings.Contains(call.Msg, expectedMessage) {
-			isExplicitMessageLogged = true
-		}
+	expectedMessages := []string{
+		fmt.Sprintf("a neighbor block transaction timestamp is too old: transaction timestamp: %d, id: %s", invalidTransaction.Timestamp(), invalidTransaction.Id()),
+		blockchainKeptMessage,
 	}
-	test.Assert(t, isKept, "blockchain is replaced whereas it should be kept")
-	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
+	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
 }

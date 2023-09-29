@@ -12,7 +12,6 @@ import (
 	"github.com/my-cloud/ruthenium/test/node/clock/clocktest"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
 	"github.com/my-cloud/ruthenium/test/node/protocol/protocoltest"
-	"strings"
 	"testing"
 	"time"
 )
@@ -52,6 +51,7 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	expectedTransactionsLength := 0
 	actualTransactionsLength := len(transactions)
 	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
+	test.AssertThatMessageIsLogged(t, []string{"failed to add transaction: the transaction timestamp is too far in the future"}, logger.DebugCalls())
 }
 
 func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *testing.T) {
@@ -87,6 +87,7 @@ func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *tes
 	expectedTransactionsLength := 0
 	actualTransactionsLength := len(transactions)
 	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
+	test.AssertThatMessageIsLogged(t, []string{"failed to add transaction: the transaction timestamp is too old"}, logger.DebugCalls())
 }
 
 func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
@@ -123,6 +124,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	expectedTransactionsLength := 0
 	actualTransactionsLength := len(transactions)
 	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
+	test.AssertThatMessageIsLogged(t, []string{"failed to add transaction: failed to verify transaction: failed to verify signature"}, logger.DebugCalls())
 }
 
 func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
@@ -197,14 +199,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	pool.Validate(now)
 
 	// Assert
-	var isExplicitMessageLogged bool
-	for _, call := range logger.WarnCalls() {
-		expectedMessage := "transaction removed from the transactions pool, the transaction timestamp is too far in the future"
-		if strings.Contains(call.Msg, expectedMessage) {
-			isExplicitMessageLogged = true
-		}
-	}
-	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
+	test.AssertThatMessageIsLogged(t, []string{"transaction removed from the transactions pool, the transaction timestamp is too far in the future"}, logger.WarnCalls())
 }
 
 func Test_Validate_TransactionTimestampIsTooOld_TransactionNotValidated(t *testing.T) {
@@ -236,14 +231,7 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionNotValidated(t *testi
 	pool.Validate(now)
 
 	// Assert
-	var isExplicitMessageLogged bool
-	for _, call := range logger.WarnCalls() {
-		expectedMessage := "transaction removed from the transactions pool, the transaction timestamp is too old"
-		if strings.Contains(call.Msg, expectedMessage) {
-			isExplicitMessageLogged = true
-		}
-	}
-	test.Assert(t, isExplicitMessageLogged, "no explicit message is logged whereas it should be")
+	test.AssertThatMessageIsLogged(t, []string{"transaction removed from the transactions pool, the transaction timestamp is too old"}, logger.WarnCalls())
 }
 
 func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
