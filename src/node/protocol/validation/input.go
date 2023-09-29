@@ -15,29 +15,19 @@ type Input struct {
 	signature     *encryption.Signature
 }
 
-func NewInputFromResponse(input *network.InputResponse) (*Input, error) {
-	publicKey, err := encryption.NewPublicKeyFromHex(input.PublicKey)
+func NewInput(outputIndex uint16, transactionId string, publicKeyString string, signatureString string) (*Input, error) {
+	publicKey, err := encryption.NewPublicKeyFromHex(publicKeyString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode public key: %w", err)
 	}
-	signature, err := encryption.DecodeSignature(input.Signature)
+	signature, err := encryption.DecodeSignature(signatureString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode signature: %w", err)
 	}
-	return &Input{input.OutputIndex, input.TransactionId, publicKey, signature}, nil
+	return &Input{outputIndex, transactionId, publicKey, signature}, nil
 }
 
 func (input *Input) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		OutputIndex   uint16 `json:"output_index"`
-		TransactionId string `json:"transaction_id"`
-	}{
-		OutputIndex:   input.outputIndex,
-		TransactionId: input.transactionId,
-	})
-}
-
-func (input *Input) GetResponse() *network.InputResponse {
 	var encodedPublicKey string
 	if input.publicKey != nil {
 		encodedPublicKey = input.publicKey.String()
@@ -46,16 +36,50 @@ func (input *Input) GetResponse() *network.InputResponse {
 	if input.signature != nil {
 		encodedSignature = input.signature.String()
 	}
-	return &network.InputResponse{
+	return json.Marshal(struct {
+		OutputIndex   uint16 `json:"output_index"`
+		TransactionId string `json:"transaction_id"`
+		PublicKey     string `json:"public_key"`
+		Signature     string `json:"signature"`
+	}{
 		OutputIndex:   input.outputIndex,
 		TransactionId: input.transactionId,
 		PublicKey:     encodedPublicKey,
 		Signature:     encodedSignature,
+	})
+}
+
+func (input *Input) UnmarshalJSON(data []byte) error {
+	var inputDto network.InputResponse
+	err := json.Unmarshal(data, &inputDto)
+	if err != nil {
+		return err
 	}
+	input.outputIndex = inputDto.OutputIndex
+	input.transactionId = inputDto.TransactionId
+	publicKey, err := encryption.NewPublicKeyFromHex(inputDto.PublicKey)
+	if err != nil {
+		return fmt.Errorf("failed to decode public key: %w", err)
+	}
+	signature, err := encryption.DecodeSignature(inputDto.Signature)
+	if err != nil {
+		return fmt.Errorf("failed to decode signature: %w", err)
+	}
+	input.publicKey = publicKey
+	input.signature = signature
+	return nil
+}
+
+func (input *Input) OutputIndex() uint16 {
+	return input.outputIndex
+}
+
+func (input *Input) TransactionId() string {
+	return input.transactionId
 }
 
 func (input *Input) VerifySignature() error {
-	marshaledInput, err := input.MarshalJSON()
+	marshaledInput, err := input.marshalJSONWithoutKeyAndSignature()
 	if err != nil {
 		return fmt.Errorf("failed to marshal input, %w", err)
 	}
@@ -63,4 +87,14 @@ func (input *Input) VerifySignature() error {
 		return errors.New("signature is invalid")
 	}
 	return nil
+}
+
+func (input *Input) marshalJSONWithoutKeyAndSignature() ([]byte, error) {
+	return json.Marshal(struct {
+		OutputIndex   uint16 `json:"output_index"`
+		TransactionId string `json:"transaction_id"`
+	}{
+		OutputIndex:   input.outputIndex,
+		TransactionId: input.transactionId,
+	})
 }

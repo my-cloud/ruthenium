@@ -47,7 +47,7 @@ func main() {
 	}
 	watch := tick.NewWatch()
 	hoursADay := 24.
-	halfLifeInNanoseconds := settings.HalfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
+	halfLifeInNanoseconds := settings.HalfLifeInNanoseconds * hoursADay * float64(time.Hour.Nanoseconds())
 	validationTimestamp := settings.ValidationIntervalInSeconds * time.Second.Nanoseconds()
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
 	http.Handle("/transaction", transaction.NewHandler(host, logger))

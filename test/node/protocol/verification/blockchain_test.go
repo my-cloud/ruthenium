@@ -28,7 +28,7 @@ func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 	synchronizer := new(networktest.SynchronizerMock)
 	settings := config.Settings{
 		GenesisAmountInParticles:    1,
-		HalfLifeInDays:              1,
+		HalfLifeInNanoseconds:       1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       0,
@@ -50,7 +50,7 @@ func Test_Blocks_BlocksCountLimitSetToZero_ReturnsEmptyArray(t *testing.T) {
 	synchronizer := new(networktest.SynchronizerMock)
 	settings := config.Settings{
 		GenesisAmountInParticles:    1,
-		HalfLifeInDays:              1,
+		HalfLifeInNanoseconds:       1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       0,
@@ -77,7 +77,7 @@ func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
 	settings := config.Settings{
 		BlocksCountLimit:            expectedBlocksCount,
 		GenesisAmountInParticles:    1,
-		HalfLifeInDays:              1,
+		HalfLifeInNanoseconds:       1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       0,
@@ -108,7 +108,7 @@ func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
 	settings := config.Settings{
 		BlocksCountLimit:            expectedBlocksCount,
 		GenesisAmountInParticles:    1,
-		HalfLifeInDays:              1,
+		HalfLifeInNanoseconds:       1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       0,
@@ -138,7 +138,7 @@ func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsEmptyArray(t 
 	settings := config.Settings{
 		BlocksCountLimit:            1,
 		GenesisAmountInParticles:    1,
-		HalfLifeInDays:              1,
+		HalfLifeInNanoseconds:       1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       0,
@@ -166,7 +166,7 @@ func Test_UtxosByAddress_UnknownAddress_ReturnsEmptyArray(t *testing.T) {
 	var genesisAmount uint64 = 0
 	settings := config.Settings{
 		GenesisAmountInParticles:    genesisAmount,
-		HalfLifeInDays:              1,
+		HalfLifeInNanoseconds:       1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       0,
@@ -192,7 +192,7 @@ func Test_Utxos_UtxoExists_ReturnsUtxo(t *testing.T) {
 	var validationInterval int64 = 1
 	settings := config.Settings{
 		GenesisAmountInParticles:    1,
-		HalfLifeInDays:              1,
+		HalfLifeInNanoseconds:       1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       0,
@@ -236,7 +236,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	settings := config.Settings{
 		BlocksCountLimit:            2,
 		GenesisAmountInParticles:    1,
-		HalfLifeInDays:              1,
+		HalfLifeInNanoseconds:       1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       0,
@@ -289,7 +289,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	}
 	settings := config.Settings{
 		GenesisAmountInParticles:    1,
-		HalfLifeInDays:              1,
+		HalfLifeInNanoseconds:       1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       0,
@@ -386,7 +386,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	}
 	settings := config.Settings{
 		GenesisAmountInParticles:    1,
-		HalfLifeInDays:              1,
+		HalfLifeInNanoseconds:       1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       0,
@@ -449,7 +449,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	}
 	settings := config.Settings{
 		GenesisAmountInParticles:         genesisAmount,
-		HalfLifeInDays:                   1,
+		HalfLifeInNanoseconds:            1,
 		IncomeBaseInParticles:            1,
 		IncomeLimitInParticles:           incomeLimit,
 		MaxOutboundsCount:                1,
@@ -514,7 +514,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	}
 	settings := config.Settings{
 		GenesisAmountInParticles:    genesisAmount,
-		HalfLifeInDays:              1,
+		HalfLifeInNanoseconds:       1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       1,
@@ -576,7 +576,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	}
 	settings := config.Settings{
 		GenesisAmountInParticles:    genesisAmount,
-		HalfLifeInDays:              1,
+		HalfLifeInNanoseconds:       1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       transactionFee,
@@ -638,7 +638,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	}
 	settings := config.Settings{
 		GenesisAmountInParticles:    genesisAmount,
-		HalfLifeInDays:              1,
+		HalfLifeInNanoseconds:       1,
 		IncomeBaseInParticles:       1,
 		IncomeLimitInParticles:      1,
 		MinimalTransactionFee:       transactionFee,

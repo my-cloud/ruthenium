@@ -72,7 +72,7 @@ func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *
 	synchronizer := createSynchronizer(parser, *seedsPath, *ip, *port, settings.MaxOutboundsCount, watch, logger)
 	validationTimer := time.Duration(settings.ValidationIntervalInSeconds) * time.Second
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
-	transactionsPool := validation.NewTransactionsPool(blockchain, settings.GenesisAmountInParticles, settings.MinimalTransactionFee, synchronizer, address, validationTimer, logger)
+	transactionsPool := validation.NewTransactionsPool(blockchain, settings, synchronizer, address, validationTimer, logger)
 	synchronizationTimer := time.Duration(settings.SynchronizationIntervalInSeconds) * time.Second
 	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, synchronizationTimer, 1, 0)
 	validationEngine := tick.NewEngine(transactionsPool.Validate, watch, validationTimer, 1, 0)

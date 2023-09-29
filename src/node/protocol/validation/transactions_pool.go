@@ -7,6 +7,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/clock/tick"
+	"github.com/my-cloud/ruthenium/src/node/config"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"math/rand"
@@ -18,11 +19,10 @@ type TransactionsPool struct {
 	transactions []*Transaction
 	mutex        sync.RWMutex
 
-	blockchain            protocol.Blockchain
-	genesisAmount         uint64
-	minimalTransactionFee uint64
-	synchronizer          network.Synchronizer
-	validatorAddress      string
+	blockchain       protocol.Blockchain
+	settings         config.Settings
+	synchronizer     network.Synchronizer
+	validatorAddress string
 
 	validationTimestamp int64
 	watch               clock.Watch
@@ -30,11 +30,10 @@ type TransactionsPool struct {
 	logger log.Logger
 }
 
-func NewTransactionsPool(blockchain protocol.Blockchain, genesisAmount uint64, minimalTransactionFee uint64, synchronizer network.Synchronizer, validatorAddress string, validationTimer time.Duration, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain protocol.Blockchain, settings config.Settings, synchronizer network.Synchronizer, validatorAddress string, validationTimer time.Duration, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blockchain = blockchain
-	pool.genesisAmount = genesisAmount
-	pool.minimalTransactionFee = minimalTransactionFee
+	pool.settings = settings
 	pool.synchronizer = synchronizer
 	pool.validatorAddress = validatorAddress
 	pool.validationTimestamp = validationTimer.Nanoseconds()
@@ -80,7 +79,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	var newAddresses []string
 	var hasIncome bool
 	if lastBlockTimestamp == 0 {
-		reward = pool.genesisAmount
+		reward = pool.settings.GenesisAmountInParticles
 		newAddresses = []string{pool.validatorAddress}
 		hasIncome = true
 	} else if lastBlockTimestamp == timestamp {
@@ -102,6 +101,8 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	rand.Shuffle(len(transactions), func(i, j int) {
 		transactions[i], transactions[j] = transactions[j], transactions[i]
 	})
+	firstBlockTimestamp := blockchainCopy.FirstBlockTimestamp()
+	utxosById := blockchainCopy.UtxosById()
 	var rejectedTransactions []*Transaction
 	for _, transaction := range transactions {
 		if timestamp < transaction.Timestamp() {
@@ -114,7 +115,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		fee, err := blockchainCopy.FindFee(transaction.Inputs(), transaction.Outputs(), timestamp)
+		fee, err := transaction.FindFee(firstBlockTimestamp, pool.settings, timestamp, pool.validationTimestamp, utxosById)
 		if err != nil {
 			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, transaction: %v\n %w", transaction, err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
@@ -122,16 +123,16 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		}
 		var isAlreadySpent bool
 		for _, input := range transaction.Inputs() {
-			if isAlreadySpentByOutputIndex, ok := isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId]; ok {
-				if _, isAlreadySpent = isAlreadySpentByOutputIndex[input.OutputIndex]; isAlreadySpent {
+			if isAlreadySpentByOutputIndex, ok := isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId()]; ok {
+				if _, isAlreadySpent = isAlreadySpentByOutputIndex[input.OutputIndex()]; isAlreadySpent {
 					pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, an input has already been spent, transaction: %v", transaction))
 					rejectedTransactions = append(rejectedTransactions, transaction)
 					break
 				}
 			} else {
-				isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId] = make(map[uint16]bool)
+				isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId()] = make(map[uint16]bool)
 			}
-			isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId][input.OutputIndex] = true
+			isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId()][input.OutputIndex()] = true
 		}
 		if !isAlreadySpent {
 			reward += fee
@@ -142,8 +143,8 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	}
 	for _, transaction := range transactions {
 		for _, output := range transaction.Outputs() {
-			if output.HasIncome {
-				newAddresses = append(newAddresses, output.Address)
+			if output.HasIncome() {
+				newAddresses = append(newAddresses, output.Address())
 			}
 		}
 	}
@@ -194,7 +195,9 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	if err != nil {
 		return fmt.Errorf("failed to instantiate transaction: %w", err)
 	}
-	_, err = blockchainCopy.FindFee(transaction.Inputs(), transaction.Outputs(), nextBlockTimestamp)
+	firstBlockTimestamp := blockchainCopy.FirstBlockTimestamp()
+	utxosById := blockchainCopy.UtxosById()
+	_, err = transaction.FindFee(firstBlockTimestamp, pool.settings, nextBlockTimestamp, pool.validationTimestamp, utxosById)
 	if err != nil {
 		return fmt.Errorf("failed to verify fee: %w", err)
 	}

@@ -27,7 +27,7 @@ func Test_Value_ValueIsMaxUint64AndHasIncome_ReturnsValueWithIncome(t *testing.T
 		HasIncome: true,
 		Value:     math.MaxUint64, // 18446744073709551615
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo)
+	output := validation.NewUtxoFromUtxoResponse(utxo)
 
 	// Act
 	actualValueAfterHalfLife := output.Value(int64(genesisTimestamp+halfLife), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -44,7 +44,7 @@ func Test_Value_ValueIsTwiceTheLimitAndHasIncome_ReturnsValueWithIncome(t *testi
 		HasIncome: true,
 		Value:     value,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo)
+	output := validation.NewUtxoFromUtxoResponse(utxo)
 
 	// Act
 	actualValueAfterHalfLife := output.Value(int64(genesisTimestamp+halfLife), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -60,7 +60,7 @@ func Test_Value_ValueIsLimitAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 		HasIncome: true,
 		Value:     limit,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo)
+	output := validation.NewUtxoFromUtxoResponse(utxo)
 
 	// Act
 	actualValueAfterOneDay := output.Value(int64(genesisTimestamp+oneDay), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -80,7 +80,7 @@ func Test_Value_ValueIs1AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 		HasIncome: true,
 		Value:     value,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo)
+	output := validation.NewUtxoFromUtxoResponse(utxo)
 
 	// Act
 	actualValueAfterNoTimeElapsed := output.Value(int64(genesisTimestamp), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -98,7 +98,7 @@ func Test_Value_ValueIs0AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 		HasIncome: true,
 		Value:     0,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo)
+	output := validation.NewUtxoFromUtxoResponse(utxo)
 
 	// Act
 	actualValueAfterHalfLife := output.Value(int64(genesisTimestamp+halfLife), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -114,8 +114,8 @@ func Test_Value_SamePortionOfHalfLifeElapsedWithIncome_ReturnsSameValue(t *testi
 		HasIncome: true,
 		Value:     0,
 	}
-	output1 := validation.NewOutputFromUtxoResponse(utxo)
-	output2 := validation.NewOutputFromUtxoResponse(utxo)
+	output1 := validation.NewUtxoFromUtxoResponse(utxo)
+	output2 := validation.NewUtxoFromUtxoResponse(utxo)
 	portion := 1.5
 
 	// Act
@@ -140,8 +140,8 @@ func Test_Value_SameElapsedTimeWithIncome_ReturnsSameValue(t *testing.T) {
 		HasIncome:   true,
 		Value:       0,
 	}
-	output1 := validation.NewOutputFromUtxoResponse(utxo1)
-	output2 := validation.NewOutputFromUtxoResponse(utxo2)
+	output1 := validation.NewUtxoFromUtxoResponse(utxo1)
+	output2 := validation.NewUtxoFromUtxoResponse(utxo2)
 	var elapsedTimestamp int64 = oneDay
 	utxo1Timestamp := int64(blockHeight1 * validationTimestamp)
 	utxo2Timestamp := int64(blockHeight2 * validationTimestamp)
@@ -161,7 +161,7 @@ func Test_Value_ValueIsMaxUint64AndHasNoIncome_ReturnsValueWithoutIncome(t *test
 		HasIncome: false,
 		Value:     math.MaxUint64, // 18446744073709551615
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo)
+	output := validation.NewUtxoFromUtxoResponse(utxo)
 
 	// Act
 	actualValueAfterHalfLife := output.Value(int64(genesisTimestamp+halfLife), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -178,7 +178,7 @@ func Test_Value_ValueIsTwiceTheLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *
 		HasIncome: false,
 		Value:     value,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo)
+	output := validation.NewUtxoFromUtxoResponse(utxo)
 
 	// Act
 	actualValueAfterHalfLife := output.Value(int64(genesisTimestamp+halfLife), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -194,7 +194,7 @@ func Test_Value_ValueIsLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.
 		HasIncome: false,
 		Value:     limit,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo)
+	output := validation.NewUtxoFromUtxoResponse(utxo)
 
 	// Act
 	actualValueAfterHalfLife := output.Value(int64(genesisTimestamp+halfLife), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -211,7 +211,7 @@ func Test_Value_ValueIs1AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 		HasIncome: false,
 		Value:     value,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo)
+	output := validation.NewUtxoFromUtxoResponse(utxo)
 
 	// Act
 	actualValueAfterNoTimeElapsed := output.Value(int64(genesisTimestamp), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -230,7 +230,7 @@ func Test_Value_ValueIs0AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 		HasIncome: false,
 		Value:     0,
 	}
-	output := validation.NewOutputFromUtxoResponse(utxo)
+	output := validation.NewUtxoFromUtxoResponse(utxo)
 
 	// Act
 	actualValueAfterOneDay := output.Value(int64(oneDay), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -249,8 +249,8 @@ func Test_Value_SamePortionOfHalfLifeElapsedWithoutIncome_ReturnsSameValue(t *te
 		HasIncome: false,
 		Value:     0,
 	}
-	output1 := validation.NewOutputFromUtxoResponse(utxo)
-	output2 := validation.NewOutputFromUtxoResponse(utxo)
+	output1 := validation.NewUtxoFromUtxoResponse(utxo)
+	output2 := validation.NewUtxoFromUtxoResponse(utxo)
 	portion := 1.5
 
 	// Act
@@ -275,8 +275,8 @@ func Test_Value_SameElapsedTimeWithoutIncome_ReturnsSameValue(t *testing.T) {
 		HasIncome:   false,
 		Value:       0,
 	}
-	output1 := validation.NewOutputFromUtxoResponse(utxo1)
-	output2 := validation.NewOutputFromUtxoResponse(utxo2)
+	output1 := validation.NewUtxoFromUtxoResponse(utxo1)
+	output2 := validation.NewUtxoFromUtxoResponse(utxo2)
 	var elapsedTimestamp int64 = oneDay
 	utxo1Timestamp := int64(blockHeight1 * validationTimestamp)
 	utxo2Timestamp := int64(blockHeight2 * validationTimestamp)
