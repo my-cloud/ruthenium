@@ -1,6 +1,7 @@
 package address
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/node/network"
@@ -61,7 +62,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.GetUtxosFunc = func(string) ([]*network.UtxoResponse, error) { return nil, errors.New("") }
+	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(clocktest.WatchMock)
 	handler := amount.NewHandler(neighborMock, 0, 1, 1, 1, 1, watchMock, logger)
 	recorder := httptest.NewRecorder()
@@ -81,7 +82,8 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.GetUtxosFunc = func(string) ([]*network.UtxoResponse, error) { return nil, nil }
+	marshalledEmptyUtxos, _ := json.Marshal([]*network.UtxoResponse{{}})
+	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
 	watchMock := new(clocktest.WatchMock)
 	handler := amount.NewHandler(neighborMock, 0, 1, 1, 1, 1, watchMock, logger)
@@ -102,7 +104,8 @@ func Test_ServeHTTP_ValidRequest_ReturnsAmount(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.GetUtxosFunc = func(string) ([]*network.UtxoResponse, error) { return []*network.UtxoResponse{{}}, nil }
+	marshalledEmptyUtxos, _ := json.Marshal([]*network.UtxoResponse{{}})
+	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(clocktest.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }

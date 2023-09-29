@@ -121,7 +121,7 @@ func Test_HandleUtxosRequest_ValidUtxosRequest_UtxosByAddressCalled(t *testing.T
 	// Arrange
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
-	blockchainMock.UtxosByAddressFunc = func(string) []*network.UtxoResponse { return nil }
+	blockchainMock.UtxosFunc = func(string) []byte { return nil }
 	watchMock := new(clocktest.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), watchMock, logtest.NewLoggerMock())
@@ -137,7 +137,7 @@ func Test_HandleUtxosRequest_ValidUtxosRequest_UtxosByAddressCalled(t *testing.T
 	_, _ = handler.HandleUtxosRequest(context.TODO(), req)
 
 	// Assert
-	isMethodCalled := len(blockchainMock.UtxosByAddressCalls()) == 1
+	isMethodCalled := len(blockchainMock.UtxosCalls()) == 1
 	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
 }
 

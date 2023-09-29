@@ -60,9 +60,16 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write(errorMessage)
 			return
 		}
-		utxos, err := handler.host.GetUtxos(address)
+		utxosBytes, err := handler.host.GetUtxos(address)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		var utxos []*network.UtxoResponse
+		err = json.Unmarshal(utxosBytes, &utxos)
+		if err != nil {
+			handler.logger.Error(fmt.Errorf("failed to unmarshal UTXOs: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}

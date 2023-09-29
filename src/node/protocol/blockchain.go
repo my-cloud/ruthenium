@@ -11,5 +11,5 @@ type Blockchain interface {
 	FindFee(inputs []*network.InputResponse, outputs []*network.OutputResponse, timestamp int64) (uint64, error)
 	FirstBlockTimestamp() int64
 	LastBlockTimestamp() int64
-	UtxosByAddress(address string) []*network.UtxoResponse
+	Utxos(address string) []byte
 }

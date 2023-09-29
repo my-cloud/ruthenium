@@ -59,9 +59,11 @@ func Test_Blocks_BlocksCountLimitSetToZero_ReturnsEmptyArray(t *testing.T) {
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 
 	// Act
-	blocks := blockchain.Blocks(0)
+	blocksBytes := blockchain.Blocks(0)
 
 	// Assert
+	var blocks []*verification.Block
+	_ = json.Unmarshal(blocksBytes, &blocks)
 	test.Assert(t, len(blocks) == 0, "blocks should be empty")
 }
 
@@ -147,10 +149,12 @@ func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsEmptyArray(t 
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
 
 	// Act
-	blocks := blockchain.Blocks(1)
+	blocksBytes := blockchain.Blocks(1)
 
 	// Assert
 	expectedBlocksCount := 0
+	var blocks []*verification.Block
+	_ = json.Unmarshal(blocksBytes, &blocks)
 	actualBlocksCount := len(blocks)
 	test.Assert(t, actualBlocksCount == expectedBlocksCount, fmt.Sprintf("blocks count is %d whereas it should be %d", actualBlocksCount, expectedBlocksCount))
 }
@@ -171,13 +175,15 @@ func Test_UtxosByAddress_UnknownAddress_ReturnsEmptyArray(t *testing.T) {
 	blockchain := verification.NewBlockchain(nil, settings, nil, logger)
 
 	// Act
-	utxos := blockchain.UtxosByAddress(genesisValidatorAddress)
+	utxosBytes := blockchain.Utxos(genesisValidatorAddress)
 
 	// Assert
+	var utxos []*network.UtxoResponse
+	_ = json.Unmarshal(utxosBytes, &utxos)
 	test.Assert(t, len(utxos) == 0, "utxos should be empty")
 }
 
-func Test_UtxosByAddress_UtxoExists_ReturnsUtxo(t *testing.T) {
+func Test_Utxos_UtxoExists_ReturnsUtxo(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
@@ -204,9 +210,11 @@ func Test_UtxosByAddress_UtxoExists_ReturnsUtxo(t *testing.T) {
 	_ = blockchain.AddBlock(genesisTimestamp+2*validationInterval, nil, nil)
 
 	// Act
-	utxos := blockchain.UtxosByAddress(registeredAddress)
+	utxosBytes := blockchain.Utxos(registeredAddress)
 
 	// Assert
+	var utxos []*network.UtxoResponse
+	_ = json.Unmarshal(utxosBytes, &utxos)
 	actualValue := utxos[0].Value
 	test.Assert(t, actualValue == expectedValue, fmt.Sprintf("utxo amount is %d whereas it should be %d", actualValue, expectedValue))
 }

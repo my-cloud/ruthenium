@@ -37,8 +37,8 @@ var _ protocol.Blockchain = &BlockchainMock{}
 //			LastBlockTimestampFunc: func() int64 {
 //				panic("mock out the LastBlockTimestamp method")
 //			},
-//			UtxosByAddressFunc: func(address string) []*network.UtxoResponse {
-//				panic("mock out the UtxosByAddress method")
+//			UtxosFunc: func(address string) []byte {
+//				panic("mock out the Utxos method")
 //			},
 //		}
 //
@@ -65,8 +65,8 @@ type BlockchainMock struct {
 	// LastBlockTimestampFunc mocks the LastBlockTimestamp method.
 	LastBlockTimestampFunc func() int64
 
-	// UtxosByAddressFunc mocks the UtxosByAddress method.
-	UtxosByAddressFunc func(address string) []*network.UtxoResponse
+	// UtxosFunc mocks the Utxos method.
+	UtxosFunc func(address string) []byte
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -102,8 +102,8 @@ type BlockchainMock struct {
 		// LastBlockTimestamp holds details about calls to the LastBlockTimestamp method.
 		LastBlockTimestamp []struct {
 		}
-		// UtxosByAddress holds details about calls to the UtxosByAddress method.
-		UtxosByAddress []struct {
+		// Utxos holds details about calls to the Utxos method.
+		Utxos []struct {
 			// Address is the address argument value.
 			Address string
 		}
@@ -114,7 +114,7 @@ type BlockchainMock struct {
 	lockFindFee             sync.RWMutex
 	lockFirstBlockTimestamp sync.RWMutex
 	lockLastBlockTimestamp  sync.RWMutex
-	lockUtxosByAddress      sync.RWMutex
+	lockUtxos               sync.RWMutex
 }
 
 // AddBlock calls AddBlockFunc.
@@ -310,34 +310,34 @@ func (mock *BlockchainMock) LastBlockTimestampCalls() []struct {
 	return calls
 }
 
-// UtxosByAddress calls UtxosByAddressFunc.
-func (mock *BlockchainMock) UtxosByAddress(address string) []*network.UtxoResponse {
-	if mock.UtxosByAddressFunc == nil {
-		panic("BlockchainMock.UtxosByAddressFunc: method is nil but Blockchain.UtxosByAddress was just called")
+// Utxos calls UtxosFunc.
+func (mock *BlockchainMock) Utxos(address string) []byte {
+	if mock.UtxosFunc == nil {
+		panic("BlockchainMock.UtxosFunc: method is nil but Blockchain.Utxos was just called")
 	}
 	callInfo := struct {
 		Address string
 	}{
 		Address: address,
 	}
-	mock.lockUtxosByAddress.Lock()
-	mock.calls.UtxosByAddress = append(mock.calls.UtxosByAddress, callInfo)
-	mock.lockUtxosByAddress.Unlock()
-	return mock.UtxosByAddressFunc(address)
+	mock.lockUtxos.Lock()
+	mock.calls.Utxos = append(mock.calls.Utxos, callInfo)
+	mock.lockUtxos.Unlock()
+	return mock.UtxosFunc(address)
 }
 
-// UtxosByAddressCalls gets all the calls that were made to UtxosByAddress.
+// UtxosCalls gets all the calls that were made to Utxos.
 // Check the length with:
 //
-//	len(mockedBlockchain.UtxosByAddressCalls())
-func (mock *BlockchainMock) UtxosByAddressCalls() []struct {
+//	len(mockedBlockchain.UtxosCalls())
+func (mock *BlockchainMock) UtxosCalls() []struct {
 	Address string
 } {
 	var calls []struct {
 		Address string
 	}
-	mock.lockUtxosByAddress.RLock()
-	calls = mock.calls.UtxosByAddress
-	mock.lockUtxosByAddress.RUnlock()
+	mock.lockUtxos.RLock()
+	calls = mock.calls.Utxos
+	mock.lockUtxos.RUnlock()
 	return calls
 }

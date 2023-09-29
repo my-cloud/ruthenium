@@ -106,7 +106,7 @@ func (blockchain *Blockchain) Blocks(startingBlockHeight uint64) []byte {
 	blocksCountLimit := blockchain.settings.BlocksCountLimit
 	blocksCount := len(blockchain.blocks)
 	if blockchain.isEmpty() || startingBlockHeight > uint64(blocksCount)-1 || blocksCountLimit == 0 {
-		return []byte{}
+		return marshalledEmptyArray()
 	} else if startingBlockHeight+blocksCountLimit < uint64(blocksCount) {
 		endingBlockHeight = startingBlockHeight + blocksCountLimit
 	} else {
@@ -116,7 +116,7 @@ func (blockchain *Blockchain) Blocks(startingBlockHeight uint64) []byte {
 	blocksBytes, err := json.Marshal(blocks)
 	if err != nil {
 		blockchain.logger.Error(err.Error())
-		return []byte{}
+		return marshalledEmptyArray()
 	}
 	return blocksBytes
 }
@@ -236,7 +236,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 					}
 				}
 			case <-time.After(timeout):
-				blockchain.logger.Debug(errors.New("neighbor taken too much time to respond").Error())
+				blockchain.logger.Debug(errors.New("neighbor's response timeout").Error())
 			}
 			waitGroup.Done()
 		}
@@ -284,7 +284,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 					}
 				}
 			case <-time.After(timeout):
-				blockchain.logger.Debug(errors.New("neighbor taken too much time to respond").Error())
+				blockchain.logger.Debug(errors.New("neighbor's response timeout").Error())
 			}
 			waitGroup.Done()
 		}
@@ -403,11 +403,17 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	}
 }
 
-func (blockchain *Blockchain) UtxosByAddress(address string) []*network.UtxoResponse {
-	if _, ok := blockchain.utxosByAddress[address]; !ok {
-		return nil
+func (blockchain *Blockchain) Utxos(address string) []byte {
+	utxos, ok := blockchain.utxosByAddress[address]
+	if !ok {
+		return marshalledEmptyArray()
 	}
-	return blockchain.utxosByAddress[address]
+	marshaledUtxos, err := json.Marshal(utxos)
+	if err != nil {
+		blockchain.logger.Error(err.Error())
+		return marshalledEmptyArray()
+	}
+	return marshaledUtxos
 }
 
 func (blockchain *Blockchain) addBlock(block *Block) error {
@@ -471,6 +477,7 @@ func (blockchain *Blockchain) updateUtxos(block *Block, blockHeight int) error {
 	utxosByAddress := copyUtxosMap(blockchain.utxosByAddress)
 	utxosById := copyUtxosMap(blockchain.utxosById)
 	for _, transaction := range block.Transactions() {
+		// FIXME avoid searching in the map several times
 		if _, ok := utxosById[transaction.Id()]; ok {
 			return fmt.Errorf("transaction ID already exists: %s", transaction.Id())
 		}
@@ -737,6 +744,10 @@ func copyUtxosMap(utxosMap map[string][]*network.UtxoResponse) map[string][]*net
 		utxosMapCopy[address] = utxosCopy
 	}
 	return utxosMapCopy
+}
+
+func marshalledEmptyArray() []byte {
+	return []byte{91, 93}
 }
 
 func removeTarget(targets []string, removedTarget string) []string {

@@ -96,7 +96,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.GetUtxosFunc = func(string) ([]*network.UtxoResponse, error) { return nil, errors.New("") }
+	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(clocktest.WatchMock)
 	handler := info.NewHandler(neighborMock, 1, 0, 0, 1, 1, 1, watchMock, logger)
 	recorder := httptest.NewRecorder()
@@ -116,7 +116,8 @@ func Test_ServeHTTP_GetFirstBlockTimestampFuncError_ReturnsInternalServerError(t
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.GetUtxosFunc = func(string) ([]*network.UtxoResponse, error) { return nil, nil }
+	marshalledEmptyUtxos, _ := json.Marshal([]*network.UtxoResponse{{}})
+	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
 	watchMock := new(clocktest.WatchMock)
 	handler := info.NewHandler(neighborMock, 1, 0, 0, 1, 1, 1, watchMock, logger)
@@ -137,7 +138,8 @@ func Test_ServeHTTP_InsufficientWalletBalance_ReturnsMethodNotAllowed(t *testing
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.GetUtxosFunc = func(string) ([]*network.UtxoResponse, error) { return nil, nil }
+	marshalledEmptyUtxos, _ := json.Marshal([]*network.UtxoResponse{{}})
+	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(clocktest.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
@@ -188,7 +190,8 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 			Value:         0,
 		},
 	}
-	neighborMock.GetUtxosFunc = func(string) ([]*network.UtxoResponse, error) { return utxos, nil }
+	marshalledUtxos, _ := json.Marshal(utxos)
+	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(clocktest.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
@@ -235,7 +238,8 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 			Value:         2,
 		},
 	}
-	neighborMock.GetUtxosFunc = func(string) ([]*network.UtxoResponse, error) { return utxos, nil }
+	marshalledUtxos, _ := json.Marshal(utxos)
+	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(clocktest.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }

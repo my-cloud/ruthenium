@@ -153,8 +153,19 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	pool := validation.NewTransactionsPool(blockchainMock, genesisValue, transactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	var outputIndex uint16 = 0
 	transactionId := "0"
-	blockchainMock.UtxosByAddressFunc = func(string) []*network.UtxoResponse {
-		return []*network.UtxoResponse{protocoltest.NewUtxo(walletAAddress, outputIndex, transactionId, genesisValue)}
+	blockchainMock.UtxosFunc = func(string) []byte {
+		utxos := []*network.UtxoResponse{
+			{
+				Address:       walletAAddress,
+				HasReward:     true,
+				HasIncome:     true,
+				OutputIndex:   outputIndex,
+				TransactionId: transactionId,
+				Value:         genesisValue,
+			},
+		}
+		marshalledUtxos, _ := json.Marshal(utxos)
+		return marshalledUtxos
 	}
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, outputIndex, walletAAddress, privateKey, publicKey, now, transactionId, genesisValue)
 

@@ -30,7 +30,7 @@ var _ network.Neighbor = &NeighborMock{}
 //			GetTransactionsFunc: func() ([]byte, error) {
 //				panic("mock out the GetTransactions method")
 //			},
-//			GetUtxosFunc: func(address string) ([]*UtxoResponse, error) {
+//			GetUtxosFunc: func(address string) ([]byte, error) {
 //				panic("mock out the GetUtxos method")
 //			},
 //			SendTargetsFunc: func(targets []string) error {
@@ -59,7 +59,7 @@ type NeighborMock struct {
 	GetTransactionsFunc func() ([]byte, error)
 
 	// GetUtxosFunc mocks the GetUtxos method.
-	GetUtxosFunc func(address string) ([]*network.UtxoResponse, error)
+	GetUtxosFunc func(address string) ([]byte, error)
 
 	// SendTargetsFunc mocks the SendTargets method.
 	SendTargetsFunc func(targets []string) error
@@ -227,7 +227,7 @@ func (mock *NeighborMock) GetTransactionsCalls() []struct {
 }
 
 // GetUtxos calls GetUtxosFunc.
-func (mock *NeighborMock) GetUtxos(address string) ([]*network.UtxoResponse, error) {
+func (mock *NeighborMock) GetUtxos(address string) ([]byte, error) {
 	if mock.GetUtxosFunc == nil {
 		panic("NeighborMock.GetUtxosFunc: method is nil but Neighbor.GetUtxos was just called")
 	}

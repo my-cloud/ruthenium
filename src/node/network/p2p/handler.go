@@ -97,12 +97,7 @@ func (handler *Handler) HandleUtxosRequest(_ context.Context, req gp2p.Data) (gp
 		handler.logger.Debug(BadRequest)
 		return res, err
 	}
-	utxosByAddress := handler.blockchain.UtxosByAddress(address)
-	marshaledUtxos, err := json.Marshal(utxosByAddress)
-	if err != nil {
-		handler.logger.Error(err.Error())
-		return res, err
-	}
-	res.SetBytes(marshaledUtxos)
+	utxosByAddress := handler.blockchain.Utxos(address)
+	res.SetBytes(utxosByAddress)
 	return res, nil
 }

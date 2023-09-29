@@ -70,15 +70,10 @@ func (neighbor *Neighbor) GetTransactions() (transactionResponses []byte, err er
 	return
 }
 
-func (neighbor *Neighbor) GetUtxos(address string) (utxos []*network.UtxoResponse, err error) {
+func (neighbor *Neighbor) GetUtxos(address string) (utxos []byte, err error) {
 	res, err := neighbor.sendRequest(utxosEndpoint, address)
-	if err != nil {
-		return
-	}
-	data := res.GetBytes()
-	err = json.Unmarshal(data, &utxos)
-	if err != nil {
-		return
+	if err == nil {
+		return res.GetBytes(), nil
 	}
 	return
 }
@@ -90,6 +85,6 @@ func (neighbor *Neighbor) sendRequest(topic string, request interface{}) (res gp
 		return
 	}
 	req.SetBytes(data)
-	res, err = neighbor.client.Send(topic, req)
+	res, err = neighbor.client.Send(topic, req) // FIXME panic
 	return
 }
