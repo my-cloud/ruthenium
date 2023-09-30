@@ -115,6 +115,11 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
+		if err = transaction.VerifySignatures(); err != nil {
+			pool.logger.Warn(fmt.Errorf("failed to verify transaction: %w", err).Error())
+			rejectedTransactions = append(rejectedTransactions, transaction)
+			continue
+		}
 		fee, err := transaction.FindFee(firstBlockTimestamp, pool.settings, timestamp, pool.validationTimestamp, blockchainCopy.Utxo)
 		if err != nil {
 			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, transaction: %v\n %w", transaction, err).Error())
@@ -195,11 +200,6 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	if err != nil {
 		return fmt.Errorf("failed to instantiate transaction: %w", err)
 	}
-	firstBlockTimestamp := blockchainCopy.FirstBlockTimestamp()
-	_, err = transaction.FindFee(firstBlockTimestamp, pool.settings, nextBlockTimestamp, pool.validationTimestamp, blockchainCopy.Utxo)
-	if err != nil {
-		return fmt.Errorf("failed to verify fee: %w", err)
-	}
 	timestamp := transaction.Timestamp()
 	if nextBlockTimestamp < timestamp {
 		return fmt.Errorf("the transaction timestamp is too far in the future: %v, now: %v", time.Unix(0, timestamp), time.Unix(0, nextBlockTimestamp))
@@ -215,6 +215,11 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	}
 	if err = transaction.VerifySignatures(); err != nil {
 		return fmt.Errorf("failed to verify transaction: %w", err)
+	}
+	firstBlockTimestamp := blockchainCopy.FirstBlockTimestamp()
+	_, err = transaction.FindFee(firstBlockTimestamp, pool.settings, nextBlockTimestamp, pool.validationTimestamp, blockchainCopy.Utxo)
+	if err != nil {
+		return fmt.Errorf("failed to verify fee: %w", err)
 	}
 	transactions := []*verification.Transaction{transaction}
 	transactionsBytes, err := json.Marshal(transactions)

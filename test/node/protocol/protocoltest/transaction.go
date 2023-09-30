@@ -7,20 +7,19 @@ import (
 )
 
 func NewSignedTransactionRequest(inputsValue uint64, fee uint64, outputIndex uint16, recipientAddress string, senderPrivateKey *encryption.PrivateKey, senderPublicKey *encryption.PublicKey, timestamp int64, transactionId string, value uint64) network.TransactionRequest {
-	utxo := NewUtxo(recipientAddress, outputIndex, transactionId, inputsValue)
 	marshalledInput, _ := json.Marshal(struct {
 		OutputIndex   uint16 `json:"output_index"`
 		TransactionId string `json:"transaction_id"`
 	}{
-		OutputIndex:   utxo.OutputIndex,
-		TransactionId: utxo.TransactionId,
+		OutputIndex:   outputIndex,
+		TransactionId: transactionId,
 	})
 	signature, _ := encryption.NewSignature(marshalledInput, senderPrivateKey)
 	hexPublicKey := senderPublicKey.String()
 	hexSignature := signature.String()
 	input := network.InputRequest{
-		OutputIndex:   &utxo.OutputIndex,
-		TransactionId: &utxo.TransactionId,
+		OutputIndex:   &outputIndex,
+		TransactionId: &transactionId,
 		PublicKey:     &hexPublicKey,
 		Signature:     &hexSignature,
 	}
@@ -44,17 +43,6 @@ func NewSignedTransactionRequest(inputsValue uint64, fee uint64, outputIndex uin
 		Outputs:                      &[]network.OutputRequest{sent, rest},
 		Timestamp:                    &timestamp,
 		TransactionBroadcasterTarget: &broadcasterTarget,
-	}
-}
-
-func NewUtxo(address string, outputIndex uint16, transactionId string, value uint64) *network.UtxoResponse {
-	return &network.UtxoResponse{
-		Address:       address,
-		HasReward:     true,
-		HasIncome:     true,
-		OutputIndex:   outputIndex,
-		TransactionId: transactionId,
-		Value:         value,
 	}
 }
 
