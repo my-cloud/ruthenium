@@ -4,7 +4,6 @@
 package protocoltest
 
 import (
-	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"sync"
 )
@@ -28,14 +27,14 @@ var _ protocol.Blockchain = &BlockchainMock{}
 //			CopyFunc: func() Blockchain {
 //				panic("mock out the Copy method")
 //			},
-//			FindFeeFunc: func(inputs []*network.InputResponse, outputs []*network.OutputResponse, timestamp int64) (uint64, error) {
-//				panic("mock out the FindFee method")
-//			},
 //			FirstBlockTimestampFunc: func() int64 {
 //				panic("mock out the FirstBlockTimestamp method")
 //			},
 //			LastBlockTimestampFunc: func() int64 {
 //				panic("mock out the LastBlockTimestamp method")
+//			},
+//			UtxoFunc: func(input Input) (Utxo, error) {
+//				panic("mock out the Utxo method")
 //			},
 //			UtxosFunc: func(address string) []byte {
 //				panic("mock out the Utxos method")
@@ -56,14 +55,14 @@ type BlockchainMock struct {
 	// CopyFunc mocks the Copy method.
 	CopyFunc func() protocol.Blockchain
 
-	// FindFeeFunc mocks the FindFee method.
-	FindFeeFunc func(inputs []*network.InputResponse, outputs []*network.OutputResponse, timestamp int64) (uint64, error)
-
 	// FirstBlockTimestampFunc mocks the FirstBlockTimestamp method.
 	FirstBlockTimestampFunc func() int64
 
 	// LastBlockTimestampFunc mocks the LastBlockTimestamp method.
 	LastBlockTimestampFunc func() int64
+
+	// UtxoFunc mocks the Utxo method.
+	UtxoFunc func(input protocol.Input) (protocol.Utxo, error)
 
 	// UtxosFunc mocks the Utxos method.
 	UtxosFunc func(address string) []byte
@@ -87,20 +86,16 @@ type BlockchainMock struct {
 		// Copy holds details about calls to the Copy method.
 		Copy []struct {
 		}
-		// FindFee holds details about calls to the FindFee method.
-		FindFee []struct {
-			// Inputs is the inputs argument value.
-			Inputs []*network.InputResponse
-			// Outputs is the outputs argument value.
-			Outputs []*network.OutputResponse
-			// Timestamp is the timestamp argument value.
-			Timestamp int64
-		}
 		// FirstBlockTimestamp holds details about calls to the FirstBlockTimestamp method.
 		FirstBlockTimestamp []struct {
 		}
 		// LastBlockTimestamp holds details about calls to the LastBlockTimestamp method.
 		LastBlockTimestamp []struct {
+		}
+		// Utxo holds details about calls to the Utxo method.
+		Utxo []struct {
+			// Input is the input argument value.
+			Input protocol.Input
 		}
 		// Utxos holds details about calls to the Utxos method.
 		Utxos []struct {
@@ -111,9 +106,9 @@ type BlockchainMock struct {
 	lockAddBlock            sync.RWMutex
 	lockBlocks              sync.RWMutex
 	lockCopy                sync.RWMutex
-	lockFindFee             sync.RWMutex
 	lockFirstBlockTimestamp sync.RWMutex
 	lockLastBlockTimestamp  sync.RWMutex
+	lockUtxo                sync.RWMutex
 	lockUtxos               sync.RWMutex
 }
 
@@ -216,46 +211,6 @@ func (mock *BlockchainMock) CopyCalls() []struct {
 	return calls
 }
 
-// FindFee calls FindFeeFunc.
-func (mock *BlockchainMock) FindFee(inputs []*network.InputResponse, outputs []*network.OutputResponse, timestamp int64) (uint64, error) {
-	if mock.FindFeeFunc == nil {
-		panic("BlockchainMock.FindFeeFunc: method is nil but Blockchain.FindFee was just called")
-	}
-	callInfo := struct {
-		Inputs    []*network.InputResponse
-		Outputs   []*network.OutputResponse
-		Timestamp int64
-	}{
-		Inputs:    inputs,
-		Outputs:   outputs,
-		Timestamp: timestamp,
-	}
-	mock.lockFindFee.Lock()
-	mock.calls.FindFee = append(mock.calls.FindFee, callInfo)
-	mock.lockFindFee.Unlock()
-	return mock.FindFeeFunc(inputs, outputs, timestamp)
-}
-
-// FindFeeCalls gets all the calls that were made to FindFee.
-// Check the length with:
-//
-//	len(mockedBlockchain.FindFeeCalls())
-func (mock *BlockchainMock) FindFeeCalls() []struct {
-	Inputs    []*network.InputResponse
-	Outputs   []*network.OutputResponse
-	Timestamp int64
-} {
-	var calls []struct {
-		Inputs    []*network.InputResponse
-		Outputs   []*network.OutputResponse
-		Timestamp int64
-	}
-	mock.lockFindFee.RLock()
-	calls = mock.calls.FindFee
-	mock.lockFindFee.RUnlock()
-	return calls
-}
-
 // FirstBlockTimestamp calls FirstBlockTimestampFunc.
 func (mock *BlockchainMock) FirstBlockTimestamp() int64 {
 	if mock.FirstBlockTimestampFunc == nil {
@@ -307,6 +262,38 @@ func (mock *BlockchainMock) LastBlockTimestampCalls() []struct {
 	mock.lockLastBlockTimestamp.RLock()
 	calls = mock.calls.LastBlockTimestamp
 	mock.lockLastBlockTimestamp.RUnlock()
+	return calls
+}
+
+// Utxo calls UtxoFunc.
+func (mock *BlockchainMock) Utxo(input protocol.Input) (protocol.Utxo, error) {
+	if mock.UtxoFunc == nil {
+		panic("BlockchainMock.UtxoFunc: method is nil but Blockchain.Utxo was just called")
+	}
+	callInfo := struct {
+		Input protocol.Input
+	}{
+		Input: input,
+	}
+	mock.lockUtxo.Lock()
+	mock.calls.Utxo = append(mock.calls.Utxo, callInfo)
+	mock.lockUtxo.Unlock()
+	return mock.UtxoFunc(input)
+}
+
+// UtxoCalls gets all the calls that were made to Utxo.
+// Check the length with:
+//
+//	len(mockedBlockchain.UtxoCalls())
+func (mock *BlockchainMock) UtxoCalls() []struct {
+	Input protocol.Input
+} {
+	var calls []struct {
+		Input protocol.Input
+	}
+	mock.lockUtxo.RLock()
+	calls = mock.calls.Utxo
+	mock.lockUtxo.RUnlock()
 	return calls
 }
 
