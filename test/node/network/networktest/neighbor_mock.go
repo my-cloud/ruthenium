@@ -18,7 +18,7 @@ var _ network.Neighbor = &NeighborMock{}
 //
 //		// make and configure a mocked Neighbor
 //		mockedNeighbor := &NeighborMock{
-//			AddTransactionFunc: func(request TransactionRequest) error {
+//			AddTransactionFunc: func(transaction []byte) error {
 //				panic("mock out the AddTransaction method")
 //			},
 //			GetBlocksFunc: func(startingBlockHeight uint64) ([]byte, error) {
@@ -47,7 +47,7 @@ var _ network.Neighbor = &NeighborMock{}
 //	}
 type NeighborMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
-	AddTransactionFunc func(request network.TransactionRequest) error
+	AddTransactionFunc func(transaction []byte) error
 
 	// GetBlocksFunc mocks the GetBlocks method.
 	GetBlocksFunc func(startingBlockHeight uint64) ([]byte, error)
@@ -71,8 +71,8 @@ type NeighborMock struct {
 	calls struct {
 		// AddTransaction holds details about calls to the AddTransaction method.
 		AddTransaction []struct {
-			// Request is the request argument value.
-			Request network.TransactionRequest
+			// Transaction is the transaction argument value.
+			Transaction []byte
 		}
 		// GetBlocks holds details about calls to the GetBlocks method.
 		GetBlocks []struct {
@@ -109,19 +109,19 @@ type NeighborMock struct {
 }
 
 // AddTransaction calls AddTransactionFunc.
-func (mock *NeighborMock) AddTransaction(request network.TransactionRequest) error {
+func (mock *NeighborMock) AddTransaction(transaction []byte) error {
 	if mock.AddTransactionFunc == nil {
 		panic("NeighborMock.AddTransactionFunc: method is nil but Neighbor.AddTransaction was just called")
 	}
 	callInfo := struct {
-		Request network.TransactionRequest
+		Transaction []byte
 	}{
-		Request: request,
+		Transaction: transaction,
 	}
 	mock.lockAddTransaction.Lock()
 	mock.calls.AddTransaction = append(mock.calls.AddTransaction, callInfo)
 	mock.lockAddTransaction.Unlock()
-	return mock.AddTransactionFunc(request)
+	return mock.AddTransactionFunc(transaction)
 }
 
 // AddTransactionCalls gets all the calls that were made to AddTransaction.
@@ -129,10 +129,10 @@ func (mock *NeighborMock) AddTransaction(request network.TransactionRequest) err
 //
 //	len(mockedNeighbor.AddTransactionCalls())
 func (mock *NeighborMock) AddTransactionCalls() []struct {
-	Request network.TransactionRequest
+	Transaction []byte
 } {
 	var calls []struct {
-		Request network.TransactionRequest
+		Transaction []byte
 	}
 	mock.lockAddTransaction.RLock()
 	calls = mock.calls.AddTransaction

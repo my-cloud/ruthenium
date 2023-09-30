@@ -3,7 +3,6 @@ package p2p
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
@@ -66,19 +65,9 @@ func (handler *Handler) HandleTargetsRequest(_ context.Context, req gp2p.Data) (
 }
 
 func (handler *Handler) HandleTransactionRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
-	var transactionRequest network.TransactionRequest
 	res := gp2p.Data{}
 	data := req.GetBytes()
-	if err := json.Unmarshal(data, &transactionRequest); err != nil {
-		handler.logger.Debug(BadRequest)
-		return res, err
-	}
-	if transactionRequest.IsInvalid() {
-		handler.logger.Debug(BadRequest)
-		err := errors.New(BadRequest)
-		return res, err
-	}
-	go handler.transactionsPool.AddTransaction(&transactionRequest, handler.synchronizer.HostTarget())
+	go handler.transactionsPool.AddTransaction(data, handler.synchronizer.HostTarget())
 	return res, nil
 }
 

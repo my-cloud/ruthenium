@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	gp2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/node/network"
 	"time"
 )
 
@@ -57,8 +56,10 @@ func (neighbor *Neighbor) SendTargets(targets []string) (err error) {
 	return
 }
 
-func (neighbor *Neighbor) AddTransaction(request network.TransactionRequest) (err error) {
-	_, err = neighbor.sendRequest(transactionEndpoint, request)
+func (neighbor *Neighbor) AddTransaction(transaction []byte) (err error) {
+	req := gp2p.Data{}
+	req.SetBytes(transaction)
+	_, err = neighbor.client.Send(transactionEndpoint, req)
 	return
 }
 

@@ -76,7 +76,7 @@ func Test_HandleFirstBlockTimestampRequest_ValidRequest_FirstBlockTimestampCalle
 func Test_HandleTransactionRequest_AddInvalidTransaction_AddTransactionNotCalled(t *testing.T) {
 	// Arrange
 	transactionsPoolMock := new(protocoltest.TransactionsPoolMock)
-	transactionsPoolMock.AddTransactionFunc = func(*network.TransactionRequest, string) {}
+	transactionsPoolMock.AddTransactionFunc = func([]byte, string) {}
 	handler := p2p.NewHandler(new(protocoltest.BlockchainMock), new(networktest.SynchronizerMock), transactionsPoolMock, new(clocktest.WatchMock), logtest.NewLoggerMock())
 	data, err := json.Marshal(network.TransactionRequest{})
 	if err != nil {

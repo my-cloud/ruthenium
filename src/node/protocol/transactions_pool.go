@@ -1,10 +1,6 @@
 package protocol
 
-import (
-	"github.com/my-cloud/ruthenium/src/node/network"
-)
-
 type TransactionsPool interface {
-	AddTransaction(transactionRequest *network.TransactionRequest, hostTarget string)
+	AddTransaction(transaction []byte, hostTarget string)
 	Transactions() []byte
 }

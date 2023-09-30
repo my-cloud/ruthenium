@@ -91,7 +91,7 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	neighborMock := new(networktest.NeighborMock)
 	target := "0.0.0.0:0"
 	neighborMock.TargetFunc = func() string { return target }
-	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return errors.New("") }
+	neighborMock.AddTransactionFunc = func([]byte) error { return errors.New("") }
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, logger)
 	address := "RecipientAddress"
@@ -118,7 +118,7 @@ func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	neighborMock := new(networktest.NeighborMock)
 	target := "0.0.0.0:0"
 	neighborMock.TargetFunc = func() string { return target }
-	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return nil }
+	neighborMock.AddTransactionFunc = func([]byte) error { return nil }
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, logger)
 	address := "RecipientAddress"
