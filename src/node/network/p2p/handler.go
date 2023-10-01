@@ -53,8 +53,8 @@ func (handler *Handler) HandleFirstBlockTimestampRequest(_ context.Context, _ gp
 }
 
 func (handler *Handler) HandleTargetsRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
-	var targets []string
 	res := gp2p.Data{}
+	var targets []string
 	data := req.GetBytes()
 	if err := json.Unmarshal(data, &targets); err != nil {
 		handler.logger.Debug(BadRequest)
@@ -65,10 +65,9 @@ func (handler *Handler) HandleTargetsRequest(_ context.Context, req gp2p.Data) (
 }
 
 func (handler *Handler) HandleTransactionRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
-	res := gp2p.Data{}
 	data := req.GetBytes()
 	go handler.transactionsPool.AddTransaction(data, handler.synchronizer.HostTarget())
-	return res, nil
+	return gp2p.Data{}, nil
 }
 
 func (handler *Handler) HandleTransactionsRequest(_ context.Context, _ gp2p.Data) (gp2p.Data, error) {

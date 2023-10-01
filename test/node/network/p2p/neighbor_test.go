@@ -161,9 +161,10 @@ func Test_AddTransaction_NoError_ClientCalled(t *testing.T) {
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
+	marshalledTransaction, _ := json.Marshal(&network.TransactionRequest{})
 
 	// Act
-	err := neighbor.AddTransaction(network.TransactionRequest{})
+	err := neighbor.AddTransaction(marshalledTransaction)
 
 	// Assert
 	sendCalls := clientMock.SendCalls()
@@ -185,9 +186,10 @@ func Test_AddTransaction_Error_ReturnsError(t *testing.T) {
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
+	marshalledTransaction, _ := json.Marshal(&network.TransactionRequest{})
 
 	// Act
-	err := neighbor.AddTransaction(network.TransactionRequest{})
+	err := neighbor.AddTransaction(marshalledTransaction)
 
 	// Assert
 	sendCalls := clientMock.SendCalls()

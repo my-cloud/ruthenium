@@ -40,9 +40,10 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	settings := config.Settings{ValidationIntervalInSeconds: 1}
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+2, "0", genesisValue)
+	marshalledTransaction, _ := json.Marshal(&invalidTransactionRequest)
 
 	// Act
-	pool.AddTransaction(&invalidTransactionRequest, "0")
+	pool.AddTransaction(marshalledTransaction, "0")
 
 	// Assert
 	transactionsBytes := pool.Transactions()
@@ -74,9 +75,10 @@ func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *tes
 	settings := config.Settings{ValidationIntervalInSeconds: 1}
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue)
+	marshalledTransaction, _ := json.Marshal(&invalidTransactionRequest)
 
 	// Act
-	pool.AddTransaction(&invalidTransactionRequest, "0")
+	pool.AddTransaction(marshalledTransaction, "0")
 
 	// Assert
 	transactionsBytes := pool.Transactions()
@@ -109,9 +111,10 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	settings := config.Settings{ValidationIntervalInSeconds: 1}
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey2, publicKey, now, "0", genesisValue)
+	marshalledTransaction, _ := json.Marshal(&invalidTransactionRequest)
 
 	// Act
-	pool.AddTransaction(&invalidTransactionRequest, "0")
+	pool.AddTransaction(marshalledTransaction, "0")
 
 	// Assert
 	transactionsBytes := pool.Transactions()
@@ -128,7 +131,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	validatorWalletAddress := test.Address
 	walletAAddress := test.Address2
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return nil }
+	neighborMock.AddTransactionFunc = func([]byte) error { return nil }
 	synchronizerMock := new(networktest.SynchronizerMock)
 	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return []network.Neighbor{neighborMock} }
 	synchronizerMock.IncentiveFunc = func(string) {}
@@ -152,9 +155,10 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	var outputIndex uint16 = 0
 	transactionId := "0"
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, outputIndex, walletAAddress, privateKey, publicKey, now, transactionId, genesisValue)
+	marshalledTransaction, _ := json.Marshal(&transactionRequest)
 
 	// Act
-	pool.AddTransaction(&transactionRequest, "0")
+	pool.AddTransaction(marshalledTransaction, "0")
 
 	// Assert
 	transactionsBytes := pool.Transactions()
@@ -189,7 +193,8 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	settings := config.Settings{ValidationIntervalInSeconds: 1}
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+1, "0", genesisValue)
-	pool.AddTransaction(&invalidTransactionRequest, "0")
+	marshalledTransaction, _ := json.Marshal(&invalidTransactionRequest)
+	pool.AddTransaction(marshalledTransaction, "0")
 	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 
 	// Act
@@ -223,7 +228,8 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionNotValidated(t *testi
 	settings := config.Settings{ValidationIntervalInSeconds: 1}
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue)
-	pool.AddTransaction(&invalidTransactionRequest, "0")
+	marshalledTransaction, _ := json.Marshal(&invalidTransactionRequest)
+	pool.AddTransaction(marshalledTransaction, "0")
 	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 
 	// Act
@@ -257,7 +263,8 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	settings := config.Settings{ValidationIntervalInSeconds: 1}
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now, "0", genesisValue)
-	pool.AddTransaction(&transactionRequest, "0")
+	marshalledTransaction, _ := json.Marshal(&transactionRequest)
+	pool.AddTransaction(marshalledTransaction, "0")
 
 	// Act
 	pool.Validate(now)

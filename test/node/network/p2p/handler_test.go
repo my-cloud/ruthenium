@@ -12,6 +12,7 @@ import (
 	"github.com/my-cloud/ruthenium/test/node/clock/clocktest"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
 	"github.com/my-cloud/ruthenium/test/node/protocol/protocoltest"
+	"sync"
 	"testing"
 	"time"
 )
@@ -21,10 +22,7 @@ func Test_HandleTargetsRequest_AddInvalidTargets_AddTargetsNotCalled(t *testing.
 	synchronizerMock := new(networktest.SynchronizerMock)
 	synchronizerMock.AddTargetsFunc = func([]string) {}
 	handler := p2p.NewHandler(new(protocoltest.BlockchainMock), synchronizerMock, new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
-	data, err := json.Marshal("")
-	if err != nil {
-		return
-	}
+	data, _ := json.Marshal("")
 	req := gp2p.Data{}
 	req.SetBytes(data)
 
@@ -36,27 +34,26 @@ func Test_HandleTargetsRequest_AddInvalidTargets_AddTargetsNotCalled(t *testing.
 	test.Assert(t, !isMethodCalled, "Method is called whereas it should not.")
 }
 
-// TODO use wait group
-//func Test_HandleTargetsRequest_AddValidTargets_AddTargetsCalled(t *testing.T) {
-//	// Arrange
-//	synchronizerMock := new(networktest.SynchronizerMock)
-//	synchronizerMock.AddTargetsFunc = func([]network.TargetRequest) {}
-//	handler := p2p.NewHandler(new(protocoltest.BlockchainMock), synchronizerMock, new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
-//	target := "target"
-//	data, err := json.Marshal([]network.TargetRequest{{Target: &target}})
-//	if err != nil {
-//		return
-//	}
-//	req := gp2p.Data{}
-//	req.SetBytes(data)
-//
-//	// Act
-//	_, _ = handler.HandleTargetsRequest(context.TODO(), req)
-//
-//	// Assert
-//	isMethodCalled := len(synchronizerMock.AddTargetsCalls()) == 1
-//	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
-//}
+func Test_HandleTargetsRequest_AddValidTargets_AddTargetsCalled(t *testing.T) {
+	// Arrange
+	waitGroup := sync.WaitGroup{}
+	synchronizerMock := new(networktest.SynchronizerMock)
+	synchronizerMock.AddTargetsFunc = func([]string) { waitGroup.Done() }
+	handler := p2p.NewHandler(new(protocoltest.BlockchainMock), synchronizerMock, new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
+	target := []string{"target"}
+	data, _ := json.Marshal(target)
+	req := gp2p.Data{}
+	req.SetBytes(data)
+	waitGroup.Add(1)
+
+	// Act
+	_, _ = handler.HandleTargetsRequest(context.TODO(), req)
+
+	// Assert
+	waitGroup.Wait()
+	isMethodCalled := len(synchronizerMock.AddTargetsCalls()) == 1
+	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
+}
 
 func Test_HandleFirstBlockTimestampRequest_ValidRequest_FirstBlockTimestampCalled(t *testing.T) {
 	// Arrange
@@ -73,49 +70,27 @@ func Test_HandleFirstBlockTimestampRequest_ValidRequest_FirstBlockTimestampCalle
 	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
 }
 
-func Test_HandleTransactionRequest_AddInvalidTransaction_AddTransactionNotCalled(t *testing.T) {
+func Test_HandleTransactionRequest_AddValidTransaction_AddTransactionCalled(t *testing.T) {
 	// Arrange
+	waitGroup := sync.WaitGroup{}
 	transactionsPoolMock := new(protocoltest.TransactionsPoolMock)
-	transactionsPoolMock.AddTransactionFunc = func([]byte, string) {}
-	handler := p2p.NewHandler(new(protocoltest.BlockchainMock), new(networktest.SynchronizerMock), transactionsPoolMock, new(clocktest.WatchMock), logtest.NewLoggerMock())
-	data, err := json.Marshal(network.TransactionRequest{})
-	if err != nil {
-		return
-	}
+	transactionsPoolMock.AddTransactionFunc = func([]byte, string) { waitGroup.Done() }
+	synchronizerMock := new(networktest.SynchronizerMock)
+	synchronizerMock.HostTargetFunc = func() string { return "" }
+	handler := p2p.NewHandler(new(protocoltest.BlockchainMock), synchronizerMock, transactionsPoolMock, new(clocktest.WatchMock), logtest.NewLoggerMock())
+	data, _ := json.Marshal(network.TransactionRequest{})
 	req := gp2p.Data{}
 	req.SetBytes(data)
+	waitGroup.Add(1)
 
 	// Act
 	_, _ = handler.HandleTransactionRequest(context.TODO(), req)
 
 	// Assert
-	isMethodCalled := len(transactionsPoolMock.AddTransactionCalls()) != 0
-	test.Assert(t, !isMethodCalled, "Method is called whereas it should not.")
+	waitGroup.Wait()
+	isMethodCalled := len(transactionsPoolMock.AddTransactionCalls()) == 1
+	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
 }
-
-// TODO use wait group
-//func Test_HandleTransactionRequest_AddValidTransaction_AddTransactionCalled(t *testing.T) {
-//	// Arrange
-//	transactionsPoolMock := new(protocoltest.TransactionsPoolMock)
-//	transactionsPoolMock.AddTransactionFunc = func(*network.TransactionRequest, string) {}
-//	handler := p2p.NewHandler(new(protocoltest.BlockchainMock), new(networktest.SynchronizerMock), transactionsPoolMock, new(clocktest.WatchMock), logtest.NewLoggerMock())
-//	privateKey, _ := encryption.DecodePrivateKey(test.PrivateKey)
-//	transaction := server.NewTransaction(0, "A", "B", encryption.NewPublicKey(privateKey), 0, 0)
-//	_ = transaction.Sign(privateKey)
-//	data, err := json.Marshal(transaction.GetRequest())
-//	if err != nil {
-//		return
-//	}
-//	req := gp2p.Data{}
-//	req.SetBytes(data)
-//
-//	// Act
-//	_, _ = handler.HandleTransactionRequest(context.TODO(), req)
-//
-//	// Assert
-//	isMethodCalled := len(transactionsPoolMock.AddTransactionCalls()) == 1
-//	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
-//}
 
 func Test_HandleUtxosRequest_ValidUtxosRequest_UtxosByAddressCalled(t *testing.T) {
 	// Arrange
@@ -126,10 +101,7 @@ func Test_HandleUtxosRequest_ValidUtxosRequest_UtxosByAddressCalled(t *testing.T
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), watchMock, logtest.NewLoggerMock())
 	address := "address"
-	data, err := json.Marshal(&address)
-	if err != nil {
-		return
-	}
+	data, _ := json.Marshal(&address)
 	req := gp2p.Data{}
 	req.SetBytes(data)
 
@@ -147,10 +119,7 @@ func Test_HandleBlocksRequest_ValidBlocksRequest_LastBlocksCalled(t *testing.T) 
 	blockchainMock.BlocksFunc = func(uint64) []byte { return nil }
 	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
 	var height uint64 = 0
-	data, err := json.Marshal(&height)
-	if err != nil {
-		return
-	}
+	data, _ := json.Marshal(&height)
 	req := gp2p.Data{}
 	req.SetBytes(data)
 
