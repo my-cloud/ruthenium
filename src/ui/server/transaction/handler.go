@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
+	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"net/http"
 )
@@ -21,25 +23,17 @@ func NewHandler(host network.Neighbor, logger log.Logger) *Handler {
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		var transactionRequest network.TransactionRequest
 		jsonWriter := server.NewIoWriter(writer, handler.logger)
 		decoder := json.NewDecoder(req.Body)
-		err := decoder.Decode(&transactionRequest)
+		var transaction *verification.Transaction
+		err := decoder.Decode(&transaction)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to decode transaction request: %w", err).Error())
 			writer.WriteHeader(http.StatusBadRequest)
 			jsonWriter.Write("invalid transaction request")
 			return
 		}
-		hostTarget := handler.host.Target()
-		transactionRequest.TransactionBroadcasterTarget = &hostTarget
-		if transactionRequest.IsInvalid() {
-			errorMessage := "field(s) are missing in transaction request"
-			handler.logger.Error(errorMessage)
-			writer.WriteHeader(http.StatusBadRequest)
-			jsonWriter.Write(errorMessage)
-			return
-		}
+		transactionRequest := validation.NewTransactionRequest(transaction, handler.host.Target())
 		marshaledTransaction, err := json.Marshal(transactionRequest)
 		err = handler.host.AddTransaction(marshaledTransaction)
 		if err != nil {

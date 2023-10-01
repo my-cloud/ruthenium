@@ -151,28 +151,29 @@
                 const recipientAddress = $("#recipient_address").val();
                 const spend = {
                     "address": recipientAddress,
-                    "has_reward": false,
                     "has_income": false,
+                    "has_reward": false,
                     "value": value,
                 }
                 console.log(isIncomeUpdateRequested)
                 const rest = {
                     "address": senderAddress,
-                    "has_reward": false,
                     "has_income": isIncomeUpdateRequested,
+                    "has_reward": false,
                     "value": response.rest,
                 }
-                const transactionRequest = {
+                const transaction = {
                     "inputs": inputs,
                     "outputs": [spend, rest],
                     "timestamp": response.timestamp,
                 };
+                transaction.id = CryptoJS.SHA256(JSON.stringify(transaction)).toString(CryptoJS.enc.Hex);
 
                 $.ajax({
                     url: "/transaction",
                     type: "POST",
                     contentType: "application/json",
-                    data: JSON.stringify(transactionRequest),
+                    data: JSON.stringify(transaction),
                     success: function (response) {
                         if (response === "success") {
                             alert("Send success");

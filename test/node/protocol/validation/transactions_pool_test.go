@@ -39,11 +39,10 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	var genesisValue uint64 = 0
 	settings := config.Settings{ValidationIntervalInSeconds: 1}
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+2, "0", genesisValue)
-	marshalledTransaction, _ := json.Marshal(&invalidTransactionRequest)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+2, "0", genesisValue)
 
 	// Act
-	pool.AddTransaction(marshalledTransaction, "0")
+	pool.AddTransaction(transactionRequest, "0")
 
 	// Assert
 	transactionsBytes := pool.Transactions()
@@ -74,11 +73,10 @@ func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *tes
 	var genesisValue uint64 = 0
 	settings := config.Settings{ValidationIntervalInSeconds: 1}
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue)
-	marshalledTransaction, _ := json.Marshal(&invalidTransactionRequest)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue)
 
 	// Act
-	pool.AddTransaction(marshalledTransaction, "0")
+	pool.AddTransaction(transactionRequest, "0")
 
 	// Assert
 	transactionsBytes := pool.Transactions()
@@ -110,11 +108,10 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	privateKey2, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey2)
 	settings := config.Settings{ValidationIntervalInSeconds: 1}
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey2, publicKey, now, "0", genesisValue)
-	marshalledTransaction, _ := json.Marshal(&invalidTransactionRequest)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey2, publicKey, now, "0", genesisValue)
 
 	// Act
-	pool.AddTransaction(marshalledTransaction, "0")
+	pool.AddTransaction(transactionRequest, "0")
 
 	// Assert
 	transactionsBytes := pool.Transactions()
@@ -155,10 +152,9 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	var outputIndex uint16 = 0
 	transactionId := "0"
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, outputIndex, walletAAddress, privateKey, publicKey, now, transactionId, genesisValue)
-	marshalledTransaction, _ := json.Marshal(&transactionRequest)
 
 	// Act
-	pool.AddTransaction(marshalledTransaction, "0")
+	pool.AddTransaction(transactionRequest, "0")
 
 	// Assert
 	transactionsBytes := pool.Transactions()
@@ -192,9 +188,8 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	var genesisValue uint64 = 0
 	settings := config.Settings{ValidationIntervalInSeconds: 1}
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+1, "0", genesisValue)
-	marshalledTransaction, _ := json.Marshal(&invalidTransactionRequest)
-	pool.AddTransaction(marshalledTransaction, "0")
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+1, "0", genesisValue)
+	pool.AddTransaction(transactionRequest, "0")
 	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 
 	// Act
@@ -227,9 +222,8 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionNotValidated(t *testi
 	var genesisValue uint64 = 0
 	settings := config.Settings{ValidationIntervalInSeconds: 1}
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue)
-	marshalledTransaction, _ := json.Marshal(&invalidTransactionRequest)
-	pool.AddTransaction(marshalledTransaction, "0")
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue)
+	pool.AddTransaction(transactionRequest, "0")
 	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 
 	// Act
@@ -263,8 +257,7 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	settings := config.Settings{ValidationIntervalInSeconds: 1}
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now, "0", genesisValue)
-	marshalledTransaction, _ := json.Marshal(&transactionRequest)
-	pool.AddTransaction(marshalledTransaction, "0")
+	pool.AddTransaction(transactionRequest, "0")
 
 	// Act
 	pool.Validate(now)
@@ -280,8 +273,9 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	isTwoTransactions := len(transactions) == 2
 	test.Assert(t, isTwoTransactions, "Validated transactions pool should contain exactly 2 transactions.")
 	actualTransaction := transactions[0]
-	expectedTransaction, _ := verification.NewTransactionFromRequest(&transactionRequest)
-	test.Assert(t, expectedTransaction.Equals(actualTransaction), "The first validated transaction is not the expected one.")
+	var expectedTransaction *validation.TransactionRequest
+	_ = json.Unmarshal(transactionRequest, &expectedTransaction)
+	test.Assert(t, actualTransaction.Equals(expectedTransaction.Transaction()), "The first validated transaction is not the expected one.")
 	rewardTransaction := transactions[1]
 	isRewardTransaction := rewardTransaction.HasReward()
 	test.Assert(t, isRewardTransaction, "The second validated transaction should be the reward.")

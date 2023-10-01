@@ -43,26 +43,19 @@ func NewTransactionsPool(blockchain protocol.Blockchain, settings config.Setting
 	return pool
 }
 
-func (pool *TransactionsPool) AddTransaction(transaction []byte, hostTarget string) {
-	var transactionRequest network.TransactionRequest
-	if err := json.Unmarshal(transaction, &transactionRequest); err != nil {
+func (pool *TransactionsPool) AddTransaction(requestBytes []byte, hostTarget string) {
+	var request TransactionRequest
+	if err := json.Unmarshal(requestBytes, &request); err != nil {
 		pool.logger.Debug(fmt.Errorf("failed to unmarshal transaction: %w", err).Error())
 		return
 	}
-	if transactionRequest.IsInvalid() {
-		pool.logger.Debug("invalid transaction request")
-		return
-	}
-	err := pool.addTransaction(&transactionRequest)
+	err := pool.addTransaction(request.Transaction())
 	if err != nil {
 		pool.logger.Debug(fmt.Errorf("failed to add transaction: %w", err).Error())
 		return
 	}
-	if transactionRequest.TransactionBroadcasterTarget != nil {
-		pool.synchronizer.Incentive(*transactionRequest.TransactionBroadcasterTarget)
-	}
-	transactionRequest.TransactionBroadcasterTarget = &hostTarget
-	marshaledTransaction, err := json.Marshal(transactionRequest)
+	pool.synchronizer.Incentive(request.TransactionBroadcasterTarget())
+	marshaledTransaction, err := json.Marshal(NewTransactionRequest(request.Transaction(), hostTarget))
 	neighbors := pool.synchronizer.Neighbors()
 	for _, neighbor := range neighbors {
 		go func(neighbor network.Neighbor) {
@@ -195,7 +188,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	pool.logger.Debug(fmt.Sprintf("reward: %d", reward))
 }
 
-func (pool *TransactionsPool) addTransaction(transactionRequest *network.TransactionRequest) error {
+func (pool *TransactionsPool) addTransaction(transaction *verification.Transaction) error {
 	blockchainCopy := pool.blockchain.Copy()
 	lastBlockTimestamp := blockchainCopy.LastBlockTimestamp()
 	if lastBlockTimestamp == 0 {
@@ -205,10 +198,6 @@ func (pool *TransactionsPool) addTransaction(transactionRequest *network.Transac
 	err := blockchainCopy.AddBlock(nextBlockTimestamp, nil, nil)
 	if err != nil {
 		return errors.New("failed to add temporary block")
-	}
-	transaction, err := verification.NewTransactionFromRequest(transactionRequest)
-	if err != nil {
-		return fmt.Errorf("failed to instantiate transaction: %w", err)
 	}
 	timestamp := transaction.Timestamp()
 	if nextBlockTimestamp < timestamp {

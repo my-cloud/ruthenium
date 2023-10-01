@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/test/node/protocol/protocoltest"
+	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -97,8 +97,8 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	address := "RecipientAddress"
 	var value uint64 = 0
 	var timestamp int64 = 0
-	transactionRequest := protocoltest.NewTransactionRequest(address, value, timestamp, target)
-	marshalledTransaction, _ := json.Marshal(&transactionRequest)
+	transactionRequest, _ := verification.NewRewardTransaction(address, false, timestamp, value)
+	marshalledTransaction, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(marshalledTransaction)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest("POST", urlTarget, body)
@@ -124,8 +124,8 @@ func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	address := "RecipientAddress"
 	var value uint64 = 0
 	var timestamp int64 = 0
-	transactionRequest := protocoltest.NewTransactionRequest(address, value, timestamp, target)
-	marshalledTransaction, _ := json.Marshal(&transactionRequest)
+	transactionRequest, _ := verification.NewRewardTransaction(address, false, timestamp, value)
+	marshalledTransaction, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(marshalledTransaction)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest("POST", urlTarget, body)

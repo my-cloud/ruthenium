@@ -6,6 +6,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/node/config"
 	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/log/logtest"
@@ -354,8 +355,10 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	hash2, _ := block2.Hash()
 	genesisTransaction := block1.Transactions()[0]
 	var genesisOutputIndex uint16 = 0
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisAmount, invalidTransactionFee, genesisOutputIndex, "A", privateKey, publicKey, now, genesisTransaction.Id(), genesisAmount)
-	invalidTransaction, _ := verification.NewTransactionFromRequest(&invalidTransactionRequest)
+	invalidTransactionRequestBytes := protocoltest.NewSignedTransactionRequest(genesisAmount, invalidTransactionFee, genesisOutputIndex, "A", privateKey, publicKey, now, genesisTransaction.Id(), genesisAmount)
+	var invalidTransactionRequest *validation.TransactionRequest
+	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
+	invalidTransaction := invalidTransactionRequest.Transaction()
 	rewardTransaction, _ := verification.NewRewardTransaction(address, false, now, 1)
 	transactions := []*verification.Transaction{
 		invalidTransaction,
@@ -409,8 +412,10 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	hash2, _ := block2.Hash()
 	genesisTransaction := block1.Transactions()[0]
 	var genesisOutputIndex uint16 = 0
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisAmount, invalidTransactionFee, genesisOutputIndex, "A", privateKey, publicKey, now, genesisTransaction.Id(), genesisAmount)
-	invalidTransaction, _ := verification.NewTransactionFromRequest(&invalidTransactionRequest)
+	invalidTransactionRequestBytes := protocoltest.NewSignedTransactionRequest(genesisAmount, invalidTransactionFee, genesisOutputIndex, "A", privateKey, publicKey, now, genesisTransaction.Id(), genesisAmount)
+	var invalidTransactionRequest *validation.TransactionRequest
+	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
+	invalidTransaction := invalidTransactionRequest.Transaction()
 	rewardTransaction, _ := verification.NewRewardTransaction(address, false, now, 1)
 	transactions := []*verification.Transaction{
 		invalidTransaction,
@@ -465,8 +470,10 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	block1 := protocoltest.NewGenesisBlock(address, genesisAmount)
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := block1.Transactions()[0]
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey, publicKey, now+validationTimestamp, genesisTransaction.Id(), genesisAmount)
-	invalidTransaction, _ := verification.NewTransactionFromRequest(&invalidTransactionRequest)
+	invalidTransactionRequestBytes := protocoltest.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey, publicKey, now+validationTimestamp, genesisTransaction.Id(), genesisAmount)
+	var invalidTransactionRequest *validation.TransactionRequest
+	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
+	invalidTransaction := invalidTransactionRequest.Transaction()
 	hash1, _ := block1.Hash()
 	block2 := protocoltest.NewRewardedBlock(hash1, now-validationTimestamp)
 	hash2, _ := block2.Hash()
@@ -524,8 +531,10 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	block1 := protocoltest.NewGenesisBlock(address, genesisAmount)
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := block1.Transactions()[0]
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey, publicKey, now-validationTimestamp-1, genesisTransaction.Id(), genesisAmount)
-	invalidTransaction, _ := verification.NewTransactionFromRequest(&invalidTransactionRequest)
+	invalidTransactionRequestBytes := protocoltest.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey, publicKey, now-validationTimestamp-1, genesisTransaction.Id(), genesisAmount)
+	var invalidTransactionRequest *validation.TransactionRequest
+	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
+	invalidTransaction := invalidTransactionRequest.Transaction()
 	hash1, _ := block1.Hash()
 	block2 := protocoltest.NewRewardedBlock(hash1, now-validationTimestamp)
 	hash2, _ := block2.Hash()

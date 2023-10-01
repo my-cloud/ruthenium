@@ -57,8 +57,7 @@ func (neighbor *Neighbor) SendTargets(targets []string) (err error) {
 }
 
 func (neighbor *Neighbor) AddTransaction(transaction []byte) (err error) {
-	req := gp2p.Data{}
-	req.SetBytes(transaction)
+	req := gp2p.Data{Bytes: transaction}
 	_, err = neighbor.client.Send(transactionEndpoint, req)
 	return
 }
@@ -80,12 +79,11 @@ func (neighbor *Neighbor) GetUtxos(address string) (utxos []byte, err error) {
 }
 
 func (neighbor *Neighbor) sendRequest(topic string, request interface{}) (res gp2p.Data, err error) {
-	req := gp2p.Data{}
-	data, err := json.Marshal(request)
+	bytes, err := json.Marshal(request)
 	if err != nil {
 		return
 	}
-	req.SetBytes(data)
+	req := gp2p.Data{Bytes: bytes}
 	res, err = neighbor.client.Send(topic, req) // FIXME panic
 	return
 }
