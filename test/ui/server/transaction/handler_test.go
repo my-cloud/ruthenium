@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/log/logtest"
@@ -70,9 +69,8 @@ func Test_ServeHTTP_InvalidTransaction_BadRequest(t *testing.T) {
 	neighborMock.TargetFunc = func() string { return "0.0.0.0:0" }
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, logger)
-	transactionRequest := network.TransactionRequest{Inputs: nil, Outputs: nil}
-	b, _ := json.Marshal(&transactionRequest)
-	body := bytes.NewReader(b)
+	data, _ := json.Marshal("")
+	body := bytes.NewReader(data)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest("POST", urlTarget, body)
 
