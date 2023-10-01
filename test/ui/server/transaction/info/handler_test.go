@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/node/network"
+	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction/info"
 	"github.com/my-cloud/ruthenium/test/node/clock/clocktest"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
@@ -116,7 +116,7 @@ func Test_ServeHTTP_GetFirstBlockTimestampFuncError_ReturnsInternalServerError(t
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	marshalledEmptyUtxos, _ := json.Marshal([]*network.UtxoResponse{{}})
+	marshalledEmptyUtxos, _ := json.Marshal([]*verification.Utxo{})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
 	watchMock := new(clocktest.WatchMock)
@@ -138,7 +138,7 @@ func Test_ServeHTTP_InsufficientWalletBalance_ReturnsMethodNotAllowed(t *testing
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	marshalledEmptyUtxos, _ := json.Marshal([]*network.UtxoResponse{{}})
+	marshalledEmptyUtxos, _ := json.Marshal([]*verification.Utxo{})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(clocktest.WatchMock)
@@ -161,34 +161,11 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	utxos := []*network.UtxoResponse{
-		{
-			Address:       "",
-			BlockHeight:   1,
-			HasReward:     false,
-			HasIncome:     false,
-			OutputIndex:   0,
-			TransactionId: "0",
-			Value:         1,
-		},
-		{
-			Address:       "",
-			BlockHeight:   1,
-			HasReward:     false,
-			HasIncome:     false,
-			OutputIndex:   1,
-			TransactionId: "0",
-			Value:         2,
-		},
-		{
-			Address:       "",
-			BlockHeight:   1,
-			HasReward:     false,
-			HasIncome:     false,
-			OutputIndex:   1,
-			TransactionId: "0",
-			Value:         0,
-		},
+
+	utxos := []*verification.Utxo{
+		verification.NewUtxo(verification.NewOutput("", false, false, 1), 1, 0, "0"),
+		verification.NewUtxo(verification.NewOutput("", false, false, 2), 1, 1, "0"),
+		verification.NewUtxo(verification.NewOutput("", false, false, 0), 1, 2, "0"),
 	}
 	marshalledUtxos, _ := json.Marshal(utxos)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
@@ -207,8 +184,8 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
-	infoResponse := &info.TransactionInfoResponse{}
-	_ = json.Unmarshal(recorder.Body.Bytes(), infoResponse)
+	var infoResponse *info.TransactionInfoResponse
+	_ = json.Unmarshal(recorder.Body.Bytes(), &infoResponse)
 	expectedUtxosCount := 1
 	actualUtxosCount := len(infoResponse.Utxos)
 	test.Assert(t, actualUtxosCount == expectedUtxosCount, fmt.Sprintf("Wrong UTXOs count. expected: %d actual: %d", expectedUtxosCount, actualUtxosCount))
@@ -218,25 +195,9 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	utxos := []*network.UtxoResponse{
-		{
-			Address:       "",
-			BlockHeight:   1,
-			HasReward:     false,
-			HasIncome:     false,
-			OutputIndex:   0,
-			TransactionId: "0",
-			Value:         1,
-		},
-		{
-			Address:       "",
-			BlockHeight:   1,
-			HasReward:     false,
-			HasIncome:     false,
-			OutputIndex:   1,
-			TransactionId: "0",
-			Value:         2,
-		},
+	utxos := []*verification.Utxo{
+		verification.NewUtxo(verification.NewOutput("", false, false, 1), 1, 0, "0"),
+		verification.NewUtxo(verification.NewOutput("", false, false, 2), 1, 1, "0"),
 	}
 	marshalledUtxos, _ := json.Marshal(utxos)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
@@ -255,8 +216,8 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
-	infoResponse := &info.TransactionInfoResponse{}
-	_ = json.Unmarshal(recorder.Body.Bytes(), infoResponse)
+	var infoResponse info.TransactionInfoResponse
+	_ = json.Unmarshal(recorder.Body.Bytes(), &infoResponse)
 	expectedUtxosCount := 2
 	actualUtxosCount := len(infoResponse.Utxos)
 	test.Assert(t, actualUtxosCount == expectedUtxosCount, fmt.Sprintf("Wrong UTXOs count. expected: %d actual: %d", expectedUtxosCount, actualUtxosCount))

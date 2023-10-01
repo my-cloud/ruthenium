@@ -6,6 +6,14 @@ import (
 	"fmt"
 )
 
+type blockDto struct {
+	Timestamp                  int64          `json:"timestamp"`
+	PreviousHash               [32]byte       `json:"previous_hash"`
+	Transactions               []*Transaction `json:"transactions"`
+	AddedRegisteredAddresses   []string       `json:"added_registered_addresses"`
+	RemovedRegisteredAddresses []string       `json:"removed_registered_addresses"`
+}
+
 type Block struct {
 	timestamp                  int64
 	previousHash               [32]byte
@@ -33,33 +41,21 @@ func (block *Block) Hash() (hash [32]byte, err error) {
 }
 
 func (block *Block) UnmarshalJSON(data []byte) error {
-	blockDto := struct {
-		Timestamp                  int64          `json:"timestamp"`
-		PreviousHash               [32]byte       `json:"previous_hash"`
-		Transactions               []*Transaction `json:"transactions"`
-		AddedRegisteredAddresses   []string       `json:"added_registered_addresses"`
-		RemovedRegisteredAddresses []string       `json:"removed_registered_addresses"`
-	}{}
-	err := json.Unmarshal(data, &blockDto)
+	var dto *blockDto
+	err := json.Unmarshal(data, &dto)
 	if err != nil {
 		return err
 	}
-	block.timestamp = blockDto.Timestamp
-	block.previousHash = blockDto.PreviousHash
-	block.transactions = blockDto.Transactions
-	block.addedRegisteredAddresses = blockDto.AddedRegisteredAddresses
-	block.removedRegisteredAddresses = blockDto.RemovedRegisteredAddresses
+	block.timestamp = dto.Timestamp
+	block.previousHash = dto.PreviousHash
+	block.transactions = dto.Transactions
+	block.addedRegisteredAddresses = dto.AddedRegisteredAddresses
+	block.removedRegisteredAddresses = dto.RemovedRegisteredAddresses
 	return nil
 }
 
 func (block *Block) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Timestamp                  int64          `json:"timestamp"`
-		PreviousHash               [32]byte       `json:"previous_hash"`
-		Transactions               []*Transaction `json:"transactions"`
-		AddedRegisteredAddresses   []string       `json:"added_registered_addresses"`
-		RemovedRegisteredAddresses []string       `json:"removed_registered_addresses"`
-	}{
+	return json.Marshal(blockDto{
 		Timestamp:                  block.timestamp,
 		PreviousHash:               block.previousHash,
 		Transactions:               block.transactions,

@@ -10,6 +10,13 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 )
 
+type transactionDto struct {
+	Id        string    `json:"id"`
+	Inputs    []*Input  `json:"inputs"`
+	Outputs   []*Output `json:"outputs"`
+	Timestamp int64     `json:"timestamp"`
+}
+
 type Transaction struct {
 	id                     string
 	inputs                 []*Input
@@ -26,9 +33,6 @@ func NewRewardTransaction(address string, hasIncome bool, timestamp int64, value
 }
 
 func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (*Transaction, error) {
-	if transactionRequest.IsInvalid() {
-		return nil, errors.New("transaction request is invalid")
-	}
 	var inputs []*Input
 	for _, inputRequest := range *transactionRequest.Inputs {
 		input, err := NewInput(*inputRequest.OutputIndex, *inputRequest.TransactionId, *inputRequest.PublicKey, *inputRequest.Signature)
@@ -48,12 +52,12 @@ func NewTransactionFromRequest(transactionRequest *network.TransactionRequest) (
 	return transaction, nil
 }
 
-func newTransaction(inputs []*Input, outputs []*Output, timestamp int64) (*Transaction, error) {
-	transaction := &Transaction{"", inputs, outputs, timestamp, false, "", 0}
-	if err := transaction.generateId(); err != nil {
+func newTransaction(inputs []*Input, outputs []*Output, timestamp int64) (transaction *Transaction, err error) {
+	transaction = &Transaction{"", inputs, outputs, timestamp, false, "", 0}
+	if transaction.id, err = transaction.generateId(); err != nil {
 		return nil, fmt.Errorf("failed to generate id: %w", err)
 	}
-	if err := transaction.findReward(); err != nil {
+	if err = transaction.findReward(); err != nil {
 		return nil, fmt.Errorf("failed to find reward: %w", err)
 	}
 	return transaction, nil
@@ -64,41 +68,29 @@ func (transaction *Transaction) Equals(other *Transaction) bool {
 }
 
 func (transaction *Transaction) UnmarshalJSON(data []byte) error {
-	transactionDto := struct {
-		Id        string    `json:"id"`
-		Inputs    []*Input  `json:"inputs"`
-		Outputs   []*Output `json:"outputs"`
-		Timestamp int64     `json:"timestamp"`
-	}{}
-	err := json.Unmarshal(data, &transactionDto)
+	var dto *transactionDto
+	if err := json.Unmarshal(data, &dto); err != nil {
+		return err
+	}
+	transactionFromDto, err := newTransaction(dto.Inputs, dto.Outputs, dto.Timestamp)
 	if err != nil {
 		return err
 	}
-	transaction.inputs = transactionDto.Inputs
-	transaction.outputs = transactionDto.Outputs
-	transaction.timestamp = transactionDto.Timestamp
-	marshaledTransaction, err := transaction.marshalJSONWithoutId()
-	if err != nil {
-		return err
+	if transactionFromDto.Id() != dto.Id {
+		return fmt.Errorf("wrong transaction ID, provided: %s, calculated: %s", dto.Id, transaction.id)
 	}
-	transactionHash := sha256.Sum256(marshaledTransaction)
-	transaction.id = fmt.Sprintf("%x", transactionHash)
-	if err = transaction.findReward(); err != nil {
-		return fmt.Errorf("failed to find reward: %w", err)
-	}
-	if transaction.id != transactionDto.Id {
-		return fmt.Errorf("wrong transaction ID, provided: %s, calculated: %s", transactionDto.Id, transaction.id)
-	}
+	transaction.id = transactionFromDto.Id()
+	transaction.inputs = transactionFromDto.Inputs()
+	transaction.outputs = transactionFromDto.Outputs()
+	transaction.timestamp = transactionFromDto.Timestamp()
+	transaction.hasReward = transactionFromDto.HasReward()
+	transaction.rewardRecipientAddress = transactionFromDto.RewardRecipientAddress()
+	transaction.rewardValue = transactionFromDto.RewardValue()
 	return nil
 }
 
 func (transaction *Transaction) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Id        string    `json:"id"`
-		Inputs    []*Input  `json:"inputs"`
-		Outputs   []*Output `json:"outputs"`
-		Timestamp int64     `json:"timestamp"`
-	}{
+	return json.Marshal(transactionDto{
 		Id:        transaction.id,
 		Inputs:    transaction.inputs,
 		Outputs:   transaction.outputs,
@@ -127,7 +119,7 @@ func (transaction *Transaction) VerifySignatures() error {
 	return nil
 }
 
-func (transaction *Transaction) FindFee(genesisTimestamp int64, settings config.Settings, timestamp int64, validationTimestamp int64, utxoFinder protocol.UtxoFinder) (uint64, error) {
+func (transaction *Transaction) Fee(genesisTimestamp int64, settings config.Settings, timestamp int64, validationTimestamp int64, utxoFinder protocol.UtxoFinder) (uint64, error) {
 	incomeBase := settings.IncomeBaseInParticles
 	incomeLimit := settings.IncomeLimitInParticles
 	var inputsValue uint64
@@ -182,14 +174,14 @@ func (transaction *Transaction) Timestamp() int64 {
 	return transaction.timestamp
 }
 
-func (transaction *Transaction) generateId() error {
+func (transaction *Transaction) generateId() (string, error) {
 	marshaledTransaction, err := transaction.marshalJSONWithoutId()
 	if err != nil {
-		return errors.New("failed to marshal transaction")
+		return "", errors.New("failed to marshal transaction")
 	}
 	transactionHash := sha256.Sum256(marshaledTransaction)
-	transaction.id = fmt.Sprintf("%x", transactionHash)
-	return nil
+	id := fmt.Sprintf("%x", transactionHash)
+	return id, nil
 }
 
 func (transaction *Transaction) findReward() error {

@@ -5,8 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/encryption"
-	"github.com/my-cloud/ruthenium/src/node/network"
 )
+
+type inputDto struct {
+	OutputIndex   uint16 `json:"output_index"`
+	TransactionId string `json:"transaction_id"`
+	PublicKey     string `json:"public_key"`
+	Signature     string `json:"signature"`
+}
 
 type Input struct {
 	outputIndex   uint16
@@ -36,12 +42,7 @@ func (input *Input) MarshalJSON() ([]byte, error) {
 	if input.signature != nil {
 		encodedSignature = input.signature.String()
 	}
-	return json.Marshal(struct {
-		OutputIndex   uint16 `json:"output_index"`
-		TransactionId string `json:"transaction_id"`
-		PublicKey     string `json:"public_key"`
-		Signature     string `json:"signature"`
-	}{
+	return json.Marshal(inputDto{
 		OutputIndex:   input.outputIndex,
 		TransactionId: input.transactionId,
 		PublicKey:     encodedPublicKey,
@@ -50,21 +51,21 @@ func (input *Input) MarshalJSON() ([]byte, error) {
 }
 
 func (input *Input) UnmarshalJSON(data []byte) error {
-	var inputDto network.InputResponse
-	err := json.Unmarshal(data, &inputDto)
+	var dto *inputDto
+	err := json.Unmarshal(data, &dto)
 	if err != nil {
 		return err
 	}
-	input.outputIndex = inputDto.OutputIndex
-	input.transactionId = inputDto.TransactionId
-	publicKey, err := encryption.NewPublicKeyFromHex(inputDto.PublicKey)
+	publicKey, err := encryption.NewPublicKeyFromHex(dto.PublicKey)
 	if err != nil {
 		return fmt.Errorf("failed to decode public key: %w", err)
 	}
-	signature, err := encryption.DecodeSignature(inputDto.Signature)
+	signature, err := encryption.DecodeSignature(dto.Signature)
 	if err != nil {
 		return fmt.Errorf("failed to decode signature: %w", err)
 	}
+	input.outputIndex = dto.OutputIndex
+	input.transactionId = dto.TransactionId
 	input.publicKey = publicKey
 	input.signature = signature
 	return nil

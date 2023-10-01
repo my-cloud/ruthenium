@@ -2,9 +2,18 @@ package verification
 
 import (
 	"encoding/json"
-	"github.com/my-cloud/ruthenium/src/node/network"
 	"math"
 )
+
+type utxoDto struct {
+	Address       string `json:"address"`
+	BlockHeight   int    `json:"block_height"`
+	HasReward     bool   `json:"has_reward"`
+	HasIncome     bool   `json:"has_income"`
+	OutputIndex   uint16 `json:"output_index"`
+	TransactionId string `json:"transaction_id"`
+	Value         uint64 `json:"value"`
+}
 
 type Utxo struct {
 	*Output
@@ -18,7 +27,7 @@ func NewUtxo(output *Output, blockHeight int, outputIndex uint16, transactionId 
 }
 
 func (utxo *Utxo) MarshalJSON() ([]byte, error) {
-	return json.Marshal(network.UtxoResponse{
+	return json.Marshal(utxoDto{
 		Address:       utxo.Address(),
 		BlockHeight:   utxo.blockHeight,
 		HasIncome:     utxo.HasIncome(),
@@ -30,15 +39,15 @@ func (utxo *Utxo) MarshalJSON() ([]byte, error) {
 }
 
 func (utxo *Utxo) UnmarshalJSON(data []byte) error {
-	var utxoDto network.UtxoResponse
-	err := json.Unmarshal(data, &utxoDto)
+	var dto *utxoDto
+	err := json.Unmarshal(data, &dto)
 	if err != nil {
 		return err
 	}
-	utxo.Output = NewOutput(utxoDto.Address, utxoDto.HasIncome, utxoDto.HasReward, utxoDto.Value)
-	utxo.blockHeight = utxoDto.BlockHeight
-	utxo.outputIndex = utxoDto.OutputIndex
-	utxo.transactionId = utxoDto.TransactionId
+	utxo.Output = NewOutput(dto.Address, dto.HasIncome, dto.HasReward, dto.Value)
+	utxo.blockHeight = dto.BlockHeight
+	utxo.outputIndex = dto.OutputIndex
+	utxo.transactionId = dto.TransactionId
 	return nil
 }
 

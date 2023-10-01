@@ -2,8 +2,14 @@ package verification
 
 import (
 	"encoding/json"
-	"github.com/my-cloud/ruthenium/src/node/network"
 )
+
+type outputDto struct {
+	Address   string `json:"address"`
+	HasIncome bool   `json:"has_income"`
+	HasReward bool   `json:"has_reward"`
+	Value     uint64 `json:"value"`
+}
 
 type Output struct {
 	address   string
@@ -17,7 +23,7 @@ func NewOutput(address string, hasIncome bool, hasReward bool, value uint64) *Ou
 }
 
 func (output *Output) MarshalJSON() ([]byte, error) {
-	return json.Marshal(network.OutputResponse{
+	return json.Marshal(outputDto{
 		Address:   output.address,
 		HasIncome: output.hasIncome,
 		HasReward: output.hasReward,
@@ -26,15 +32,15 @@ func (output *Output) MarshalJSON() ([]byte, error) {
 }
 
 func (output *Output) UnmarshalJSON(data []byte) error {
-	var outputDto network.OutputResponse
-	err := json.Unmarshal(data, &outputDto)
+	var dto *outputDto
+	err := json.Unmarshal(data, &dto)
 	if err != nil {
 		return err
 	}
-	output.address = outputDto.Address
-	output.hasIncome = outputDto.HasIncome
-	output.hasReward = outputDto.HasReward
-	output.value = outputDto.Value
+	output.address = dto.Address
+	output.hasIncome = dto.HasIncome
+	output.hasReward = dto.HasReward
+	output.value = dto.Value
 	return nil
 }
 

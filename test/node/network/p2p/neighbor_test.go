@@ -35,8 +35,7 @@ func Test_GetBlocks_NoError_ClientCalled(t *testing.T) {
 	// Arrange
 	clientMock := new(p2ptest.ClientMock)
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
-	responseData, _ := json.Marshal([]*network.BlockResponse{})
-	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{Bytes: responseData}, nil }
+	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
@@ -61,8 +60,8 @@ func Test_GetFirstBlockTimestamp_NoError_ClientCalled(t *testing.T) {
 	// Arrange
 	clientMock := new(p2ptest.ClientMock)
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
-	responseData, _ := json.Marshal(0)
-	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{Bytes: responseData}, nil }
+	responseBytes, _ := json.Marshal(0)
+	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{Bytes: responseBytes}, nil }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
@@ -207,14 +206,13 @@ func Test_GetTransactions_NoError_ClientCalled(t *testing.T) {
 	// Arrange
 	clientMock := new(p2ptest.ClientMock)
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
-	responseData, _ := json.Marshal([]*network.TransactionResponse{})
-	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{Bytes: responseData}, nil }
+	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
 
 	// Act
-	transactions, err := neighbor.GetTransactions()
+	_, err := neighbor.GetTransactions()
 
 	// Assert
 	sendCalls := clientMock.SendCalls()
@@ -223,7 +221,6 @@ func Test_GetTransactions_NoError_ClientCalled(t *testing.T) {
 	req := sendCalls[0].Req
 	expectedReq := gp2p.Data{}
 	test.Assert(t, bytes.Equal(req.Bytes, expectedReq.Bytes), "Client is not called with the good parameter.")
-	test.Assert(t, transactions != nil, "The transactions are nil whereas it should not.")
 	test.Assert(t, err == nil, "Error is not nil whereas it should be.")
 }
 
@@ -253,8 +250,7 @@ func Test_GetUtxos_NoError_ClientCalled(t *testing.T) {
 	// Arrange
 	clientMock := new(p2ptest.ClientMock)
 	clientMock.SetSettingsFunc = func(*gp2p.ClientSettings) {}
-	responseData, _ := json.Marshal([]*network.UtxoResponse{})
-	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{Bytes: responseData}, nil }
+	clientMock.SendFunc = func(string, gp2p.Data) (gp2p.Data, error) { return gp2p.Data{}, nil }
 	clientFactoryMock := new(p2ptest.ClientFactoryMock)
 	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
 	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
