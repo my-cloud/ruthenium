@@ -35,6 +35,11 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		}
 		transactionRequest := validation.NewTransactionRequest(transaction, handler.host.Target())
 		marshaledTransaction, err := json.Marshal(transactionRequest)
+		if err != nil {
+			handler.logger.Error(fmt.Errorf("failed to marshal transaction request: %w", err).Error())
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		err = handler.host.AddTransaction(marshaledTransaction)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to create transaction: %w", err).Error())

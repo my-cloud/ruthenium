@@ -1,6 +1,6 @@
 package protocol
 
 type TransactionsPool interface {
-	AddTransaction(transaction []byte, hostTarget string)
+	AddTransaction(transactionRequestBytes []byte, hostTarget string)
 	Transactions() []byte
 }

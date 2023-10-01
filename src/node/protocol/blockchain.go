@@ -1,7 +1,7 @@
 package protocol
 
 type Blockchain interface {
-	AddBlock(timestamp int64, transactions []byte, newRegisteredAddresses []string) error
+	AddBlock(timestamp int64, transactionsBytes []byte, newRegisteredAddresses []string) error
 	Blocks(startingBlockHeight uint64) []byte
 	Copy() Blockchain // TODO remove
 	FirstBlockTimestamp() int64

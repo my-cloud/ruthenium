@@ -43,23 +43,29 @@ func NewTransactionsPool(blockchain protocol.Blockchain, settings config.Setting
 	return pool
 }
 
-func (pool *TransactionsPool) AddTransaction(requestBytes []byte, hostTarget string) {
-	var request TransactionRequest
-	if err := json.Unmarshal(requestBytes, &request); err != nil {
+func (pool *TransactionsPool) AddTransaction(transactionRequestBytes []byte, hostTarget string) {
+	var transactionRequest TransactionRequest
+	if err := json.Unmarshal(transactionRequestBytes, &transactionRequest); err != nil {
 		pool.logger.Debug(fmt.Errorf("failed to unmarshal transaction: %w", err).Error())
 		return
 	}
-	err := pool.addTransaction(request.Transaction())
+	transaction := transactionRequest.Transaction()
+	err := pool.addTransaction(transaction)
 	if err != nil {
 		pool.logger.Debug(fmt.Errorf("failed to add transaction: %w", err).Error())
 		return
 	}
-	pool.synchronizer.Incentive(request.TransactionBroadcasterTarget())
-	marshaledTransaction, err := json.Marshal(NewTransactionRequest(request.Transaction(), hostTarget))
+	pool.synchronizer.Incentive(transactionRequest.TransactionBroadcasterTarget())
+	newTransactionRequest := NewTransactionRequest(transaction, hostTarget)
+	marshaledTransactionRequest, err := json.Marshal(newTransactionRequest)
+	if err != nil {
+		pool.logger.Debug(fmt.Errorf("failed to marshal transaction request: %w", err).Error())
+		return
+	}
 	neighbors := pool.synchronizer.Neighbors()
 	for _, neighbor := range neighbors {
 		go func(neighbor network.Neighbor) {
-			_ = neighbor.AddTransaction(marshaledTransaction)
+			_ = neighbor.AddTransaction(marshaledTransactionRequest)
 		}(neighbor)
 	}
 }
