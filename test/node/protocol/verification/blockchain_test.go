@@ -189,7 +189,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	settings := new(protocoltest.SettingsMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 2 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
-	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
+	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	now := 5 * validationTimestamp
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(now-5*validationTimestamp, nil, nil)
@@ -236,7 +236,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	}
 	settings := new(protocoltest.SettingsMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
+	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
@@ -327,7 +327,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	}
 	settings := new(protocoltest.SettingsMock)
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
-	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
+	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
@@ -389,7 +389,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
-	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
+	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
@@ -451,7 +451,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
-	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
+	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
@@ -513,7 +513,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
-	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
+	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
@@ -575,7 +575,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
-	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
+	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
