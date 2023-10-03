@@ -8,6 +8,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/amount"
 	"github.com/my-cloud/ruthenium/test/node/clock/clocktest"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
+	"github.com/my-cloud/ruthenium/test/ui/server/servertest"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -24,7 +25,13 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 	watchMock := new(clocktest.WatchMock)
-	handler := amount.NewHandler(neighborMock, 0, 1, 1, 1, 1, watchMock, logger)
+	settings := new(servertest.SettingsMock)
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	handler := amount.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	invalidHttpMethods := []string{http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
 	for _, method := range invalidHttpMethods {
@@ -46,7 +53,13 @@ func Test_ServeHTTP_InvalidAddress_ReturnsBadRequest(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 	watchMock := new(clocktest.WatchMock)
-	handler := amount.NewHandler(neighborMock, 0, 1, 1, 1, 1, watchMock, logger)
+	settings := new(servertest.SettingsMock)
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	handler := amount.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, urlTarget, nil)
 
@@ -64,7 +77,13 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	neighborMock := new(networktest.NeighborMock)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(clocktest.WatchMock)
-	handler := amount.NewHandler(neighborMock, 0, 1, 1, 1, 1, watchMock, logger)
+	settings := new(servertest.SettingsMock)
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	handler := amount.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address", urlTarget), nil)
 
@@ -86,7 +105,13 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
 	watchMock := new(clocktest.WatchMock)
-	handler := amount.NewHandler(neighborMock, 0, 1, 1, 1, 1, watchMock, logger)
+	settings := new(servertest.SettingsMock)
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	handler := amount.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address", urlTarget), nil)
 
@@ -109,7 +134,13 @@ func Test_ServeHTTP_ValidRequest_ReturnsAmount(t *testing.T) {
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(clocktest.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	handler := amount.NewHandler(neighborMock, 0, 1, 1, 1, 1, watchMock, logger)
+	settings := new(servertest.SettingsMock)
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	handler := amount.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address", urlTarget), nil)
 

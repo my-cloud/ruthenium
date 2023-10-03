@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/encryption"
-	"github.com/my-cloud/ruthenium/src/node/config"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
@@ -37,7 +36,7 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
 	var genesisValue uint64 = 0
-	settings := config.Settings{ValidationIntervalInSeconds: 1}
+	settings := new(protocoltest.SettingsMock)
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+2, "0", genesisValue)
 
@@ -71,7 +70,7 @@ func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *tes
 	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
 	var genesisValue uint64 = 0
-	settings := config.Settings{ValidationIntervalInSeconds: 1}
+	settings := new(protocoltest.SettingsMock)
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue)
 
@@ -106,7 +105,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	publicKey := encryption.NewPublicKey(privateKey)
 	var genesisValue uint64 = 0
 	privateKey2, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey2)
-	settings := config.Settings{ValidationIntervalInSeconds: 1}
+	settings := new(protocoltest.SettingsMock)
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey2, publicKey, now, "0", genesisValue)
 
@@ -147,7 +146,11 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	var genesisValue uint64 = 0
-	settings := config.Settings{ValidationIntervalInSeconds: 1}
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	var outputIndex uint16 = 0
 	transactionId := "0"
@@ -186,7 +189,11 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	var genesisValue uint64 = 0
-	settings := config.Settings{ValidationIntervalInSeconds: 1}
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+1, "0", genesisValue)
 	pool.AddTransaction(transactionRequest, "0")
@@ -220,7 +227,11 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionNotValidated(t *testi
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	var genesisValue uint64 = 0
-	settings := config.Settings{ValidationIntervalInSeconds: 1}
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue)
 	pool.AddTransaction(transactionRequest, "0")
@@ -254,7 +265,11 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	var genesisValue uint64 = 0
-	settings := config.Settings{ValidationIntervalInSeconds: 1}
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, validationTimer, logger)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now, "0", genesisValue)
 	pool.AddTransaction(transactionRequest, "0")

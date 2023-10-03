@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/node/config"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 )
 
@@ -86,9 +85,7 @@ func (transaction *Transaction) VerifySignatures() error {
 	return nil
 }
 
-func (transaction *Transaction) Fee(genesisTimestamp int64, settings config.Settings, timestamp int64, validationTimestamp int64, utxoFinder protocol.UtxoFinder) (uint64, error) {
-	incomeBase := settings.IncomeBaseInParticles
-	incomeLimit := settings.IncomeLimitInParticles
+func (transaction *Transaction) Fee(genesisTimestamp int64, settings protocol.Settings, timestamp int64, validationTimestamp int64, utxoFinder protocol.UtxoFinder) (uint64, error) {
 	var inputsValue uint64
 	var outputsValue uint64
 	for _, input := range transaction.inputs {
@@ -96,7 +93,7 @@ func (transaction *Transaction) Fee(genesisTimestamp int64, settings config.Sett
 		if err != nil {
 			return 0, err
 		}
-		value := utxo.Value(timestamp, genesisTimestamp, settings.HalfLifeInNanoseconds, incomeBase, incomeLimit, validationTimestamp)
+		value := utxo.Value(timestamp, genesisTimestamp, settings.HalfLifeInNanoseconds(), settings.IncomeBaseInParticles(), settings.IncomeLimitInParticles(), validationTimestamp)
 		inputsValue += value
 	}
 	for _, output := range transaction.outputs {
@@ -106,7 +103,7 @@ func (transaction *Transaction) Fee(genesisTimestamp int64, settings config.Sett
 		return 0, errors.New("transaction fee is negative")
 	}
 	fee := inputsValue - outputsValue
-	minimalTransactionFee := settings.MinimalTransactionFee
+	minimalTransactionFee := settings.MinimalTransactionFee()
 	if fee < minimalTransactionFee {
 		return 0, fmt.Errorf("transaction fee is too low, fee: %d, minimal fee: %d", fee, minimalTransactionFee)
 	}

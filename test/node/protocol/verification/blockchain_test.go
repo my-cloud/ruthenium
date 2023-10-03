@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/encryption"
-	"github.com/my-cloud/ruthenium/src/node/config"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
@@ -26,7 +25,7 @@ func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 	registry := new(protocoltest.RegistryMock)
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
-	settings := config.Settings{}
+	settings := new(protocoltest.SettingsMock)
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 
 	// Act
@@ -41,7 +40,8 @@ func Test_Blocks_BlocksCountLimitSetToZero_ReturnsEmptyArray(t *testing.T) {
 	registry := new(protocoltest.RegistryMock)
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
-	settings := config.Settings{}
+	settings := new(protocoltest.SettingsMock)
+	settings.BlocksCountLimitFunc = func() uint64 { return 0 }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 
 	// Act
@@ -59,9 +59,10 @@ func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
 	var expectedBlocksCount uint64 = 1
-	var validationInterval int64 = 1
-	settings := config.Settings{BlocksCountLimit: expectedBlocksCount}
+	settings := new(protocoltest.SettingsMock)
+	settings.BlocksCountLimitFunc = func() uint64 { return expectedBlocksCount }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	var validationInterval int64 = 1
 	var genesisTimestamp int64 = 0
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
 	_ = blockchain.AddBlock(genesisTimestamp+validationInterval, nil, nil)
@@ -82,9 +83,10 @@ func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
 	var expectedBlocksCount uint64 = 2
-	var validationInterval int64 = 1
-	settings := config.Settings{BlocksCountLimit: expectedBlocksCount}
+	settings := new(protocoltest.SettingsMock)
+	settings.BlocksCountLimitFunc = func() uint64 { return expectedBlocksCount }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	var validationInterval int64 = 1
 	var genesisTimestamp int64 = 0
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
 	_ = blockchain.AddBlock(genesisTimestamp+validationInterval, nil, nil)
@@ -104,7 +106,9 @@ func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsEmptyArray(t 
 	registry := new(protocoltest.RegistryMock)
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
-	settings := config.Settings{BlocksCountLimit: 1}
+	var blocksCount uint64 = 1
+	settings := new(protocoltest.SettingsMock)
+	settings.BlocksCountLimitFunc = func() uint64 { return blocksCount }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	var genesisTimestamp int64 = 0
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
@@ -125,7 +129,8 @@ func Test_UtxosByAddress_UnknownAddress_ReturnsEmptyArray(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	genesisValidatorAddress := ""
 	var genesisAmount uint64 = 0
-	settings := config.Settings{GenesisAmountInParticles: genesisAmount}
+	settings := new(protocoltest.SettingsMock)
+	settings.GenesisAmountInParticlesFunc = func() uint64 { return genesisAmount }
 	blockchain := verification.NewBlockchain(nil, settings, nil, logger)
 
 	// Act
@@ -144,7 +149,8 @@ func Test_Utxos_UtxoExists_ReturnsUtxo(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	synchronizer := new(networktest.SynchronizerMock)
 	var validationInterval int64 = 1
-	settings := config.Settings{GenesisAmountInParticles: 1}
+	settings := new(protocoltest.SettingsMock)
+	settings.GenesisAmountInParticlesFunc = func() uint64 { return 1 }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	registeredAddress := ""
 	var expectedValue uint64 = 1
@@ -179,12 +185,11 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	var validationIntervalInSeconds int64 = 1
-	settings := config.Settings{
-		BlocksCountLimit:            2,
-		ValidationIntervalInSeconds: validationIntervalInSeconds,
-	}
-	validationTimestamp := validationIntervalInSeconds * time.Second.Nanoseconds()
+	var validationTimestamp int64 = 11
+	settings := new(protocoltest.SettingsMock)
+	settings.BlocksCountLimitFunc = func() uint64 { return 2 }
+	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
+	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
 	now := 5 * validationTimestamp
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(now-5*validationTimestamp, nil, nil)
@@ -229,7 +234,9 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := config.Settings{ValidationIntervalInSeconds: 1}
+	settings := new(protocoltest.SettingsMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
@@ -301,8 +308,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	var validationIntervalInSeconds int64 = 1
-	validationTimestamp := validationIntervalInSeconds * time.Second.Nanoseconds()
+	var validationTimestamp int64 = 1
 	now := validationTimestamp
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		block1 := protocoltest.NewRewardedBlock([32]byte{}, now)
@@ -319,7 +325,9 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := config.Settings{ValidationIntervalInSeconds: validationIntervalInSeconds}
+	settings := new(protocoltest.SettingsMock)
+	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
+	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
@@ -344,8 +352,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	var invalidTransactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	var validationIntervalInSeconds int64 = 1
-	validationTimestamp := validationIntervalInSeconds * time.Second.Nanoseconds()
+	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var incomeLimit uint64 = 1
 	genesisAmount := 2 * incomeLimit
@@ -377,7 +384,12 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := config.Settings{ValidationIntervalInSeconds: validationIntervalInSeconds}
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
+	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
@@ -402,8 +414,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	var invalidTransactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	var validationIntervalInSeconds int64 = 1
-	validationTimestamp := validationIntervalInSeconds * time.Second.Nanoseconds()
+	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
 	block1 := protocoltest.NewGenesisBlock(address, genesisAmount)
@@ -434,11 +445,13 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := config.Settings{
-		IncomeLimitInParticles:      1,
-		MinimalTransactionFee:       1,
-		ValidationIntervalInSeconds: validationIntervalInSeconds,
-	}
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return 1 }
+	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
+	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
@@ -463,8 +476,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	var validationIntervalInSeconds int64 = 1
-	validationTimestamp := validationIntervalInSeconds * time.Second.Nanoseconds()
+	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
 	block1 := protocoltest.NewGenesisBlock(address, genesisAmount)
@@ -495,11 +507,13 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := config.Settings{
-		IncomeLimitInParticles:      1,
-		MinimalTransactionFee:       transactionFee,
-		ValidationIntervalInSeconds: validationIntervalInSeconds,
-	}
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
+	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
+	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
@@ -524,8 +538,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	var validationIntervalInSeconds int64 = 1
-	validationTimestamp := validationIntervalInSeconds * time.Second.Nanoseconds()
+	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
 	block1 := protocoltest.NewGenesisBlock(address, genesisAmount)
@@ -556,11 +569,13 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := config.Settings{
-		IncomeLimitInParticles:      1,
-		MinimalTransactionFee:       transactionFee,
-		ValidationIntervalInSeconds: validationIntervalInSeconds,
-	}
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
+	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
+	settings.ValidationTimeoutFunc = func() time.Duration { return 1 }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 

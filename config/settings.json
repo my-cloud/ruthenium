@@ -1,7 +1,7 @@
 {
   "blocksCountLimit": 1440,
   "genesisAmountInParticles": 10000000000000,
-  "halfLifeInNanoseconds": 32278176000000000,
+  "halfLifeInDays": 373.59,
   "incomeBaseInParticles": 50000000000,
   "incomeLimitInParticles": 10000000000000,
   "maxOutboundsCount": 8,
@@ -9,5 +9,6 @@
   "particlesPerToken": 100000000,
   "synchronizationIntervalInSeconds": 10,
   "validationIntervalInSeconds": 60,
+  "validationTimeoutInSeconds": 5,
   "verificationsCountPerValidation": 6
 }

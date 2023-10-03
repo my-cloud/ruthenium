@@ -7,7 +7,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/clock/tick"
-	"github.com/my-cloud/ruthenium/src/node/config"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
@@ -21,7 +20,7 @@ type TransactionsPool struct {
 	mutex        sync.RWMutex
 
 	blockchain       protocol.Blockchain
-	settings         config.Settings
+	settings         protocol.Settings
 	synchronizer     network.Synchronizer
 	validatorAddress string
 
@@ -31,7 +30,7 @@ type TransactionsPool struct {
 	logger log.Logger
 }
 
-func NewTransactionsPool(blockchain protocol.Blockchain, settings config.Settings, synchronizer network.Synchronizer, validatorAddress string, validationTimer time.Duration, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain protocol.Blockchain, settings protocol.Settings, synchronizer network.Synchronizer, validatorAddress string, validationTimer time.Duration, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blockchain = blockchain
 	pool.settings = settings
@@ -89,7 +88,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	var newAddresses []string
 	var hasIncome bool
 	if lastBlockTimestamp == 0 {
-		reward = pool.settings.GenesisAmountInParticles
+		reward = pool.settings.GenesisAmountInParticles()
 		newAddresses = []string{pool.validatorAddress}
 		hasIncome = true
 	} else if lastBlockTimestamp == timestamp {
