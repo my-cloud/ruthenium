@@ -4,7 +4,6 @@
 package p2ptest
 
 import (
-	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"sync"
 )
@@ -15,44 +14,102 @@ var _ p2p.Server = &ServerMock{}
 
 // ServerMock is a mock implementation of Server.
 //
-// 	func TestSomethingThatUsesServer(t *testing.T) {
+//	func TestSomethingThatUsesServer(t *testing.T) {
 //
-// 		// make and configure a mocked Server
-// 		mockedServer := &ServerMock{
-// 			ServeFunc: func() error {
-// 				panic("mock out the Serve method")
-// 			},
-// 			SetHandleFunc: func(topic string, handler p2p.Handler)  {
-// 				panic("mock out the SetHandle method")
-// 			},
-// 		}
+//		// make and configure a mocked Server
+//		mockedServer := &ServerMock{
+//			ServeFunc: func() error {
+//				panic("mock out the Serve method")
+//			},
+//			SetHandleBlocksRequestFunc: func(endpoint string)  {
+//				panic("mock out the SetHandleBlocksRequest method")
+//			},
+//			SetHandleFirstBlockTimestampRequestFunc: func(endpoint string)  {
+//				panic("mock out the SetHandleFirstBlockTimestampRequest method")
+//			},
+//			SetHandleTargetsRequestFunc: func(endpoint string)  {
+//				panic("mock out the SetHandleTargetsRequest method")
+//			},
+//			SetHandleTransactionRequestFunc: func(endpoint string)  {
+//				panic("mock out the SetHandleTransactionRequest method")
+//			},
+//			SetHandleTransactionsRequestFunc: func(endpoint string)  {
+//				panic("mock out the SetHandleTransactionsRequest method")
+//			},
+//			SetHandleUtxosRequestFunc: func(endpoint string)  {
+//				panic("mock out the SetHandleUtxosRequest method")
+//			},
+//		}
 //
-// 		// use mockedServer in code that requires Server
-// 		// and then make assertions.
+//		// use mockedServer in code that requires Server
+//		// and then make assertions.
 //
-// 	}
+//	}
 type ServerMock struct {
 	// ServeFunc mocks the Serve method.
 	ServeFunc func() error
 
-	// SetHandleFunc mocks the SetHandle method.
-	SetHandleFunc func(topic string, handler gp2p.Handler)
+	// SetHandleBlocksRequestFunc mocks the SetHandleBlocksRequest method.
+	SetHandleBlocksRequestFunc func(endpoint string)
+
+	// SetHandleFirstBlockTimestampRequestFunc mocks the SetHandleFirstBlockTimestampRequest method.
+	SetHandleFirstBlockTimestampRequestFunc func(endpoint string)
+
+	// SetHandleTargetsRequestFunc mocks the SetHandleTargetsRequest method.
+	SetHandleTargetsRequestFunc func(endpoint string)
+
+	// SetHandleTransactionRequestFunc mocks the SetHandleTransactionRequest method.
+	SetHandleTransactionRequestFunc func(endpoint string)
+
+	// SetHandleTransactionsRequestFunc mocks the SetHandleTransactionsRequest method.
+	SetHandleTransactionsRequestFunc func(endpoint string)
+
+	// SetHandleUtxosRequestFunc mocks the SetHandleUtxosRequest method.
+	SetHandleUtxosRequestFunc func(endpoint string)
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// Serve holds details about calls to the Serve method.
 		Serve []struct {
 		}
-		// SetHandle holds details about calls to the SetHandle method.
-		SetHandle []struct {
-			// Topic is the topic argument value.
-			Topic string
-			// Handler is the handler argument value.
-			Handler gp2p.Handler
+		// SetHandleBlocksRequest holds details about calls to the SetHandleBlocksRequest method.
+		SetHandleBlocksRequest []struct {
+			// Endpoint is the endpoint argument value.
+			Endpoint string
+		}
+		// SetHandleFirstBlockTimestampRequest holds details about calls to the SetHandleFirstBlockTimestampRequest method.
+		SetHandleFirstBlockTimestampRequest []struct {
+			// Endpoint is the endpoint argument value.
+			Endpoint string
+		}
+		// SetHandleTargetsRequest holds details about calls to the SetHandleTargetsRequest method.
+		SetHandleTargetsRequest []struct {
+			// Endpoint is the endpoint argument value.
+			Endpoint string
+		}
+		// SetHandleTransactionRequest holds details about calls to the SetHandleTransactionRequest method.
+		SetHandleTransactionRequest []struct {
+			// Endpoint is the endpoint argument value.
+			Endpoint string
+		}
+		// SetHandleTransactionsRequest holds details about calls to the SetHandleTransactionsRequest method.
+		SetHandleTransactionsRequest []struct {
+			// Endpoint is the endpoint argument value.
+			Endpoint string
+		}
+		// SetHandleUtxosRequest holds details about calls to the SetHandleUtxosRequest method.
+		SetHandleUtxosRequest []struct {
+			// Endpoint is the endpoint argument value.
+			Endpoint string
 		}
 	}
-	lockServe     sync.RWMutex
-	lockSetHandle sync.RWMutex
+	lockServe                               sync.RWMutex
+	lockSetHandleBlocksRequest              sync.RWMutex
+	lockSetHandleFirstBlockTimestampRequest sync.RWMutex
+	lockSetHandleTargetsRequest             sync.RWMutex
+	lockSetHandleTransactionRequest         sync.RWMutex
+	lockSetHandleTransactionsRequest        sync.RWMutex
+	lockSetHandleUtxosRequest               sync.RWMutex
 }
 
 // Serve calls ServeFunc.
@@ -70,7 +127,8 @@ func (mock *ServerMock) Serve() error {
 
 // ServeCalls gets all the calls that were made to Serve.
 // Check the length with:
-//     len(mockedServer.ServeCalls())
+//
+//	len(mockedServer.ServeCalls())
 func (mock *ServerMock) ServeCalls() []struct {
 } {
 	var calls []struct {
@@ -81,37 +139,194 @@ func (mock *ServerMock) ServeCalls() []struct {
 	return calls
 }
 
-// SetHandle calls SetHandleFunc.
-func (mock *ServerMock) SetHandle(topic string, handler gp2p.Handler) {
-	if mock.SetHandleFunc == nil {
-		panic("ServerMock.SetHandleFunc: method is nil but Server.SetHandle was just called")
+// SetHandleBlocksRequest calls SetHandleBlocksRequestFunc.
+func (mock *ServerMock) SetHandleBlocksRequest(endpoint string) {
+	if mock.SetHandleBlocksRequestFunc == nil {
+		panic("ServerMock.SetHandleBlocksRequestFunc: method is nil but Server.SetHandleBlocksRequest was just called")
 	}
 	callInfo := struct {
-		Topic   string
-		Handler gp2p.Handler
+		Endpoint string
 	}{
-		Topic:   topic,
-		Handler: handler,
+		Endpoint: endpoint,
 	}
-	mock.lockSetHandle.Lock()
-	mock.calls.SetHandle = append(mock.calls.SetHandle, callInfo)
-	mock.lockSetHandle.Unlock()
-	mock.SetHandleFunc(topic, handler)
+	mock.lockSetHandleBlocksRequest.Lock()
+	mock.calls.SetHandleBlocksRequest = append(mock.calls.SetHandleBlocksRequest, callInfo)
+	mock.lockSetHandleBlocksRequest.Unlock()
+	mock.SetHandleBlocksRequestFunc(endpoint)
 }
 
-// SetHandleCalls gets all the calls that were made to SetHandle.
+// SetHandleBlocksRequestCalls gets all the calls that were made to SetHandleBlocksRequest.
 // Check the length with:
-//     len(mockedServer.SetHandleCalls())
-func (mock *ServerMock) SetHandleCalls() []struct {
-	Topic   string
-	Handler gp2p.Handler
+//
+//	len(mockedServer.SetHandleBlocksRequestCalls())
+func (mock *ServerMock) SetHandleBlocksRequestCalls() []struct {
+	Endpoint string
 } {
 	var calls []struct {
-		Topic   string
-		Handler gp2p.Handler
+		Endpoint string
 	}
-	mock.lockSetHandle.RLock()
-	calls = mock.calls.SetHandle
-	mock.lockSetHandle.RUnlock()
+	mock.lockSetHandleBlocksRequest.RLock()
+	calls = mock.calls.SetHandleBlocksRequest
+	mock.lockSetHandleBlocksRequest.RUnlock()
+	return calls
+}
+
+// SetHandleFirstBlockTimestampRequest calls SetHandleFirstBlockTimestampRequestFunc.
+func (mock *ServerMock) SetHandleFirstBlockTimestampRequest(endpoint string) {
+	if mock.SetHandleFirstBlockTimestampRequestFunc == nil {
+		panic("ServerMock.SetHandleFirstBlockTimestampRequestFunc: method is nil but Server.SetHandleFirstBlockTimestampRequest was just called")
+	}
+	callInfo := struct {
+		Endpoint string
+	}{
+		Endpoint: endpoint,
+	}
+	mock.lockSetHandleFirstBlockTimestampRequest.Lock()
+	mock.calls.SetHandleFirstBlockTimestampRequest = append(mock.calls.SetHandleFirstBlockTimestampRequest, callInfo)
+	mock.lockSetHandleFirstBlockTimestampRequest.Unlock()
+	mock.SetHandleFirstBlockTimestampRequestFunc(endpoint)
+}
+
+// SetHandleFirstBlockTimestampRequestCalls gets all the calls that were made to SetHandleFirstBlockTimestampRequest.
+// Check the length with:
+//
+//	len(mockedServer.SetHandleFirstBlockTimestampRequestCalls())
+func (mock *ServerMock) SetHandleFirstBlockTimestampRequestCalls() []struct {
+	Endpoint string
+} {
+	var calls []struct {
+		Endpoint string
+	}
+	mock.lockSetHandleFirstBlockTimestampRequest.RLock()
+	calls = mock.calls.SetHandleFirstBlockTimestampRequest
+	mock.lockSetHandleFirstBlockTimestampRequest.RUnlock()
+	return calls
+}
+
+// SetHandleTargetsRequest calls SetHandleTargetsRequestFunc.
+func (mock *ServerMock) SetHandleTargetsRequest(endpoint string) {
+	if mock.SetHandleTargetsRequestFunc == nil {
+		panic("ServerMock.SetHandleTargetsRequestFunc: method is nil but Server.SetHandleTargetsRequest was just called")
+	}
+	callInfo := struct {
+		Endpoint string
+	}{
+		Endpoint: endpoint,
+	}
+	mock.lockSetHandleTargetsRequest.Lock()
+	mock.calls.SetHandleTargetsRequest = append(mock.calls.SetHandleTargetsRequest, callInfo)
+	mock.lockSetHandleTargetsRequest.Unlock()
+	mock.SetHandleTargetsRequestFunc(endpoint)
+}
+
+// SetHandleTargetsRequestCalls gets all the calls that were made to SetHandleTargetsRequest.
+// Check the length with:
+//
+//	len(mockedServer.SetHandleTargetsRequestCalls())
+func (mock *ServerMock) SetHandleTargetsRequestCalls() []struct {
+	Endpoint string
+} {
+	var calls []struct {
+		Endpoint string
+	}
+	mock.lockSetHandleTargetsRequest.RLock()
+	calls = mock.calls.SetHandleTargetsRequest
+	mock.lockSetHandleTargetsRequest.RUnlock()
+	return calls
+}
+
+// SetHandleTransactionRequest calls SetHandleTransactionRequestFunc.
+func (mock *ServerMock) SetHandleTransactionRequest(endpoint string) {
+	if mock.SetHandleTransactionRequestFunc == nil {
+		panic("ServerMock.SetHandleTransactionRequestFunc: method is nil but Server.SetHandleTransactionRequest was just called")
+	}
+	callInfo := struct {
+		Endpoint string
+	}{
+		Endpoint: endpoint,
+	}
+	mock.lockSetHandleTransactionRequest.Lock()
+	mock.calls.SetHandleTransactionRequest = append(mock.calls.SetHandleTransactionRequest, callInfo)
+	mock.lockSetHandleTransactionRequest.Unlock()
+	mock.SetHandleTransactionRequestFunc(endpoint)
+}
+
+// SetHandleTransactionRequestCalls gets all the calls that were made to SetHandleTransactionRequest.
+// Check the length with:
+//
+//	len(mockedServer.SetHandleTransactionRequestCalls())
+func (mock *ServerMock) SetHandleTransactionRequestCalls() []struct {
+	Endpoint string
+} {
+	var calls []struct {
+		Endpoint string
+	}
+	mock.lockSetHandleTransactionRequest.RLock()
+	calls = mock.calls.SetHandleTransactionRequest
+	mock.lockSetHandleTransactionRequest.RUnlock()
+	return calls
+}
+
+// SetHandleTransactionsRequest calls SetHandleTransactionsRequestFunc.
+func (mock *ServerMock) SetHandleTransactionsRequest(endpoint string) {
+	if mock.SetHandleTransactionsRequestFunc == nil {
+		panic("ServerMock.SetHandleTransactionsRequestFunc: method is nil but Server.SetHandleTransactionsRequest was just called")
+	}
+	callInfo := struct {
+		Endpoint string
+	}{
+		Endpoint: endpoint,
+	}
+	mock.lockSetHandleTransactionsRequest.Lock()
+	mock.calls.SetHandleTransactionsRequest = append(mock.calls.SetHandleTransactionsRequest, callInfo)
+	mock.lockSetHandleTransactionsRequest.Unlock()
+	mock.SetHandleTransactionsRequestFunc(endpoint)
+}
+
+// SetHandleTransactionsRequestCalls gets all the calls that were made to SetHandleTransactionsRequest.
+// Check the length with:
+//
+//	len(mockedServer.SetHandleTransactionsRequestCalls())
+func (mock *ServerMock) SetHandleTransactionsRequestCalls() []struct {
+	Endpoint string
+} {
+	var calls []struct {
+		Endpoint string
+	}
+	mock.lockSetHandleTransactionsRequest.RLock()
+	calls = mock.calls.SetHandleTransactionsRequest
+	mock.lockSetHandleTransactionsRequest.RUnlock()
+	return calls
+}
+
+// SetHandleUtxosRequest calls SetHandleUtxosRequestFunc.
+func (mock *ServerMock) SetHandleUtxosRequest(endpoint string) {
+	if mock.SetHandleUtxosRequestFunc == nil {
+		panic("ServerMock.SetHandleUtxosRequestFunc: method is nil but Server.SetHandleUtxosRequest was just called")
+	}
+	callInfo := struct {
+		Endpoint string
+	}{
+		Endpoint: endpoint,
+	}
+	mock.lockSetHandleUtxosRequest.Lock()
+	mock.calls.SetHandleUtxosRequest = append(mock.calls.SetHandleUtxosRequest, callInfo)
+	mock.lockSetHandleUtxosRequest.Unlock()
+	mock.SetHandleUtxosRequestFunc(endpoint)
+}
+
+// SetHandleUtxosRequestCalls gets all the calls that were made to SetHandleUtxosRequest.
+// Check the length with:
+//
+//	len(mockedServer.SetHandleUtxosRequestCalls())
+func (mock *ServerMock) SetHandleUtxosRequestCalls() []struct {
+	Endpoint string
+} {
+	var calls []struct {
+		Endpoint string
+	}
+	mock.lockSetHandleUtxosRequest.RLock()
+	calls = mock.calls.SetHandleUtxosRequest
+	mock.lockSetHandleUtxosRequest.RUnlock()
 	return calls
 }

@@ -78,12 +78,12 @@ func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *
 	validationEngine := tick.NewEngine(transactionsPool.Validate, watch, validationTimer, 1, 0)
 	verificationEngine := tick.NewEngine(blockchain.Update, watch, validationTimer, settings.VerificationsCountPerValidation, 1)
 	serverFactory := gp2p.NewServerFactory()
-	server, err := serverFactory.CreateServer(*port)
+	handler := gp2p.NewHandler(blockchain, synchronizer, transactionsPool, watch, logger)
+	server, err := serverFactory.CreateServer(*port, handler)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
 	}
-	handler := p2p.NewHandler(blockchain, synchronizer, transactionsPool, watch, logger)
-	return p2p.NewHost(handler, server, synchronizationEngine, validationEngine, verificationEngine, logger)
+	return p2p.NewHost(server, synchronizationEngine, validationEngine, verificationEngine, logger)
 }
 
 func createSynchronizer(parser *file.JsonParser, seedsPath string, hostIp string, port int, maxOutboundsCount int, watch *tick.Watch, logger *console.Logger) *p2p.Synchronizer {

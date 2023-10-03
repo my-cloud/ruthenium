@@ -11,7 +11,7 @@ func Test_CreateServer(t *testing.T) {
 	serverFactory := gp2p.NewServerFactory()
 
 	// Act
-	server, _ := serverFactory.CreateServer(0)
+	server, _ := serverFactory.CreateServer(0, nil)
 
 	// Assert
 	test.Assert(t, server != nil, "server is nil whereas it should not")

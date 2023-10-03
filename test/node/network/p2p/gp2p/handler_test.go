@@ -1,10 +1,10 @@
-package p2p
+package gp2p
 
 import (
 	"context"
 	"encoding/json"
 	gp2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/node/network/p2p"
+	gp2p2 "github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/log/logtest"
@@ -20,7 +20,7 @@ func Test_HandleTargetsRequest_AddInvalidTargets_AddTargetsNotCalled(t *testing.
 	// Arrange
 	synchronizerMock := new(networktest.SynchronizerMock)
 	synchronizerMock.AddTargetsFunc = func([]string) {}
-	handler := p2p.NewHandler(new(protocoltest.BlockchainMock), synchronizerMock, new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
+	handler := gp2p2.NewHandler(new(protocoltest.BlockchainMock), synchronizerMock, new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
 	targets := []string{"target"}
 	marshalledTargets, _ := json.Marshal(targets)
 	req := gp2p.Data{Bytes: marshalledTargets}
@@ -38,7 +38,7 @@ func Test_HandleTargetsRequest_AddValidTargets_AddTargetsCalled(t *testing.T) {
 	waitGroup := sync.WaitGroup{}
 	synchronizerMock := new(networktest.SynchronizerMock)
 	synchronizerMock.AddTargetsFunc = func([]string) { waitGroup.Done() }
-	handler := p2p.NewHandler(new(protocoltest.BlockchainMock), synchronizerMock, new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
+	handler := gp2p2.NewHandler(new(protocoltest.BlockchainMock), synchronizerMock, new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
 	targets := []string{"target"}
 	marshalledTargets, _ := json.Marshal(targets)
 	req := gp2p.Data{Bytes: marshalledTargets}
@@ -57,7 +57,7 @@ func Test_HandleFirstBlockTimestampRequest_ValidRequest_FirstBlockTimestampCalle
 	// Arrange
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.FirstBlockTimestampFunc = func() int64 { return 0 }
-	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
+	handler := gp2p2.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
 	req := gp2p.Data{}
 
 	// Act
@@ -75,7 +75,7 @@ func Test_HandleTransactionRequest_AddValidTransaction_AddTransactionCalled(t *t
 	transactionsPoolMock.AddTransactionFunc = func([]byte, string) { waitGroup.Done() }
 	synchronizerMock := new(networktest.SynchronizerMock)
 	synchronizerMock.HostTargetFunc = func() string { return "" }
-	handler := p2p.NewHandler(new(protocoltest.BlockchainMock), synchronizerMock, transactionsPoolMock, new(clocktest.WatchMock), logtest.NewLoggerMock())
+	handler := gp2p2.NewHandler(new(protocoltest.BlockchainMock), synchronizerMock, transactionsPoolMock, new(clocktest.WatchMock), logtest.NewLoggerMock())
 	req := gp2p.Data{}
 	waitGroup.Add(1)
 
@@ -95,7 +95,7 @@ func Test_HandleUtxosRequest_ValidUtxosRequest_UtxosByAddressCalled(t *testing.T
 	blockchainMock.UtxosFunc = func(string) []byte { return nil }
 	watchMock := new(clocktest.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), watchMock, logtest.NewLoggerMock())
+	handler := gp2p2.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), watchMock, logtest.NewLoggerMock())
 	address := "address"
 	marshalledAddress, _ := json.Marshal(&address)
 	req := gp2p.Data{Bytes: marshalledAddress}
@@ -112,7 +112,7 @@ func Test_HandleBlocksRequest_ValidBlocksRequest_LastBlocksCalled(t *testing.T) 
 	// Arrange
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.BlocksFunc = func(uint64) []byte { return nil }
-	handler := p2p.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
+	handler := gp2p2.NewHandler(blockchainMock, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
 	var height uint64 = 0
 	marshalledHeight, _ := json.Marshal(&height)
 	req := gp2p.Data{Bytes: marshalledHeight}
@@ -129,7 +129,7 @@ func Test_HandleTransactionsRequest_ValidTransactionsRequest_TransactionsCalled(
 	// Arrange
 	transactionsPoolMock := new(protocoltest.TransactionsPoolMock)
 	transactionsPoolMock.TransactionsFunc = func() []byte { return nil }
-	handler := p2p.NewHandler(new(protocoltest.BlockchainMock), new(networktest.SynchronizerMock), transactionsPoolMock, new(clocktest.WatchMock), logtest.NewLoggerMock())
+	handler := gp2p2.NewHandler(new(protocoltest.BlockchainMock), new(networktest.SynchronizerMock), transactionsPoolMock, new(clocktest.WatchMock), logtest.NewLoggerMock())
 	req := gp2p.Data{}
 
 	// Act
