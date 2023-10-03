@@ -70,7 +70,7 @@ func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *
 	watch := tick.NewWatch()
 	synchronizer := createSynchronizer(parser, *seedsPath, *ip, *port, settings, watch, logger)
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
-	transactionsPool := validation.NewTransactionsPool(blockchain, settings, synchronizer, address, settings.ValidationTimer(), logger)
+	transactionsPool := validation.NewTransactionsPool(blockchain, settings, synchronizer, address, logger)
 	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, settings.SynchronizationTimer(), 1, 0)
 	validationEngine := tick.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)
 	verificationEngine := tick.NewEngine(blockchain.Update, watch, settings.ValidationTimer(), settings.VerificationsCountPerValidation(), 1)
