@@ -2,7 +2,6 @@ package gp2p
 
 import (
 	"fmt"
-	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/network"
@@ -23,12 +22,9 @@ func (factory *ClientFactory) CreateClient(ip string, port string) (p2p.Client, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to look up IP on addresse %s: %w", ip, err)
 	}
-	tcp := gp2p.NewTCP(lookedUpIp, port)
-	var client *gp2p.Client
-	client, err = gp2p.NewClient(tcp)
+	client, err := NewClient(lookedUpIp, port, factory.logger)
 	if err != nil {
 		return nil, err
 	}
-	client.SetLogger(factory.logger)
 	return client, err
 }

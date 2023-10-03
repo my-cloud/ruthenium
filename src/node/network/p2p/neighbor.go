@@ -3,16 +3,11 @@ package p2p
 import (
 	"encoding/json"
 	"fmt"
-	gp2p "github.com/leprosus/golang-p2p"
-	"time"
 )
 
-const connectionTimeoutInSeconds = 5 // TODO calculate from validation timestamp
-
 type Neighbor struct {
-	target   *Target
-	client   Client
-	settings *gp2p.ClientSettings
+	target *Target
+	client Client
 }
 
 func NewNeighbor(target *Target, clientFactory ClientFactory) (*Neighbor, error) {
@@ -20,70 +15,52 @@ func NewNeighbor(target *Target, clientFactory ClientFactory) (*Neighbor, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client reaching %s: %w", target.Value(), err)
 	}
-	settings := gp2p.NewClientSettings()
-	settings.SetRetry(1, time.Nanosecond)
-	settings.SetConnTimeout(connectionTimeoutInSeconds * time.Second)
-	client.SetSettings(settings)
-	return &Neighbor{target, client, settings}, nil
+	return &Neighbor{target, client}, nil
 }
 
 func (neighbor *Neighbor) Target() string {
 	return neighbor.target.Value()
 }
 
-func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) (blocks []byte, err error) {
-	res, err := neighbor.sendRequest(blocksEndpoint, startingBlockHeight)
-	if err == nil {
-		return res.GetBytes(), nil
+func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) ([]byte, error) {
+	return neighbor.sendRequest(blocksEndpoint, startingBlockHeight)
+}
+
+func (neighbor *Neighbor) GetFirstBlockTimestamp() (int64, error) {
+	res, err := neighbor.client.Send(firstBlockTimestampEndpoint, []byte{})
+	var timestamp int64
+	if err != nil {
+		return timestamp, err
 	}
-	return
-}
-
-func (neighbor *Neighbor) GetFirstBlockTimestamp() (timestamp int64, err error) {
-	res, err := neighbor.client.Send(firstBlockTimestampEndpoint, gp2p.Data{})
-	if err == nil {
-		timestampBytes := res.GetBytes()
-		err = json.Unmarshal(timestampBytes, &timestamp)
-		if err != nil {
-			return
-		}
+	err = json.Unmarshal(res, &timestamp)
+	if err != nil {
+		return timestamp, err
 	}
-	return
+	return timestamp, err
 }
 
-func (neighbor *Neighbor) SendTargets(targets []string) (err error) {
-	_, err = neighbor.sendRequest(targetsEndpoint, targets)
-	return
+func (neighbor *Neighbor) SendTargets(targets []string) error {
+	_, err := neighbor.sendRequest(targetsEndpoint, targets)
+	return err
 }
 
-func (neighbor *Neighbor) AddTransaction(transaction []byte) (err error) {
-	req := gp2p.Data{Bytes: transaction}
-	_, err = neighbor.client.Send(transactionEndpoint, req)
-	return
+func (neighbor *Neighbor) AddTransaction(transaction []byte) error {
+	_, err := neighbor.client.Send(transactionEndpoint, transaction)
+	return err
 }
 
-func (neighbor *Neighbor) GetTransactions() (transactionResponses []byte, err error) {
-	res, err := neighbor.client.Send(transactionsEndpoint, gp2p.Data{})
-	if err == nil {
-		return res.GetBytes(), nil
-	}
-	return
+func (neighbor *Neighbor) GetTransactions() ([]byte, error) {
+	return neighbor.client.Send(transactionsEndpoint, []byte{})
 }
 
-func (neighbor *Neighbor) GetUtxos(address string) (utxos []byte, err error) {
-	res, err := neighbor.sendRequest(utxosEndpoint, address)
-	if err == nil {
-		return res.GetBytes(), nil
-	}
-	return
+func (neighbor *Neighbor) GetUtxos(address string) ([]byte, error) {
+	return neighbor.sendRequest(utxosEndpoint, address)
 }
 
-func (neighbor *Neighbor) sendRequest(topic string, request interface{}) (res gp2p.Data, err error) {
+func (neighbor *Neighbor) sendRequest(topic string, request interface{}) ([]byte, error) {
 	bytes, err := json.Marshal(request)
 	if err != nil {
-		return
+		return nil, err
 	}
-	req := gp2p.Data{Bytes: bytes}
-	res, err = neighbor.client.Send(topic, req) // FIXME panic
-	return
+	return neighbor.client.Send(topic, bytes) // FIXME panic
 }
