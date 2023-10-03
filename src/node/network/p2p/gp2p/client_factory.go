@@ -9,10 +9,11 @@ import (
 
 type ClientFactory struct {
 	ipFinder network.IpFinder
+	settings p2p.Settings
 }
 
-func NewClientFactory(ipFinder network.IpFinder) *ClientFactory {
-	return &ClientFactory{ipFinder}
+func NewClientFactory(ipFinder network.IpFinder, settings p2p.Settings) *ClientFactory {
+	return &ClientFactory{ipFinder, settings}
 }
 
 func (factory *ClientFactory) CreateClient(ip string, port string) (p2p.Client, error) {
@@ -20,7 +21,7 @@ func (factory *ClientFactory) CreateClient(ip string, port string) (p2p.Client, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to look up IP on addresse %s: %w", ip, err)
 	}
-	client, err := NewClient(lookedUpIp, port, console.NewLogger(console.Fatal))
+	client, err := NewClient(lookedUpIp, port, factory.settings.ValidationTimeout(), console.NewLogger(console.Fatal))
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate client for address %s: %w", ip, err)
 	}

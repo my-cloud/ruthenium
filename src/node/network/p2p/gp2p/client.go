@@ -6,13 +6,11 @@ import (
 	"time"
 )
 
-const connectionTimeoutInSeconds = 5 // TODO calculate from validation timestamp
-
 type Client struct {
 	*gp2p.Client
 }
 
-func NewClient(ip string, port string, logger log.Logger) (*Client, error) {
+func NewClient(ip string, port string, timeout time.Duration, logger log.Logger) (*Client, error) {
 	tcp := gp2p.NewTCP(ip, port)
 	client, err := gp2p.NewClient(tcp)
 	if err != nil {
@@ -20,7 +18,7 @@ func NewClient(ip string, port string, logger log.Logger) (*Client, error) {
 	}
 	settings := gp2p.NewClientSettings()
 	settings.SetRetry(1, time.Nanosecond)
-	settings.SetConnTimeout(connectionTimeoutInSeconds * time.Second)
+	settings.SetConnTimeout(timeout)
 	client.SetSettings(settings)
 	client.SetLogger(logger)
 	return &Client{client}, err

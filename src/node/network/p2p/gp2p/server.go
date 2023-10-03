@@ -9,14 +9,12 @@ import (
 	"time"
 )
 
-const serverConnectionTimeoutInSeconds = 10 // TODO calculate from validation timestamp
-
 type Server struct {
 	*gp2p.Server
 	handler p2p.Handler
 }
 
-func NewServer(port int, handler p2p.Handler) (*Server, error) {
+func NewServer(port int, handler p2p.Handler, timeout time.Duration) (*Server, error) {
 	tcp := gp2p.NewTCP("0.0.0.0", strconv.Itoa(port))
 	server, err := gp2p.NewServer(tcp)
 	if err != nil {
@@ -24,7 +22,7 @@ func NewServer(port int, handler p2p.Handler) (*Server, error) {
 	}
 	server.SetLogger(console.NewLogger(console.Fatal))
 	settings := gp2p.NewServerSettings()
-	settings.SetConnTimeout(serverConnectionTimeoutInSeconds * time.Second)
+	settings.SetConnTimeout(timeout)
 	server.SetSettings(settings)
 	return &Server{server, handler}, err
 }

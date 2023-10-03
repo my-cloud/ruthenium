@@ -4,14 +4,17 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 )
 
-type ServerFactory struct{}
-
-func NewServerFactory() *ServerFactory {
-	return &ServerFactory{}
+type ServerFactory struct {
+	handler  p2p.Handler
+	settings p2p.Settings
 }
 
-func (factory *ServerFactory) CreateServer(port int, handler p2p.Handler) (p2p.Server, error) {
-	server, err := NewServer(port, handler)
+func NewServerFactory(handler p2p.Handler, settings p2p.Settings) *ServerFactory {
+	return &ServerFactory{handler, settings}
+}
+
+func (factory *ServerFactory) CreateServer(port int) (p2p.Server, error) {
+	server, err := NewServer(port, factory.handler, factory.settings.ValidationTimeout())
 	if err != nil {
 		return nil, err
 	}
