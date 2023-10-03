@@ -451,38 +451,42 @@ func (blockchain *Blockchain) updateUtxos(block *Block, blockHeight int) error {
 	utxosByAddress := copyUtxosMap(blockchain.utxosByAddress)
 	utxosById := copyUtxosMap(blockchain.utxosById)
 	for _, transaction := range block.Transactions() {
-		// FIXME avoid searching in the map several times
-		if _, ok := utxosById[transaction.Id()]; ok {
+		utxosForTransactionId, ok := utxosById[transaction.Id()]
+		if ok {
 			return fmt.Errorf("transaction ID already exists: %s", transaction.Id())
 		}
 		for j, output := range transaction.Outputs() {
 			if output.InitialValue() > 0 {
 				utxo := NewUtxo(output, blockHeight, uint16(j), transaction.Id())
-				utxosById[transaction.Id()] = append(utxosById[transaction.Id()], utxo)
+				utxosForTransactionId = append(utxosForTransactionId, utxo)
+				utxosById[transaction.Id()] = utxosForTransactionId
 				utxosByAddress[output.Address()] = append(utxosByAddress[output.Address()], utxo)
 			}
 		}
 		for _, input := range transaction.Inputs() {
-			utxos := utxosById[input.TransactionId()]
-			if len(utxos) == 0 {
+			utxosForInputTransactionId := utxosById[input.TransactionId()]
+			if len(utxosForInputTransactionId) == 0 {
 				return fmt.Errorf("failed to find transaction ID, input: %v", input)
 			}
-			utxo := utxos[input.OutputIndex()]
+			utxo := utxosForInputTransactionId[input.OutputIndex()]
 			if utxo == nil {
 				return fmt.Errorf("failed to find output index, input: %v", input)
 			}
-			utxosByAddress[utxo.Address()] = removeUtxo(utxosByAddress[utxo.Address()], input.TransactionId(), input.OutputIndex())
+			utxosForUtxoAddress := utxosByAddress[utxo.Address()]
+			utxosForUtxoAddress = removeUtxo(utxosForUtxoAddress, input.TransactionId(), input.OutputIndex())
+			utxosByAddress[utxo.Address()] = utxosForUtxoAddress
 			utxosById[input.TransactionId()][input.OutputIndex()] = nil
 			isEmpty := true
-			for _, output := range utxosById[input.TransactionId()] {
+			for _, output := range utxosForInputTransactionId {
 				if output != nil {
 					isEmpty = false
+					break
 				}
 			}
 			if isEmpty {
 				delete(utxosById, input.TransactionId())
 			}
-			if len(utxosByAddress[utxo.Address()]) == 0 {
+			if len(utxosForUtxoAddress) == 0 {
 				delete(utxosByAddress, utxo.Address())
 			}
 		}
