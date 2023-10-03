@@ -11,7 +11,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/net"
-	"github.com/my-cloud/ruthenium/src/ui/server"
 	"github.com/my-cloud/ruthenium/src/ui/server/index"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction/info"
@@ -20,7 +19,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/amount"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 func main() {
@@ -35,16 +33,15 @@ func main() {
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
 	target := p2p.NewTarget(*hostIp, strconv.Itoa(*hostPort))
 	ipFinder := net.NewIpFinder(logger)
-	clientFactory := gp2p.NewClientFactory(ipFinder)
+	var settings *config.Settings
+	parser := file.NewJsonParser()
+	if err := parser.Parse(*settingsPath, &settings); err != nil {
+		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
+	}
+	clientFactory := gp2p.NewClientFactory(ipFinder, settings)
 	host, err := p2p.NewNeighbor(target, clientFactory)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
-	}
-	parser := file.NewJsonParser()
-	var settings *config.Settings
-	err = parser.Parse(*settingsPath, &settings)
-	if err != nil {
-		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
 	}
 	watch := tick.NewWatch()
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
