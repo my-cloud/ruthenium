@@ -62,5 +62,5 @@ func (neighbor *Neighbor) sendRequest(topic string, request interface{}) ([]byte
 	if err != nil {
 		return nil, err
 	}
-	return neighbor.client.Send(topic, bytes) // FIXME panic
+	return neighbor.client.Send(topic, bytes)
 }
