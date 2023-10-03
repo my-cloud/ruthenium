@@ -28,5 +28,8 @@ func NewClient(ip string, port string, logger log.Logger) (*Client, error) {
 
 func (client *Client) Send(topic string, req []byte) (res []byte, err error) {
 	data, err := client.Client.Send(topic, gp2p.Data{Bytes: req})
+	if err != nil {
+		return []byte{}, err
+	}
 	return data.Bytes, err
 }
