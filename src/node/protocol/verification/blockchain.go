@@ -163,29 +163,29 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		for _, neighbor := range neighbors {
 			target := neighbor.Target()
 			waitGroup.Add(1)
-			c := make(chan []*Block)
+			blocksChannel := make(chan []*Block)
 			go func(neighbor network.Neighbor) {
-				defer close(c)
+				defer close(blocksChannel)
 				startingBlockHeight := uint64(len(hostBlocks) - 1)
 				lastNeighborBlocksBytes, err := neighbor.GetBlocks(startingBlockHeight)
 				if err != nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
-					c <- nil
+					blocksChannel <- nil
 				}
 				var lastNeighborBlocks []*Block
 				err = json.Unmarshal(lastNeighborBlocksBytes, &lastNeighborBlocks)
 				if err != nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
-					c <- nil
+					blocksChannel <- nil
 				} else if len(lastNeighborBlocks) == 0 || lastHostBlocks[0].PreviousHash() != lastNeighborBlocks[0].PreviousHash() {
 					blockchain.logger.Debug(errors.New("neighbor's blockchain is a fork").Error())
-					c <- nil
+					blocksChannel <- nil
 				} else {
-					c <- lastNeighborBlocks
+					blocksChannel <- lastNeighborBlocks
 				}
 			}(neighbor)
 			select {
-			case lastNeighborBlocks := <-c:
+			case lastNeighborBlocks := <-blocksChannel:
 				if len(lastNeighborBlocks) > 0 {
 					verifiedBlocks, err := blockchain.verify(lastHostBlocks, lastNeighborBlocks, oldHostBlocks, timestamp)
 					if err != nil || len(verifiedBlocks) == 0 {
@@ -212,28 +212,28 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		for _, neighbor := range neighbors {
 			waitGroup.Add(1)
 			target := neighbor.Target()
-			c := make(chan []*Block)
+			blocksChannel := make(chan []*Block)
 			go func(neighbor network.Neighbor) {
-				defer close(c)
+				defer close(blocksChannel)
 				neighborBlocksBytes, err := neighbor.GetBlocks(0)
 				if err != nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
-					c <- nil
+					blocksChannel <- nil
 				}
 				var lastNeighborBlocks []*Block
 				err = json.Unmarshal(neighborBlocksBytes, &lastNeighborBlocks)
 				if err != nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
-					c <- nil
+					blocksChannel <- nil
 				} else if len(lastNeighborBlocks) < 2 {
 					blockchain.logger.Debug(errors.New("neighbor's blockchain is too short").Error())
-					c <- nil
+					blocksChannel <- nil
 				} else {
-					c <- lastNeighborBlocks
+					blocksChannel <- lastNeighborBlocks
 				}
 			}(neighbor)
 			select {
-			case neighborBlocks := <-c:
+			case neighborBlocks := <-blocksChannel:
 				if len(neighborBlocks) > 0 {
 					verifiedBlocks, err := blockchain.verify(hostBlocks, neighborBlocks, nil, timestamp)
 					if err != nil || len(verifiedBlocks) == 0 {

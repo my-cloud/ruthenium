@@ -27,26 +27,18 @@ func NewHost(server Server, synchronizationEngine clock.Engine, validationEngine
 }
 
 func (host *Host) Run() error {
-	host.startBlockchain()
+	go host.synchronizationEngine.Start()
+	go host.validationEngine.Start()
+	go host.verificationEngine.Start()
+	host.setServerHandles()
+	return host.server.Serve()
+}
+
+func (host *Host) setServerHandles() {
 	host.server.SetHandleBlocksRequest(blocksEndpoint)
 	host.server.SetHandleFirstBlockTimestampRequest(firstBlockTimestampEndpoint)
 	host.server.SetHandleTargetsRequest(targetsEndpoint)
 	host.server.SetHandleTransactionRequest(transactionEndpoint)
 	host.server.SetHandleTransactionsRequest(transactionsEndpoint)
 	host.server.SetHandleUtxosRequest(utxosEndpoint)
-	return host.startServer()
-}
-
-func (host *Host) startBlockchain() {
-	host.synchronizationEngine.Do()
-	host.logger.Info("neighbors are synchronized, updating the blockchain...")
-	host.verificationEngine.Do()
-	host.logger.Info("the blockchain is now up to date, starting validation...")
-	go host.synchronizationEngine.Start()
-	go host.validationEngine.Start()
-	go host.verificationEngine.Start()
-}
-
-func (host *Host) startServer() error {
-	return host.server.Serve()
 }

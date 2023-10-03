@@ -188,9 +188,6 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		return
 	}
 	pool.clear()
-	if lastBlockTimestamp == 0 {
-		pool.logger.Info("first block validation done, the node is now fully operational")
-	}
 	pool.logger.Debug(fmt.Sprintf("reward: %d", reward))
 }
 

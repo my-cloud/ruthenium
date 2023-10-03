@@ -57,7 +57,7 @@ func (engine *Engine) Start() {
 	}
 	engine.started = true
 	initialTime := engine.watch.Now()
-	startTime := initialTime.Truncate(engine.subTimer).Add(engine.subTimer)
+	startTime := initialTime.Truncate(engine.timer).Add(engine.timer)
 	deadline := startTime.Sub(initialTime)
 	engine.ticker.Reset(deadline)
 	<-engine.ticker.C
@@ -65,7 +65,7 @@ func (engine *Engine) Start() {
 	occurrences := int(engine.occurrences)
 	for {
 		for i := 0; i < occurrences; i++ {
-			if i < occurrences-engine.skippedOccurrences {
+			if i >= engine.skippedOccurrences {
 				if !engine.started {
 					engine.ticker.Stop()
 					return
