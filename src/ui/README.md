@@ -46,7 +46,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 
   |Code|Description|
     |---|---|
-  |200|[Transaction info response](#transaction-info-response)|
+  |200|[Transaction info](#transaction-info)|
   |400|Bad request, if any request argument is invalid|
   |405|Method not allowed, if the value exceeds the wallet amount for the given address|
   |500|Internal server error, if an unexpected condition occurred|
@@ -81,7 +81,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 
   |Code|Description|
     |---|---|
-  |200|Array of [transaction responses](#transaction-response)|
+  |200|Array of [transactions](#transaction)|
   |500|Internal server error, if an unexpected condition occurred|
 </details>
 
@@ -171,9 +171,9 @@ The input data structure
 ```
 {
   "OutputIndex":   0
-  "TransactionId": 8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d
-  "PublicKey":     0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782
-  "Signature":     4f3b24cbb4d2c13aaf60518fce70409fd29e1668db1c2109c0eac58427c203df59788bade6d5f3eb9df161b4ed3de451bac64f4c54e74578d69caf8cd401a38f
+  "TransactionId": "8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d"
+  "PublicKey":     "0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782"
+  "Signature":     "4f3b24cbb4d2c13aaf60518fce70409fd29e1668db1c2109c0eac58427c203df59788bade6d5f3eb9df161b4ed3de451bac64f4c54e74578d69caf8cd401a38f"
 }
 ```
 </td>
@@ -218,7 +218,7 @@ The output data structure
 
 ```
 {
-  "Address":   0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
+  "Address":   "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
   "HasReward": false
   "HasIncome": true
   "Value":     0
@@ -228,7 +228,7 @@ The output data structure
 </tr>
 </table>
 
-#### Transaction info response
+#### Transaction info
 <table>
 <th>
 Schema
@@ -243,7 +243,7 @@ Example
 <td>
 
 ```
-TransactionInfoResponse {
+TransactionInfo {
   Rest  uint64
   Utxos []UtxoResponse
 }
@@ -252,7 +252,7 @@ TransactionInfoResponse {
 <td>
 
 ```
-The data structure for transaction info response
+The transaction info data structure
   The remaining amount to be used as a value for the output with the sender address
   The utxos to be used as inputs of the transaction
 
@@ -294,7 +294,7 @@ type UtxoResponse struct {
 <td>
 
 ```
-The data structure for UTXO response
+The UTXO response data structure
   The output index
   The ID of the transaction holding the output
 
@@ -305,7 +305,7 @@ The data structure for UTXO response
 ```
 {
   "OutputIndex":   0
-  "TransactionId": 8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d
+  "TransactionId": "8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d"
 }
 ```
 </td>
@@ -328,19 +328,17 @@ Example
 
 ```
 TransactionRequest {
-  Inputs    []InputRequest
-  Outputs   []OutputRequest
-  Timestamp int64
+  Transaction                  Transaction
+  TransactionBroadcasterTarget string
 }
 ```
 </td>
 <td>
 
 ```
-The data structure for transaction request
-  The inputs
-  The outputs
-  The timestamp
+The transaction request data structure
+  The transaction
+  The transaction broadcaster target
 
 ```
 </td>
@@ -348,16 +346,15 @@ The data structure for transaction request
 
 ```
 {
-  "Inputs":    []
-  "Outputs":   []
-  "Timestamp": 1667768884780639700
+  "Transaction":                  {}
+  "TransactionBroadcasterTarget": "0.0.0.0:0000"
 }
 ```
 </td>
 </tr>
 </table>
 
-#### Transaction response
+#### Transaction
 <table>
 <th>
 Schema
@@ -372,10 +369,10 @@ Example
 <td>
 
 ```
-TransactionResponse {
+Transaction {
   Id        string
-  Inputs    []*InputResponse
-  Outputs   []*OutputResponse
+  Inputs    []Input
+  Outputs   []Output
   Timestamp int64
 }
 ```
@@ -383,7 +380,7 @@ TransactionResponse {
 <td>
 
 ```
-The data structure for transaction response
+The transaction data structure
   The ID
   The inputs
   The outputs
@@ -395,7 +392,7 @@ The data structure for transaction response
 
 ```
 {
-  "Id":        30148389df42b7cd0cb0d3ce951133da3f36ff4e1581d108da1ee05bacad64b7
+  "Id":        "30148389df42b7cd0cb0d3ce951133da3f36ff4e1581d108da1ee05bacad64b7"
   "Inputs":    []
   "Outputs":   []
   "Timestamp": 1667768884780639700
