@@ -154,36 +154,36 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		selectedTargets = append(selectedTargets, hostTarget)
 		blocksByTarget[hostTarget] = hostBlocks
 		oldHostBlocks := make([]*Block, len(hostBlocks)-1)
-		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-1])
+		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-1]) // TODO copy for each neighbor ?
 		lastHostBlocks := []*Block{hostBlocks[len(hostBlocks)-1]}
+		isValid := func(nb []*Block, hb []*Block) bool { return blockchain.isFork(nb, hb) }
 		for _, neighbor := range neighbors {
-			target := neighbor.Target()
 			waitGroup.Add(1)
+			target := neighbor.Target()
 			blocksChannel := make(chan []*Block)
 			go func(neighbor network.Neighbor) {
 				defer close(blocksChannel)
 				startingBlockHeight := uint64(len(hostBlocks) - 1)
-				lastNeighborBlocksBytes, err := neighbor.GetBlocks(startingBlockHeight)
+				neighborBlocksBytes, err := neighbor.GetBlocks(startingBlockHeight)
 				if err != nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
 					blocksChannel <- nil
 				}
-				var lastNeighborBlocks []*Block
-				err = json.Unmarshal(lastNeighborBlocksBytes, &lastNeighborBlocks)
+				var neighborBlocks []*Block
+				err = json.Unmarshal(neighborBlocksBytes, &neighborBlocks)
 				if err != nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
 					blocksChannel <- nil
-				} else if len(lastNeighborBlocks) == 0 || lastHostBlocks[0].PreviousHash() != lastNeighborBlocks[0].PreviousHash() {
-					blockchain.logger.Debug(errors.New("neighbor's blockchain is a fork").Error())
+				} else if isValid(neighborBlocks, lastHostBlocks) {
 					blocksChannel <- nil
 				} else {
-					blocksChannel <- lastNeighborBlocks
+					blocksChannel <- neighborBlocks
 				}
 			}(neighbor)
 			select {
-			case lastNeighborBlocks := <-blocksChannel:
-				if len(lastNeighborBlocks) > 0 {
-					verifiedBlocks, err := blockchain.verify(lastHostBlocks, lastNeighborBlocks, oldHostBlocks, timestamp)
+			case neighborBlocks := <-blocksChannel:
+				if len(neighborBlocks) > 0 {
+					verifiedBlocks, err := blockchain.verify(lastHostBlocks, neighborBlocks, oldHostBlocks, timestamp)
 					if err != nil || len(verifiedBlocks) == 0 {
 						blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 					} else {
@@ -205,38 +205,42 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	if len(hostBlocks) > 0 && len(selectedTargets) < 2 && len(neighbors) > 0 {
 		isFork = true
 		blockchain.logger.Debug("all neighbor blockchains are forks, verifying the whole blockchains")
+		var oldHostBlocks []*Block
+		lastHostBlocks := make([]*Block, len(hostBlocks)-1)
+		copy(lastHostBlocks, hostBlocks[:len(hostBlocks)-1]) // TODO copy for each neighbor ?
+		isValid := func(nb []*Block, hb []*Block) bool { return blockchain.isTooShort(nb) }
 		for _, neighbor := range neighbors {
 			waitGroup.Add(1)
 			target := neighbor.Target()
 			blocksChannel := make(chan []*Block)
 			go func(neighbor network.Neighbor) {
 				defer close(blocksChannel)
-				neighborBlocksBytes, err := neighbor.GetBlocks(0)
+				var startingBlockHeight uint64 = 0
+				neighborBlocksBytes, err := neighbor.GetBlocks(startingBlockHeight)
 				if err != nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
 					blocksChannel <- nil
 				}
-				var lastNeighborBlocks []*Block
-				err = json.Unmarshal(neighborBlocksBytes, &lastNeighborBlocks)
+				var neighborBlocks []*Block
+				err = json.Unmarshal(neighborBlocksBytes, &neighborBlocks)
 				if err != nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
 					blocksChannel <- nil
-				} else if len(lastNeighborBlocks) < 2 {
-					blockchain.logger.Debug(errors.New("neighbor's blockchain is too short").Error())
+				} else if isValid(neighborBlocks, lastHostBlocks) {
 					blocksChannel <- nil
 				} else {
-					blocksChannel <- lastNeighborBlocks
+					blocksChannel <- neighborBlocks
 				}
 			}(neighbor)
 			select {
 			case neighborBlocks := <-blocksChannel:
 				if len(neighborBlocks) > 0 {
-					verifiedBlocks, err := blockchain.verify(hostBlocks, neighborBlocks, nil, timestamp)
+					verifiedBlocks, err := blockchain.verify(lastHostBlocks, neighborBlocks, oldHostBlocks, timestamp)
 					if err != nil || len(verifiedBlocks) == 0 {
 						blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 					} else {
 						mutex.Lock()
-						blocksByTarget[target] = verifiedBlocks
+						blocksByTarget[target] = append(oldHostBlocks, verifiedBlocks...)
 						selectedTargets = append(selectedTargets, target)
 						mutex.Unlock()
 					}
@@ -359,6 +363,22 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	} else {
 		blockchain.logger.Debug("verification done: blockchain kept")
 	}
+}
+
+func (blockchain *Blockchain) isFork(neighborBlocks []*Block, lastHostBlocks []*Block) bool {
+	if len(neighborBlocks) == 0 || lastHostBlocks[0].PreviousHash() != neighborBlocks[0].PreviousHash() {
+		blockchain.logger.Debug(errors.New("neighbor's blockchain is a fork").Error())
+		return true
+	}
+	return false
+}
+
+func (blockchain *Blockchain) isTooShort(neighborBlocks []*Block) bool {
+	if len(neighborBlocks) < 2 {
+		blockchain.logger.Debug(errors.New("neighbor's blockchain is too short").Error())
+		return true
+	}
+	return false
 }
 
 func (blockchain *Blockchain) Utxo(input protocol.Input) (protocol.Utxo, error) {
