@@ -156,6 +156,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		oldHostBlocks := make([]*Block, len(hostBlocks)-1)
 		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-1]) // TODO copy for each neighbor ?
 		lastHostBlocks := []*Block{hostBlocks[len(hostBlocks)-1]}
+		startingBlockHeight := uint64(len(hostBlocks) - 1)
 		isValid := func(nb []*Block, hb []*Block) bool { return blockchain.isFork(nb, hb) }
 		for _, neighbor := range neighbors {
 			waitGroup.Add(1)
@@ -163,7 +164,6 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			blocksChannel := make(chan []*Block)
 			go func(neighbor network.Neighbor) {
 				defer close(blocksChannel)
-				startingBlockHeight := uint64(len(hostBlocks) - 1)
 				neighborBlocksBytes, err := neighbor.GetBlocks(startingBlockHeight)
 				if err != nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
@@ -208,6 +208,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		var oldHostBlocks []*Block
 		lastHostBlocks := make([]*Block, len(hostBlocks)-1)
 		copy(lastHostBlocks, hostBlocks[:len(hostBlocks)-1]) // TODO copy for each neighbor ?
+		var startingBlockHeight uint64 = 0
 		isValid := func(nb []*Block, hb []*Block) bool { return blockchain.isTooShort(nb) }
 		for _, neighbor := range neighbors {
 			waitGroup.Add(1)
@@ -215,7 +216,6 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			blocksChannel := make(chan []*Block)
 			go func(neighbor network.Neighbor) {
 				defer close(blocksChannel)
-				var startingBlockHeight uint64 = 0
 				neighborBlocksBytes, err := neighbor.GetBlocks(startingBlockHeight)
 				if err != nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
