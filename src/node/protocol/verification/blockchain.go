@@ -15,6 +15,7 @@ import (
 type Blockchain struct {
 	blocks              []*Block
 	mutex               sync.RWMutex
+	neighborMutex       sync.RWMutex
 	registeredAddresses map[string]bool
 	registry            protocol.Registry
 	synchronizer        network.Synchronizer
@@ -145,7 +146,6 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	neighbors := blockchain.synchronizer.Neighbors()
 	blocksByTarget := make(map[string][]*Block)
 	hostBlocks := blockchain.blocks
-	var mutex sync.RWMutex
 	var waitGroup sync.WaitGroup
 	timeout := blockchain.settings.ValidationTimeout()
 	if len(hostBlocks) > 2 {
@@ -182,9 +182,9 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 					if err != nil || len(verifiedBlocks) == 0 {
 						blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 					} else {
-						mutex.Lock()
+						blockchain.neighborMutex.Lock()
 						blocksByTarget[target] = append(oldHostBlocks, verifiedBlocks...)
-						mutex.Unlock()
+						blockchain.neighborMutex.Unlock()
 					}
 				}
 			case <-time.After(timeout):
@@ -230,9 +230,9 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 					if err != nil || len(verifiedBlocks) == 0 {
 						blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
 					} else {
-						mutex.Lock()
+						blockchain.neighborMutex.Lock()
 						blocksByTarget[target] = append(oldHostBlocks, verifiedBlocks...)
-						mutex.Unlock()
+						blockchain.neighborMutex.Unlock()
 					}
 				}
 			case <-time.After(timeout):
