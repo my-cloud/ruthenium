@@ -26,7 +26,7 @@ type Transaction struct {
 }
 
 func NewRewardTransaction(address string, hasIncome bool, timestamp int64, value uint64) (*Transaction, error) {
-	outputs := []*Output{NewOutput(address, hasIncome, true, value)}
+	outputs := []*Output{NewOutput(address, hasIncome, value)}
 	var inputs []*Input
 	id, err := generateId(inputs, outputs, timestamp)
 	if err != nil {
@@ -49,21 +49,22 @@ func (transaction *Transaction) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("failed to generate id: %w", err)
 	}
 	if id != dto.Id {
-		return fmt.Errorf("wrong transaction ID, provided: %s, calculated: %s", dto.Id, transaction.id)
+		return fmt.Errorf("wrong transaction ID, provided: %s, calculated: %s", dto.Id, id)
 	}
-	rewardOutput, err := findRewardOutput(dto.Outputs)
-	if err != nil {
-		return fmt.Errorf("failed to find reward output: %w", err)
+	if len(dto.Inputs) == 0 {
+		if len(dto.Outputs) > 1 {
+			return errors.New("multiple rewards attempt for the same transaction")
+		} else if len(dto.Outputs) == 0 {
+			return errors.New("reward not found whereas the transaction has no input")
+		}
+		transaction.hasReward = true
+		transaction.rewardRecipientAddress = dto.Outputs[0].Address()
+		transaction.rewardValue = dto.Outputs[0].InitialValue()
 	}
 	transaction.id = dto.Id
 	transaction.inputs = dto.Inputs
 	transaction.outputs = dto.Outputs
 	transaction.timestamp = dto.Timestamp
-	if rewardOutput != nil {
-		transaction.hasReward = true
-		transaction.rewardRecipientAddress = rewardOutput.Address()
-		transaction.rewardValue = rewardOutput.InitialValue()
-	}
 	return nil
 }
 
@@ -136,24 +137,6 @@ func (transaction *Transaction) RewardValue() uint64 {
 
 func (transaction *Transaction) Timestamp() int64 {
 	return transaction.timestamp
-}
-
-func findRewardOutput(outputs []*Output) (*Output, error) {
-	var isRewardAlreadyFound bool
-	var rewardOutput *Output
-	for _, output := range outputs {
-		if output == nil {
-			return nil, errors.New("an output is nil")
-		}
-		if output.HasReward() {
-			if isRewardAlreadyFound {
-				return nil, errors.New("multiple rewards attempt for the same transaction")
-			}
-			isRewardAlreadyFound = true
-			rewardOutput = output
-		}
-	}
-	return rewardOutput, nil
 }
 
 func generateId(inputs []*Input, outputs []*Output, timestamp int64) (string, error) {

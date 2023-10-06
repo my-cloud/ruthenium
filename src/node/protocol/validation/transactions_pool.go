@@ -152,7 +152,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	}
 	for _, transaction := range transactions {
 		for _, output := range transaction.Outputs() {
-			if output.HasIncome() {
+			if output.IsRegistered() {
 				newAddresses = append(newAddresses, output.Address())
 			}
 		}

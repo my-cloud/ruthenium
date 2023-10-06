@@ -19,9 +19,9 @@ func NewSignedTransactionRequest(inputsValue uint64, fee uint64, outputIndex uin
 	signature, _ := encryption.NewSignature(marshalledInput, privateKey)
 	signatureString := signature.String()
 	input, _ := verification.NewInput(outputIndex, transactionId, publicKey.String(), signatureString)
-	sent := verification.NewOutput(recipientAddress, false, false, value)
+	sent := verification.NewOutput(recipientAddress, false, value)
 	restValue := inputsValue - value - fee
-	rest := verification.NewOutput(recipientAddress, false, false, restValue)
+	rest := verification.NewOutput(recipientAddress, false, restValue)
 	inputs := []*verification.Input{input}
 	outputs := []*verification.Output{sent, rest}
 	id := generateId(inputs, outputs, timestamp)

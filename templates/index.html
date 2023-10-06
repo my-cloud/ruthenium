@@ -58,7 +58,8 @@
         </div>
         <div>
             <input id="income_update" type="checkbox" name="income_update" class="form-label" checked>
-            <label for="income_update" class="form-field">Update income (requires to be registered in <a href="https://proofofhumanity.id/">PoH</a>)</label>
+            <label for="income_update" class="form-field">Update income (requires to be registered in <a
+                    href="https://proofofhumanity.id/">PoH</a>)</label>
         </div>
     </form>
     <div>
@@ -151,15 +152,13 @@
                 const recipientAddress = $("#recipient_address").val();
                 const spend = {
                     "address": recipientAddress,
-                    "has_income": false,
-                    "has_reward": false,
+                    "is_registered": false,
                     "value": value,
                 }
                 console.log(isIncomeUpdateRequested)
                 const rest = {
                     "address": senderAddress,
-                    "has_income": isIncomeUpdateRequested,
-                    "has_reward": false,
+                    "is_registered": isIncomeUpdateRequested,
                     "value": response.rest,
                 }
                 const transaction = {

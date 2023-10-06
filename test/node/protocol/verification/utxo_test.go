@@ -22,7 +22,7 @@ const (
 func Test_Value_ValueIsMaxUint64AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = math.MaxUint64 // 18446744073709551615
-	output := verification.NewOutput("", true, false, value)
+	output := verification.NewOutput("", true, value)
 	utxo := verification.NewUtxo(&verification.InputInfo{}, output, 0)
 
 	// Act
@@ -36,7 +36,7 @@ func Test_Value_ValueIsMaxUint64AndHasIncome_ReturnsValueWithIncome(t *testing.T
 func Test_Value_ValueIsTwiceTheLimitAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
 	value := 2 * limit
-	output := verification.NewOutput("", true, false, value)
+	output := verification.NewOutput("", true, value)
 	utxo := verification.NewUtxo(&verification.InputInfo{}, output, 0)
 
 	// Act
@@ -50,7 +50,7 @@ func Test_Value_ValueIsTwiceTheLimitAndHasIncome_ReturnsValueWithIncome(t *testi
 func Test_Value_ValueIsLimitAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
 	value := limit
-	output := verification.NewOutput("", true, false, value)
+	output := verification.NewOutput("", true, value)
 	utxo := verification.NewUtxo(&verification.InputInfo{}, output, 0)
 
 	// Act
@@ -67,7 +67,7 @@ func Test_Value_ValueIsLimitAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 func Test_Value_ValueIs1AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = 1
-	output := verification.NewOutput("", true, false, value)
+	output := verification.NewOutput("", true, value)
 	utxo := verification.NewUtxo(&verification.InputInfo{}, output, 0)
 
 	// Act
@@ -83,7 +83,7 @@ func Test_Value_ValueIs1AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 func Test_Value_ValueIs0AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = 0
-	output := verification.NewOutput("", true, false, value)
+	output := verification.NewOutput("", true, value)
 	utxo := verification.NewUtxo(&verification.InputInfo{}, output, 0)
 
 	// Act
@@ -97,7 +97,7 @@ func Test_Value_ValueIs0AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 func Test_Value_SamePortionOfHalfLifeElapsedWithIncome_ReturnsSameValue(t *testing.T) {
 	// Arrange
 	var value uint64 = 0
-	output := verification.NewOutput("", true, false, value)
+	output := verification.NewOutput("", true, value)
 	utxo := verification.NewUtxo(&verification.InputInfo{}, output, 0)
 	portion := 1.5
 
@@ -114,7 +114,7 @@ func Test_Value_SameElapsedTimeWithIncome_ReturnsSameValue(t *testing.T) {
 	var value uint64 = 0
 	var outputTimestamp1 int64 = 0
 	var outputTimestamp2 int64 = 10
-	output := verification.NewOutput("", true, false, value)
+	output := verification.NewOutput("", true, value)
 	utxo1 := verification.NewUtxo(&verification.InputInfo{}, output, outputTimestamp1)
 	utxo2 := verification.NewUtxo(&verification.InputInfo{}, output, outputTimestamp2)
 	var elapsedTimestamp int64 = oneDay
@@ -133,7 +133,7 @@ func Test_Value_SameElapsedTimeWithIncome_ReturnsSameValue(t *testing.T) {
 func Test_Value_ValueIsMaxUint64AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = math.MaxUint64 // 18446744073709551615
-	output := verification.NewOutput("", false, false, value)
+	output := verification.NewOutput("", false, value)
 	utxo := verification.NewUtxo(&verification.InputInfo{}, output, 0)
 
 	// Act
@@ -147,7 +147,7 @@ func Test_Value_ValueIsMaxUint64AndHasNoIncome_ReturnsValueWithoutIncome(t *test
 func Test_Value_ValueIsTwiceTheLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 	// Arrange
 	value := 2 * limit
-	output := verification.NewOutput("", false, false, value)
+	output := verification.NewOutput("", false, value)
 	utxo := verification.NewUtxo(&verification.InputInfo{}, output, 0)
 
 	// Act
@@ -161,7 +161,7 @@ func Test_Value_ValueIsTwiceTheLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *
 func Test_Value_ValueIsLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 	// Arrange
 	value := limit
-	output := verification.NewOutput("", false, false, value)
+	output := verification.NewOutput("", false, value)
 	utxo := verification.NewUtxo(&verification.InputInfo{}, output, 0)
 
 	// Act
@@ -175,7 +175,7 @@ func Test_Value_ValueIsLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.
 func Test_Value_ValueIs1AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = 1
-	output := verification.NewOutput("", false, false, value)
+	output := verification.NewOutput("", false, value)
 	utxo := verification.NewUtxo(&verification.InputInfo{}, output, 0)
 
 	// Act
@@ -192,7 +192,7 @@ func Test_Value_ValueIs1AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 func Test_Value_ValueIs0AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = 0
-	output := verification.NewOutput("", false, false, value)
+	output := verification.NewOutput("", false, value)
 	utxo := verification.NewUtxo(&verification.InputInfo{}, output, 0)
 
 	// Act
@@ -209,7 +209,7 @@ func Test_Value_ValueIs0AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 func Test_Value_SamePortionOfHalfLifeElapsedWithoutIncome_ReturnsSameValue(t *testing.T) {
 	// Arrange
 	var value uint64 = 0
-	output := verification.NewOutput("", true, false, value)
+	output := verification.NewOutput("", false, value)
 	utxo := verification.NewUtxo(&verification.InputInfo{}, output, 0)
 	portion := 1.5
 
@@ -226,7 +226,7 @@ func Test_Value_SameElapsedTimeWithoutIncome_ReturnsSameValue(t *testing.T) {
 	var value uint64 = 0
 	var outputTimestamp1 int64 = 0
 	var outputTimestamp2 int64 = 10
-	output := verification.NewOutput("", true, false, value)
+	output := verification.NewOutput("", false, value)
 	utxo1 := verification.NewUtxo(&verification.InputInfo{}, output, outputTimestamp1)
 	utxo2 := verification.NewUtxo(&verification.InputInfo{}, output, outputTimestamp2)
 	var elapsedTimestamp int64 = oneDay

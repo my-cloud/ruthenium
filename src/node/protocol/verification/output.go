@@ -5,29 +5,26 @@ import (
 )
 
 type outputDto struct {
-	Address   string `json:"address"`
-	HasIncome bool   `json:"has_income"`
-	HasReward bool   `json:"has_reward"`
-	Value     uint64 `json:"value"`
+	Address      string `json:"address"`
+	IsRegistered bool   `json:"is_registered"`
+	Value        uint64 `json:"value"`
 }
 
 type Output struct {
-	address   string
-	hasIncome bool
-	hasReward bool
-	value     uint64
+	address      string
+	isRegistered bool
+	value        uint64
 }
 
-func NewOutput(address string, hasIncome bool, hasReward bool, value uint64) *Output {
-	return &Output{address, hasIncome, hasReward, value}
+func NewOutput(address string, isRegistered bool, value uint64) *Output {
+	return &Output{address, isRegistered, value}
 }
 
 func (output *Output) MarshalJSON() ([]byte, error) {
 	return json.Marshal(outputDto{
-		Address:   output.address,
-		HasIncome: output.hasIncome,
-		HasReward: output.hasReward,
-		Value:     output.value,
+		Address:      output.address,
+		IsRegistered: output.isRegistered,
+		Value:        output.value,
 	})
 }
 
@@ -38,8 +35,7 @@ func (output *Output) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	output.address = dto.Address
-	output.hasIncome = dto.HasIncome
-	output.hasReward = dto.HasReward
+	output.isRegistered = dto.IsRegistered
 	output.value = dto.Value
 	return nil
 }
@@ -48,12 +44,8 @@ func (output *Output) Address() string {
 	return output.address
 }
 
-func (output *Output) HasIncome() bool {
-	return output.hasIncome
-}
-
-func (output *Output) HasReward() bool {
-	return output.hasReward
+func (output *Output) IsRegistered() bool {
+	return output.isRegistered
 }
 
 func (output *Output) InitialValue() uint64 {

@@ -616,7 +616,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlockTim
 				return fmt.Errorf("a neighbor block transaction timestamp is too old: transaction timestamp: %d, id: %s", transaction.Timestamp(), transaction.Id())
 			}
 			for _, output := range transaction.Outputs() {
-				if output.HasIncome() {
+				if output.IsRegistered() {
 					if err := blockchain.isRegistered(output.Address(), addedRegisteredAddresses, removedRegisteredAddresses); err != nil {
 						return err
 					}
@@ -701,7 +701,7 @@ func verifyIncomes(utxosByAddress map[string][]*Utxo) error {
 	for address, utxos := range utxosByAddress {
 		var hasIncome bool
 		for _, utxo := range utxos {
-			if utxo.HasIncome() {
+			if utxo.IsRegistered() {
 				if hasIncome {
 					return fmt.Errorf("income requested for several UTXOs for address: %s", address)
 				}

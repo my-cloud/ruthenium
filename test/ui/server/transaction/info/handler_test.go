@@ -209,9 +209,9 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 	inputInfo1 := verification.NewInputInfo(0, "")
 	inputInfo2 := verification.NewInputInfo(1, "")
 	inputInfo3 := verification.NewInputInfo(2, "")
-	output1 := verification.NewOutput("", false, false, 1)
-	output2 := verification.NewOutput("", false, false, 2)
-	output3 := verification.NewOutput("", false, false, 0)
+	output1 := verification.NewOutput("", false, 1)
+	output2 := verification.NewOutput("", false, 2)
+	output3 := verification.NewOutput("", false, 0)
 	utxos := []*verification.Utxo{
 		verification.NewUtxo(inputInfo1, output1, 1),
 		verification.NewUtxo(inputInfo2, output2, 1),
@@ -254,8 +254,8 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 	neighborMock := new(networktest.NeighborMock)
 	inputInfo1 := verification.NewInputInfo(0, "")
 	inputInfo2 := verification.NewInputInfo(2, "")
-	output1 := verification.NewOutput("", false, false, 1)
-	output2 := verification.NewOutput("", false, false, 2)
+	output1 := verification.NewOutput("", false, 1)
+	output2 := verification.NewOutput("", false, 2)
 	utxos := []*verification.Utxo{
 		verification.NewUtxo(inputInfo1, output1, 1),
 		verification.NewUtxo(inputInfo2, output2, 1),

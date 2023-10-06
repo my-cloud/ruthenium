@@ -8,7 +8,6 @@ import (
 type detailedUtxo struct {
 	Address       string `json:"address"`
 	Timestamp     int64  `json:"timestamp"`
-	HasReward     bool   `json:"has_reward"`
 	HasIncome     bool   `json:"has_income"`
 	OutputIndex   uint16 `json:"output_index"`
 	TransactionId string `json:"transaction_id"`
@@ -29,8 +28,7 @@ func (utxo *Utxo) MarshalJSON() ([]byte, error) {
 	return json.Marshal(detailedUtxo{
 		Address:       utxo.Address(),
 		Timestamp:     utxo.timestamp,
-		HasIncome:     utxo.HasIncome(),
-		HasReward:     utxo.HasReward(),
+		HasIncome:     utxo.IsRegistered(),
 		OutputIndex:   utxo.outputIndex,
 		TransactionId: utxo.transactionId,
 		Value:         utxo.InitialValue(),
@@ -44,7 +42,7 @@ func (utxo *Utxo) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	utxo.InputInfo = NewInputInfo(dto.OutputIndex, dto.TransactionId)
-	utxo.Output = NewOutput(dto.Address, dto.HasIncome, dto.HasReward, dto.Value)
+	utxo.Output = NewOutput(dto.Address, dto.HasIncome, dto.Value)
 	utxo.timestamp = dto.Timestamp
 	return nil
 }
@@ -54,7 +52,7 @@ func (utxo *Utxo) Value(currentTimestamp int64, halfLifeInNanoseconds float64, i
 		return utxo.InitialValue()
 	}
 	x := float64(currentTimestamp - utxo.timestamp)
-	if utxo.HasIncome() {
+	if utxo.IsRegistered() {
 		return utxo.g(halfLifeInNanoseconds, incomeBase, incomeLimit, x)
 	} else {
 		return utxo.f(halfLifeInNanoseconds, x)
