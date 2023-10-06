@@ -144,20 +144,17 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	// Verify neighbor blockchains
 	neighbors := blockchain.synchronizer.Neighbors()
 	blocksByTarget := make(map[string][]*Block)
-	var selectedTargets []string
 	hostBlocks := blockchain.blocks
 	var mutex sync.RWMutex
 	var waitGroup sync.WaitGroup
 	timeout := blockchain.settings.ValidationTimeout()
 	if len(hostBlocks) > 2 {
 		hostTarget := "host"
-		selectedTargets = append(selectedTargets, hostTarget)
 		blocksByTarget[hostTarget] = hostBlocks
 		oldHostBlocks := make([]*Block, len(hostBlocks)-1)
 		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-1]) // TODO copy for each neighbor ?
 		lastHostBlocks := []*Block{hostBlocks[len(hostBlocks)-1]}
 		startingBlockHeight := uint64(len(hostBlocks) - 1)
-		isValid := func(nb []*Block, hb []*Block) bool { return blockchain.isFork(nb, hb) }
 		for _, neighbor := range neighbors {
 			waitGroup.Add(1)
 			target := neighbor.Target()
@@ -174,8 +171,6 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 				if err != nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
 					blocksChannel <- nil
-				} else if isValid(neighborBlocks, lastHostBlocks) {
-					blocksChannel <- nil
 				} else {
 					blocksChannel <- neighborBlocks
 				}
@@ -189,7 +184,6 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 					} else {
 						mutex.Lock()
 						blocksByTarget[target] = append(oldHostBlocks, verifiedBlocks...)
-						selectedTargets = append(selectedTargets, target)
 						mutex.Unlock()
 					}
 				}
@@ -202,14 +196,13 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	}
 	waitGroup.Wait()
 	var isFork bool
-	if len(hostBlocks) > 0 && len(selectedTargets) < 2 && len(neighbors) > 0 {
+	if len(hostBlocks) > 0 && len(blocksByTarget) < 2 && len(neighbors) > 0 {
 		isFork = true
 		blockchain.logger.Debug("all neighbor blockchains are forks, verifying the whole blockchains")
 		var oldHostBlocks []*Block
 		lastHostBlocks := make([]*Block, len(hostBlocks)-1)
 		copy(lastHostBlocks, hostBlocks[:len(hostBlocks)-1]) // TODO copy for each neighbor ?
 		var startingBlockHeight uint64 = 0
-		isValid := func(nb []*Block, hb []*Block) bool { return blockchain.isTooShort(nb) }
 		for _, neighbor := range neighbors {
 			waitGroup.Add(1)
 			target := neighbor.Target()
@@ -226,8 +219,6 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 				if err != nil {
 					blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
 					blocksChannel <- nil
-				} else if isValid(neighborBlocks, lastHostBlocks) {
-					blocksChannel <- nil
 				} else {
 					blocksChannel <- neighborBlocks
 				}
@@ -241,7 +232,6 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 					} else {
 						mutex.Lock()
 						blocksByTarget[target] = append(oldHostBlocks, verifiedBlocks...)
-						selectedTargets = append(selectedTargets, target)
 						mutex.Unlock()
 					}
 				}
@@ -254,11 +244,19 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	waitGroup.Wait()
 	var selectedBlocks []*Block
 	var isDifferent bool
-	if len(selectedTargets) != 0 {
+	if len(blocksByTarget) > 0 {
 		// Keep blockchains with consensus for the previous hash (prevent forks)
-		blockchain.sortByBlocksLength(selectedTargets, blocksByTarget)
+		minLength := len(hostBlocks)
+		maxLength := len(hostBlocks)
+		for _, blocks := range blocksByTarget {
+			if len(blocks) < minLength {
+				minLength = len(blocks)
+			}
+			if len(blocks) > maxLength {
+				maxLength = len(blocks)
+			}
+		}
 		halfNeighborsCount := len(blocksByTarget) / 2
-		minLength := len(blocksByTarget[selectedTargets[len(selectedTargets)-1]])
 		var rejectedTargets []string
 		for target, blocks := range blocksByTarget {
 			var samePreviousHashCount int
@@ -274,10 +272,8 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		}
 		for _, rejectedTarget := range rejectedTargets {
 			delete(blocksByTarget, rejectedTarget)
-			removeTarget(selectedTargets, rejectedTarget)
 		}
 		// Keep the longest blockchains
-		maxLength := len(blocksByTarget[selectedTargets[0]])
 		rejectedTargets = nil
 		for target, blocks := range blocksByTarget {
 			if len(blocks) < maxLength {
@@ -286,7 +282,6 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		}
 		for _, rejectedTarget := range rejectedTargets {
 			delete(blocksByTarget, rejectedTarget)
-			removeTarget(selectedTargets, rejectedTarget)
 		}
 		// Select the blockchain of the oldest reward recipient
 		var maxRewardRecipientAddressAge uint64
@@ -363,22 +358,6 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	} else {
 		blockchain.logger.Debug("verification done: blockchain kept")
 	}
-}
-
-func (blockchain *Blockchain) isFork(neighborBlocks []*Block, lastHostBlocks []*Block) bool {
-	if len(neighborBlocks) == 0 || lastHostBlocks[0].PreviousHash() != neighborBlocks[0].PreviousHash() {
-		blockchain.logger.Debug(errors.New("neighbor's blockchain is a fork").Error())
-		return true
-	}
-	return false
-}
-
-func (blockchain *Blockchain) isTooShort(neighborBlocks []*Block) bool {
-	if len(neighborBlocks) < 2 {
-		blockchain.logger.Debug(errors.New("neighbor's blockchain is too short").Error())
-		return true
-	}
-	return false
 }
 
 func (blockchain *Blockchain) Utxo(input protocol.Input) (protocol.Utxo, error) {
@@ -516,6 +495,11 @@ func (blockchain *Blockchain) updateUtxos(block *Block, blockHeight int) error {
 }
 
 func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlocks []*Block, oldHostBlocks []*Block, timestamp int64) ([]*Block, error) {
+	if len(oldHostBlocks) == 0 && len(neighborBlocks) < 2 {
+		return nil, errors.New("neighbor's blockchain is too short")
+	} else if len(oldHostBlocks) > 0 && (len(neighborBlocks) == 0 || lastHostBlocks[0].PreviousHash() != neighborBlocks[0].PreviousHash()) {
+		return nil, errors.New("neighbor's blockchain is a fork")
+	}
 	if neighborBlocks[len(neighborBlocks)-1].Timestamp() == timestamp {
 		err := blockchain.verifyLastBlock(neighborBlocks)
 		if err != nil {
@@ -719,16 +703,6 @@ func copyUtxosMap(utxosMap map[string][]*Utxo) map[string][]*Utxo {
 
 func marshalledEmptyArray() []byte {
 	return []byte{91, 93}
-}
-
-func removeTarget(targets []string, removedTarget string) []string {
-	for i := 0; i < len(targets); i++ {
-		if targets[i] == removedTarget {
-			targets = append(targets[:i], targets[i+1:]...)
-			return targets
-		}
-	}
-	return targets
 }
 
 func removeUtxo(utxos []*Utxo, transactionId string, outputIndex uint16) []*Utxo {
