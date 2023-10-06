@@ -15,7 +15,6 @@ import (
 type Blockchain struct {
 	blocks              []*Block
 	mutex               sync.RWMutex
-	neighborMutex       sync.RWMutex
 	registeredAddresses map[string]bool
 	registry            protocol.Registry
 	synchronizer        network.Synchronizer
@@ -147,6 +146,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	blocksByTarget := make(map[string][]*Block)
 	hostBlocks := blockchain.blocks
 	var waitGroup sync.WaitGroup
+	var mutex sync.RWMutex
 	if len(hostBlocks) > 2 {
 		hostTarget := "host"
 		blocksByTarget[hostTarget] = hostBlocks
@@ -156,7 +156,14 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		startingBlockHeight := uint64(len(hostBlocks) - 1)
 		for _, neighbor := range neighbors {
 			waitGroup.Add(1)
-			blockchain.verifyNeighborBlockchain(timestamp, neighbor, startingBlockHeight, lastHostBlocks, oldHostBlocks, blocksByTarget)
+			verifiedBlocks, err := blockchain.verifyNeighborBlockchain(timestamp, neighbor, startingBlockHeight, lastHostBlocks, oldHostBlocks)
+			if err != nil {
+				blockchain.logger.Debug(fmt.Errorf("failed to verify last neighbor blocks: %w", err).Error())
+			}
+			target := neighbor.Target()
+			mutex.Lock()
+			blocksByTarget[target] = append(oldHostBlocks, verifiedBlocks...)
+			mutex.Unlock()
 			waitGroup.Done()
 		}
 		waitGroup.Wait()
@@ -166,13 +173,19 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	if len(hostBlocks) > 0 && len(blocksByTarget) < 2 && len(neighbors) > 0 {
 		isFork = true
 		blockchain.logger.Debug("all neighbor blockchains are forks, verifying the whole blockchains")
-		var oldHostBlocks []*Block
 		lastHostBlocks := make([]*Block, len(hostBlocks)-1)
 		copy(lastHostBlocks, hostBlocks[:len(hostBlocks)-1]) // TODO copy for each neighbor ?
 		var startingBlockHeight uint64 = 0
 		for _, neighbor := range neighbors {
 			waitGroup.Add(1)
-			blockchain.verifyNeighborBlockchain(timestamp, neighbor, startingBlockHeight, lastHostBlocks, oldHostBlocks, blocksByTarget)
+			verifiedBlocks, err := blockchain.verifyNeighborBlockchain(timestamp, neighbor, startingBlockHeight, lastHostBlocks, nil)
+			if err != nil {
+				blockchain.logger.Debug(fmt.Errorf("failed to verify last neighbor blocks: %w", err).Error())
+			}
+			target := neighbor.Target()
+			mutex.Lock()
+			blocksByTarget[target] = verifiedBlocks
+			mutex.Unlock()
 			waitGroup.Done()
 		}
 	}
@@ -295,40 +308,35 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	}
 }
 
-func (blockchain *Blockchain) verifyNeighborBlockchain(timestamp int64, neighbor network.Neighbor, startingBlockHeight uint64, lastHostBlocks []*Block, oldHostBlocks []*Block, blocksByTarget map[string][]*Block) {
-	target := neighbor.Target()
-	blocksChannel := make(chan []*Block)
+func (blockchain *Blockchain) verifyNeighborBlockchain(timestamp int64, neighbor network.Neighbor, startingBlockHeight uint64, lastHostBlocks []*Block, oldHostBlocks []*Block) ([]*Block, error) {
+	type ChanResult struct {
+		Blocks []*Block
+		Err    error
+	}
+	blocksChannel := make(chan *ChanResult)
 	go func(neighbor network.Neighbor) {
 		defer close(blocksChannel)
 		neighborBlocksBytes, err := neighbor.GetBlocks(startingBlockHeight)
 		if err != nil {
-			blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
-			blocksChannel <- nil
+			blocksChannel <- &ChanResult{Err: fmt.Errorf("failed to get neighbor's blockchain: %w", err)}
 		}
 		var neighborBlocks []*Block
 		err = json.Unmarshal(neighborBlocksBytes, &neighborBlocks)
 		if err != nil {
-			blockchain.logger.Debug(fmt.Errorf("failed to get neighbor's blockchain: %w", err).Error())
-			blocksChannel <- nil
+			blocksChannel <- &ChanResult{Err: fmt.Errorf("failed to get neighbor's blockchain: %w", err)}
 		} else {
-			blocksChannel <- neighborBlocks
+			blocksChannel <- &ChanResult{Blocks: neighborBlocks}
 		}
 	}(neighbor)
 	timeout := blockchain.settings.ValidationTimeout()
 	select {
-	case neighborBlocks := <-blocksChannel:
-		if len(neighborBlocks) > 0 {
-			verifiedBlocks, err := blockchain.verify(lastHostBlocks, neighborBlocks, oldHostBlocks, timestamp)
-			if err != nil || len(verifiedBlocks) == 0 {
-				blockchain.logger.Debug(fmt.Errorf("failed to verify blocks for neighbor %s: %w", target, err).Error())
-			} else {
-				blockchain.neighborMutex.Lock()
-				blocksByTarget[target] = append(oldHostBlocks, verifiedBlocks...)
-				blockchain.neighborMutex.Unlock()
-			}
+	case chanResult := <-blocksChannel:
+		if chanResult.Err != nil {
+			return nil, chanResult.Err
 		}
+		return blockchain.verify(lastHostBlocks, chanResult.Blocks, oldHostBlocks, timestamp)
 	case <-time.After(timeout):
-		blockchain.logger.Debug(errors.New("neighbor's response timeout").Error())
+		return nil, errors.New("neighbor's response timeout")
 	}
 }
 
