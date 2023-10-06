@@ -147,7 +147,7 @@ func Test_ServeHTTP_GetFirstBlockTimestampFuncError_ReturnsInternalServerError(t
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	marshalledEmptyUtxos, _ := json.Marshal([]*verification.DetailedOutput{})
+	marshalledEmptyUtxos, _ := json.Marshal([]*verification.Utxo{})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
 	watchMock := new(clocktest.WatchMock)
@@ -175,7 +175,7 @@ func Test_ServeHTTP_InsufficientWalletBalance_ReturnsMethodNotAllowed(t *testing
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	marshalledEmptyUtxos, _ := json.Marshal([]*verification.DetailedOutput{})
+	marshalledEmptyUtxos, _ := json.Marshal([]*verification.Utxo{})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(clocktest.WatchMock)
@@ -206,10 +206,16 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 
-	utxos := []*verification.DetailedOutput{
-		verification.NewDetailedOutput(verification.NewOutput("", false, false, 1), 1, 0, "0"),
-		verification.NewDetailedOutput(verification.NewOutput("", false, false, 2), 1, 1, "0"),
-		verification.NewDetailedOutput(verification.NewOutput("", false, false, 0), 1, 2, "0"),
+	inputInfo1 := verification.NewInputInfo(0, "")
+	inputInfo2 := verification.NewInputInfo(1, "")
+	inputInfo3 := verification.NewInputInfo(2, "")
+	output1 := verification.NewOutput("", false, false, 1)
+	output2 := verification.NewOutput("", false, false, 2)
+	output3 := verification.NewOutput("", false, false, 0)
+	utxos := []*verification.Utxo{
+		verification.NewUtxo(inputInfo1, output1, 1),
+		verification.NewUtxo(inputInfo2, output2, 1),
+		verification.NewUtxo(inputInfo3, output3, 1),
 	}
 	marshalledUtxos, _ := json.Marshal(utxos)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
@@ -235,7 +241,7 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
-	var infoResponse *info.TransactionInfoResponse
+	var infoResponse *info.TransactionInfo
 	_ = json.Unmarshal(recorder.Body.Bytes(), &infoResponse)
 	expectedUtxosCount := 1
 	actualUtxosCount := len(infoResponse.Utxos)
@@ -246,9 +252,13 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	utxos := []*verification.DetailedOutput{
-		verification.NewDetailedOutput(verification.NewOutput("", false, false, 1), 1, 0, "0"),
-		verification.NewDetailedOutput(verification.NewOutput("", false, false, 2), 1, 1, "0"),
+	inputInfo1 := verification.NewInputInfo(0, "")
+	inputInfo2 := verification.NewInputInfo(2, "")
+	output1 := verification.NewOutput("", false, false, 1)
+	output2 := verification.NewOutput("", false, false, 2)
+	utxos := []*verification.Utxo{
+		verification.NewUtxo(inputInfo1, output1, 1),
+		verification.NewUtxo(inputInfo2, output2, 1),
 	}
 	marshalledUtxos, _ := json.Marshal(utxos)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
@@ -274,7 +284,7 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
-	var infoResponse info.TransactionInfoResponse
+	var infoResponse info.TransactionInfo
 	_ = json.Unmarshal(recorder.Body.Bytes(), &infoResponse)
 	expectedUtxosCount := 2
 	actualUtxosCount := len(infoResponse.Utxos)

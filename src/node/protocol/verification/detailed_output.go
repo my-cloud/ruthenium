@@ -5,9 +5,9 @@ import (
 	"math"
 )
 
-type detailedOutputDto struct {
+type detailedUtxo struct {
 	Address       string `json:"address"`
-	BlockHeight   int    `json:"block_height"`
+	Timestamp     int64  `json:"timestamp"`
 	HasReward     bool   `json:"has_reward"`
 	HasIncome     bool   `json:"has_income"`
 	OutputIndex   uint16 `json:"output_index"`
@@ -15,79 +15,68 @@ type detailedOutputDto struct {
 	Value         uint64 `json:"value"`
 }
 
-type DetailedOutput struct {
+type Utxo struct {
+	*InputInfo
 	*Output
-	blockHeight   int
-	outputIndex   uint16
-	transactionId string
+	timestamp int64
 }
 
-func NewDetailedOutput(output *Output, blockHeight int, outputIndex uint16, transactionId string) *DetailedOutput {
-	return &DetailedOutput{output, blockHeight, outputIndex, transactionId}
+func NewUtxo(inputInfo *InputInfo, output *Output, timestamp int64) *Utxo {
+	return &Utxo{inputInfo, output, timestamp}
 }
 
-func (detailedOutput *DetailedOutput) MarshalJSON() ([]byte, error) {
-	return json.Marshal(detailedOutputDto{
-		Address:       detailedOutput.Address(),
-		BlockHeight:   detailedOutput.blockHeight,
-		HasIncome:     detailedOutput.HasIncome(),
-		HasReward:     detailedOutput.HasReward(),
-		OutputIndex:   detailedOutput.outputIndex,
-		TransactionId: detailedOutput.transactionId,
-		Value:         detailedOutput.InitialValue(),
+func (utxo *Utxo) MarshalJSON() ([]byte, error) {
+	return json.Marshal(detailedUtxo{
+		Address:       utxo.Address(),
+		Timestamp:     utxo.timestamp,
+		HasIncome:     utxo.HasIncome(),
+		HasReward:     utxo.HasReward(),
+		OutputIndex:   utxo.outputIndex,
+		TransactionId: utxo.transactionId,
+		Value:         utxo.InitialValue(),
 	})
 }
 
-func (detailedOutput *DetailedOutput) UnmarshalJSON(data []byte) error {
-	var dto *detailedOutputDto
+func (utxo *Utxo) UnmarshalJSON(data []byte) error {
+	var dto *detailedUtxo
 	err := json.Unmarshal(data, &dto)
 	if err != nil {
 		return err
 	}
-	detailedOutput.Output = NewOutput(dto.Address, dto.HasIncome, dto.HasReward, dto.Value)
-	detailedOutput.blockHeight = dto.BlockHeight
-	detailedOutput.outputIndex = dto.OutputIndex
-	detailedOutput.transactionId = dto.TransactionId
+	utxo.InputInfo = NewInputInfo(dto.OutputIndex, dto.TransactionId)
+	utxo.Output = NewOutput(dto.Address, dto.HasIncome, dto.HasReward, dto.Value)
+	utxo.timestamp = dto.Timestamp
 	return nil
 }
 
-func (detailedOutput *DetailedOutput) OutputIndex() uint16 {
-	return detailedOutput.outputIndex
-}
-
-func (detailedOutput *DetailedOutput) TransactionId() string {
-	return detailedOutput.transactionId
-}
-
-func (detailedOutput *DetailedOutput) Value(currentTimestamp int64, genesisTimestamp int64, halfLifeInNanoseconds float64, incomeBase uint64, incomeLimit uint64, validationTimestamp int64) uint64 {
-	outputTimestamp := genesisTimestamp + int64(detailedOutput.blockHeight)*validationTimestamp
-	if currentTimestamp == outputTimestamp {
-		return detailedOutput.InitialValue()
+func (utxo *Utxo) Value(currentTimestamp int64, halfLifeInNanoseconds float64, incomeBase uint64, incomeLimit uint64) uint64 {
+	if currentTimestamp == utxo.timestamp {
+		return utxo.InitialValue()
 	}
-	x := float64(currentTimestamp - outputTimestamp)
-	if detailedOutput.HasIncome() {
-		return detailedOutput.g(halfLifeInNanoseconds, incomeBase, incomeLimit, x)
+	x := float64(currentTimestamp - utxo.timestamp)
+	if utxo.HasIncome() {
+		return utxo.g(halfLifeInNanoseconds, incomeBase, incomeLimit, x)
 	} else {
-		return detailedOutput.f(halfLifeInNanoseconds, x)
+		return utxo.f(halfLifeInNanoseconds, x)
 	}
 }
 
-func (detailedOutput *DetailedOutput) f(h float64, x float64) uint64 {
-	y := float64(detailedOutput.InitialValue())
+func (utxo *Utxo) f(h float64, x float64) uint64 {
+	y := float64(utxo.InitialValue())
 	result := y * math.Exp(-x*math.Log(2)/h)
 	return uint64(result)
 }
 
-func (detailedOutput *DetailedOutput) g(h float64, incomeBase uint64, incomeLimit uint64, x float64) uint64 {
-	y := float64(detailedOutput.InitialValue())
+func (utxo *Utxo) g(h float64, incomeBase uint64, incomeLimit uint64, x float64) uint64 {
+	y := float64(utxo.InitialValue())
 	l := float64(incomeLimit)
-	if detailedOutput.InitialValue() < incomeLimit {
+	if utxo.InitialValue() < incomeLimit {
 		k1 := k1(incomeBase, incomeLimit)
 		k2 := k2(incomeBase, incomeLimit, k1)
 		exp := -math.Pow(x*math.Log(2)/(k2*h)+math.Pow(-math.Log((l-y)/l), 1/k1), k1)
 		result := math.Floor(-l*math.Exp(exp)) + l
 		return uint64(result)
-	} else if incomeLimit < detailedOutput.InitialValue() {
+	} else if incomeLimit < utxo.InitialValue() {
 		exp := -x * math.Log(2) / h
 		result := math.Floor((y-l)*math.Exp(exp)) + l
 		return uint64(result)

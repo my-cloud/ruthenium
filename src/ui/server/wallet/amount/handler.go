@@ -37,23 +37,17 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var utxos []*verification.DetailedOutput
+		var utxos []*verification.Utxo
 		err = json.Unmarshal(utxosBytes, &utxos)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to unmarshal UTXOs: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		genesisTimestamp, err := handler.host.GetFirstBlockTimestamp()
-		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to get genesis timestamp: %w", err).Error())
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
 		var balance uint64
 		for _, utxo := range utxos {
 			now := handler.watch.Now().UnixNano()
-			balance += utxo.Value(now, genesisTimestamp, handler.settings.HalfLifeInNanoseconds(), handler.settings.IncomeBaseInParticles(), handler.settings.IncomeLimitInParticles(), handler.settings.ValidationTimestamp())
+			balance += utxo.Value(now, handler.settings.HalfLifeInNanoseconds(), handler.settings.IncomeBaseInParticles(), handler.settings.IncomeLimitInParticles())
 		}
 		marshaledAmount, err := json.Marshal(float64(balance) / float64(handler.settings.ParticlesPerToken()))
 		if err != nil {

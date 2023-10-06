@@ -61,7 +61,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var utxos []*verification.DetailedOutput
+		var utxos []*verification.Utxo
 		err = json.Unmarshal(utxosBytes, &utxos)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to unmarshal UTXOs: %w", err).Error())
@@ -74,27 +74,23 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var selectedUtxos []*UtxoResponse
+		var selectedUtxos []*verification.InputInfo
 		now := handler.watch.Now().UnixNano()
 		nextBlockHeight := (now-genesisTimestamp)/handler.settings.ValidationTimestamp() + 1
 		nextBlockTimestamp := genesisTimestamp + nextBlockHeight*handler.settings.ValidationTimestamp()
-		utxosByValue := make(map[uint64][]*UtxoResponse)
+		utxosByValue := make(map[uint64][]*verification.InputInfo)
 		var walletBalance uint64
 		var values []uint64
 		for _, utxo := range utxos {
-			utxoValue := utxo.Value(nextBlockTimestamp, genesisTimestamp, handler.settings.HalfLifeInNanoseconds(), handler.settings.IncomeBaseInParticles(), handler.settings.IncomeLimitInParticles(), handler.settings.ValidationTimestamp())
-			utxoResponse := &UtxoResponse{
-				OutputIndex:   utxo.OutputIndex(),
-				TransactionId: utxo.TransactionId(),
-			}
+			utxoValue := utxo.Value(nextBlockTimestamp, handler.settings.HalfLifeInNanoseconds(), handler.settings.IncomeBaseInParticles(), handler.settings.IncomeLimitInParticles())
 			walletBalance += utxoValue
 			if isConsolidationRequired {
-				selectedUtxos = append(selectedUtxos, utxoResponse)
+				selectedUtxos = append(selectedUtxos, utxo.InputInfo)
 			} else {
 				if _, ok := utxosByValue[utxoValue]; !ok {
 					values = append(values, utxoValue)
 				}
-				utxosByValue[utxoValue] = append(utxosByValue[utxoValue], utxoResponse)
+				utxosByValue[utxoValue] = append(utxosByValue[utxoValue], utxo.InputInfo)
 			}
 		}
 		value := uint64(parsedValue)
@@ -123,7 +119,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			}
 		}
 		rest := inputsValue - targetValue
-		response := &TransactionInfoResponse{
+		response := &TransactionInfo{
 			Rest:      rest,
 			Utxos:     selectedUtxos,
 			Timestamp: now,

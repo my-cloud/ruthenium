@@ -85,7 +85,7 @@ func (transaction *Transaction) VerifySignatures() error {
 	return nil
 }
 
-func (transaction *Transaction) Fee(genesisTimestamp int64, settings protocol.Settings, timestamp int64, utxoFinder protocol.UtxoFinder) (uint64, error) {
+func (transaction *Transaction) Fee(settings protocol.Settings, timestamp int64, utxoFinder protocol.UtxoFinder) (uint64, error) {
 	var inputsValue uint64
 	var outputsValue uint64
 	for _, input := range transaction.inputs {
@@ -93,7 +93,7 @@ func (transaction *Transaction) Fee(genesisTimestamp int64, settings protocol.Se
 		if err != nil {
 			return 0, err
 		}
-		value := utxo.Value(timestamp, genesisTimestamp, settings.HalfLifeInNanoseconds(), settings.IncomeBaseInParticles(), settings.IncomeLimitInParticles(), settings.ValidationTimestamp())
+		value := utxo.Value(timestamp, settings.HalfLifeInNanoseconds(), settings.IncomeBaseInParticles(), settings.IncomeLimitInParticles())
 		inputsValue += value
 	}
 	for _, output := range transaction.outputs {

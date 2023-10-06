@@ -107,7 +107,6 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	rand.Shuffle(len(transactions), func(i, j int) {
 		transactions[i], transactions[j] = transactions[j], transactions[i]
 	})
-	firstBlockTimestamp := blockchainCopy.FirstBlockTimestamp()
 	var rejectedTransactions []*verification.Transaction
 	for _, transaction := range transactions {
 		if timestamp < transaction.Timestamp() {
@@ -125,7 +124,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		fee, err := transaction.Fee(firstBlockTimestamp, pool.settings, timestamp, blockchainCopy.Utxo)
+		fee, err := transaction.Fee(pool.settings, timestamp, blockchainCopy.Utxo)
 		if err != nil {
 			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, transaction: %v\n %w", transaction, err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
@@ -214,8 +213,7 @@ func (pool *TransactionsPool) addTransaction(transaction *verification.Transacti
 	if err = transaction.VerifySignatures(); err != nil {
 		return fmt.Errorf("failed to verify transaction: %w", err)
 	}
-	firstBlockTimestamp := blockchainCopy.FirstBlockTimestamp()
-	_, err = transaction.Fee(firstBlockTimestamp, pool.settings, nextBlockTimestamp, blockchainCopy.Utxo)
+	_, err = transaction.Fee(pool.settings, nextBlockTimestamp, blockchainCopy.Utxo)
 	if err != nil {
 		return fmt.Errorf("failed to verify fee: %w", err)
 	}
