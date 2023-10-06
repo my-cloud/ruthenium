@@ -8,7 +8,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 )
 
-func NewSignedTransactionRequest(inputsValue uint64, fee uint64, outputIndex uint16, recipientAddress string, privateKey *encryption.PrivateKey, publicKey *encryption.PublicKey, timestamp int64, transactionId string, value uint64) []byte {
+func NewSignedTransactionRequest(inputsValue uint64, fee uint64, outputIndex uint16, recipientAddress string, privateKey *encryption.PrivateKey, publicKey *encryption.PublicKey, timestamp int64, transactionId string, value uint64, isRegistered bool) []byte {
 	marshalledInput, _ := json.Marshal(struct {
 		OutputIndex   uint16 `json:"output_index"`
 		TransactionId string `json:"transaction_id"`
@@ -21,7 +21,7 @@ func NewSignedTransactionRequest(inputsValue uint64, fee uint64, outputIndex uin
 	input, _ := verification.NewInput(outputIndex, transactionId, publicKey.String(), signatureString)
 	sent := verification.NewOutput(recipientAddress, false, value)
 	restValue := inputsValue - value - fee
-	rest := verification.NewOutput(recipientAddress, false, restValue)
+	rest := verification.NewOutput(recipientAddress, isRegistered, restValue)
 	inputs := []*verification.Input{input}
 	outputs := []*verification.Output{sent, rest}
 	id := generateId(inputs, outputs, timestamp)

@@ -15,14 +15,3 @@ func NewRewardedBlock(previousHash [32]byte, timestamp int64) *verification.Bloc
 	transactions := []*verification.Transaction{rewardTransaction}
 	return verification.NewBlock(timestamp, previousHash, transactions, nil, nil)
 }
-
-//
-//func NewEmptyBlockResponse(timestamp int64) *network.BlockResponse {
-//	return &network.BlockResponse{
-//		Timestamp:                  timestamp,
-//		PreviousHash:               [32]byte{},
-//		Transactions:               nil,
-//		AddedRegisteredAddresses:   nil,
-//		RemovedRegisteredAddresses: nil,
-//	}
-//}

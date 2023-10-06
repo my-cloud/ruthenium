@@ -38,7 +38,7 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	settings := new(protocoltest.SettingsMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
-	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+2, "0", genesisValue)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+2, "0", genesisValue, false)
 
 	// Act
 	pool.AddTransaction(transactionRequest, "0")
@@ -72,7 +72,7 @@ func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *tes
 	settings := new(protocoltest.SettingsMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
-	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue, false)
 
 	// Act
 	pool.AddTransaction(transactionRequest, "0")
@@ -107,7 +107,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	settings := new(protocoltest.SettingsMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
-	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey2, publicKey, now, "0", genesisValue)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey2, publicKey, now, "0", genesisValue, false)
 
 	// Act
 	pool.AddTransaction(transactionRequest, "0")
@@ -154,7 +154,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
 	var outputIndex uint16 = 0
 	transactionId := "0"
-	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, outputIndex, walletAAddress, privateKey, publicKey, now, transactionId, genesisValue)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, outputIndex, walletAAddress, privateKey, publicKey, now, transactionId, genesisValue, false)
 
 	// Act
 	pool.AddTransaction(transactionRequest, "0")
@@ -195,7 +195,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
-	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+1, "0", genesisValue)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+1, "0", genesisValue, false)
 	pool.AddTransaction(transactionRequest, "0")
 	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 
@@ -233,7 +233,7 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionNotValidated(t *testi
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
-	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue, false)
 	pool.AddTransaction(transactionRequest, "0")
 	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 
@@ -271,7 +271,7 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
-	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now, "0", genesisValue)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now, "0", genesisValue, false)
 	pool.AddTransaction(transactionRequest, "0")
 
 	// Act
