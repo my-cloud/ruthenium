@@ -124,6 +124,75 @@ func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsEmptyArray(t 
 	test.Assert(t, actualBlocksCount == expectedBlocksCount, fmt.Sprintf("blocks count is %d whereas it should be %d", actualBlocksCount, expectedBlocksCount))
 }
 
+func Test_FirstBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	settings := new(protocoltest.SettingsMock)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+
+	// Act
+	actualTimestamp := blockchain.FirstBlockTimestamp()
+
+	// Assert
+	var expectedTimestamp int64 = 0
+	test.Assert(t, actualTimestamp == expectedTimestamp, fmt.Sprintf("timestamp is %d whereas it should be %d", actualTimestamp, expectedTimestamp))
+}
+
+func Test_FirstBlockTimestamp_BlockchainIsNotEmpty_ReturnsFirstBlockTimestamp(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	settings := new(protocoltest.SettingsMock)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	var genesisTimestamp int64 = 0
+	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
+
+	// Act
+	actualTimestamp := blockchain.FirstBlockTimestamp()
+
+	// Assert
+	expectedTimestamp := genesisTimestamp
+	test.Assert(t, actualTimestamp == expectedTimestamp, fmt.Sprintf("timestamp is %d whereas it should be %d", actualTimestamp, expectedTimestamp))
+}
+
+func Test_LastBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	settings := new(protocoltest.SettingsMock)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+
+	// Act
+	actualTimestamp := blockchain.LastBlockTimestamp()
+
+	// Assert
+	var expectedTimestamp int64 = 0
+	test.Assert(t, actualTimestamp == expectedTimestamp, fmt.Sprintf("timestamp is %d whereas it should be %d", actualTimestamp, expectedTimestamp))
+}
+
+func Test_LastBlockTimestamp_BlockchainIsNotEmpty_ReturnsLastBlockTimestamp(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	logger := logtest.NewLoggerMock()
+	synchronizer := new(networktest.SynchronizerMock)
+	settings := new(protocoltest.SettingsMock)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	var genesisTimestamp int64 = 0
+	var expectedTimestamp int64 = 1
+	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
+	_ = blockchain.AddBlock(expectedTimestamp, nil, nil)
+
+	// Act
+	actualTimestamp := blockchain.LastBlockTimestamp()
+
+	// Assert
+	test.Assert(t, actualTimestamp == expectedTimestamp, fmt.Sprintf("timestamp is %d whereas it should be %d", actualTimestamp, expectedTimestamp))
+}
+
 func Test_UtxosByAddress_UnknownAddress_ReturnsEmptyArray(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
