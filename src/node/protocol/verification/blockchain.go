@@ -7,7 +7,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
-	"sort"
 	"sync"
 	"time"
 )
@@ -342,8 +341,8 @@ func (blockchain *Blockchain) verifyNeighborBlockchain(timestamp int64, neighbor
 }
 
 func (blockchain *Blockchain) Utxo(input protocol.Input) (protocol.Utxo, error) {
-	utxos := blockchain.utxosById[input.TransactionId()]
-	if len(utxos) == 0 {
+	utxos, ok := blockchain.utxosById[input.TransactionId()]
+	if !ok || int(input.OutputIndex()) > len(utxos)-1 {
 		return nil, fmt.Errorf("failed to find utxo, input: %v", input)
 	}
 	utxo := utxos[input.OutputIndex()]
@@ -368,8 +367,7 @@ func (blockchain *Blockchain) Utxos(address string) []byte {
 
 func (blockchain *Blockchain) addBlock(block *Block) error {
 	if !blockchain.isEmpty() {
-		lastBlockHeight := len(blockchain.blocks) - 1
-		lastBlock := blockchain.blocks[lastBlockHeight]
+		lastBlock := blockchain.blocks[len(blockchain.blocks)-1]
 		err := blockchain.updateUtxos(lastBlock, lastBlock.Timestamp())
 		if err != nil {
 			return fmt.Errorf("failed to add UTXO: %w", err)
@@ -408,12 +406,6 @@ func (blockchain *Blockchain) isRegistered(address string, addedRegisteredAddres
 	return nil
 }
 
-func (blockchain *Blockchain) sortByBlocksLength(selectedTargets []string, blocksByTarget map[string][]*Block) {
-	sort.Slice(selectedTargets, func(i, j int) bool {
-		return len(blocksByTarget[selectedTargets[i]]) > len(blocksByTarget[selectedTargets[j]])
-	})
-}
-
 func (blockchain *Blockchain) updateRegisteredAddresses(addedRegisteredAddresses []string, removedRegisteredAddresses []string) {
 	for _, address := range removedRegisteredAddresses {
 		delete(blockchain.registeredAddresses, address)
@@ -442,8 +434,8 @@ func (blockchain *Blockchain) updateUtxos(block *Block, timestamp int64) error {
 		}
 		for _, input := range transaction.Inputs() {
 			utxosForInputTransactionId := utxosById[input.TransactionId()]
-			if len(utxosForInputTransactionId) == 0 {
-				return fmt.Errorf("failed to find transaction ID, input: %v", input)
+			if int(input.OutputIndex()) > len(utxosForInputTransactionId)-1 {
+				return fmt.Errorf("failed to find UTXO, input: %v", input)
 			}
 			utxo := utxosForInputTransactionId[input.OutputIndex()]
 			if utxo == nil {
