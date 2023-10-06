@@ -308,46 +308,14 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	}
 }
 
-func (blockchain *Blockchain) verifyNeighborBlockchain(timestamp int64, neighbor network.Neighbor, startingBlockHeight uint64, lastHostBlocks []*Block, oldHostBlocks []*Block) ([]*Block, error) {
-	type ChanResult struct {
-		Blocks []*Block
-		Err    error
-	}
-	blocksChannel := make(chan *ChanResult)
-	go func(neighbor network.Neighbor) {
-		defer close(blocksChannel)
-		neighborBlocksBytes, err := neighbor.GetBlocks(startingBlockHeight)
-		if err != nil {
-			blocksChannel <- &ChanResult{Err: fmt.Errorf("failed to get neighbor's blockchain: %w", err)}
-		}
-		var neighborBlocks []*Block
-		err = json.Unmarshal(neighborBlocksBytes, &neighborBlocks)
-		if err != nil {
-			blocksChannel <- &ChanResult{Err: fmt.Errorf("failed to get neighbor's blockchain: %w", err)}
-		} else {
-			blocksChannel <- &ChanResult{Blocks: neighborBlocks}
-		}
-	}(neighbor)
-	timeout := blockchain.settings.ValidationTimeout()
-	select {
-	case chanResult := <-blocksChannel:
-		if chanResult.Err != nil {
-			return nil, chanResult.Err
-		}
-		return blockchain.verify(lastHostBlocks, chanResult.Blocks, oldHostBlocks, timestamp)
-	case <-time.After(timeout):
-		return nil, errors.New("neighbor's response timeout")
-	}
-}
-
 func (blockchain *Blockchain) Utxo(input protocol.Input) (protocol.Utxo, error) {
 	utxos, ok := blockchain.utxosById[input.TransactionId()]
 	if !ok || int(input.OutputIndex()) > len(utxos)-1 {
-		return nil, fmt.Errorf("failed to find utxo, input: %v", input)
+		return nil, fmt.Errorf("failed to find UTXO, input: %v", input)
 	}
 	utxo := utxos[input.OutputIndex()]
 	if utxo == nil {
-		return nil, fmt.Errorf("failed to find utxo, input: %v", input)
+		return nil, fmt.Errorf("failed to find UTXO, input: %v", input)
 	}
 	return utxo, nil
 }
@@ -564,6 +532,38 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlocks []*
 		return nil, err
 	}
 	return verifiedBlocks, nil
+}
+
+func (blockchain *Blockchain) verifyNeighborBlockchain(timestamp int64, neighbor network.Neighbor, startingBlockHeight uint64, lastHostBlocks []*Block, oldHostBlocks []*Block) ([]*Block, error) {
+	type ChanResult struct {
+		Blocks []*Block
+		Err    error
+	}
+	blocksChannel := make(chan *ChanResult)
+	go func(neighbor network.Neighbor) {
+		defer close(blocksChannel)
+		neighborBlocksBytes, err := neighbor.GetBlocks(startingBlockHeight)
+		if err != nil {
+			blocksChannel <- &ChanResult{Err: fmt.Errorf("failed to get neighbor's blockchain: %w", err)}
+		}
+		var neighborBlocks []*Block
+		err = json.Unmarshal(neighborBlocksBytes, &neighborBlocks)
+		if err != nil {
+			blocksChannel <- &ChanResult{Err: fmt.Errorf("failed to get neighbor's blockchain: %w", err)}
+		} else {
+			blocksChannel <- &ChanResult{Blocks: neighborBlocks}
+		}
+	}(neighbor)
+	timeout := blockchain.settings.ValidationTimeout()
+	select {
+	case chanResult := <-blocksChannel:
+		if chanResult.Err != nil {
+			return nil, chanResult.Err
+		}
+		return blockchain.verify(lastHostBlocks, chanResult.Blocks, oldHostBlocks, timestamp)
+	case <-time.After(timeout):
+		return nil, errors.New("neighbor's response timeout")
+	}
 }
 
 func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlockTimestamp int64, timestamp int64, neighborBlockchain *Blockchain) error {
