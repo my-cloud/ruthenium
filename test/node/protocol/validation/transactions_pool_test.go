@@ -140,7 +140,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
 	blockchainMock.FirstBlockTimestampFunc = func() int64 { return 0 }
 	blockchainMock.UtxoFunc = func(input protocol.Input) (protocol.Utxo, error) {
-		return verification.NewUtxo(&verification.Output{}, 0, 0, ""), nil
+		return verification.NewDetailedOutput(&verification.Output{}, 0, 0, ""), nil
 	}
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -183,7 +183,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
 	blockchainMock.FirstBlockTimestampFunc = func() int64 { return 0 }
 	blockchainMock.UtxoFunc = func(input protocol.Input) (protocol.Utxo, error) {
-		return verification.NewUtxo(&verification.Output{}, 0, 0, ""), nil
+		return verification.NewDetailedOutput(&verification.Output{}, 0, 0, ""), nil
 	}
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -221,7 +221,7 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionNotValidated(t *testi
 	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
 	blockchainMock.FirstBlockTimestampFunc = func() int64 { return 0 }
 	blockchainMock.UtxoFunc = func(input protocol.Input) (protocol.Utxo, error) {
-		return verification.NewUtxo(&verification.Output{}, 0, 0, ""), nil
+		return verification.NewDetailedOutput(&verification.Output{}, 0, 0, ""), nil
 	}
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -259,7 +259,7 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
 	blockchainMock.FirstBlockTimestampFunc = func() int64 { return 0 }
 	blockchainMock.UtxoFunc = func(input protocol.Input) (protocol.Utxo, error) {
-		return verification.NewUtxo(&verification.Output{}, 0, 0, ""), nil
+		return verification.NewDetailedOutput(&verification.Output{}, 0, 0, ""), nil
 	}
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)

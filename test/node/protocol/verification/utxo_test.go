@@ -24,7 +24,7 @@ func Test_Value_ValueIsMaxUint64AndHasIncome_ReturnsValueWithIncome(t *testing.T
 	// Arrange
 	var value uint64 = math.MaxUint64 // 18446744073709551615
 	output := verification.NewOutput("", true, false, value)
-	utxo := verification.NewUtxo(output, 0, 0, "")
+	utxo := verification.NewDetailedOutput(output, 0, 0, "")
 
 	// Act
 	actualValueAfterHalfLife := utxo.Value(int64(genesisTimestamp+halfLife), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -38,7 +38,7 @@ func Test_Value_ValueIsTwiceTheLimitAndHasIncome_ReturnsValueWithIncome(t *testi
 	// Arrange
 	value := 2 * limit
 	output := verification.NewOutput("", true, false, value)
-	utxo := verification.NewUtxo(output, 0, 0, "")
+	utxo := verification.NewDetailedOutput(output, 0, 0, "")
 
 	// Act
 	actualValueAfterHalfLife := utxo.Value(int64(genesisTimestamp+halfLife), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -52,7 +52,7 @@ func Test_Value_ValueIsLimitAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
 	value := limit
 	output := verification.NewOutput("", true, false, value)
-	utxo := verification.NewUtxo(output, 0, 0, "")
+	utxo := verification.NewDetailedOutput(output, 0, 0, "")
 
 	// Act
 	actualValueAfterOneDay := utxo.Value(int64(genesisTimestamp+oneDay), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -69,7 +69,7 @@ func Test_Value_ValueIs1AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = 1
 	output := verification.NewOutput("", true, false, value)
-	utxo := verification.NewUtxo(output, 0, 0, "")
+	utxo := verification.NewDetailedOutput(output, 0, 0, "")
 
 	// Act
 	actualValueAfterNoTimeElapsed := utxo.Value(int64(genesisTimestamp), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -85,7 +85,7 @@ func Test_Value_ValueIs0AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = 0
 	output := verification.NewOutput("", true, false, value)
-	utxo := verification.NewUtxo(output, 0, 0, "")
+	utxo := verification.NewDetailedOutput(output, 0, 0, "")
 
 	// Act
 	actualValueAfterHalfLife := utxo.Value(int64(genesisTimestamp+halfLife), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -99,7 +99,7 @@ func Test_Value_SamePortionOfHalfLifeElapsedWithIncome_ReturnsSameValue(t *testi
 	// Arrange
 	var value uint64 = 0
 	output := verification.NewOutput("", true, false, value)
-	utxo := verification.NewUtxo(output, 0, 0, "")
+	utxo := verification.NewDetailedOutput(output, 0, 0, "")
 	portion := 1.5
 
 	// Act
@@ -116,8 +116,8 @@ func Test_Value_SameElapsedTimeWithIncome_ReturnsSameValue(t *testing.T) {
 	blockHeight1 := 0
 	blockHeight2 := 10
 	output := verification.NewOutput("", true, false, value)
-	utxo1 := verification.NewUtxo(output, blockHeight1, 0, "")
-	utxo2 := verification.NewUtxo(output, blockHeight2, 0, "")
+	utxo1 := verification.NewDetailedOutput(output, blockHeight1, 0, "")
+	utxo2 := verification.NewDetailedOutput(output, blockHeight2, 0, "")
 	var elapsedTimestamp int64 = oneDay
 	utxo1Timestamp := int64(blockHeight1 * validationTimestamp)
 	utxo2Timestamp := int64(blockHeight2 * validationTimestamp)
@@ -135,7 +135,7 @@ func Test_Value_ValueIsMaxUint64AndHasNoIncome_ReturnsValueWithoutIncome(t *test
 	// Arrange
 	var value uint64 = math.MaxUint64 // 18446744073709551615
 	output := verification.NewOutput("", false, false, value)
-	utxo := verification.NewUtxo(output, 0, 0, "")
+	utxo := verification.NewDetailedOutput(output, 0, 0, "")
 
 	// Act
 	actualValueAfterHalfLife := utxo.Value(int64(genesisTimestamp+halfLife), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -149,7 +149,7 @@ func Test_Value_ValueIsTwiceTheLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *
 	// Arrange
 	value := 2 * limit
 	output := verification.NewOutput("", false, false, value)
-	utxo := verification.NewUtxo(output, 0, 0, "")
+	utxo := verification.NewDetailedOutput(output, 0, 0, "")
 
 	// Act
 	actualValueAfterHalfLife := utxo.Value(int64(genesisTimestamp+halfLife), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -163,7 +163,7 @@ func Test_Value_ValueIsLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.
 	// Arrange
 	value := limit
 	output := verification.NewOutput("", false, false, value)
-	utxo := verification.NewUtxo(output, 0, 0, "")
+	utxo := verification.NewDetailedOutput(output, 0, 0, "")
 
 	// Act
 	actualValueAfterHalfLife := utxo.Value(int64(genesisTimestamp+halfLife), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -177,7 +177,7 @@ func Test_Value_ValueIs1AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = 1
 	output := verification.NewOutput("", false, false, value)
-	utxo := verification.NewUtxo(output, 0, 0, "")
+	utxo := verification.NewDetailedOutput(output, 0, 0, "")
 
 	// Act
 	actualValueAfterNoTimeElapsed := utxo.Value(int64(genesisTimestamp), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -194,7 +194,7 @@ func Test_Value_ValueIs0AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = 0
 	output := verification.NewOutput("", false, false, value)
-	utxo := verification.NewUtxo(output, 0, 0, "")
+	utxo := verification.NewDetailedOutput(output, 0, 0, "")
 
 	// Act
 	actualValueAfterOneDay := utxo.Value(int64(oneDay), genesisTimestamp, halfLife, base, limit, validationTimestamp)
@@ -211,7 +211,7 @@ func Test_Value_SamePortionOfHalfLifeElapsedWithoutIncome_ReturnsSameValue(t *te
 	// Arrange
 	var value uint64 = 0
 	output := verification.NewOutput("", true, false, value)
-	utxo := verification.NewUtxo(output, 0, 0, "")
+	utxo := verification.NewDetailedOutput(output, 0, 0, "")
 	portion := 1.5
 
 	// Act
@@ -228,8 +228,8 @@ func Test_Value_SameElapsedTimeWithoutIncome_ReturnsSameValue(t *testing.T) {
 	blockHeight1 := 0
 	blockHeight2 := 10
 	output := verification.NewOutput("", true, false, value)
-	utxo1 := verification.NewUtxo(output, blockHeight1, 0, "")
-	utxo2 := verification.NewUtxo(output, blockHeight2, 0, "")
+	utxo1 := verification.NewDetailedOutput(output, blockHeight1, 0, "")
+	utxo2 := verification.NewDetailedOutput(output, blockHeight2, 0, "")
 	var elapsedTimestamp int64 = oneDay
 	utxo1Timestamp := int64(blockHeight1 * validationTimestamp)
 	utxo2Timestamp := int64(blockHeight2 * validationTimestamp)

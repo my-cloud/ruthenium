@@ -147,7 +147,7 @@ func Test_ServeHTTP_GetFirstBlockTimestampFuncError_ReturnsInternalServerError(t
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	marshalledEmptyUtxos, _ := json.Marshal([]*verification.Utxo{})
+	marshalledEmptyUtxos, _ := json.Marshal([]*verification.DetailedOutput{})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
 	watchMock := new(clocktest.WatchMock)
@@ -175,7 +175,7 @@ func Test_ServeHTTP_InsufficientWalletBalance_ReturnsMethodNotAllowed(t *testing
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	marshalledEmptyUtxos, _ := json.Marshal([]*verification.Utxo{})
+	marshalledEmptyUtxos, _ := json.Marshal([]*verification.DetailedOutput{})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(clocktest.WatchMock)
@@ -206,10 +206,10 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
 
-	utxos := []*verification.Utxo{
-		verification.NewUtxo(verification.NewOutput("", false, false, 1), 1, 0, "0"),
-		verification.NewUtxo(verification.NewOutput("", false, false, 2), 1, 1, "0"),
-		verification.NewUtxo(verification.NewOutput("", false, false, 0), 1, 2, "0"),
+	utxos := []*verification.DetailedOutput{
+		verification.NewDetailedOutput(verification.NewOutput("", false, false, 1), 1, 0, "0"),
+		verification.NewDetailedOutput(verification.NewOutput("", false, false, 2), 1, 1, "0"),
+		verification.NewDetailedOutput(verification.NewOutput("", false, false, 0), 1, 2, "0"),
 	}
 	marshalledUtxos, _ := json.Marshal(utxos)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
@@ -246,9 +246,9 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
-	utxos := []*verification.Utxo{
-		verification.NewUtxo(verification.NewOutput("", false, false, 1), 1, 0, "0"),
-		verification.NewUtxo(verification.NewOutput("", false, false, 2), 1, 1, "0"),
+	utxos := []*verification.DetailedOutput{
+		verification.NewDetailedOutput(verification.NewOutput("", false, false, 1), 1, 0, "0"),
+		verification.NewDetailedOutput(verification.NewOutput("", false, false, 2), 1, 1, "0"),
 	}
 	marshalledUtxos, _ := json.Marshal(utxos)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }

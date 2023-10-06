@@ -137,7 +137,7 @@ func Test_UtxosByAddress_UnknownAddress_ReturnsEmptyArray(t *testing.T) {
 	utxosBytes := blockchain.Utxos(genesisValidatorAddress)
 
 	// Assert
-	var utxos []*verification.Utxo
+	var utxos []*verification.DetailedOutput
 	_ = json.Unmarshal(utxosBytes, &utxos)
 	test.Assert(t, len(utxos) == 0, "utxos should be empty")
 }
@@ -166,7 +166,7 @@ func Test_Utxos_UtxoExists_ReturnsUtxo(t *testing.T) {
 	utxosBytes := blockchain.Utxos(registeredAddress)
 
 	// Assert
-	var utxos []*verification.Utxo
+	var utxos []*verification.DetailedOutput
 	_ = json.Unmarshal(utxosBytes, &utxos)
 	actualValue := utxos[0].Value(genesisTimestamp+2*validationInterval, genesisTimestamp, 1, 1, 1, validationInterval)
 	test.Assert(t, actualValue == expectedValue, fmt.Sprintf("utxo amount is %d whereas it should be %d", actualValue, expectedValue))

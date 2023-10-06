@@ -19,20 +19,20 @@ type Blockchain struct {
 	registry            protocol.Registry
 	synchronizer        network.Synchronizer
 	settings            protocol.Settings
-	utxosByAddress      map[string][]*Utxo
-	utxosById           map[string][]*Utxo
+	utxosByAddress      map[string][]*DetailedOutput
+	utxosById           map[string][]*DetailedOutput
 	logger              log.Logger
 }
 
 func NewBlockchain(registry protocol.Registry, settings protocol.Settings, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
-	utxosByAddress := make(map[string][]*Utxo)
-	utxosById := make(map[string][]*Utxo)
+	utxosByAddress := make(map[string][]*DetailedOutput)
+	utxosById := make(map[string][]*DetailedOutput)
 	registeredAddresses := make(map[string]bool)
 	blockchain := newBlockchain(nil, registeredAddresses, registry, settings, synchronizer, utxosByAddress, utxosById, logger)
 	return blockchain
 }
 
-func newBlockchain(blocks []*Block, registeredAddresses map[string]bool, registry protocol.Registry, settings protocol.Settings, synchronizer network.Synchronizer, utxosByAddress map[string][]*Utxo, utxosById map[string][]*Utxo, logger log.Logger) *Blockchain {
+func newBlockchain(blocks []*Block, registeredAddresses map[string]bool, registry protocol.Registry, settings protocol.Settings, synchronizer network.Synchronizer, utxosByAddress map[string][]*DetailedOutput, utxosById map[string][]*DetailedOutput, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blocks = blocks
 	blockchain.registeredAddresses = registeredAddresses
@@ -284,8 +284,8 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		var newBlocks []*Block
 		if isFork {
 			blockchain.registeredAddresses = make(map[string]bool)
-			blockchain.utxosById = make(map[string][]*Utxo)
-			blockchain.utxosByAddress = make(map[string][]*Utxo)
+			blockchain.utxosById = make(map[string][]*DetailedOutput)
+			blockchain.utxosByAddress = make(map[string][]*DetailedOutput)
 			newBlocks = selectedBlocks[:len(selectedBlocks)-1]
 		} else if len(hostBlocks) < len(selectedBlocks) {
 			newBlocks = selectedBlocks[len(hostBlocks)-1 : len(selectedBlocks)-1]
@@ -431,10 +431,10 @@ func (blockchain *Blockchain) updateUtxos(block *Block, blockHeight int) error {
 		}
 		for j, output := range transaction.Outputs() {
 			if output.InitialValue() > 0 {
-				utxo := NewUtxo(output, blockHeight, uint16(j), transaction.Id())
-				utxosForTransactionId = append(utxosForTransactionId, utxo)
+				detailedOutput := NewDetailedOutput(output, blockHeight, uint16(j), transaction.Id())
+				utxosForTransactionId = append(utxosForTransactionId, detailedOutput)
 				utxosById[transaction.Id()] = utxosForTransactionId
-				utxosByAddress[output.Address()] = append(utxosByAddress[output.Address()], utxo)
+				utxosByAddress[output.Address()] = append(utxosByAddress[output.Address()], detailedOutput)
 			}
 		}
 		for _, input := range transaction.Inputs() {
@@ -486,12 +486,12 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*Block, neighborBlocks []*
 		}
 	}
 	var verifiedBlocks []*Block
-	var utxosByAddress map[string][]*Utxo
-	var utxosById map[string][]*Utxo
+	var utxosByAddress map[string][]*DetailedOutput
+	var utxosById map[string][]*DetailedOutput
 	var registeredAddresses map[string]bool
 	if len(oldHostBlocks) == 0 {
-		utxosByAddress = make(map[string][]*Utxo)
-		utxosById = make(map[string][]*Utxo)
+		utxosByAddress = make(map[string][]*DetailedOutput)
+		utxosById = make(map[string][]*DetailedOutput)
 		registeredAddresses = make(map[string]bool)
 	} else {
 		utxosByAddress = copyUtxosMap(blockchain.utxosByAddress)
@@ -670,10 +670,10 @@ func copyRegisteredAddressesMap(registeredAddresses map[string]bool) map[string]
 	return registeredAddressesCopy
 }
 
-func copyUtxosMap(utxosMap map[string][]*Utxo) map[string][]*Utxo {
-	utxosMapCopy := make(map[string][]*Utxo, len(utxosMap))
+func copyUtxosMap(utxosMap map[string][]*DetailedOutput) map[string][]*DetailedOutput {
+	utxosMapCopy := make(map[string][]*DetailedOutput, len(utxosMap))
 	for address, utxos := range utxosMap {
-		utxosCopy := make([]*Utxo, len(utxos))
+		utxosCopy := make([]*DetailedOutput, len(utxos))
 		copy(utxosCopy, utxos)
 		utxosMapCopy[address] = utxosCopy
 	}
@@ -684,7 +684,7 @@ func marshalledEmptyArray() []byte {
 	return []byte{91, 93}
 }
 
-func removeUtxo(utxos []*Utxo, transactionId string, outputIndex uint16) []*Utxo {
+func removeUtxo(utxos []*DetailedOutput, transactionId string, outputIndex uint16) []*DetailedOutput {
 	for i := 0; i < len(utxos); i++ {
 		if utxos[i].TransactionId() == transactionId && utxos[i].OutputIndex() == outputIndex {
 			utxos = append(utxos[:i], utxos[i+1:]...)
@@ -694,7 +694,7 @@ func removeUtxo(utxos []*Utxo, transactionId string, outputIndex uint16) []*Utxo
 	return utxos
 }
 
-func verifyIncomes(utxosByAddress map[string][]*Utxo) error {
+func verifyIncomes(utxosByAddress map[string][]*DetailedOutput) error {
 	for address, utxos := range utxosByAddress {
 		var hasIncome bool
 		for _, utxo := range utxos {
