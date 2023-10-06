@@ -146,8 +146,8 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	hostBlocks := blockchain.blocks
 	var waitGroup sync.WaitGroup
 	var mutex sync.RWMutex
+	hostTarget := "host"
 	if len(hostBlocks) > 2 {
-		hostTarget := "host"
 		blocksByTarget[hostTarget] = hostBlocks
 		oldHostBlocks := make([]*Block, len(hostBlocks)-1)
 		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-1])
@@ -191,7 +191,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	}
 	waitGroup.Wait()
 	var selectedBlocks []*Block
-	var isDifferent bool
+	selectedTarget := hostTarget
 	if len(blocksByTarget) > 0 {
 		// Keep blockchains with consensus for the previous hash (prevent forks)
 		minLength := len(hostBlocks)
@@ -233,7 +233,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		}
 		// Select the blockchain of the oldest reward recipient
 		var maxRewardRecipientAddressAge uint64
-		for _, blocks := range blocksByTarget {
+		for target, blocks := range blocksByTarget {
 			var rewardRecipientAddressAge uint64
 			var lastBlockRewardRecipientAddress string
 			for _, transaction := range blocks[len(blocks)-1].Transactions() {
@@ -259,27 +259,11 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			if rewardRecipientAddressAge > maxRewardRecipientAddressAge {
 				maxRewardRecipientAddressAge = rewardRecipientAddressAge
 				selectedBlocks = blocks
-			}
-		}
-		// Check if blockchain is different to know if it should be updated
-		if len(hostBlocks) < len(selectedBlocks) {
-			isDifferent = true
-		} else if len(selectedBlocks) >= 2 {
-			lastNewBlockHash, newBlockHashError := selectedBlocks[len(selectedBlocks)-1].Hash()
-			if newBlockHashError != nil {
-				blockchain.logger.Error("failed to calculate new block hash")
-			} else {
-				lastOldBlockHash, oldBlockHashError := hostBlocks[len(hostBlocks)-1].Hash()
-				if oldBlockHashError != nil {
-					blockchain.logger.Error("failed to calculate old block hash")
-					isDifferent = true
-				} else {
-					isDifferent = lastOldBlockHash != lastNewBlockHash
-				}
+				selectedTarget = target
 			}
 		}
 	}
-	if isDifferent && len(selectedBlocks) != 0 {
+	if selectedTarget != hostTarget {
 		blockchain.mutex.Lock()
 		defer blockchain.mutex.Unlock()
 		var newBlocks []*Block

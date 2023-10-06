@@ -721,9 +721,9 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasNotBeenAdded_IsNotReplac
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
-	address := test.Address2
+	address := test.Address
 	block1 := protocoltest.NewGenesisBlock(address, genesisAmount)
-	notAddedAddress := test.Address
+	notAddedAddress := test.Address2
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := block1.Transactions()[0]
 	invalidTransactionRequestBytes := protocoltest.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, notAddedAddress, privateKey, publicKey, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, true)
@@ -784,9 +784,9 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasBeenRemoved_IsNotReplace
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
-	address := test.Address2
+	address := test.Address
 	block1 := protocoltest.NewGenesisBlock(address, genesisAmount)
-	removedAddress := test.Address
+	removedAddress := test.Address2
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := block1.Transactions()[0]
 	invalidTransactionRequestBytes := protocoltest.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, removedAddress, privateKey, publicKey, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, true)
@@ -831,6 +831,116 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasBeenRemoved_IsNotReplace
 	expectedMessages := []string{
 		"an incomed output address is not registered",
 		blockchainKeptMessage,
+	}
+	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+}
+
+func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
+	logger := logtest.NewLoggerMock()
+	neighborMock := new(networktest.NeighborMock)
+	var validationTimestamp int64 = 1
+	now := 2 * validationTimestamp
+	neighborMock.TargetFunc = func() string {
+		return "neighbor"
+	}
+	synchronizer := new(networktest.SynchronizerMock)
+	synchronizer.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
+	}
+	settings := new(protocoltest.SettingsMock)
+	settings.BlocksCountLimitFunc = func() uint64 { return 1 }
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
+	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
+	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	rewardTransaction1, _ := verification.NewRewardTransaction(test.Address, false, now-2*validationTimestamp, 0)
+	transactionsBytes1, _ := json.Marshal([]*verification.Transaction{rewardTransaction1})
+	_ = blockchain.AddBlock(now-2*validationTimestamp, transactionsBytes1, nil)
+	blocksBytes := blockchain.Blocks(0)
+	var blocks []*verification.Block
+	_ = json.Unmarshal(blocksBytes, &blocks)
+	rewardTransaction2, _ := verification.NewRewardTransaction(test.Address, false, now-validationTimestamp, 0)
+	transactionsBytes2, _ := json.Marshal([]*verification.Transaction{rewardTransaction2})
+	_ = blockchain.AddBlock(now-validationTimestamp, transactionsBytes2, nil)
+	rewardTransaction3, _ := verification.NewRewardTransaction(test.Address, false, now, 0)
+	transactionsBytes3, _ := json.Marshal([]*verification.Transaction{rewardTransaction3})
+	_ = blockchain.AddBlock(now, transactionsBytes3, nil)
+	hash1, _ := blocks[0].Hash()
+	block2 := protocoltest.NewRewardedBlock(hash1, now-validationTimestamp)
+	hash2, _ := block2.Hash()
+	block3 := protocoltest.NewRewardedBlock(hash2, now)
+	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+		neighborBlocks := []*verification.Block{block3}
+		neighborBlocksBytes, _ := json.Marshal(neighborBlocks)
+		return neighborBlocksBytes, nil
+	}
+
+	// Act
+	blockchain.Update(now)
+
+	// Assert
+	expectedMessages := []string{
+		blockchainKeptMessage,
+	}
+	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+}
+
+func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
+	logger := logtest.NewLoggerMock()
+	neighborMock := new(networktest.NeighborMock)
+	var validationTimestamp int64 = 1
+	now := 2 * validationTimestamp
+	neighborMock.TargetFunc = func() string {
+		return "neighbor"
+	}
+	synchronizer := new(networktest.SynchronizerMock)
+	synchronizer.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
+	}
+	settings := new(protocoltest.SettingsMock)
+	settings.BlocksCountLimitFunc = func() uint64 { return 2 }
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
+	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
+	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	rewardTransaction1, _ := verification.NewRewardTransaction(test.Address, false, now-2*validationTimestamp, 0)
+	transactionsBytes1, _ := json.Marshal([]*verification.Transaction{rewardTransaction1})
+	_ = blockchain.AddBlock(now-2*validationTimestamp, transactionsBytes1, nil)
+	rewardTransaction2, _ := verification.NewRewardTransaction(test.Address, false, now-validationTimestamp, 0)
+	transactionsBytes2, _ := json.Marshal([]*verification.Transaction{rewardTransaction2})
+	_ = blockchain.AddBlock(now-validationTimestamp, transactionsBytes2, nil)
+	blocksBytes := blockchain.Blocks(0)
+	var blocks []*verification.Block
+	_ = json.Unmarshal(blocksBytes, &blocks)
+	rewardTransaction3, _ := verification.NewRewardTransaction(test.Address, false, now, 0)
+	transactionsBytes3, _ := json.Marshal([]*verification.Transaction{rewardTransaction3})
+	_ = blockchain.AddBlock(now, transactionsBytes3, nil)
+	hash2, _ := blocks[1].Hash()
+	block3 := protocoltest.NewRewardedBlock(hash2, now)
+	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+		neighborBlocks := []*verification.Block{block3}
+		neighborBlocksBytes, _ := json.Marshal(neighborBlocks)
+		return neighborBlocksBytes, nil
+	}
+
+	// Act
+	blockchain.Update(now)
+
+	// Assert
+	expectedMessages := []string{
+		blockchainReplacedMessage,
 	}
 	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
 }
