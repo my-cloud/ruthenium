@@ -151,16 +151,16 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		hostTarget := "host"
 		blocksByTarget[hostTarget] = hostBlocks
 		oldHostBlocks := make([]*Block, len(hostBlocks)-1)
-		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-1]) // TODO copy for each neighbor ?
+		copy(oldHostBlocks, hostBlocks[:len(hostBlocks)-1])
 		lastHostBlocks := []*Block{hostBlocks[len(hostBlocks)-1]}
 		startingBlockHeight := uint64(len(hostBlocks) - 1)
 		for _, neighbor := range neighbors {
 			waitGroup.Add(1)
 			verifiedBlocks, err := blockchain.verifyNeighborBlockchain(timestamp, neighbor, startingBlockHeight, lastHostBlocks, oldHostBlocks)
-			if err != nil {
-				blockchain.logger.Debug(fmt.Errorf("failed to verify last neighbor blocks: %w", err).Error())
-			}
 			target := neighbor.Target()
+			if err != nil {
+				blockchain.logger.Debug(fmt.Errorf("failed to verify last neighbor blocks for target %s: %w", target, err).Error())
+			}
 			mutex.Lock()
 			blocksByTarget[target] = append(oldHostBlocks, verifiedBlocks...)
 			mutex.Unlock()
@@ -173,16 +173,15 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	if len(hostBlocks) > 0 && len(blocksByTarget) < 2 && len(neighbors) > 0 {
 		isFork = true
 		blockchain.logger.Debug("all neighbor blockchains are forks, verifying the whole blockchains")
-		lastHostBlocks := make([]*Block, len(hostBlocks)-1)
-		copy(lastHostBlocks, hostBlocks[:len(hostBlocks)-1]) // TODO copy for each neighbor ?
+		lastHostBlocks := hostBlocks[:len(hostBlocks)-1]
 		var startingBlockHeight uint64 = 0
 		for _, neighbor := range neighbors {
 			waitGroup.Add(1)
 			verifiedBlocks, err := blockchain.verifyNeighborBlockchain(timestamp, neighbor, startingBlockHeight, lastHostBlocks, nil)
-			if err != nil {
-				blockchain.logger.Debug(fmt.Errorf("failed to verify last neighbor blocks: %w", err).Error())
-			}
 			target := neighbor.Target()
+			if err != nil {
+				blockchain.logger.Debug(fmt.Errorf("failed to verify whole neighbor blocks for target %s: %w", target, err).Error())
+			}
 			mutex.Lock()
 			blocksByTarget[target] = verifiedBlocks
 			mutex.Unlock()
