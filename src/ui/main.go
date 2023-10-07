@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/config"
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/file"
 	"github.com/my-cloud/ruthenium/src/log/console"
@@ -10,7 +11,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/net"
-	"github.com/my-cloud/ruthenium/src/ui/config"
 	"github.com/my-cloud/ruthenium/src/ui/server/index"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction/info"
@@ -19,7 +19,6 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/amount"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 func main() {
@@ -34,27 +33,23 @@ func main() {
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
 	target := p2p.NewTarget(*hostIp, strconv.Itoa(*hostPort))
 	ipFinder := net.NewIpFinder(logger)
-	clientFactory := gp2p.NewClientFactory(ipFinder)
+	var settings *config.Settings
+	parser := file.NewJsonParser()
+	if err := parser.Parse(*settingsPath, &settings); err != nil {
+		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
+	}
+	clientFactory := gp2p.NewClientFactory(ipFinder, settings)
 	host, err := p2p.NewNeighbor(target, clientFactory)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
 	}
-	parser := file.NewJsonParser()
-	var settings config.Settings
-	err = parser.Parse(*settingsPath, &settings)
-	if err != nil {
-		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
-	}
 	watch := tick.NewWatch()
-	hoursADay := 24.
-	halfLifeInNanoseconds := settings.HalfLifeInDays * hoursADay * float64(time.Hour.Nanoseconds())
-	validationTimestamp := settings.ValidationIntervalInSeconds * time.Second.Nanoseconds()
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
 	http.Handle("/transaction", transaction.NewHandler(host, logger))
-	http.Handle("/transaction/info", info.NewHandler(host, halfLifeInNanoseconds, settings.IncomeBaseInParticles, settings.IncomeLimitInParticles, settings.MinimalTransactionFee, settings.ParticlesPerToken, validationTimestamp, watch, logger))
+	http.Handle("/transaction/info", info.NewHandler(host, settings, watch, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/wallet/address", address.NewHandler(logger))
-	http.Handle("/wallet/amount", amount.NewHandler(host, halfLifeInNanoseconds, settings.IncomeBaseInParticles, settings.IncomeLimitInParticles, settings.ParticlesPerToken, validationTimestamp, watch, logger))
+	http.Handle("/wallet/amount", amount.NewHandler(host, settings, watch, logger))
 	logger.Info("user interface server is running...")
 	logger.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(*port), nil).Error())
 }

@@ -2,8 +2,6 @@ package gp2p
 
 import (
 	"fmt"
-	gp2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
@@ -11,11 +9,11 @@ import (
 
 type ClientFactory struct {
 	ipFinder network.IpFinder
-	logger   log.Logger
+	settings p2p.Settings
 }
 
-func NewClientFactory(ipFinder network.IpFinder) *ClientFactory {
-	return &ClientFactory{ipFinder, console.NewLogger(console.Fatal)}
+func NewClientFactory(ipFinder network.IpFinder, settings p2p.Settings) *ClientFactory {
+	return &ClientFactory{ipFinder, settings}
 }
 
 func (factory *ClientFactory) CreateClient(ip string, port string) (p2p.Client, error) {
@@ -23,12 +21,9 @@ func (factory *ClientFactory) CreateClient(ip string, port string) (p2p.Client, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to look up IP on addresse %s: %w", ip, err)
 	}
-	tcp := gp2p.NewTCP(lookedUpIp, port)
-	var client *gp2p.Client
-	client, err = gp2p.NewClient(tcp)
+	client, err := NewClient(lookedUpIp, port, factory.settings.ValidationTimeout(), console.NewLogger(console.Fatal))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to instantiate client for address %s: %w", ip, err)
 	}
-	client.SetLogger(factory.logger)
 	return client, err
 }

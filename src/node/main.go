@@ -3,15 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/my-cloud/ruthenium/src/config"
 	"github.com/my-cloud/ruthenium/src/file"
 	"strconv"
-	"time"
 
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/environment"
 	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/clock/tick"
-	"github.com/my-cloud/ruthenium/src/node/config"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p/net"
@@ -62,37 +61,29 @@ func decodeAddress(mnemonic *string, derivationPath *string, password *string, p
 
 func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *string, port *int, address string, logger *console.Logger) *p2p.Host {
 	parser := file.NewJsonParser()
-	var settings config.Settings
+	var settings *config.Settings
 	err := parser.Parse(*settingsPath, &settings)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
 	}
 	registry := poh.NewRegistry(*infuraKey, logger)
 	watch := tick.NewWatch()
-	synchronizer := createSynchronizer(parser, *seedsPath, *ip, *port, settings.MaxOutboundsCount, watch, logger)
-	validationTimer := time.Duration(settings.ValidationIntervalInSeconds) * time.Second
-	now := watch.Now()
-	genesisTimestamp := now.Truncate(validationTimer).Add(validationTimer).UnixNano()
-	genesisTransaction, err := validation.NewGenesisTransaction(address, genesisTimestamp, settings.GenesisAmountInParticles)
-	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to create genesis transaction: %w", err).Error())
-	}
-	blockchain := verification.NewBlockchain(genesisTimestamp, genesisTransaction, registry, settings, synchronizer, logger)
-	transactionsPool := validation.NewTransactionsPool(blockchain, settings.MinimalTransactionFee, synchronizer, address, validationTimer, logger)
-	synchronizationTimer := time.Duration(settings.SynchronizationIntervalInSeconds) * time.Second
-	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, synchronizationTimer, 1, 0)
-	validationEngine := tick.NewEngine(transactionsPool.Validate, watch, validationTimer, 1, 0)
-	verificationEngine := tick.NewEngine(blockchain.Update, watch, validationTimer, settings.VerificationsCountPerValidation, 1)
-	serverFactory := gp2p.NewServerFactory()
+	synchronizer := createSynchronizer(parser, *seedsPath, *ip, *port, settings, watch, logger)
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	transactionsPool := validation.NewTransactionsPool(blockchain, settings, synchronizer, address, logger)
+	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, settings.SynchronizationTimer(), 1, 0)
+	validationEngine := tick.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)
+	verificationEngine := tick.NewEngine(blockchain.Update, watch, settings.ValidationTimer(), settings.VerificationsCountPerValidation(), 1)
+	handler := gp2p.NewHandler(blockchain, synchronizer, transactionsPool, watch, logger)
+	serverFactory := gp2p.NewServerFactory(handler, settings)
 	server, err := serverFactory.CreateServer(*port)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
 	}
-	handler := p2p.NewHandler(blockchain, synchronizer, transactionsPool, watch, logger)
-	return p2p.NewHost(handler, server, synchronizationEngine, validationEngine, verificationEngine, logger)
+	return p2p.NewHost(server, synchronizationEngine, validationEngine, verificationEngine, logger)
 }
 
-func createSynchronizer(parser *file.JsonParser, seedsPath string, hostIp string, port int, maxOutboundsCount int, watch *tick.Watch, logger *console.Logger) *p2p.Synchronizer {
+func createSynchronizer(parser *file.JsonParser, seedsPath string, hostIp string, port int, settings *config.Settings, watch *tick.Watch, logger *console.Logger) *p2p.Synchronizer {
 	var seedsStringTargets []string
 	err := parser.Parse(seedsPath, &seedsStringTargets)
 	if err != nil {
@@ -109,6 +100,6 @@ func createSynchronizer(parser *file.JsonParser, seedsPath string, hostIp string
 			logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
 		}
 	}
-	clientFactory := gp2p.NewClientFactory(ipFinder)
-	return p2p.NewSynchronizer(clientFactory, hostIp, strconv.Itoa(port), maxOutboundsCount, scoresBySeedTarget, watch)
+	clientFactory := gp2p.NewClientFactory(ipFinder, settings)
+	return p2p.NewSynchronizer(clientFactory, hostIp, strconv.Itoa(port), settings.MaxOutboundsCount(), scoresBySeedTarget, watch)
 }

@@ -1,11 +1,13 @@
 package validation
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/encryption"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
+	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/log/logtest"
 	"github.com/my-cloud/ruthenium/test/node/clock/clocktest"
@@ -24,107 +26,100 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	watchMock := new(clocktest.WatchMock)
 	var now int64 = 2
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, now) }
-	validationTimer := time.Nanosecond
 	logger := logtest.NewLoggerMock()
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
-	blockResponses := []*network.BlockResponse{genesisBlockResponse, protocoltest.NewEmptyBlockResponse(now - 1)}
 	blockchainMock := new(protocoltest.BlockchainMock)
-	blockchainMock.AllBlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
-	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
-	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
-	genesisTransaction := genesisBlockResponse.Transactions[0]
-	var genesisOutputIndex uint16 = 0
-	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, now+2, 1)
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
+	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
+	var genesisValue uint64 = 0
+	settings := new(protocoltest.SettingsMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+2, "0", genesisValue, false)
 
 	// Act
-	pool.AddTransaction(&invalidTransactionRequest, "0")
+	pool.AddTransaction(transactionRequest, "0")
 
 	// Assert
-	transactions := pool.Transactions()
+	transactionsBytes := pool.Transactions()
+	var transactions []*verification.Transaction
+	_ = json.Unmarshal(transactionsBytes, &transactions)
 	expectedTransactionsLength := 0
 	actualTransactionsLength := len(transactions)
 	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
+	test.AssertThatMessageIsLogged(t, []string{"failed to add transaction: the transaction timestamp is too far in the future"}, logger.DebugCalls())
 }
 
-func Test_AddTransaction_TransactionTimestampIsOlderThan1Blocks_TransactionNotAdded(t *testing.T) {
+func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
 	synchronizerMock := new(networktest.SynchronizerMock)
 	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return nil }
 	synchronizerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
-	validationTimer := time.Nanosecond
 	logger := logtest.NewLoggerMock()
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
-	blockResponses := []*network.BlockResponse{genesisBlockResponse, protocoltest.NewEmptyBlockResponse(now - 1)}
 	blockchainMock := new(protocoltest.BlockchainMock)
-	blockchainMock.AllBlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
-	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
-	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
-	genesisTransaction := genesisBlockResponse.Transactions[0]
-	var genesisOutputIndex uint16 = 0
-	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, now-2, 1)
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
+	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
+	var genesisValue uint64 = 0
+	settings := new(protocoltest.SettingsMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue, false)
 
 	// Act
-	pool.AddTransaction(&invalidTransactionRequest, "0")
+	pool.AddTransaction(transactionRequest, "0")
 
 	// Assert
-	transactions := pool.Transactions()
+	transactionsBytes := pool.Transactions()
+	var transactions []*verification.Transaction
+	_ = json.Unmarshal(transactionsBytes, &transactions)
 	expectedTransactionsLength := 0
 	actualTransactionsLength := len(transactions)
 	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
+	test.AssertThatMessageIsLogged(t, []string{"failed to add transaction: the transaction timestamp is too old"}, logger.DebugCalls())
 }
 
 func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
-	walletAAddress := test.Address2
 	synchronizerMock := new(networktest.SynchronizerMock)
 	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return nil }
 	synchronizerMock.IncentiveFunc = func(string) {}
-	var now int64 = 1
+	var now int64 = 2
 	var transactionFee uint64 = 0
-	validationTimer := time.Nanosecond
 	logger := logtest.NewLoggerMock()
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
-	blockResponses := []*network.BlockResponse{genesisBlockResponse}
 	blockchainMock := new(protocoltest.BlockchainMock)
-	blockchainMock.AllBlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
-	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
+	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
+	var genesisValue uint64 = 0
 	privateKey2, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey2)
-	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
-	genesisTransaction := genesisBlockResponse.Transactions[0]
-	var genesisOutputIndex uint16 = 0
-	blockchainMock.UtxosByAddressFunc = func(string) []*network.UtxoResponse {
-		return []*network.UtxoResponse{protocoltest.NewUtxoFromOutput(genesisTransaction, genesisOutputIndex)}
-	}
-	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, walletAAddress, genesisTransaction, genesisOutputIndex, privateKey2, publicKey, now, 1)
+	settings := new(protocoltest.SettingsMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey2, publicKey, now, "0", genesisValue, false)
 
 	// Act
-	pool.AddTransaction(&invalidTransactionRequest, "0")
+	pool.AddTransaction(transactionRequest, "0")
 
 	// Assert
-	transactions := pool.Transactions()
+	transactionsBytes := pool.Transactions()
+	var transactions []*verification.Transaction
+	_ = json.Unmarshal(transactionsBytes, &transactions)
 	expectedTransactionsLength := 0
 	actualTransactionsLength := len(transactions)
 	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
+	test.AssertThatMessageIsLogged(t, []string{"failed to add transaction: failed to verify transaction: failed to verify signature"}, logger.DebugCalls())
 }
 
 func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
@@ -132,139 +127,192 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	validatorWalletAddress := test.Address
 	walletAAddress := test.Address2
 	neighborMock := new(networktest.NeighborMock)
-	neighborMock.AddTransactionFunc = func(network.TransactionRequest) error { return nil }
+	neighborMock.AddTransactionFunc = func([]byte) error { return nil }
 	synchronizerMock := new(networktest.SynchronizerMock)
 	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return []network.Neighbor{neighborMock} }
 	synchronizerMock.IncentiveFunc = func(string) {}
-	var now int64 = 1
+	var now int64 = 2
 	var transactionFee uint64 = 0
-	validationTimer := time.Nanosecond
 	logger := logtest.NewLoggerMock()
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
-	blockResponses := []*network.BlockResponse{genesisBlockResponse}
 	blockchainMock := new(protocoltest.BlockchainMock)
-	blockchainMock.AllBlocksFunc = func() []*network.BlockResponse { return blockResponses }
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
-	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
+	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
+	blockchainMock.UtxoFunc = func(input protocol.InputInfo) (protocol.Utxo, error) {
+		inputInfo := verification.NewInputInfo(0, "")
+		return verification.NewUtxo(inputInfo, &verification.Output{}, 0), nil
+	}
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
-	genesisTransaction := genesisBlockResponse.Transactions[0]
-	var genesisOutputIndex uint16 = 0
-	blockchainMock.UtxosByAddressFunc = func(string) []*network.UtxoResponse {
-		return []*network.UtxoResponse{protocoltest.NewUtxoFromOutput(genesisTransaction, genesisOutputIndex)}
-	}
-	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, walletAAddress, genesisTransaction, genesisOutputIndex, privateKey, publicKey, now, 1)
+	var genesisValue uint64 = 0
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
+	var outputIndex uint16 = 0
+	transactionId := "0"
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, outputIndex, walletAAddress, privateKey, publicKey, now, transactionId, genesisValue, false)
 
 	// Act
-	pool.AddTransaction(&transactionRequest, "0")
+	pool.AddTransaction(transactionRequest, "0")
 
 	// Assert
-	transactions := pool.Transactions()
+	transactionsBytes := pool.Transactions()
+	var transactions []*verification.Transaction
+	_ = json.Unmarshal(transactionsBytes, &transactions)
 	expectedTransactionsLength := 1
 	actualTransactionsLength := len(transactions)
 	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
 }
 
-func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *testing.T) {
+func Test_Validate_BlockAlreadyExist_TransactionsNotValidated(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
 	synchronizerMock := new(networktest.SynchronizerMock)
-	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return nil }
-	synchronizerMock.IncentiveFunc = func(string) {}
-	var now int64 = 1
-	validationTimer := time.Nanosecond
+	var now int64 = 2
 	logger := logtest.NewLoggerMock()
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
-	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
-	blockResponses := []*network.BlockResponse{genesisBlockResponse}
-	blockchainMock.AllBlocksFunc = func() []*network.BlockResponse { return blockResponses }
-	var transactionFee uint64 = 0
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
-	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
-	publicKey := encryption.NewPublicKey(privateKey)
-	genesisTransaction := genesisBlockResponse.Transactions[0]
-	var genesisOutputIndex uint16 = 0
-	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, now+2, 1)
-	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
-	pool.AddTransaction(&invalidTransactionRequest, "0")
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now }
+	settings := new(protocoltest.SettingsMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
 
 	// Act
 	pool.Validate(now)
 
 	// Assert
-	assertAddBlockCalledWithRewardTransactionOnly(t, blockchainMock)
+	test.AssertThatMessageIsLogged(t, []string{"unable to create block, a block with the same timestamp is already in the blockchain"}, logger.ErrorCalls())
 }
 
-func Test_Validate_TransactionTimestampIsOlderThan2Blocks_TransactionNotValidated(t *testing.T) {
+func Test_Validate_BlockIsMissing_TransactionsNotValidated(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
 	synchronizerMock := new(networktest.SynchronizerMock)
-	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return nil }
-	synchronizerMock.IncentiveFunc = func(string) {}
 	var now int64 = 3
-	validationTimer := time.Nanosecond
 	logger := logtest.NewLoggerMock()
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
-	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
-	blockResponses := []*network.BlockResponse{genesisBlockResponse}
-	blockchainMock.AllBlocksFunc = func() []*network.BlockResponse { return blockResponses }
-	var transactionFee uint64 = 0
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
-	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
-	publicKey := encryption.NewPublicKey(privateKey)
-	genesisTransaction := genesisBlockResponse.Transactions[0]
-	var genesisOutputIndex uint16 = 0
-	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	invalidTransactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, now-3, 1)
-	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
-	pool.AddTransaction(&invalidTransactionRequest, "0")
-	blockResponses = append(blockResponses, protocoltest.NewEmptyBlockResponse(now-2))
-	blockResponses = append(blockResponses, protocoltest.NewEmptyBlockResponse(now-1))
-	blockchainMock.AllBlocksFunc = func() []*network.BlockResponse { return blockResponses }
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 2 }
+	settings := new(protocoltest.SettingsMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
 
 	// Act
 	pool.Validate(now)
 
 	// Assert
-	assertAddBlockCalledWithRewardTransactionOnly(t, blockchainMock)
+	test.AssertThatMessageIsLogged(t, []string{"unable to create block, a block is missing in the blockchain"}, logger.ErrorCalls())
 }
 
-func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
+func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
 	synchronizerMock := new(networktest.SynchronizerMock)
 	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return nil }
 	synchronizerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
-	validationTimer := time.Nanosecond
+	var transactionFee uint64 = 0
 	logger := logtest.NewLoggerMock()
 	blockchainMock := new(protocoltest.BlockchainMock)
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
-	blockchainMock.AddBlockFunc = func(int64, []*network.TransactionResponse, []string) error { return nil }
-	genesisBlockResponse := protocoltest.NewGenesisBlockResponse(validatorWalletAddress, 0)
-	blockResponses := []*network.BlockResponse{genesisBlockResponse, protocoltest.NewEmptyBlockResponse(now - 1)}
-	blockchainMock.AllBlocksFunc = func() []*network.BlockResponse { return blockResponses }
-	var transactionFee uint64 = 0
-	blockchainMock.FindFeeFunc = func(*network.TransactionResponse, int64) (uint64, error) { return transactionFee, nil }
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now }
+	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
+	blockchainMock.UtxoFunc = func(input protocol.InputInfo) (protocol.Utxo, error) {
+		inputInfo := verification.NewInputInfo(0, "")
+		return verification.NewUtxo(inputInfo, &verification.Output{}, 0), nil
+	}
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
-	genesisTransaction := genesisBlockResponse.Transactions[0]
-	var genesisOutputIndex uint16 = 0
-	blockchainMock.UtxosByAddressFunc = func(string) []*network.UtxoResponse {
-		return []*network.UtxoResponse{protocoltest.NewUtxoFromOutput(genesisTransaction, genesisOutputIndex)}
+	var genesisValue uint64 = 0
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+1, "0", genesisValue, false)
+	pool.AddTransaction(transactionRequest, "0")
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
+
+	// Act
+	pool.Validate(now)
+
+	// Assert
+	test.AssertThatMessageIsLogged(t, []string{"transaction removed from the transactions pool, the transaction timestamp is too far in the future"}, logger.WarnCalls())
+}
+
+func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *testing.T) {
+	// Arrange
+	validatorWalletAddress := test.Address
+	synchronizerMock := new(networktest.SynchronizerMock)
+	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return nil }
+	synchronizerMock.IncentiveFunc = func(string) {}
+	var now int64 = 3
+	var transactionFee uint64 = 0
+	logger := logtest.NewLoggerMock()
+	blockchainMock := new(protocoltest.BlockchainMock)
+	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 2 }
+	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
+	blockchainMock.UtxoFunc = func(input protocol.InputInfo) (protocol.Utxo, error) {
+		inputInfo := verification.NewInputInfo(0, "")
+		return verification.NewUtxo(inputInfo, &verification.Output{}, 0), nil
 	}
-	genesisValue := genesisTransaction.Outputs[genesisOutputIndex].Value
-	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, "A", genesisTransaction, genesisOutputIndex, privateKey, publicKey, now, 1)
-	pool := validation.NewTransactionsPool(blockchainMock, transactionFee, synchronizerMock, validatorWalletAddress, validationTimer, logger)
-	pool.AddTransaction(&transactionRequest, "0")
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
+	publicKey := encryption.NewPublicKey(privateKey)
+	var genesisValue uint64 = 0
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue, false)
+	pool.AddTransaction(transactionRequest, "0")
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
+
+	// Act
+	pool.Validate(now)
+
+	// Assert
+	test.AssertThatMessageIsLogged(t, []string{"transaction removed from the transactions pool, the transaction timestamp is too old"}, logger.WarnCalls())
+}
+
+func Test_Validate_ValidTransaction_TransactionsValidated(t *testing.T) {
+	// Arrange
+	validatorWalletAddress := test.Address
+	synchronizerMock := new(networktest.SynchronizerMock)
+	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return nil }
+	synchronizerMock.IncentiveFunc = func(string) {}
+	var now int64 = 2
+	var transactionFee uint64 = 0
+	logger := logtest.NewLoggerMock()
+	blockchainMock := new(protocoltest.BlockchainMock)
+	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
+	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
+	blockchainMock.UtxoFunc = func(input protocol.InputInfo) (protocol.Utxo, error) {
+		inputInfo := verification.NewInputInfo(0, "")
+		return verification.NewUtxo(inputInfo, &verification.Output{}, 0), nil
+	}
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
+	publicKey := encryption.NewPublicKey(privateKey)
+	var genesisValue uint64 = 0
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now, "0", genesisValue, false)
+	pool.AddTransaction(transactionRequest, "0")
 
 	// Act
 	pool.Validate(now)
@@ -274,26 +322,16 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	expectedCallsCount := 7
 	isTransactionsPoolValidated := len(validatedPool) == expectedCallsCount
 	test.Assert(t, isTransactionsPoolValidated, fmt.Sprintf("AddBlock method should be called only %d times whereas it's called %d times", expectedCallsCount, len(validatedPool)))
-	validatedTransactions := validatedPool[expectedCallsCount-1].Transactions
-	isTwoTransactions := len(validatedTransactions) == 2
+	transactionsBytes := validatedPool[expectedCallsCount-1].Transactions
+	var transactions []*verification.Transaction
+	_ = json.Unmarshal(transactionsBytes, &transactions)
+	isTwoTransactions := len(transactions) == 2
 	test.Assert(t, isTwoTransactions, "Validated transactions pool should contain exactly 2 transactions.")
-	actualTransaction := validatedTransactions[0]
-	expectedTransaction, _ := validation.NewTransactionFromRequest(&transactionRequest)
-	test.Assert(t, expectedTransaction.Equals(actualTransaction), "The first validated transaction is not the expected one.")
-	rewardTransaction, _ := validation.NewTransactionFromResponse(validatedTransactions[1])
+	actualTransaction := transactions[0]
+	var expectedTransaction *validation.TransactionRequest
+	_ = json.Unmarshal(transactionRequest, &expectedTransaction)
+	test.Assert(t, actualTransaction.Equals(expectedTransaction.Transaction()), "The first validated transaction is not the expected one.")
+	rewardTransaction := transactions[1]
 	isRewardTransaction := rewardTransaction.HasReward()
 	test.Assert(t, isRewardTransaction, "The second validated transaction should be the reward.")
-}
-
-func assertAddBlockCalledWithRewardTransactionOnly(t *testing.T, blockchainMock *protocoltest.BlockchainMock) {
-	validatedPool := blockchainMock.AddBlockCalls()
-	expectedCallsCount := 7
-	isTransactionsPoolValidated := len(validatedPool) == expectedCallsCount
-	test.Assert(t, isTransactionsPoolValidated, fmt.Sprintf("AddBlock method should be called only %d times whereas it's called %d times", expectedCallsCount, len(validatedPool)))
-	validatedTransactions := validatedPool[expectedCallsCount-1].Transactions
-	isSingleTransaction := len(validatedTransactions) == 1
-	test.Assert(t, isSingleTransaction, "Validated transactions pool should contain only one transaction.")
-	transaction, _ := validation.NewTransactionFromResponse(validatedTransactions[0])
-	isRewardTransaction := transaction.HasReward()
-	test.Assert(t, isRewardTransaction, "The single validated transaction should be the reward.")
 }

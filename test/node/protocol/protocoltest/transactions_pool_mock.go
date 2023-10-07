@@ -4,7 +4,6 @@
 package protocoltest
 
 import (
-	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol"
 	"sync"
 )
@@ -19,10 +18,10 @@ var _ protocol.TransactionsPool = &TransactionsPoolMock{}
 //
 //		// make and configure a mocked TransactionsPool
 //		mockedTransactionsPool := &TransactionsPoolMock{
-//			AddTransactionFunc: func(transactionRequest *network.TransactionRequest, hostTarget string)  {
+//			AddTransactionFunc: func(transaction []byte, hostTarget string)  {
 //				panic("mock out the AddTransaction method")
 //			},
-//			TransactionsFunc: func() []*network.TransactionResponse {
+//			TransactionsFunc: func() []byte {
 //				panic("mock out the Transactions method")
 //			},
 //		}
@@ -33,17 +32,17 @@ var _ protocol.TransactionsPool = &TransactionsPoolMock{}
 //	}
 type TransactionsPoolMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
-	AddTransactionFunc func(transactionRequest *network.TransactionRequest, hostTarget string)
+	AddTransactionFunc func(transaction []byte, hostTarget string)
 
 	// TransactionsFunc mocks the Transactions method.
-	TransactionsFunc func() []*network.TransactionResponse
+	TransactionsFunc func() []byte
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// AddTransaction holds details about calls to the AddTransaction method.
 		AddTransaction []struct {
-			// TransactionRequest is the transactionRequest argument value.
-			TransactionRequest *network.TransactionRequest
+			// Transaction is the transaction argument value.
+			Transaction []byte
 			// HostTarget is the hostTarget argument value.
 			HostTarget string
 		}
@@ -56,21 +55,21 @@ type TransactionsPoolMock struct {
 }
 
 // AddTransaction calls AddTransactionFunc.
-func (mock *TransactionsPoolMock) AddTransaction(transactionRequest *network.TransactionRequest, hostTarget string) {
+func (mock *TransactionsPoolMock) AddTransaction(transaction []byte, hostTarget string) {
 	if mock.AddTransactionFunc == nil {
 		panic("TransactionsPoolMock.AddTransactionFunc: method is nil but TransactionsPool.AddTransaction was just called")
 	}
 	callInfo := struct {
-		TransactionRequest *network.TransactionRequest
-		HostTarget         string
+		Transaction []byte
+		HostTarget  string
 	}{
-		TransactionRequest: transactionRequest,
-		HostTarget:         hostTarget,
+		Transaction: transaction,
+		HostTarget:  hostTarget,
 	}
 	mock.lockAddTransaction.Lock()
 	mock.calls.AddTransaction = append(mock.calls.AddTransaction, callInfo)
 	mock.lockAddTransaction.Unlock()
-	mock.AddTransactionFunc(transactionRequest, hostTarget)
+	mock.AddTransactionFunc(transaction, hostTarget)
 }
 
 // AddTransactionCalls gets all the calls that were made to AddTransaction.
@@ -78,12 +77,12 @@ func (mock *TransactionsPoolMock) AddTransaction(transactionRequest *network.Tra
 //
 //	len(mockedTransactionsPool.AddTransactionCalls())
 func (mock *TransactionsPoolMock) AddTransactionCalls() []struct {
-	TransactionRequest *network.TransactionRequest
-	HostTarget         string
+	Transaction []byte
+	HostTarget  string
 } {
 	var calls []struct {
-		TransactionRequest *network.TransactionRequest
-		HostTarget         string
+		Transaction []byte
+		HostTarget  string
 	}
 	mock.lockAddTransaction.RLock()
 	calls = mock.calls.AddTransaction
@@ -92,7 +91,7 @@ func (mock *TransactionsPoolMock) AddTransactionCalls() []struct {
 }
 
 // Transactions calls TransactionsFunc.
-func (mock *TransactionsPoolMock) Transactions() []*network.TransactionResponse {
+func (mock *TransactionsPoolMock) Transactions() []byte {
 	if mock.TransactionsFunc == nil {
 		panic("TransactionsPoolMock.TransactionsFunc: method is nil but TransactionsPool.Transactions was just called")
 	}

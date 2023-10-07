@@ -9,5 +9,6 @@
   "particlesPerToken": 100000000,
   "synchronizationIntervalInSeconds": 10,
   "validationIntervalInSeconds": 60,
+  "validationTimeoutInSeconds": 5,
   "verificationsCountPerValidation": 6
 }

@@ -3,7 +3,7 @@ In this repository, the host node is an implementation following the Ruthenium p
 
 ## Prerequisites
 * A firewall port must be open. The port number will be the value of the `port` [program argument](#program-arguments).
-* If you want to [validate](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#validation) [blocks](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#block) or get an [income](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#income), you must be registered in the [Proof of Humanity](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#proof-of-humanity) registry with an Ethereum wallet address for which you are the owner of the private key.
+* In order to [validate](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#validation) [blocks](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#block) or get an [income](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#income), the node wallet address must be registered in the [Proof of Humanity](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#proof-of-humanity) registry.
 
 ## Launch
 At root level (ruthenium folder), run the node using the command `go run src/node/main.go` with the add of some [program argument](#program-arguments). For example:
@@ -26,63 +26,77 @@ go run src/node/main.go -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0
 ```
   
 ## API
+Base URL: `<node IP>:<node port>` (example: seed-styx.ruthenium.my-cloud.me:10600)
+
 Each request value or response value shall be marshaled to bytes or un-marshaled from bytes. All fields are required.
 
 ### Blockchain
 <details>
-<summary><b>Get block</b></summary>
-
-*Description*: Get the block having the given height.
-  * **request value:** [Block request](#block-request)
-  * **response value:** [Block response](#block-response)
-</details>
-<details>
 <summary><b>Get blocks</b></summary>
 
-*Description*: Get the blocks starting from the given index (blocks count is limited).
-  * **request value:** [Blocks request](#blocks-request)
-  * **response value:** Array of [block responses](#block-response)
+![/blocks](https://img.shields.io/badge//blocks-dimgray?style=flat-square)
+
+*Description*: Get the blocks starting from the given height (returned blocks array size is limited).
+  * **request value:** 64 bits unsigned integer block height
+  * **response value:** Array of [blocks](#block)
+</details>
+<details>
+<summary><b>Get first block timestamp</b></summary>
+
+![/first-block-timestamp](https://img.shields.io/badge//first--block--timestamp-dimgray?style=flat-square)
+
+*Description*: Get the first block timestamp.
+  * **request value:** *none*
+  * **response value:** 64 bits integer timestamp in nanoseconds
 </details>
 
 ### Network
 <details>
 <summary><b>Share targets</b></summary>
 
-*Description:* Share known validator node targets (IP and port).
-* **request value:** Array of [target requests](#target-request)  
-* **response value:** no response
+![/targets](https://img.shields.io/badge//targets-dimgray?style=flat-square)
+
+*Description:* Share known validator node targets.
+* **request value:** Array of target strings (IP and port, *e.g.* ["0.0.0.0:0000", "1.1.1.1:1111"])
+* **response value:** *none*
 </details>
 
 ### Transactions pool
 <details>
 <summary><b>Add transaction</b></summary>
 
+![/transaction](https://img.shields.io/badge//transaction-dimgray?style=flat-square)
+
 *Description:* Add a transaction to the transactions pool.
-* **request value:** [Transaction request](#transaction-request)  
+* **request value:** [TransactionRequest](#transactionrequest)
 * **response value:** *none*
 </details>
 <details>
 <summary><b>Get transactions</b></summary>
 
+![/transactions](https://img.shields.io/badge//transactions-dimgray?style=flat-square)
+
 *Description:* Get all the transactions of the current transactions pool.
-* **request value:** `GET TRANSACTIONS`  
-* **response value:** Array of [transaction responses](#transaction-response)
+* **request value:** *none*
+* **response value:** Array of [transactions](#transaction)
 </details>
 
 ### Wallet
 <details>
 <summary><b>Get UTXOs</b></summary>
 
+![/utxos](https://img.shields.io/badge//utxos-dimgray?style=flat-square)
+
 *Description:* Get all the UTXOs for the given wallet address.
-* **request value:** [UTXO request](#utxo-request)  
-* **response value:** Array of [UTXO response](#utxo-response)
+* **request value:** wallet address string
+* **response value:** Array of [UTXOs](#utxo)
 </details>
 
 ---
-<details open>
-<summary style="font-size:24px"><b>Schemas</b></summary>
 
-### Blocks request
+### Schemas
+
+#### Block
 <table>
 <th>
 Schema
@@ -97,16 +111,24 @@ Example
 <td>
 
 ```
-BlocksRequest {
-  StartingBlockHeight uint64
+{
+  "timestamp":                    int64
+  "previous_hash":                [32]byte
+  "transactions":                 []Transaction
+  "added_registered_addresses":   []string
+  "removed_registered_addresses": []string
 }
 ```
 </td>
 <td>
 
 ```
-The data structure for blocks request
-  The blocks first block height
+
+The block timestamp
+The hash of the previous block in the chain
+The block transactions
+The added addresses registered in the PoH registry compared to the previous block
+The removed addresses registered in the PoH registry compared to the previous block
 
 ```
 </td>
@@ -114,136 +136,11 @@ The data structure for blocks request
 
 ```
 {
-  "StartingBlockHeight": 0
-}
-```
-</td>
-</tr>
-</table>
-
-### Block request
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-BlockRequest {
-  BlockHeight uint64
-}
-```
-</td>
-<td>
-
-```
-The data structure for block request
-  The block height
-
-```
-</td>
-<td>
-
-```
-{
-  "BlockHeight": 0
-}
-```
-</td>
-</tr>
-</table>
-
-### Block response
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-BlockResponse {
-  Timestamp                  int64
-  PreviousHash               [32]byte
-  Transactions               []TransactionResponse
-  AddedRegisteredAddresses   []string
-  RemovedRegisteredAddresses []string
-}
-```
-</td>
-<td>
-
-```
-The data structure for block response
-  The block timestamp
-  The hash of the previous block in the chain
-  The block transactions
-  The added addresses registered in the PoH registry compared to the previous block
-  The removed addresses registered in the PoH registry compared to the previous block
-
-```
-</td>
-<td>
-
-```
-{
-  "Timestamp":                  1667768884780639700
-  "PreviousHash":               [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
-  "Transactions":               []
-  "AddedRegisteredAddresses":   [ 0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a ]
-  "RemovedRegisteredAddresses": [ 0xb1477DcBBea001a339a92b031d14a011e36D008F ]
-}
-```
-</td>
-</tr>
-</table>
-
-### Target request
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-TargetRequest {
-    Ip   string
-}
-```
-</td>
-<td>
-
-```
-The data structure for target request
-  The IP
-
-```
-</td>
-<td>
-
-```
-{
-  "Ip":   0.0.0.0:10600
+  "timestamp": 1667768884780639700
+  "previous_hash": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+  "transactions": []
+  "added_registered_addresses": ["0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"]
+  "removed_registered_addresses": ["0xb1477DcBBea001a339a92b031d14a011e36D008F"]
 }
 ```
 </td>
@@ -265,22 +162,22 @@ Example
 <td>
 
 ```
-Input {
-  OutputIndex   uint16
-  TransactionId string
-  PublicKey     string
-  Signature     string
+{
+  "output_index":   uint16
+  "transaction_id": string
+  "public_key":     string
+  "signature":      string
 }
 ```
 </td>
 <td>
 
 ```
-The input data structure
-  The output index
-  The ID of the transaction holding the output
-  The output recipient public key
-  The output signature
+
+The output index
+The ID of the transaction holding the output
+The output recipient public key
+The output signature
 
 ```
 </td>
@@ -288,10 +185,10 @@ The input data structure
 
 ```
 {
-  "OutputIndex":   0
-  "TransactionId": 8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d
-  "PublicKey":     0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782
-  "Signature":     4f3b24cbb4d2c13aaf60518fce70409fd29e1668db1c2109c0eac58427c203df59788bade6d5f3eb9df161b4ed3de451bac64f4c54e74578d69caf8cd401a38f
+  "output_index": 0
+  "transaction_id": "8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d"
+  "public_key": "0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782"
+  "signature": "4f3b24cbb4d2c13aaf60518fce70409fd29e1668db1c2109c0eac58427c203df59788bade6d5f3eb9df161b4ed3de451bac64f4c54e74578d69caf8cd401a38f"
 }
 ```
 </td>
@@ -313,22 +210,20 @@ Example
 <td>
 
 ```
-Output {
-  Address   string
-  HasReward bool
-  HasIncome bool
-  Value     uint64
+{
+  "address":       string
+  "is_registered": bool
+  "value":         uint64
 }
 ```
 </td>
 <td>
 
 ```
-The output data structure
-  The address of this output recipient
-  Whether this output contains a reward
-  Whether this output should be used for income calculation
-  The value at the transaction timestamp
+
+The address of this output recipient
+Whether this output should be used for income calculation
+The value at the transaction timestamp
 
 ```
 </td>
@@ -336,17 +231,16 @@ The output data structure
 
 ```
 {
-  "Address":   0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
-  "HasReward": false
-  "HasIncome": true
-  "Value":     0
+  "address": "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
+  "has_income": true
+  "value": 0
 }
 ```
 </td>
 </tr>
 </table>
 
-#### Transaction request
+#### Transaction
 <table>
 <th>
 Schema
@@ -361,22 +255,22 @@ Example
 <td>
 
 ```
-TransactionRequest {
-  Inputs                       []InputRequest
-  Outputs                      []OutputRequest
-  Timestamp                    int64
-  TransactionBroadcasterTarget string
+{
+  "id":        string
+  "inputs":    []Input
+  "outputs":   []Output
+  "timestamp": int64
 }
 ```
 </td>
 <td>
 
 ```
-The transaction data structure for request
-  The inputs
-  The outputs
-  The timestamp
-  The transaction broadcaster target
+
+The ID
+The inputs
+The outputs
+The timestamp
 
 ```
 </td>
@@ -384,17 +278,17 @@ The transaction data structure for request
 
 ```
 {
-  "Inputs": []
-  "Outputs": []
-  "Timestamp":       1667768884780639700
-  "TransactionBroadcasterTarget": 0.0.0.0:0000
+  "id": "30148389df42b7cd0cb0d3ce951133da3f36ff4e1581d108da1ee05bacad64b7"
+  "inputs": []
+  "outputs": []
+  "timestamp": 1667768884780639700
 }
 ```
 </td>
 </tr>
 </table>
 
-#### Transaction response
+#### TransactionRequest
 <table>
 <th>
 Schema
@@ -409,22 +303,18 @@ Example
 <td>
 
 ```
-TransactionResponse {
-  Id        string
-  Inputs    []*InputResponse
-  Outputs   []*OutputResponse
-  Timestamp int64
+{
+  "transaction":                    Transaction
+  "transaction_broadcaster_target": string
 }
 ```
 </td>
 <td>
 
 ```
-The transaction data structure for response
-  The ID
-  The inputs
-  The outputs
-  The timestamp
+
+The transaction
+The transaction broadcaster target
 
 ```
 </td>
@@ -432,17 +322,15 @@ The transaction data structure for response
 
 ```
 {
-  "Id":            30148389df42b7cd0cb0d3ce951133da3f36ff4e1581d108da1ee05bacad64b7
-  "Inputs": []
-  "Outputs": []
-  "Timestamp":     1667768884780639700
+  "transaction": {}
+  "transaction_broadcaster_target": "0.0.0.0:0000"
 }
 ```
 </td>
 </tr>
 </table>
 
-### UTXO request
+#### UTXO
 <table>
 <th>
 Schema
@@ -457,16 +345,27 @@ Example
 <td>
 
 ```
-UtxosRequest {
-  Address string
+{
+  "address":        string
+  "block_height":   int
+  "has_income":     bool
+  "output_index":   uint16
+  "transaction_id": string
+  "value":          uint64
 }
 ```
 </td>
 <td>
 
 ```
-The data structure for UTXOs request
-  The wallet address for which to get the UTXOs
+
+The address of the output recipient
+The output transaction block height
+Whether the output contains a reward
+Whether the output should be used for income calculation
+The output index
+The ID of the transaction holding the output
+The value at the transaction timestamp
 
 ```
 </td>
@@ -474,69 +373,16 @@ The data structure for UTXOs request
 
 ```
 {
-  "Address": 0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
+  "address": "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
+  "block_height": 0
+  "has_income": true
+  "output_index": 0
+  "transaction_id": "8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d"
+  "value": 0
 }
 ```
 </td>
 </tr>
 </table>
-
-### UTXO response
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-type UtxoResponse struct {
-  Address       string
-  BlockHeight   int
-  HasReward     bool
-  HasIncome     bool
-  OutputIndex   uint16
-  TransactionId string
-  Value         uint64
-}
-```
-</td>
-<td>
-
-```
-The data structure for UTXO response
-  The address of the output recipient
-  The output transaction block height
-  Whether the output contains a reward
-  Whether the output should be used for income calculation
-  The output index
-  The ID of the transaction holding the output
-  The value at the transaction timestamp
-
-```
-</td>
-<td>
-
-```
-{
-  "Address":       0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a
-  "BlockHeight":   0
-  "HasReward":     false
-  "HasIncome":     true
-  "OutputIndex":   0
-  "TransactionId": 8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d
-  "Value":         0
-}
-```
-</td>
-</tr>
-</table>
-</details>
 
 [1]: https://go.dev/blog/gob "Gobs official documentation"

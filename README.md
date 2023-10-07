@@ -98,10 +98,7 @@ For a [tutorial to create a first blockchain in Go][1], thanks to [Yuko Sakai][2
 [![Reliability](https://sonarcloud.io/api/project_badges/measure?project=my-cloud_ruthenium&metric=reliability_rating)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=reliability_rating)
 [![Coverage](https://img.shields.io/sonar/coverage/my-cloud_ruthenium/main?logo=sonarcloud&server=https%3A%2F%2Fsonarcloud.io)](https://sonarcloud.io/component_measures?id=my-cloud_ruthenium&metric=coverage)
 
-The main principles have been implemented.
-
-Now it needs a lot of refactoring and tests to improve maintainability and
-reliability.
+While the main principles have been implemented, there is still a substantial amount of refactoring and test implementation remaining.
 
 [1]: https://www.udemy.com/course/golang-how-to-build-a-blockchain-in-go/ "Udemy tutorial to build a blockchain in Go"
 [2]: https://www.udemy.com/user/myeigoworld/ "Yuko Sakai LinkedIn profile"

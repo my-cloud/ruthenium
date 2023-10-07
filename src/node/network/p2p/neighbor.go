@@ -3,17 +3,11 @@ package p2p
 import (
 	"encoding/json"
 	"fmt"
-	gp2p "github.com/leprosus/golang-p2p"
-	"github.com/my-cloud/ruthenium/src/node/network"
-	"time"
 )
 
-const connectionTimeoutInSeconds = 5
-
 type Neighbor struct {
-	target   *Target
-	client   Client
-	settings *gp2p.ClientSettings
+	target *Target
+	client Client
 }
 
 func NewNeighbor(target *Target, clientFactory ClientFactory) (*Neighbor, error) {
@@ -21,81 +15,52 @@ func NewNeighbor(target *Target, clientFactory ClientFactory) (*Neighbor, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client reaching %s: %w", target.Value(), err)
 	}
-	settings := gp2p.NewClientSettings()
-	settings.SetRetry(1, time.Nanosecond)
-	settings.SetConnTimeout(connectionTimeoutInSeconds * time.Second)
-	client.SetSettings(settings)
-	return &Neighbor{target, client, settings}, nil
+	return &Neighbor{target, client}, nil
 }
 
 func (neighbor *Neighbor) Target() string {
 	return neighbor.target.Value()
 }
 
-func (neighbor *Neighbor) GetBlock(blockHeight uint64) (blockResponse *network.BlockResponse, err error) {
-	request := network.BlockRequest{BlockHeight: &blockHeight}
-	res, err := neighbor.sendRequest(request)
-	if err == nil {
-		data := res.GetBytes()
-		err = json.Unmarshal(data, &blockResponse)
-	}
-	return
+func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) ([]byte, error) {
+	return neighbor.sendRequest(blocksEndpoint, startingBlockHeight)
 }
 
-func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) (blockResponses []*network.BlockResponse, err error) {
-	request := network.BlocksRequest{StartingBlockHeight: &startingBlockHeight}
-	res, err := neighbor.sendRequest(request)
-	if err == nil {
-		data := res.GetBytes()
-		err = json.Unmarshal(data, &blockResponses)
-	}
-	return
-}
-
-func (neighbor *Neighbor) SendTargets(request []network.TargetRequest) (err error) {
-	_, err = neighbor.sendRequest(request)
-	return
-}
-
-func (neighbor *Neighbor) AddTransaction(request network.TransactionRequest) (err error) {
-	_, err = neighbor.sendRequest(request)
-	return
-}
-
-func (neighbor *Neighbor) GetTransactions() (transactionResponses []network.TransactionResponse, err error) {
-	res, err := neighbor.sendRequest(GetTransactions)
+func (neighbor *Neighbor) GetFirstBlockTimestamp() (int64, error) {
+	res, err := neighbor.client.Send(firstBlockTimestampEndpoint, []byte{})
+	var timestamp int64
 	if err != nil {
-		return
+		return timestamp, err
 	}
-	data := res.GetBytes()
-	err = json.Unmarshal(data, &transactionResponses)
-	if transactionResponses == nil {
-		return []network.TransactionResponse{}, err
+	err = json.Unmarshal(res, &timestamp)
+	if err != nil {
+		return timestamp, err
 	}
-	return
+	return timestamp, err
 }
 
-func (neighbor *Neighbor) GetUtxos(address string) (utxos []*network.UtxoResponse, err error) {
-	request := network.UtxosRequest{Address: &address}
-	res, err := neighbor.sendRequest(request)
-	if err != nil {
-		return
-	}
-	data := res.GetBytes()
-	err = json.Unmarshal(data, &utxos)
-	if err != nil {
-		return
-	}
-	return
+func (neighbor *Neighbor) SendTargets(targets []string) error {
+	_, err := neighbor.sendRequest(targetsEndpoint, targets)
+	return err
 }
 
-func (neighbor *Neighbor) sendRequest(request interface{}) (res gp2p.Data, err error) {
-	req := gp2p.Data{}
-	data, err := json.Marshal(request)
+func (neighbor *Neighbor) AddTransaction(transaction []byte) error {
+	_, err := neighbor.client.Send(transactionEndpoint, transaction)
+	return err
+}
+
+func (neighbor *Neighbor) GetTransactions() ([]byte, error) {
+	return neighbor.client.Send(transactionsEndpoint, []byte{})
+}
+
+func (neighbor *Neighbor) GetUtxos(address string) ([]byte, error) {
+	return neighbor.sendRequest(utxosEndpoint, address)
+}
+
+func (neighbor *Neighbor) sendRequest(topic string, request interface{}) ([]byte, error) {
+	bytes, err := json.Marshal(request)
 	if err != nil {
-		return
+		return nil, err
 	}
-	req.SetBytes(data)
-	res, err = neighbor.client.Send("dialog", req)
-	return
+	return neighbor.client.Send(topic, bytes)
 }

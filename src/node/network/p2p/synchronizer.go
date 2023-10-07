@@ -10,40 +10,40 @@ import (
 )
 
 type Synchronizer struct {
-	clientFactory       ClientFactory
-	hostTarget          *Target
-	maxOutboundsCount   int
-	neighbors           []network.Neighbor
-	neighborsMutex      sync.RWMutex
-	scoresBySeedTarget  map[string]int
-	scoresByTarget      map[string]int
-	scoresByTargetMutex sync.RWMutex
-	watch               clock.Watch
+	clientFactory            ClientFactory
+	hostTarget               *Target
+	maxOutboundsCount        int
+	neighbors                []network.Neighbor
+	neighborsMutex           sync.RWMutex
+	scoresBySeedTargetValue  map[string]int
+	scoresByTargetValue      map[string]int
+	scoresByTargetValueMutex sync.RWMutex
+	watch                    clock.Watch
 }
 
-func NewSynchronizer(clientFactory ClientFactory, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTarget map[string]int, watch clock.Watch) *Synchronizer {
+func NewSynchronizer(clientFactory ClientFactory, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTargetValue map[string]int, watch clock.Watch) *Synchronizer {
 	synchronizer := new(Synchronizer)
 	synchronizer.clientFactory = clientFactory
 	synchronizer.hostTarget = NewTarget(hostIp, hostPort)
 	synchronizer.maxOutboundsCount = maxOutboundsCount
-	synchronizer.scoresBySeedTarget = scoresBySeedTarget
-	synchronizer.scoresByTarget = map[string]int{}
+	synchronizer.scoresBySeedTargetValue = scoresBySeedTargetValue
+	synchronizer.scoresByTargetValue = map[string]int{}
 	synchronizer.watch = watch
 	return synchronizer
 }
 
-func (synchronizer *Synchronizer) AddTargets(targetRequests []network.TargetRequest) {
-	synchronizer.scoresByTargetMutex.Lock()
-	defer synchronizer.scoresByTargetMutex.Unlock()
-	for _, targetRequest := range targetRequests {
-		_, isTargetAlreadyKnown := synchronizer.scoresByTarget[*targetRequest.Target]
-		target, err := NewTargetFromValue(*targetRequest.Target)
+func (synchronizer *Synchronizer) AddTargets(targetValues []string) {
+	synchronizer.scoresByTargetValueMutex.Lock()
+	defer synchronizer.scoresByTargetValueMutex.Unlock()
+	for _, targetValue := range targetValues {
+		_, isTargetAlreadyKnown := synchronizer.scoresByTargetValue[targetValue]
+		target, err := NewTargetFromValue(targetValue)
 		if err != nil {
 			continue
 		}
 		isTargetOnSameNetwork := synchronizer.hostTarget.IsSameNetworkId(target)
 		if !isTargetAlreadyKnown && isTargetOnSameNetwork {
-			synchronizer.scoresByTarget[*targetRequest.Target] = 0
+			synchronizer.scoresByTargetValue[targetValue] = 0
 		}
 	}
 }
@@ -52,10 +52,10 @@ func (synchronizer *Synchronizer) HostTarget() string {
 	return synchronizer.hostTarget.Value()
 }
 
-func (synchronizer *Synchronizer) Incentive(target string) {
-	synchronizer.scoresByTargetMutex.Lock()
-	defer synchronizer.scoresByTargetMutex.Unlock()
-	synchronizer.scoresByTarget[target] += 1
+func (synchronizer *Synchronizer) Incentive(targetValue string) {
+	synchronizer.scoresByTargetValueMutex.Lock()
+	defer synchronizer.scoresByTargetValueMutex.Unlock()
+	synchronizer.scoresByTargetValue[targetValue] += 1
 }
 
 func (synchronizer *Synchronizer) Neighbors() []network.Neighbor {
@@ -63,25 +63,22 @@ func (synchronizer *Synchronizer) Neighbors() []network.Neighbor {
 }
 
 func (synchronizer *Synchronizer) Synchronize(int64) {
-	synchronizer.scoresByTargetMutex.Lock()
-	var scoresByTarget map[string]int
-	if len(synchronizer.scoresByTarget) == 0 {
-		scoresByTarget = synchronizer.scoresBySeedTarget
+	synchronizer.scoresByTargetValueMutex.Lock()
+	var scoresByTargetValue map[string]int
+	if len(synchronizer.scoresByTargetValue) == 0 {
+		scoresByTargetValue = synchronizer.scoresBySeedTargetValue
 	} else {
-		scoresByTarget = synchronizer.scoresByTarget
+		scoresByTargetValue = synchronizer.scoresByTargetValue
 	}
-	synchronizer.scoresByTarget = map[string]int{}
-	synchronizer.scoresByTargetMutex.Unlock()
+	synchronizer.scoresByTargetValue = map[string]int{}
+	synchronizer.scoresByTargetValueMutex.Unlock()
 	neighborsByScore := map[int][]network.Neighbor{}
-	var targetRequests []network.TargetRequest
+	var targetValues []string
 	hostTargetValue := synchronizer.hostTarget.Value()
-	hostTargetRequest := network.TargetRequest{
-		Target: &hostTargetValue,
-	}
-	targetRequests = append(targetRequests, hostTargetRequest)
-	for target, score := range scoresByTarget {
-		if target != hostTargetValue {
-			neighborTarget, err := NewTargetFromValue(target)
+	targetValues = append(targetValues, hostTargetValue)
+	for targetValue, score := range scoresByTargetValue {
+		if targetValue != hostTargetValue {
+			neighborTarget, err := NewTargetFromValue(targetValue)
 			if err != nil {
 				continue
 			}
@@ -90,26 +87,23 @@ func (synchronizer *Synchronizer) Synchronize(int64) {
 				continue
 			}
 			neighborsByScore[score] = append(neighborsByScore[score], neighbor)
-			targetRequest := network.TargetRequest{
-				Target: &target,
-			}
-			targetRequests = append(targetRequests, targetRequest)
+			targetValues = append(targetValues, targetValue)
 		}
 	}
-	outbounds := synchronizer.selectOutbounds(neighborsByScore, len(scoresByTarget))
+	outbounds := synchronizer.selectOutbounds(neighborsByScore, len(scoresByTargetValue))
 	synchronizer.neighborsMutex.Lock()
 	synchronizer.neighbors = outbounds
 	synchronizer.neighborsMutex.Unlock()
 	for _, neighbor := range outbounds {
-		var neighborTargetRequests []network.TargetRequest
-		for _, targetRequest := range targetRequests {
-			neighborTarget := neighbor.Target()
-			if neighborTarget != *targetRequest.Target {
-				neighborTargetRequests = append(neighborTargetRequests, targetRequest)
+		var neighborTargetValues []string
+		for _, targetValue := range targetValues {
+			neighborTargetValue := neighbor.Target()
+			if neighborTargetValue != targetValue {
+				neighborTargetValues = append(neighborTargetValues, targetValue)
 			}
 		}
 		go func(neighbor network.Neighbor) {
-			_ = neighbor.SendTargets(neighborTargetRequests)
+			_ = neighbor.SendTargets(neighborTargetValues)
 		}(neighbor)
 	}
 }

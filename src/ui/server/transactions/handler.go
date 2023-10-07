@@ -1,7 +1,6 @@
 package transactions
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/network"
@@ -27,14 +26,8 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		marshaledTransactions, err := json.Marshal(transactions)
-		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to marshal transactions: %w", err).Error())
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
 		writer.Header().Add("Content-Type", "application/json")
-		server.NewIoWriter(writer, handler.logger).Write(string(marshaledTransactions[:]))
+		server.NewIoWriter(writer, handler.logger).Write(string(transactions[:]))
 	default:
 		handler.logger.Error("invalid HTTP method")
 		writer.WriteHeader(http.StatusBadRequest)

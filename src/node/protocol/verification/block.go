@@ -3,83 +3,31 @@ package verification
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/src/node/network"
-	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
 )
+
+type blockDto struct {
+	Timestamp                  int64          `json:"timestamp"`
+	PreviousHash               [32]byte       `json:"previous_hash"`
+	Transactions               []*Transaction `json:"transactions"`
+	AddedRegisteredAddresses   []string       `json:"added_registered_addresses"`
+	RemovedRegisteredAddresses []string       `json:"removed_registered_addresses"`
+}
 
 type Block struct {
 	timestamp                  int64
 	previousHash               [32]byte
-	transactions               []*validation.Transaction
+	transactions               []*Transaction
 	addedRegisteredAddresses   []string
 	removedRegisteredAddresses []string
-	registeredAddresses        []string
 }
 
-func NewBlockResponse(timestamp int64, previousHash [32]byte, transactions []*network.TransactionResponse, addedRegisteredAddresses []string, removedRegisteredAddresses []string) *network.BlockResponse {
-	return &network.BlockResponse{
-		Timestamp:                  timestamp,
-		PreviousHash:               previousHash,
-		Transactions:               transactions,
-		AddedRegisteredAddresses:   addedRegisteredAddresses,
-		RemovedRegisteredAddresses: removedRegisteredAddresses,
-	}
-}
-
-func NewBlockFromResponse(block *network.BlockResponse, lastRegisteredAddresses []string) (*Block, error) {
-	var transactions []*validation.Transaction
-	for _, transactionResponse := range block.Transactions {
-		if transactionResponse == nil {
-			return nil, errors.New("a transaction is nil")
-		}
-		transaction, err := validation.NewTransactionFromResponse(transactionResponse)
-		if err != nil {
-			return nil, fmt.Errorf("failed to instantiate transaction: %w", err)
-		}
-		transactions = append(transactions, transaction)
-	}
-	cleanedAddresses := lastRegisteredAddresses
-	for _, address := range block.RemovedRegisteredAddresses {
-		removeAddress(cleanedAddresses, address)
-	}
-	registeredAddressesMap := make(map[string]bool)
-	for _, address := range append(lastRegisteredAddresses, block.AddedRegisteredAddresses...) {
-		if _, ok := registeredAddressesMap[address]; !ok {
-			registeredAddressesMap[address] = false
-		}
-	}
-	var registeredAddresses []string
-	for address := range registeredAddressesMap {
-		registeredAddresses = append(registeredAddresses, address)
-	}
-	return &Block{
-		block.Timestamp,
-		block.PreviousHash,
-		transactions,
-		block.AddedRegisteredAddresses,
-		block.RemovedRegisteredAddresses,
-		registeredAddresses,
-	}, nil
+func NewBlock(timestamp int64, previousHash [32]byte, transactions []*Transaction, addedRegisteredAddresses []string, removedRegisteredAddresses []string) *Block {
+	return &Block{timestamp, previousHash, transactions, addedRegisteredAddresses, removedRegisteredAddresses}
 }
 
 func (block *Block) AddedRegisteredAddresses() []string {
 	return block.addedRegisteredAddresses
-}
-
-func (block *Block) GetResponse() *network.BlockResponse {
-	var transactions []*network.TransactionResponse
-	for _, transaction := range block.transactions {
-		transactions = append(transactions, transaction.GetResponse())
-	}
-	return &network.BlockResponse{
-		Timestamp:                  block.timestamp,
-		PreviousHash:               block.previousHash,
-		Transactions:               transactions,
-		AddedRegisteredAddresses:   block.registeredAddresses,
-		RemovedRegisteredAddresses: block.registeredAddresses,
-	}
 }
 
 func (block *Block) Hash() (hash [32]byte, err error) {
@@ -92,16 +40,24 @@ func (block *Block) Hash() (hash [32]byte, err error) {
 	return
 }
 
+func (block *Block) UnmarshalJSON(data []byte) error {
+	var dto *blockDto
+	err := json.Unmarshal(data, &dto)
+	if err != nil {
+		return err
+	}
+	block.timestamp = dto.Timestamp
+	block.previousHash = dto.PreviousHash
+	block.transactions = dto.Transactions
+	block.addedRegisteredAddresses = dto.AddedRegisteredAddresses
+	block.removedRegisteredAddresses = dto.RemovedRegisteredAddresses
+	return nil
+}
+
 func (block *Block) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Timestamp                  int64                     `json:"timestamp"`
-		PreviousHash               string                    `json:"previous_hash"`
-		Transactions               []*validation.Transaction `json:"transactions"`
-		AddedRegisteredAddresses   []string                  `json:"added_registered_addresses"`
-		RemovedRegisteredAddresses []string                  `json:"removed_registered_addresses"`
-	}{
+	return json.Marshal(blockDto{
 		Timestamp:                  block.timestamp,
-		PreviousHash:               fmt.Sprintf("%x", block.previousHash),
+		PreviousHash:               block.previousHash,
 		Transactions:               block.transactions,
 		AddedRegisteredAddresses:   block.addedRegisteredAddresses,
 		RemovedRegisteredAddresses: block.removedRegisteredAddresses,
@@ -112,10 +68,6 @@ func (block *Block) PreviousHash() [32]byte {
 	return block.previousHash
 }
 
-func (block *Block) RegisteredAddresses() []string {
-	return block.registeredAddresses
-}
-
 func (block *Block) RemovedRegisteredAddresses() []string {
 	return block.removedRegisteredAddresses
 }
@@ -124,7 +76,7 @@ func (block *Block) Timestamp() int64 {
 	return block.timestamp
 }
 
-func (block *Block) Transactions() []*validation.Transaction {
+func (block *Block) Transactions() []*Transaction {
 	return block.transactions
 }
 

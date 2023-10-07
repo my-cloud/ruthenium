@@ -18,7 +18,7 @@ var _ network.Synchronizer = &SynchronizerMock{}
 //
 //		// make and configure a mocked Synchronizer
 //		mockedSynchronizer := &SynchronizerMock{
-//			AddTargetsFunc: func(requests []TargetRequest)  {
+//			AddTargetsFunc: func(targets []string)  {
 //				panic("mock out the AddTargets method")
 //			},
 //			HostTargetFunc: func() string {
@@ -38,7 +38,7 @@ var _ network.Synchronizer = &SynchronizerMock{}
 //	}
 type SynchronizerMock struct {
 	// AddTargetsFunc mocks the AddTargets method.
-	AddTargetsFunc func(requests []network.TargetRequest)
+	AddTargetsFunc func(targets []string)
 
 	// HostTargetFunc mocks the HostTarget method.
 	HostTargetFunc func() string
@@ -53,8 +53,8 @@ type SynchronizerMock struct {
 	calls struct {
 		// AddTargets holds details about calls to the AddTargets method.
 		AddTargets []struct {
-			// Requests is the requests argument value.
-			Requests []network.TargetRequest
+			// Targets is the targets argument value.
+			Targets []string
 		}
 		// HostTarget holds details about calls to the HostTarget method.
 		HostTarget []struct {
@@ -75,19 +75,19 @@ type SynchronizerMock struct {
 }
 
 // AddTargets calls AddTargetsFunc.
-func (mock *SynchronizerMock) AddTargets(requests []network.TargetRequest) {
+func (mock *SynchronizerMock) AddTargets(targets []string) {
 	if mock.AddTargetsFunc == nil {
 		panic("SynchronizerMock.AddTargetsFunc: method is nil but Synchronizer.AddTargets was just called")
 	}
 	callInfo := struct {
-		Requests []network.TargetRequest
+		Targets []string
 	}{
-		Requests: requests,
+		Targets: targets,
 	}
 	mock.lockAddTargets.Lock()
 	mock.calls.AddTargets = append(mock.calls.AddTargets, callInfo)
 	mock.lockAddTargets.Unlock()
-	mock.AddTargetsFunc(requests)
+	mock.AddTargetsFunc(targets)
 }
 
 // AddTargetsCalls gets all the calls that were made to AddTargets.
@@ -95,10 +95,10 @@ func (mock *SynchronizerMock) AddTargets(requests []network.TargetRequest) {
 //
 //	len(mockedSynchronizer.AddTargetsCalls())
 func (mock *SynchronizerMock) AddTargetsCalls() []struct {
-	Requests []network.TargetRequest
+	Targets []string
 } {
 	var calls []struct {
-		Requests []network.TargetRequest
+		Targets []string
 	}
 	mock.lockAddTargets.RLock()
 	calls = mock.calls.AddTargets

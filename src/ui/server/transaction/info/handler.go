@@ -7,7 +7,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
-	"github.com/my-cloud/ruthenium/src/node/protocol/validation"
+	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/src/ui/server"
 	"math"
 	"net/http"
@@ -15,19 +15,14 @@ import (
 )
 
 type Handler struct {
-	host                  network.Neighbor
-	halfLifeInNanoseconds float64
-	incomeBase            uint64
-	incomeLimit           uint64
-	minimalTransactionFee uint64
-	particlesCount        uint64
-	validationTimestamp   int64
-	watch                 clock.Watch
-	logger                log.Logger
+	host     network.Neighbor
+	settings server.Settings
+	watch    clock.Watch
+	logger   log.Logger
 }
 
-func NewHandler(host network.Neighbor, halfLifeInNanoseconds float64, incomeBase uint64, incomeLimit uint64, minimalTransactionFee uint64, particlesCount uint64, validationTimestamp int64, watch clock.Watch, logger log.Logger) *Handler {
-	return &Handler{host, halfLifeInNanoseconds, incomeBase, incomeLimit, minimalTransactionFee, particlesCount, validationTimestamp, watch, logger}
+func NewHandler(host network.Neighbor, settings server.Settings, watch clock.Watch, logger log.Logger) *Handler {
+	return &Handler{host, settings, watch, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -60,44 +55,46 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write(errorMessage)
 			return
 		}
-		utxos, err := handler.host.GetUtxos(address)
+		utxosBytes, err := handler.host.GetUtxos(address)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		genesisBlock, err := handler.host.GetBlock(0)
-		if err != nil || genesisBlock == nil {
-			handler.logger.Error(fmt.Errorf("failed to get genesis block: %w", err).Error())
+		var utxos []*verification.Utxo
+		err = json.Unmarshal(utxosBytes, &utxos)
+		if err != nil {
+			handler.logger.Error(fmt.Errorf("failed to unmarshal UTXOs: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var selectedUtxos []*UtxoResponse
+		genesisTimestamp, err := handler.host.GetFirstBlockTimestamp()
+		if err != nil {
+			handler.logger.Error(fmt.Errorf("failed to get genesis timestamp: %w", err).Error())
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		var selectedInputs []*verification.InputInfo
 		now := handler.watch.Now().UnixNano()
-		nextBlockHeight := (now-genesisBlock.Timestamp)/handler.validationTimestamp + 1
-		nextBlockTimestamp := genesisBlock.Timestamp + nextBlockHeight*handler.validationTimestamp
-		utxosByValue := make(map[uint64][]*UtxoResponse)
+		nextBlockHeight := (now-genesisTimestamp)/handler.settings.ValidationTimestamp() + 1
+		nextBlockTimestamp := genesisTimestamp + nextBlockHeight*handler.settings.ValidationTimestamp()
+		utxosByValue := make(map[uint64][]*verification.InputInfo)
 		var walletBalance uint64
 		var values []uint64
 		for _, utxo := range utxos {
-			output := validation.NewOutputFromUtxoResponse(utxo, genesisBlock.Timestamp, handler.halfLifeInNanoseconds, handler.incomeBase, handler.incomeLimit, handler.validationTimestamp)
-			outputValue := output.Value(nextBlockTimestamp)
-			utxoResponse := &UtxoResponse{
-				OutputIndex:   utxo.OutputIndex,
-				TransactionId: utxo.TransactionId,
-			}
-			walletBalance += outputValue
+			utxoValue := utxo.Value(nextBlockTimestamp, handler.settings.HalfLifeInNanoseconds(), handler.settings.IncomeBaseInParticles(), handler.settings.IncomeLimitInParticles())
+			walletBalance += utxoValue
 			if isConsolidationRequired {
-				selectedUtxos = append(selectedUtxos, utxoResponse)
+				selectedInputs = append(selectedInputs, utxo.InputInfo)
 			} else {
-				if _, ok := utxosByValue[outputValue]; !ok {
-					values = append(values, outputValue)
+				if _, ok := utxosByValue[utxoValue]; !ok {
+					values = append(values, utxoValue)
 				}
-				utxosByValue[outputValue] = append(utxosByValue[outputValue], utxoResponse)
+				utxosByValue[utxoValue] = append(utxosByValue[utxoValue], utxo.InputInfo)
 			}
 		}
 		value := uint64(parsedValue)
-		targetValue := value + handler.minimalTransactionFee
+		targetValue := value + handler.settings.MinimalTransactionFee()
 		if walletBalance < targetValue {
 			errorMessage := "insufficient wallet balance"
 			handler.logger.Error(errors.New(errorMessage).Error())
@@ -109,7 +106,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		var inputsValue uint64
 		if isConsolidationRequired {
 			inputsValue = walletBalance
-		} else if values != nil {
+		} else if len(values) != 0 {
 			for inputsValue < targetValue {
 				closestValueIndex := findClosestValueIndex(targetValue, values)
 				closestValue := values[closestValueIndex]
@@ -117,14 +114,15 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 				closestUtxos := utxosByValue[closestValue]
 				for i := 0; i < len(closestUtxos) && inputsValue < targetValue; i++ {
 					inputsValue += closestValue
-					selectedUtxos = append(selectedUtxos, closestUtxos[i])
+					selectedInputs = append(selectedInputs, closestUtxos[i])
 				}
 			}
 		}
-		rest := inputsValue - value - handler.minimalTransactionFee
-		response := &TransactionInfoResponse{
-			Rest:  rest,
-			Utxos: selectedUtxos,
+		rest := inputsValue - targetValue
+		response := &TransactionInfo{
+			Rest:      rest,
+			Inputs:    selectedInputs,
+			Timestamp: now,
 		}
 		marshaledResponse, err := json.Marshal(response)
 		if err != nil {
