@@ -308,7 +308,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	}
 }
 
-func (blockchain *Blockchain) Utxo(input protocol.Input) (protocol.Utxo, error) {
+func (blockchain *Blockchain) Utxo(input protocol.InputInfo) (protocol.Utxo, error) {
 	utxos, ok := blockchain.utxosById[input.TransactionId()]
 	if !ok || int(input.OutputIndex()) > len(utxos)-1 {
 		return nil, fmt.Errorf("failed to find UTXO, input: %v", input)

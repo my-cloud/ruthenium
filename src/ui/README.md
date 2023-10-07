@@ -46,7 +46,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 
   |Code|Description|
     |---|---|
-  |200|[Transaction info](#transaction-info)|
+  |200|[TransactionInfo](#transactioninfo)|
   |400|Bad request, if any request argument is invalid|
   |405|Method not allowed, if the value exceeds the wallet amount for the given address|
   |500|Internal server error, if an unexpected condition occurred|
@@ -59,7 +59,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 
 *Description:* Add a transaction to the transactions pool.
 * **parameters:** *none*
-* **request body:** [Transaction request](#transaction-request)
+* **request body:** [TransactionRequest](#transactionrequest)
 * **responses:**
 
   |Code|Description|
@@ -147,22 +147,22 @@ Example
 <td>
 
 ```
-Input {
-  OutputIndex   uint16
-  TransactionId string
-  PublicKey     string
-  Signature     string
+{
+  "output_index":   uint16
+  "transaction_id": string
+  "public_key":     string
+  "signature":      string
 }
 ```
 </td>
 <td>
 
 ```
-The input data structure
-  The output index
-  The ID of the transaction holding the output
-  The output recipient public key
-  The output signature
+
+The output index
+The ID of the transaction holding the output
+The output recipient public key
+The output signature
 
 ```
 </td>
@@ -170,10 +170,10 @@ The input data structure
 
 ```
 {
-  "OutputIndex":   0
-  "TransactionId": "8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d"
-  "PublicKey":     "0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782"
-  "Signature":     "4f3b24cbb4d2c13aaf60518fce70409fd29e1668db1c2109c0eac58427c203df59788bade6d5f3eb9df161b4ed3de451bac64f4c54e74578d69caf8cd401a38f"
+  "output_index": 0
+  "transaction_id": "8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d"
+  "public_key": "0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782"
+  "signature": "4f3b24cbb4d2c13aaf60518fce70409fd29e1668db1c2109c0eac58427c203df59788bade6d5f3eb9df161b4ed3de451bac64f4c54e74578d69caf8cd401a38f"
 }
 ```
 </td>
@@ -195,22 +195,20 @@ Example
 <td>
 
 ```
-Output {
-  Address   string
-  HasReward bool
-  HasIncome bool
-  Value     uint64
+{
+  "address":       string
+  "is_registered": bool
+  "value":         uint64
 }
 ```
 </td>
 <td>
 
 ```
-The output data structure
-  The address of this output recipient
-  Whether this output contains a reward
-  Whether this output should be used for income calculation
-  The value at the transaction timestamp
+
+The address of this output recipient
+Whether this output should be used for income calculation
+The value at the transaction timestamp
 
 ```
 </td>
@@ -218,17 +216,16 @@ The output data structure
 
 ```
 {
-  "Address":   "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
-  "HasReward": false
-  "HasIncome": true
-  "Value":     0
+  "address": "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
+  "has_income": true
+  "value": 0
 }
 ```
 </td>
 </tr>
 </table>
 
-#### Transaction info
+#### TransactionInfo
 <table>
 <th>
 Schema
@@ -243,18 +240,19 @@ Example
 <td>
 
 ```
-TransactionInfo {
-  Rest  uint64
-  Utxos []UtxoResponse
+{
+  "inputs":    []InputInfo
+  "rest":      uint64
+  "timestamp": int64
 }
 ```
 </td>
 <td>
 
 ```
-The transaction info data structure
-  The remaining amount to be used as a value for the output with the sender address
-  The utxos to be used as inputs of the transaction
+
+The remaining amount to be used as a value for the output with the sender address
+The utxos to be used as inputs of the transaction
 
 ```
 </td>
@@ -262,15 +260,16 @@ The transaction info data structure
 
 ```
 {
-  "Rest":  0
-  "Utxos": []
+  "inputs": []
+  "rest": 0
+  "timestamp": 1667768884780639700
 }
 ```
 </td>
 </tr>
 </table>
 
-#### UTXO response
+#### InputInfo
 <table>
 <th>
 Schema
@@ -285,18 +284,18 @@ Example
 <td>
 
 ```
-type UtxoResponse struct {
-  OutputIndex   uint16
-  TransactionId string
+{
+  "output_index":   uint16
+  "transaction_id": string
 }
 ```
 </td>
 <td>
 
 ```
-The UTXO response data structure
-  The output index
-  The ID of the transaction holding the output
+
+The output index
+The ID of the transaction holding the output
 
 ```
 </td>
@@ -304,15 +303,15 @@ The UTXO response data structure
 
 ```
 {
-  "OutputIndex":   0
-  "TransactionId": "8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d"
+  "output_index": 0
+  "transaction_id": "8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d"
 }
 ```
 </td>
 </tr>
 </table>
 
-#### Transaction request
+#### TransactionRequest
 <table>
 <th>
 Schema
@@ -327,18 +326,18 @@ Example
 <td>
 
 ```
-TransactionRequest {
-  Transaction                  Transaction
-  TransactionBroadcasterTarget string
+{
+  "transaction":                    Transaction
+  "transaction_broadcaster_target": string
 }
 ```
 </td>
 <td>
 
 ```
-The transaction request data structure
-  The transaction
-  The transaction broadcaster target
+
+The transaction
+The transaction broadcaster target
 
 ```
 </td>
@@ -346,8 +345,8 @@ The transaction request data structure
 
 ```
 {
-  "Transaction":                  {}
-  "TransactionBroadcasterTarget": "0.0.0.0:0000"
+  "transaction": {}
+  "transaction_broadcaster_target": "0.0.0.0:0000"
 }
 ```
 </td>
@@ -369,22 +368,22 @@ Example
 <td>
 
 ```
-Transaction {
-  Id        string
-  Inputs    []Input
-  Outputs   []Output
-  Timestamp int64
+{
+  "id":        string
+  "inputs":    []Input
+  "outputs":   []Output
+  "timestamp": int64
 }
 ```
 </td>
 <td>
 
 ```
-The transaction data structure
-  The ID
-  The inputs
-  The outputs
-  The timestamp
+
+The ID
+The inputs
+The outputs
+The timestamp
 
 ```
 </td>
@@ -392,10 +391,10 @@ The transaction data structure
 
 ```
 {
-  "Id":        "30148389df42b7cd0cb0d3ce951133da3f36ff4e1581d108da1ee05bacad64b7"
-  "Inputs":    []
-  "Outputs":   []
-  "Timestamp": 1667768884780639700
+  "id": "30148389df42b7cd0cb0d3ce951133da3f36ff4e1581d108da1ee05bacad64b7"
+  "inputs": []
+  "outputs": []
+  "timestamp": 1667768884780639700
 }
 ```
 </td>

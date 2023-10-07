@@ -62,7 +62,7 @@ type BlockchainMock struct {
 	LastBlockTimestampFunc func() int64
 
 	// UtxoFunc mocks the Utxo method.
-	UtxoFunc func(input protocol.Input) (protocol.Utxo, error)
+	UtxoFunc func(input protocol.InputInfo) (protocol.Utxo, error)
 
 	// UtxosFunc mocks the Utxos method.
 	UtxosFunc func(address string) []byte
@@ -95,7 +95,7 @@ type BlockchainMock struct {
 		// Utxo holds details about calls to the Utxo method.
 		Utxo []struct {
 			// Input is the input argument value.
-			Input protocol.Input
+			Input protocol.InputInfo
 		}
 		// Utxos holds details about calls to the Utxos method.
 		Utxos []struct {
@@ -266,12 +266,12 @@ func (mock *BlockchainMock) LastBlockTimestampCalls() []struct {
 }
 
 // Utxo calls UtxoFunc.
-func (mock *BlockchainMock) Utxo(input protocol.Input) (protocol.Utxo, error) {
+func (mock *BlockchainMock) Utxo(input protocol.InputInfo) (protocol.Utxo, error) {
 	if mock.UtxoFunc == nil {
 		panic("BlockchainMock.UtxoFunc: method is nil but Blockchain.Utxo was just called")
 	}
 	callInfo := struct {
-		Input protocol.Input
+		Input protocol.InputInfo
 	}{
 		Input: input,
 	}
@@ -286,10 +286,10 @@ func (mock *BlockchainMock) Utxo(input protocol.Input) (protocol.Utxo, error) {
 //
 //	len(mockedBlockchain.UtxoCalls())
 func (mock *BlockchainMock) UtxoCalls() []struct {
-	Input protocol.Input
+	Input protocol.InputInfo
 } {
 	var calls []struct {
-		Input protocol.Input
+		Input protocol.InputInfo
 	}
 	mock.lockUtxo.RLock()
 	calls = mock.calls.Utxo

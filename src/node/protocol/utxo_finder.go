@@ -1,3 +1,3 @@
 package protocol
 
-type UtxoFinder func(input Input) (Utxo, error)
+type UtxoFinder func(input InputInfo) (Utxo, error)

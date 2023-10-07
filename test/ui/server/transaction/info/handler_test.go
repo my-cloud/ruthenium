@@ -241,11 +241,11 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
-	var infoResponse *info.TransactionInfo
-	_ = json.Unmarshal(recorder.Body.Bytes(), &infoResponse)
-	expectedUtxosCount := 1
-	actualUtxosCount := len(infoResponse.Utxos)
-	test.Assert(t, actualUtxosCount == expectedUtxosCount, fmt.Sprintf("Wrong UTXOs count. expected: %d actual: %d", expectedUtxosCount, actualUtxosCount))
+	var transactionInfo *info.TransactionInfo
+	_ = json.Unmarshal(recorder.Body.Bytes(), &transactionInfo)
+	expectedInputsCount := 1
+	actualInputsCount := len(transactionInfo.Inputs)
+	test.Assert(t, actualInputsCount == expectedInputsCount, fmt.Sprintf("Wrong inputs count. expected: %d actual: %d", expectedInputsCount, actualInputsCount))
 }
 
 func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
@@ -284,9 +284,9 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
-	var infoResponse info.TransactionInfo
-	_ = json.Unmarshal(recorder.Body.Bytes(), &infoResponse)
-	expectedUtxosCount := 2
-	actualUtxosCount := len(infoResponse.Utxos)
-	test.Assert(t, actualUtxosCount == expectedUtxosCount, fmt.Sprintf("Wrong UTXOs count. expected: %d actual: %d", expectedUtxosCount, actualUtxosCount))
+	var transactionInfo info.TransactionInfo
+	_ = json.Unmarshal(recorder.Body.Bytes(), &transactionInfo)
+	expectedInputsCount := 2
+	actualInputsCount := len(transactionInfo.Inputs)
+	test.Assert(t, actualInputsCount == expectedInputsCount, fmt.Sprintf("Wrong inputs count. expected: %d actual: %d", expectedInputsCount, actualInputsCount))
 }

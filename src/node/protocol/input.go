@@ -1,6 +1,6 @@
 package protocol
 
-type Input interface {
+type InputInfo interface {
 	TransactionId() string
 	OutputIndex() uint16
 }

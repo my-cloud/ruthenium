@@ -132,18 +132,14 @@
 
             function send(response) {
                 let inputs = [];
-                for (let i = 0; i < response.utxos.length; i++) {
-                    let utxo = response.utxos[i];
-                    const input = {
-                        "output_index": utxo.output_index,
-                        "transaction_id": utxo.transaction_id,
-                    }
+                for (let i = 0; i < response.inputs.length; i++) {
+                    let input = response.inputs[i];
                     const hash = CryptoJS.SHA256(JSON.stringify(input)).toString(CryptoJS.enc.Hex);
                     const signature = keyPair.sign(hash);
                     const signatureHex = getSignatureHex(signature);
                     inputs[i] = {
-                        "output_index": utxo.output_index,
-                        "transaction_id": utxo.transaction_id,
+                        "output_index": input.output_index,
+                        "transaction_id": input.transaction_id,
                         "public_key": publicKeyString,
                         "signature": signatureHex,
                     };

@@ -138,7 +138,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
-	blockchainMock.UtxoFunc = func(input protocol.Input) (protocol.Utxo, error) {
+	blockchainMock.UtxoFunc = func(input protocol.InputInfo) (protocol.Utxo, error) {
 		inputInfo := verification.NewInputInfo(0, "")
 		return verification.NewUtxo(inputInfo, &verification.Output{}, 0), nil
 	}
@@ -221,7 +221,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t 
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.LastBlockTimestampFunc = func() int64 { return now }
 	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
-	blockchainMock.UtxoFunc = func(input protocol.Input) (protocol.Utxo, error) {
+	blockchainMock.UtxoFunc = func(input protocol.InputInfo) (protocol.Utxo, error) {
 		inputInfo := verification.NewInputInfo(0, "")
 		return verification.NewUtxo(inputInfo, &verification.Output{}, 0), nil
 	}
@@ -259,7 +259,7 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *test
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 2 }
 	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
-	blockchainMock.UtxoFunc = func(input protocol.Input) (protocol.Utxo, error) {
+	blockchainMock.UtxoFunc = func(input protocol.InputInfo) (protocol.Utxo, error) {
 		inputInfo := verification.NewInputInfo(0, "")
 		return verification.NewUtxo(inputInfo, &verification.Output{}, 0), nil
 	}
@@ -297,7 +297,7 @@ func Test_Validate_ValidTransaction_TransactionsValidated(t *testing.T) {
 	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
 	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
-	blockchainMock.UtxoFunc = func(input protocol.Input) (protocol.Utxo, error) {
+	blockchainMock.UtxoFunc = func(input protocol.InputInfo) (protocol.Utxo, error) {
 		inputInfo := verification.NewInputInfo(0, "")
 		return verification.NewUtxo(inputInfo, &verification.Output{}, 0), nil
 	}

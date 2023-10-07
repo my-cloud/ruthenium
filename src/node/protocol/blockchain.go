@@ -7,5 +7,5 @@ type Blockchain interface {
 	FirstBlockTimestamp() int64
 	LastBlockTimestamp() int64
 	Utxos(address string) []byte
-	Utxo(input Input) (Utxo, error)
+	Utxo(input InputInfo) (Utxo, error)
 }

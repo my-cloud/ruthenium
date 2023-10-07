@@ -74,7 +74,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var selectedUtxos []*verification.InputInfo
+		var selectedInputs []*verification.InputInfo
 		now := handler.watch.Now().UnixNano()
 		nextBlockHeight := (now-genesisTimestamp)/handler.settings.ValidationTimestamp() + 1
 		nextBlockTimestamp := genesisTimestamp + nextBlockHeight*handler.settings.ValidationTimestamp()
@@ -85,7 +85,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			utxoValue := utxo.Value(nextBlockTimestamp, handler.settings.HalfLifeInNanoseconds(), handler.settings.IncomeBaseInParticles(), handler.settings.IncomeLimitInParticles())
 			walletBalance += utxoValue
 			if isConsolidationRequired {
-				selectedUtxos = append(selectedUtxos, utxo.InputInfo)
+				selectedInputs = append(selectedInputs, utxo.InputInfo)
 			} else {
 				if _, ok := utxosByValue[utxoValue]; !ok {
 					values = append(values, utxoValue)
@@ -114,14 +114,14 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 				closestUtxos := utxosByValue[closestValue]
 				for i := 0; i < len(closestUtxos) && inputsValue < targetValue; i++ {
 					inputsValue += closestValue
-					selectedUtxos = append(selectedUtxos, closestUtxos[i])
+					selectedInputs = append(selectedInputs, closestUtxos[i])
 				}
 			}
 		}
 		rest := inputsValue - targetValue
 		response := &TransactionInfo{
 			Rest:      rest,
-			Utxos:     selectedUtxos,
+			Inputs:    selectedInputs,
 			Timestamp: now,
 		}
 		marshaledResponse, err := json.Marshal(response)
