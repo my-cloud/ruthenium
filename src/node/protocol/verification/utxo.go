@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-type detailedUtxo struct {
+type utxoDto struct {
 	Address       string `json:"address"`
 	Timestamp     int64  `json:"timestamp"`
 	HasIncome     bool   `json:"has_income"`
@@ -25,7 +25,7 @@ func NewUtxo(inputInfo *InputInfo, output *Output, timestamp int64) *Utxo {
 }
 
 func (utxo *Utxo) MarshalJSON() ([]byte, error) {
-	return json.Marshal(detailedUtxo{
+	return json.Marshal(utxoDto{
 		Address:       utxo.Address(),
 		Timestamp:     utxo.timestamp,
 		HasIncome:     utxo.IsRegistered(),
@@ -36,7 +36,7 @@ func (utxo *Utxo) MarshalJSON() ([]byte, error) {
 }
 
 func (utxo *Utxo) UnmarshalJSON(data []byte) error {
-	var dto *detailedUtxo
+	var dto *utxoDto
 	err := json.Unmarshal(data, &dto)
 	if err != nil {
 		return err
