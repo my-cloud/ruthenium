@@ -25,14 +25,14 @@ go run src/ui/main.go -host-ip=0.0.0.0
 Using a web browser, go to `http://localhost:8080` (If needed, replace `localhost` by the UI server IP address and `8080` by the TCP port number for the UI server)
 
 ## API
-Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
+Base URL: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 
 ### Transactions pool
 <details>
 <summary><b>Get transaction info</b></summary>
 
 ![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
-![Transaction info](https://img.shields.io/badge//transaction/info-dimgray?style=flat-square)
+![/transaction/info](https://img.shields.io/badge//transaction/info-dimgray?style=flat-square)
 
 *Description:* Get the transaction data needed for a transaction request.
 * **parameters:**
@@ -55,7 +55,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 <summary><b>Add transaction</b></summary>
 
 ![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
-![Transaction](https://img.shields.io/badge//transaction-dimgray?style=flat-square)
+![/transaction](https://img.shields.io/badge//transaction-dimgray?style=flat-square)
 
 *Description:* Add a transaction to the transactions pool.
 * **parameters:** *none*
@@ -72,7 +72,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 <summary><b>Get transactions</b></summary>
 
 ![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
-![Transactions](https://img.shields.io/badge//transactions-dimgray?style=flat-square)
+![/transactions](https://img.shields.io/badge//transactions-dimgray?style=flat-square)
 
 *Description:* Get all the transactions of the current transactions pool.
 * **parameters:** *none*
@@ -90,7 +90,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 <summary><b>Get wallet address</b></summary>
 
 ![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
-![Wallet address](https://img.shields.io/badge//wallet/address-dimgray?style=flat-square)
+![/wallet/address](https://img.shields.io/badge//wallet/address-dimgray?style=flat-square)
 
 *Description:* Get the wallet address depending on the given public key.
 * **parameters:** *none*
@@ -110,7 +110,7 @@ Base url: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 <summary><b>Get wallet amount</b></summary>
 
 ![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
-![Wallet amount](https://img.shields.io/badge//wallet/amount-dimgray?style=flat-square)
+![/wallet/amount](https://img.shields.io/badge//wallet/amount-dimgray?style=flat-square)
 
 *Description:* Get the amount for the given wallet address.
 * **parameters:**

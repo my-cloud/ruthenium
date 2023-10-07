@@ -26,7 +26,7 @@ go run src/node/main.go -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0
 ```
   
 ## API
-`base-url`: `<node IP>:<node port>` (example: seed-styx.ruthenium.my-cloud.me:10600)
+Base URL: `<node IP>:<node port>` (example: seed-styx.ruthenium.my-cloud.me:10600)
 
 Each request value or response value shall be marshaled to bytes or un-marshaled from bytes. All fields are required.
 
@@ -34,7 +34,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 <details>
 <summary><b>Get blocks</b></summary>
 
-*Route*: `base-url/blocks`
+![/blocks](https://img.shields.io/badge//blocks-dimgray?style=flat-square)
 
 *Description*: Get the blocks starting from the given height (returned blocks array size is limited).
   * **request value:** 64 bits unsigned integer block height
@@ -43,7 +43,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 <details>
 <summary><b>Get first block timestamp</b></summary>
 
-*Route*: `base-url/first-block-timestamp`
+![/first--block--timestamp](https://img.shields.io/badge//first--block--timestamp-dimgray?style=flat-square)
 
 *Description*: Get the first block timestamp.
   * **request value:** *none*
@@ -54,7 +54,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 <details>
 <summary><b>Share targets</b></summary>
 
-*Route*: `base-url/targets`
+![/targets](https://img.shields.io/badge//targets-dimgray?style=flat-square)
 
 *Description:* Share known validator node targets.
 * **request value:** Array of target strings (IP and port, *e.g.* ["0.0.0.0:0000", "1.1.1.1:1111"])
@@ -65,7 +65,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 <details>
 <summary><b>Add transaction</b></summary>
 
-*Route*: `base-url/transaction`
+![/transaction](https://img.shields.io/badge//transaction-dimgray?style=flat-square)
 
 *Description:* Add a transaction to the transactions pool.
 * **request value:** [TransactionRequest](#transactionrequest)
@@ -74,10 +74,10 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 <details>
 <summary><b>Get transactions</b></summary>
 
-*Route*: `base-url/transactions`
+![/transactions](https://img.shields.io/badge//transactions-dimgray?style=flat-square)
 
 *Description:* Get all the transactions of the current transactions pool.
-* **request value:** `GET TRANSACTIONS`
+* **request value:** *none*
 * **response value:** Array of [transactions](#transaction)
 </details>
 
@@ -85,7 +85,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 <details>
 <summary><b>Get UTXOs</b></summary>
 
-*Route*: `base-url/utxos`
+![/utxos](https://img.shields.io/badge//utxos-dimgray?style=flat-square)
 
 *Description:* Get all the UTXOs for the given wallet address.
 * **request value:** wallet address string
