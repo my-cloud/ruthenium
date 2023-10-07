@@ -29,29 +29,6 @@ Base URL: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
 
 ### Transactions pool
 <details>
-<summary><b>Get transaction info</b></summary>
-
-![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
-![/transaction/info](https://img.shields.io/badge//transaction/info-dimgray?style=flat-square)
-
-*Description:* Get the transaction data needed for a transaction request.
-* **parameters:**
-
-  |Name|Description|Example|
-    |---|---|---|
-  |`address`|42 characters hexadecimal sender wallet address|`0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a`|
-  |`value`|64 bits floating-point number value of the transaction|`0`|
-* **request body:** *none*
-* **responses:**
-
-  |Code|Description|
-    |---|---|
-  |200|[TransactionInfo](#transactioninfo)|
-  |400|Bad request, if any request argument is invalid|
-  |405|Method not allowed, if the value exceeds the wallet amount for the given address|
-  |500|Internal server error, if an unexpected condition occurred|
-</details>
-<details>
 <summary><b>Add transaction</b></summary>
 
 ![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
@@ -66,6 +43,29 @@ Base URL: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
     |---|---|
   |201|Transaction added|
   |400|Bad request, if any request argument is invalid|
+  |500|Internal server error, if an unexpected condition occurred|
+</details>
+<details>
+<summary><b>Get transaction info</b></summary>
+
+![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
+![/transaction/info](https://img.shields.io/badge//transaction/info-dimgray?style=flat-square)
+
+*Description:* Get the transaction data needed for a transaction request.
+* **parameters:**
+
+  |Name|Description|Example|
+      |---|---|---|
+  |`address`|42 characters hexadecimal sender wallet address|`0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a`|
+  |`value`|64 bits floating-point number value of the transaction|`0`|
+* **request body:** *none*
+* **responses:**
+
+  |Code|Description|
+      |---|---|
+  |200|[TransactionInfo](#transactioninfo)|
+  |400|Bad request, if any request argument is invalid|
+  |405|Method not allowed, if the value exceeds the wallet amount for the given address|
   |500|Internal server error, if an unexpected condition occurred|
 </details>
 <details>
@@ -180,6 +180,48 @@ The output signature
 </tr>
 </table>
 
+#### InputInfo
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+{
+  "output_index":   uint16
+  "transaction_id": string
+}
+```
+</td>
+<td>
+
+```
+
+The output index
+The ID of the transaction holding the output
+
+```
+</td>
+<td>
+
+```
+{
+  "output_index": 0
+  "transaction_id": "8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d"
+}
+```
+</td>
+</tr>
+</table>
+
 #### Output
 <table>
 <th>
@@ -219,6 +261,54 @@ The value at the transaction timestamp
   "address": "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
   "has_income": true
   "value": 0
+}
+```
+</td>
+</tr>
+</table>
+
+#### Transaction
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+{
+  "id":        string
+  "inputs":    []Input
+  "outputs":   []Output
+  "timestamp": int64
+}
+```
+</td>
+<td>
+
+```
+
+The ID
+The inputs
+The outputs
+The timestamp
+
+```
+</td>
+<td>
+
+```
+{
+  "id": "30148389df42b7cd0cb0d3ce951133da3f36ff4e1581d108da1ee05bacad64b7"
+  "inputs": []
+  "outputs": []
+  "timestamp": 1667768884780639700
 }
 ```
 </td>
@@ -269,48 +359,6 @@ The utxos to be used as inputs of the transaction
 </tr>
 </table>
 
-#### InputInfo
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-{
-  "output_index":   uint16
-  "transaction_id": string
-}
-```
-</td>
-<td>
-
-```
-
-The output index
-The ID of the transaction holding the output
-
-```
-</td>
-<td>
-
-```
-{
-  "output_index": 0
-  "transaction_id": "8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d"
-}
-```
-</td>
-</tr>
-</table>
-
 #### TransactionRequest
 <table>
 <th>
@@ -347,54 +395,6 @@ The transaction broadcaster target
 {
   "transaction": {}
   "transaction_broadcaster_target": "0.0.0.0:0000"
-}
-```
-</td>
-</tr>
-</table>
-
-#### Transaction
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-{
-  "id":        string
-  "inputs":    []Input
-  "outputs":   []Output
-  "timestamp": int64
-}
-```
-</td>
-<td>
-
-```
-
-The ID
-The inputs
-The outputs
-The timestamp
-
-```
-</td>
-<td>
-
-```
-{
-  "id": "30148389df42b7cd0cb0d3ce951133da3f36ff4e1581d108da1ee05bacad64b7"
-  "inputs": []
-  "outputs": []
-  "timestamp": 1667768884780639700
 }
 ```
 </td>

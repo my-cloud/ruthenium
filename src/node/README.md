@@ -240,48 +240,6 @@ The value at the transaction timestamp
 </tr>
 </table>
 
-#### TransactionRequest
-<table>
-<th>
-Schema
-</th>
-<th>
-Description
-</th>
-<th>
-Example
-</th>
-<tr>
-<td>
-
-```
-{
-  "transaction":                    Transaction
-  "transaction_broadcaster_target": string
-}
-```
-</td>
-<td>
-
-```
-
-The transaction
-The transaction broadcaster target
-
-```
-</td>
-<td>
-
-```
-{
-  "transaction": {}
-  "transaction_broadcaster_target": "0.0.0.0:0000"
-}
-```
-</td>
-</tr>
-</table>
-
 #### Transaction
 <table>
 <th>
@@ -324,6 +282,48 @@ The timestamp
   "inputs": []
   "outputs": []
   "timestamp": 1667768884780639700
+}
+```
+</td>
+</tr>
+</table>
+
+#### TransactionRequest
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+{
+  "transaction":                    Transaction
+  "transaction_broadcaster_target": string
+}
+```
+</td>
+<td>
+
+```
+
+The transaction
+The transaction broadcaster target
+
+```
+</td>
+<td>
+
+```
+{
+  "transaction": {}
+  "transaction_broadcaster_target": "0.0.0.0:0000"
 }
 ```
 </td>
