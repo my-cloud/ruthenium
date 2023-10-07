@@ -43,7 +43,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 <details>
 <summary><b>Get first block timestamp</b></summary>
 
-![/first--block--timestamp](https://img.shields.io/badge//first--block--timestamp-dimgray?style=flat-square)
+![/first-block-timestamp](https://img.shields.io/badge//first--block--timestamp-dimgray?style=flat-square)
 
 *Description*: Get the first block timestamp.
   * **request value:** *none*
