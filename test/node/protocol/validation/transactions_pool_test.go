@@ -168,7 +168,47 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
 }
 
-func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *testing.T) {
+func Test_Validate_BlockAlreadyExist_TransactionsNotValidated(t *testing.T) {
+	// Arrange
+	validatorWalletAddress := test.Address
+	synchronizerMock := new(networktest.SynchronizerMock)
+	var now int64 = 2
+	logger := logtest.NewLoggerMock()
+	blockchainMock := new(protocoltest.BlockchainMock)
+	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now }
+	settings := new(protocoltest.SettingsMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
+
+	// Act
+	pool.Validate(now)
+
+	// Assert
+	test.AssertThatMessageIsLogged(t, []string{"unable to create block, a block with the same timestamp is already in the blockchain"}, logger.ErrorCalls())
+}
+
+func Test_Validate_BlockIsMissing_TransactionsNotValidated(t *testing.T) {
+	// Arrange
+	validatorWalletAddress := test.Address
+	synchronizerMock := new(networktest.SynchronizerMock)
+	var now int64 = 3
+	logger := logtest.NewLoggerMock()
+	blockchainMock := new(protocoltest.BlockchainMock)
+	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 2 }
+	settings := new(protocoltest.SettingsMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
+
+	// Act
+	pool.Validate(now)
+
+	// Assert
+	test.AssertThatMessageIsLogged(t, []string{"unable to create block, a block is missing in the blockchain"}, logger.ErrorCalls())
+}
+
+func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
 	synchronizerMock := new(networktest.SynchronizerMock)
@@ -192,7 +232,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
 	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+1, "0", genesisValue, false)
@@ -206,7 +246,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionNotValidated(t *
 	test.AssertThatMessageIsLogged(t, []string{"transaction removed from the transactions pool, the transaction timestamp is too far in the future"}, logger.WarnCalls())
 }
 
-func Test_Validate_TransactionTimestampIsTooOld_TransactionNotValidated(t *testing.T) {
+func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
 	synchronizerMock := new(networktest.SynchronizerMock)
@@ -230,7 +270,7 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionNotValidated(t *testi
 	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
 	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue, false)
@@ -244,7 +284,7 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionNotValidated(t *testi
 	test.AssertThatMessageIsLogged(t, []string{"transaction removed from the transactions pool, the transaction timestamp is too old"}, logger.WarnCalls())
 }
 
-func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
+func Test_Validate_ValidTransaction_TransactionsValidated(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
 	synchronizerMock := new(networktest.SynchronizerMock)
@@ -268,7 +308,7 @@ func Test_Validate_ValidTransaction_TransactionValidated(t *testing.T) {
 	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
 	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
 	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now, "0", genesisValue, false)
