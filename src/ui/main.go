@@ -14,6 +14,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server/index"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
 	"github.com/my-cloud/ruthenium/src/ui/server/transaction/info"
+	"github.com/my-cloud/ruthenium/src/ui/server/transaction/status"
 	"github.com/my-cloud/ruthenium/src/ui/server/transactions"
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/address"
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/amount"
@@ -46,8 +47,9 @@ func main() {
 	watch := tick.NewWatch()
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
 	http.Handle("/transaction", transaction.NewHandler(host, logger))
-	http.Handle("/transaction/info", info.NewHandler(host, settings, watch, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
+	http.Handle("/transaction/info", info.NewHandler(host, settings, watch, logger))
+	http.Handle("/transaction/status", status.NewHandler(host, settings, watch, logger))
 	http.Handle("/wallet/address", address.NewHandler(logger))
 	http.Handle("/wallet/amount", amount.NewHandler(host, settings, watch, logger))
 	logger.Info("user interface server is running...")

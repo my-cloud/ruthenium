@@ -131,6 +131,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			return
 		}
 		writer.Header().Add("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusOK)
 		server.NewIoWriter(writer, handler.logger).Write(string(marshaledResponse[:]))
 	default:
 		handler.logger.Error("invalid HTTP method")
