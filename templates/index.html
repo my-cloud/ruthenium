@@ -62,10 +62,10 @@
             <label for="income_update" class="form-field">Update income (requires to be registered in <a
                     href="https://proofofhumanity.id/">PoH</a>)</label>
         </div>
-    </form>
+     </form>
     <div class="progress">
-            <div class="progress-circle"></div>
-        </div>
+        <div class="progress-circle"></div>
+    </div>
     <div>
         <label class="form-label"></label>
         <button id="send_tokens_button" class="form-field">Send</button>
@@ -209,8 +209,8 @@
             })
         })
 
-        setInterval(refresh_amount, 500)
-        setInterval(refresh_transactions, 500)
+        setInterval(refresh_amount, 100)
+        setInterval(refresh_transactions, 100)
         setInterval(refresh_progress, 100)
 
         function refresh_amount() {
@@ -251,7 +251,7 @@
             const progressBar = document.querySelector('.progress-circle');
             if (pendingTransaction === undefined) {
                 progressBar.style.background = `conic-gradient(white 100%, white 0)`;
-                progressBar.textContent = "P";
+                progressBar.textContent = "";
             } else {
                 console.log(JSON.stringify(pendingTransaction, undefined, 4))
                 $.ajax({
@@ -266,29 +266,26 @@
                         let color2;
                         switch (response.transaction_status) {
                             case "sent":
-                                color1 = "blue";
-                                color2 = "yellow";
-                                progressBar.textContent = "S";
+                                color1 = "lightseagreen";
+                                color2 = "royalblue";
                                 break;
                             case "validated":
-                                color1 = "green";
-                                color2 = "blue";
-                                progressBar.textContent = "V";
+                                color1 = "seagreen";
+                                color2 = "lightseagreen";
                                 break;
                             case "confirmed":
-                                color1 = "green";
-                                color2 = "green";
-                                progressBar.textContent = "C";
+                                color1 = "seagreen";
+                                color2 = "seagreen";
                                 break;
                             case "rejected":
-                                color1 = "red";
-                                color2 = "red";
-                                progressBar.textContent = "R";
+                                color1 = "brown";
+                                color2 = "brown";
                                 break;
                             default:
                                 color1 = "white";
                                 color2 = "white";
                         }
+                        progressBar.textContent = response.transaction_status[0]
                         progressBar.style.background = `conic-gradient(${color1} ${angle}%, ${color2} 0)`;
                     },
                     error: function (response) {
@@ -296,12 +293,6 @@
                     }
                 })
             }
-            // const now = new Date()
-            // if ($("#transactions_pool").val() != "") {
-            //     start = new Date()
-            // }
-            // const angle = (now - start) / 100
-            // progressBar.style.background = `conic-gradient(blue ${angle}%, grey 0)`;
         }
     })
 
@@ -502,6 +493,7 @@
         text-align: center;
         font-weight: bold;
         font-size: 22px;
+        text-transform: capitalize;
         color: lightgrey;
     }
 </style>
