@@ -122,6 +122,53 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	test.AssertThatMessageIsLogged(t, []string{"failed to add transaction: failed to verify transaction: failed to verify signature"}, logger.DebugCalls())
 }
 
+func Test_AddTransaction_InvalidPublicKey_TransactionNotAdded(t *testing.T) {
+	// Arrange
+	validatorWalletAddress := test.Address
+	walletAAddress := test.Address2
+	neighborMock := new(networktest.NeighborMock)
+	neighborMock.AddTransactionFunc = func([]byte) error { return nil }
+	synchronizerMock := new(networktest.SynchronizerMock)
+	synchronizerMock.NeighborsFunc = func() []network.Neighbor { return []network.Neighbor{neighborMock} }
+	synchronizerMock.IncentiveFunc = func(string) {}
+	var now int64 = 2
+	var transactionFee uint64 = 0
+	logger := logtest.NewLoggerMock()
+	blockchainMock := new(protocoltest.BlockchainMock)
+	blockchainMock.CopyFunc = func() protocol.Blockchain { return blockchainMock }
+	blockchainMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
+	blockchainMock.AddBlockFunc = func(int64, []byte, []string) error { return nil }
+	blockchainMock.UtxoFunc = func(input protocol.InputInfo) (protocol.Utxo, error) {
+		inputInfo := verification.NewInputInfo(0, "")
+		return verification.NewUtxo(inputInfo, &verification.Output{}, 0), nil
+	}
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey2)
+	publicKey := encryption.NewPublicKey(privateKey)
+	var genesisValue uint64 = 0
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	pool := validation.NewTransactionsPool(blockchainMock, settings, synchronizerMock, validatorWalletAddress, logger)
+	var outputIndex uint16 = 0
+	transactionId := "0"
+	transactionRequest := protocoltest.NewSignedTransactionRequest(genesisValue, transactionFee, outputIndex, walletAAddress, privateKey, publicKey, now, transactionId, genesisValue, false)
+
+	// Act
+	pool.AddTransaction(transactionRequest, "0")
+
+	// Assert
+	transactionsBytes := pool.Transactions()
+	var transactions []*verification.Transaction
+	_ = json.Unmarshal(transactionsBytes, &transactions)
+	expectedTransactionsLength := 0
+	actualTransactionsLength := len(transactions)
+	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
+	test.AssertThatMessageIsLogged(t, []string{"failed to add transaction: failed to verify transaction: output address does not derive from input public key"}, logger.DebugCalls())
+}
+
 func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
