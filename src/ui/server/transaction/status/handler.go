@@ -132,7 +132,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 func (handler *Handler) sendResponse(writer http.ResponseWriter, progress *Progress) {
 	marshaledResponse, err := json.Marshal(progress)
 	if err != nil {
-		handler.logger.Error(fmt.Errorf("failed to marshal amount: %w", err).Error())
+		handler.logger.Error(fmt.Errorf("failed to marshal progress: %w", err).Error())
 		writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
