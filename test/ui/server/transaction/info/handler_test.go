@@ -138,7 +138,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 }
 
-func Test_ServeHTTP_GetFirstBlockTimestampFuncError_ReturnsInternalServerError(t *testing.T) {
+func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)
