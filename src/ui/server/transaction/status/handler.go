@@ -2,6 +2,7 @@ package status
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
@@ -29,14 +30,20 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		decoder := json.NewDecoder(req.Body)
 		var transaction *verification.Transaction
 		err := decoder.Decode(&transaction)
-		if err != nil || len(transaction.Outputs()) == 0 {
+		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to decode transaction: %w", err).Error())
 			writer.WriteHeader(http.StatusBadRequest)
 			jsonWriter.Write("invalid transaction")
 			return
+		} else if len(transaction.Outputs()) == 0 {
+			handler.logger.Error(errors.New("transaction has no output").Error())
+			writer.WriteHeader(http.StatusBadRequest)
+			jsonWriter.Write("invalid transaction")
+			return
 		}
-		rest := transaction.Outputs()[0]
-		utxosBytes, err := handler.host.GetUtxos(rest.Address())
+		lastOutputIndex := len(transaction.Outputs()) - 1
+		lastOutput := transaction.Outputs()[lastOutputIndex]
+		utxosBytes, err := handler.host.GetUtxos(lastOutput.Address())
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -58,7 +65,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			ValidationTimestamp:   handler.settings.ValidationTimestamp(),
 		}
 		for _, utxo := range utxos {
-			if utxo.TransactionId() == transaction.Id() && utxo.OutputIndex() == 0 {
+			if utxo.TransactionId() == transaction.Id() && utxo.OutputIndex() == uint16(lastOutputIndex) {
 				progress.TransactionStatus = "confirmed"
 				handler.sendResponse(writer, progress)
 				return

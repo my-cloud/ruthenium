@@ -253,7 +253,6 @@
                 progressBar.style.background = `conic-gradient(white 100%, white 0)`;
                 progressBar.textContent = "";
             } else {
-                console.log(JSON.stringify(pendingTransaction, undefined, 4))
                 $.ajax({
                     url: "/transaction/status",
                     type: "PUT",
