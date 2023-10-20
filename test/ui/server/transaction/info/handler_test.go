@@ -26,11 +26,6 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	neighborMock := new(networktest.NeighborMock)
 	watchMock := new(clocktest.WatchMock)
 	settings := new(servertest.SettingsMock)
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
-	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
-	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	handler := info.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	invalidHttpMethods := []string{http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
@@ -143,7 +138,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 }
 
-func Test_ServeHTTP_GetFirstBlockTimestampFuncError_ReturnsInternalServerError(t *testing.T) {
+func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := logtest.NewLoggerMock()
 	neighborMock := new(networktest.NeighborMock)

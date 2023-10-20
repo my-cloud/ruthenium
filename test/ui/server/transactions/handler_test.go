@@ -44,7 +44,7 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	handler := transactions.NewHandler(neighborMock, logger)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("GET", urlTarget, nil)
+	request := httptest.NewRequest(http.MethodGet, urlTarget, nil)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
@@ -63,7 +63,7 @@ func Test_ServeHTTP_ValidRequest_NeighborMethodCalled(t *testing.T) {
 	logger := logtest.NewLoggerMock()
 	handler := transactions.NewHandler(neighborMock, logger)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("GET", urlTarget, nil)
+	request := httptest.NewRequest(http.MethodGet, urlTarget, nil)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
