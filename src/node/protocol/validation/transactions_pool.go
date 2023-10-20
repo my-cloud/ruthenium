@@ -119,7 +119,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		if err = transaction.VerifySignatures(); err != nil {
+		if err = transaction.VerifySignatures(blockchainCopy.Utxo); err != nil {
 			pool.logger.Warn(fmt.Errorf("failed to verify transaction: %w", err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
@@ -210,7 +210,7 @@ func (pool *TransactionsPool) addTransaction(transaction *verification.Transacti
 			return errors.New("the transaction is already in the transactions pool")
 		}
 	}
-	if err = transaction.VerifySignatures(); err != nil {
+	if err = transaction.VerifySignatures(blockchainCopy.Utxo); err != nil {
 		return fmt.Errorf("failed to verify transaction: %w", err)
 	}
 	_, err = transaction.Fee(pool.settings, nextBlockTimestamp, blockchainCopy.Utxo)
