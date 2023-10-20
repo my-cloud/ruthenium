@@ -29,14 +29,13 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		decoder := json.NewDecoder(req.Body)
 		var transaction *verification.Transaction
 		err := decoder.Decode(&transaction)
-		if err != nil || len(transaction.Outputs()) != 2 {
+		if err != nil || len(transaction.Outputs()) == 0 {
 			handler.logger.Error(fmt.Errorf("failed to decode transaction: %w", err).Error())
 			writer.WriteHeader(http.StatusBadRequest)
 			jsonWriter.Write("invalid transaction")
 			return
 		}
-		outputIndex := 1
-		rest := transaction.Outputs()[outputIndex]
+		rest := transaction.Outputs()[0]
 		utxosBytes, err := handler.host.GetUtxos(rest.Address())
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())
@@ -59,7 +58,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			ValidationTimestamp:   handler.settings.ValidationTimestamp(),
 		}
 		for _, utxo := range utxos {
-			if utxo.TransactionId() == transaction.Id() && utxo.OutputIndex() == uint16(outputIndex) {
+			if utxo.TransactionId() == transaction.Id() && utxo.OutputIndex() == 0 {
 				progress.TransactionStatus = "confirmed"
 				handler.sendResponse(writer, progress)
 				return
@@ -71,6 +70,11 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			return
 		}
 		blocksBytes, err := handler.host.GetBlocks(uint64(currentBlockHeight))
+		if err != nil {
+			handler.logger.Error("failed to get blocks")
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		var blocks []*verification.Block
 		err = json.Unmarshal(blocksBytes, &blocks)
 		if err != nil {
@@ -79,7 +83,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			return
 		}
 		if len(blocks) == 0 {
-			handler.logger.Error("failed to get last block")
+			handler.logger.Error("failed to get last block, get blocks returned an empty list")
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}

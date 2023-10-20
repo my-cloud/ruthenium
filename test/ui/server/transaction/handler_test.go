@@ -47,32 +47,10 @@ func Test_ServeHTTP_UndecipherableTransaction_BadRequest(t *testing.T) {
 	neighborMock := new(networktest.NeighborMock)
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, logger)
-	transactionRequest := ""
-	b, _ := json.Marshal(transactionRequest)
-	body := bytes.NewReader(b)
+	marshalledData, _ := json.Marshal("")
+	body := bytes.NewReader(marshalledData)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("POST", urlTarget, body)
-
-	// Act
-	handler.ServeHTTP(recorder, request)
-
-	// Assert
-	isNeighborMethodCalled := len(neighborMock.AddTransactionCalls()) != 0
-	test.Assert(t, !isNeighborMethodCalled, "Neighbor method is called whereas it should not.")
-	expectedStatusCode := 400
-	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
-}
-
-func Test_ServeHTTP_InvalidTransaction_BadRequest(t *testing.T) {
-	// Arrange
-	neighborMock := new(networktest.NeighborMock)
-	neighborMock.TargetFunc = func() string { return "0.0.0.0:0" }
-	logger := logtest.NewLoggerMock()
-	handler := transaction.NewHandler(neighborMock, logger)
-	data, _ := json.Marshal("")
-	body := bytes.NewReader(data)
-	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("POST", urlTarget, body)
+	request := httptest.NewRequest(http.MethodPost, urlTarget, body)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
@@ -92,14 +70,11 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	neighborMock.AddTransactionFunc = func([]byte) error { return errors.New("") }
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, logger)
-	address := "RecipientAddress"
-	var value uint64 = 0
-	var timestamp int64 = 0
-	transactionRequest, _ := verification.NewRewardTransaction(address, false, timestamp, value)
+	transactionRequest, _ := verification.NewRewardTransaction("", false, 0, 0)
 	marshalledTransaction, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(marshalledTransaction)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("POST", urlTarget, body)
+	request := httptest.NewRequest(http.MethodPost, urlTarget, body)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
@@ -119,14 +94,11 @@ func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	neighborMock.AddTransactionFunc = func([]byte) error { return nil }
 	logger := logtest.NewLoggerMock()
 	handler := transaction.NewHandler(neighborMock, logger)
-	address := "RecipientAddress"
-	var value uint64 = 0
-	var timestamp int64 = 0
-	transactionRequest, _ := verification.NewRewardTransaction(address, false, timestamp, value)
+	transactionRequest, _ := verification.NewRewardTransaction("", false, 0, 0)
 	marshalledTransaction, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(marshalledTransaction)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest("POST", urlTarget, body)
+	request := httptest.NewRequest(http.MethodPost, urlTarget, body)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
