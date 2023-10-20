@@ -28,9 +28,9 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		var transaction *verification.Transaction
 		err := decoder.Decode(&transaction)
 		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to decode transaction request: %w", err).Error())
+			handler.logger.Error(fmt.Errorf("failed to decode transaction: %w", err).Error())
 			writer.WriteHeader(http.StatusBadRequest)
-			jsonWriter.Write("invalid transaction request")
+			jsonWriter.Write("invalid transaction")
 			return
 		}
 		transactionRequest := validation.NewTransactionRequest(transaction, handler.host.Target())
@@ -42,7 +42,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		}
 		err = handler.host.AddTransaction(marshaledTransaction)
 		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to create transaction: %w", err).Error())
+			handler.logger.Error(fmt.Errorf("failed to add transaction: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}

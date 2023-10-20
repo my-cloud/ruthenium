@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wallet</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
           integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
@@ -49,8 +50,8 @@
             <input id="recipient_address" name="recipient_address" class="form-field">
         </div>
         <div>
-            <label for="send_amount" class="form-label">Amount:</label>
-            <input id="send_amount" type="text" name="send_amount" class="form-field">
+            <label for="amount" class="form-label">Amount:</label>
+            <input id="amount" type="text" name="amount" class="form-field">
         </div>
         <div>
             <input id="utxo_consolidation" type="checkbox" name="utxo_consolidation" class="form-label" checked>
@@ -61,7 +62,10 @@
             <label for="income_update" class="form-field">Update income (requires to be registered in <a
                     href="https://proofofhumanity.id/">PoH</a>)</label>
         </div>
-    </form>
+     </form>
+    <div class="progress">
+        <div class="progress-circle"></div>
+    </div>
     <div>
         <label class="form-label"></label>
         <button id="send_tokens_button" class="form-field">Send</button>
@@ -106,6 +110,8 @@
     });
 
     $(function () {
+        let pendingTransaction;
+
         $("#send_tokens_button").click(function () {
             if (!keyPair) {
                 alert("The private key must be provided to send tokens")
@@ -113,7 +119,7 @@
             }
 
             const senderAddress = $("#sender_address").val();
-            const atoms = $("#send_amount").val();
+            const atoms = $("#amount").val();
             const result = atomsToParticles(atoms, 100000000);
             if (result.err) {
                 alert(result.err);
@@ -151,7 +157,6 @@
                     "is_registered": false,
                     "value": value,
                 }
-                console.log(isIncomeUpdateRequested)
                 const rest = {
                     "address": senderAddress,
                     "is_registered": isIncomeUpdateRequested,
@@ -172,6 +177,7 @@
                     success: function (response) {
                         if (response === "success") {
                             alert("Send success");
+                            pendingTransaction = transaction
                         } else {
                             alert("Send failed: " + response)
                         }
@@ -205,6 +211,7 @@
 
         setInterval(refresh_amount, 100)
         setInterval(refresh_transactions, 100)
+        setInterval(refresh_progress, 100)
 
         function refresh_amount() {
             const $walletAmount = $("#wallet_amount");
@@ -238,6 +245,53 @@
                     console.error(error)
                 }
             })
+        }
+
+        function refresh_progress() {
+            const progressBar = document.querySelector('.progress-circle');
+            if (pendingTransaction === undefined) {
+                progressBar.style.background = `conic-gradient(white 100%, white 0)`;
+                progressBar.textContent = "";
+            } else {
+                $.ajax({
+                    url: "/transaction/status",
+                    type: "PUT",
+                    contentType: "application/json",
+                    data: JSON.stringify(pendingTransaction),
+                    success: function (response) {
+                        const now = new Date().getTime() * 1000000
+                        let angle = (now - response.current_block_timestamp) / response.validation_timestamp * 100
+                        let color1;
+                        let color2;
+                        switch (response.transaction_status) {
+                            case "sent":
+                                color1 = "lightseagreen";
+                                color2 = "royalblue";
+                                break;
+                            case "validated":
+                                color1 = "seagreen";
+                                color2 = "lightseagreen";
+                                break;
+                            case "confirmed":
+                                color1 = "seagreen";
+                                color2 = "seagreen";
+                                break;
+                            case "rejected":
+                                color1 = "brown";
+                                color2 = "brown";
+                                break;
+                            default:
+                                color1 = "white";
+                                color2 = "white";
+                        }
+                        progressBar.textContent = response.transaction_status[0]
+                        progressBar.style.background = `conic-gradient(${color1} ${angle}%, ${color2} 0)`;
+                    },
+                    error: function (response) {
+                        console.error(response);
+                    }
+                })
+            }
         }
     })
 
@@ -418,5 +472,27 @@
     table {
         width: 50%;
         margin-left: 90px;
+    }
+
+    .progress {
+        width: 30px;
+        height: 30px;
+        margin-left: 30px;
+        margin-right: 30px;
+        border-radius: 50%;
+        position: absolute;
+    }
+
+    .progress-circle {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: conic-gradient(white 0, white 0);
+        animation: progress 5s 1 forwards;
+        text-align: center;
+        font-weight: bold;
+        font-size: 22px;
+        text-transform: capitalize;
+        color: lightgrey;
     }
 </style>
