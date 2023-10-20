@@ -593,7 +593,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlockTim
 			rewarded = true
 			reward = transaction.RewardValue()
 		} else {
-			if err := transaction.VerifySignatures(); err != nil {
+			if err := transaction.VerifySignatures(neighborBlockchain.Utxo); err != nil {
 				return fmt.Errorf("neighbor transaction is invalid: %w", err)
 			}
 			fee, err := transaction.Fee(blockchain.settings, currentBlockTimestamp, neighborBlockchain.Utxo)

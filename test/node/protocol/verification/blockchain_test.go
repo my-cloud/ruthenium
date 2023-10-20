@@ -659,6 +659,131 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
 }
 
+func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplaced(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	logger := logtest.NewLoggerMock()
+	neighborMock := new(networktest.NeighborMock)
+	address := test.Address
+	var transactionFee uint64 = 0
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
+	privateKey2, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey2)
+	publicKey := encryption.NewPublicKey(privateKey)
+	var validationTimestamp int64 = 1
+	now := 2 * validationTimestamp
+	var genesisAmount uint64 = 1
+	block1 := protocoltest.NewGenesisBlock(address, genesisAmount)
+	var genesisOutputIndex uint16 = 0
+	genesisTransaction := block1.Transactions()[0]
+	invalidTransactionRequestBytes := protocoltest.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey2, publicKey, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, false)
+	var invalidTransactionRequest *validation.TransactionRequest
+	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
+	invalidTransaction := invalidTransactionRequest.Transaction()
+	hash1, _ := block1.Hash()
+	block2 := protocoltest.NewRewardedBlock(hash1, now-validationTimestamp)
+	hash2, _ := block2.Hash()
+	rewardTransaction, _ := verification.NewRewardTransaction(address, false, now, 0)
+	transactions := []*verification.Transaction{
+		invalidTransaction,
+		rewardTransaction,
+	}
+	block3 := verification.NewBlock(now, hash2, transactions, []string{address}, nil)
+	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+		blocks := []*verification.Block{block1, block2, block3}
+		blocksBytes, _ := json.Marshal(blocks)
+		return blocksBytes, nil
+	}
+	neighborMock.TargetFunc = func() string {
+		return "neighbor"
+	}
+	synchronizer := new(networktest.SynchronizerMock)
+	synchronizer.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
+	}
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
+	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
+	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	_ = blockchain.AddBlock(0, nil, nil)
+
+	// Act
+	blockchain.Update(now)
+
+	// Assert
+	expectedMessages := []string{
+		"neighbor transaction is invalid: failed to verify signature of an input: signature is invalid",
+		blockchainKeptMessage,
+	}
+	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+}
+
+func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplaced(t *testing.T) {
+	// Arrange
+	registry := new(protocoltest.RegistryMock)
+	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	logger := logtest.NewLoggerMock()
+	neighborMock := new(networktest.NeighborMock)
+	address := test.Address
+	var transactionFee uint64 = 0
+	privateKey2, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey2)
+	publicKey2 := encryption.NewPublicKey(privateKey2)
+	var validationTimestamp int64 = 1
+	now := 2 * validationTimestamp
+	var genesisAmount uint64 = 1
+	block1 := protocoltest.NewGenesisBlock(address, genesisAmount)
+	var genesisOutputIndex uint16 = 0
+	genesisTransaction := block1.Transactions()[0]
+	invalidTransactionRequestBytes := protocoltest.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey2, publicKey2, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, false)
+	var invalidTransactionRequest *validation.TransactionRequest
+	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
+	invalidTransaction := invalidTransactionRequest.Transaction()
+	hash1, _ := block1.Hash()
+	block2 := protocoltest.NewRewardedBlock(hash1, now-validationTimestamp)
+	hash2, _ := block2.Hash()
+	rewardTransaction, _ := verification.NewRewardTransaction(address, false, now, 0)
+	transactions := []*verification.Transaction{
+		invalidTransaction,
+		rewardTransaction,
+	}
+	block3 := verification.NewBlock(now, hash2, transactions, []string{address}, nil)
+	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+		blocks := []*verification.Block{block1, block2, block3}
+		blocksBytes, _ := json.Marshal(blocks)
+		return blocksBytes, nil
+	}
+	neighborMock.TargetFunc = func() string {
+		return "neighbor"
+	}
+	synchronizer := new(networktest.SynchronizerMock)
+	synchronizer.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
+	}
+	settings := new(protocoltest.SettingsMock)
+	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
+	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
+	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
+	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
+	_ = blockchain.AddBlock(0, nil, nil)
+
+	// Act
+	blockchain.Update(now)
+
+	// Assert
+	expectedMessages := []string{
+		"neighbor transaction is invalid: output address does not derive from input public key",
+		blockchainKeptMessage,
+	}
+	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+}
+
 func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registry := new(protocoltest.RegistryMock)

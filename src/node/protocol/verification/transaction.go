@@ -77,10 +77,19 @@ func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (transaction *Transaction) VerifySignatures() error {
+func (transaction *Transaction) VerifySignatures(utxoFinder protocol.UtxoFinder) error {
 	for _, input := range transaction.inputs {
-		if err := input.VerifySignature(); err != nil {
-			return fmt.Errorf("failed to verify signature for input: %v\n %w", input, err)
+		utxo, err := utxoFinder(input)
+		if err != nil {
+			return err
+		}
+		utxoAddress := utxo.Address()
+		inputAddress := input.publicKey.Address()
+		if utxoAddress != inputAddress {
+			return errors.New("output address does not derive from input public key")
+		}
+		if err = input.VerifySignature(); err != nil {
+			return fmt.Errorf("failed to verify signature of an input: %w", err)
 		}
 	}
 	return nil
