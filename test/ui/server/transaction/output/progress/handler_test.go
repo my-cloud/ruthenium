@@ -173,7 +173,7 @@ func Test_ServeHTTP_GetTransactionsError_ReturnsInternalServerError(t *testing.T
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
-	blocks := []*verification.Block{verification.NewBlock(0, [32]byte{}, nil, nil, nil)}
+	blocks := []*verification.Block{verification.NewBlock([32]byte{}, nil, 0, nil, nil)}
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return nil, errors.New("") }
@@ -209,7 +209,7 @@ func Test_ServeHTTP_TransactionNotFound_ReturnsRejected(t *testing.T) {
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
-	blocks := []*verification.Block{verification.NewBlock(0, [32]byte{}, nil, nil, nil)}
+	blocks := []*verification.Block{verification.NewBlock([32]byte{}, nil, 0, nil, nil)}
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledEmptyArray, nil }
@@ -295,7 +295,7 @@ func Test_ServeHTTP_ValidatedTransactionFound_ReturnsValidated(t *testing.T) {
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	transaction, _ := verification.NewRewardTransaction("", false, 0, 0)
-	blocks := []*verification.Block{verification.NewBlock(0, [32]byte{}, []*verification.Transaction{transaction}, nil, nil)}
+	blocks := []*verification.Block{verification.NewBlock([32]byte{}, []*verification.Transaction{transaction}, 0, nil, nil)}
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	watchMock := new(clocktest.WatchMock)
@@ -338,7 +338,7 @@ func Test_ServeHTTP_PendingTransactionFound_ReturnsSent(t *testing.T) {
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
-	blocks := []*verification.Block{verification.NewBlock(0, [32]byte{}, nil, nil, nil)}
+	blocks := []*verification.Block{verification.NewBlock([32]byte{}, nil, 0, nil, nil)}
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	transaction, _ := verification.NewRewardTransaction("", false, 0, 0)

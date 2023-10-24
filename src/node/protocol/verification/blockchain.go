@@ -85,7 +85,7 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactionsBytes []byte
 			return fmt.Errorf("failed to unmarshal transactions: %w", err)
 		}
 	}
-	block := NewBlock(timestamp, previousHash, transactions, addedRegisteredAddresses, removedRegisteredAddresses)
+	block := NewBlock(previousHash, transactions, timestamp, addedRegisteredAddresses, removedRegisteredAddresses)
 	return blockchain.addBlock(block)
 }
 
