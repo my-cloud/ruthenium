@@ -1,14 +1,14 @@
-package status
+package progress
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/log"
 	"github.com/my-cloud/ruthenium/src/node/clock"
 	"github.com/my-cloud/ruthenium/src/node/network"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
 	"github.com/my-cloud/ruthenium/src/ui/server"
+	"github.com/my-cloud/ruthenium/src/ui/server/transaction/output"
 	"net/http"
 )
 
@@ -28,22 +28,15 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 	case http.MethodPut:
 		jsonWriter := server.NewIoWriter(writer, handler.logger)
 		decoder := json.NewDecoder(req.Body)
-		var transaction *verification.Transaction
-		err := decoder.Decode(&transaction)
+		var searchedUtxo *verification.Utxo
+		err := decoder.Decode(&searchedUtxo)
 		if err != nil {
-			handler.logger.Error(fmt.Errorf("failed to decode transaction: %w", err).Error())
+			handler.logger.Error(fmt.Errorf("failed to decode utxo: %w", err).Error())
 			writer.WriteHeader(http.StatusBadRequest)
-			jsonWriter.Write("invalid transaction")
-			return
-		} else if len(transaction.Outputs()) == 0 {
-			handler.logger.Error(errors.New("transaction has no output").Error())
-			writer.WriteHeader(http.StatusBadRequest)
-			jsonWriter.Write("invalid transaction")
+			jsonWriter.Write("invalid utxo")
 			return
 		}
-		lastOutputIndex := len(transaction.Outputs()) - 1
-		lastOutput := transaction.Outputs()[lastOutputIndex]
-		utxosBytes, err := handler.host.GetUtxos(lastOutput.Address())
+		utxosBytes, err := handler.host.GetUtxos(searchedUtxo.Address())
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -60,12 +53,12 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		now := handler.watch.Now().UnixNano()
 		currentBlockHeight := (now - genesisTimestamp) / handler.settings.ValidationTimestamp()
 		currentBlockTimestamp := genesisTimestamp + currentBlockHeight*handler.settings.ValidationTimestamp()
-		progress := &Progress{
+		progress := &output.Progress{
 			CurrentBlockTimestamp: currentBlockTimestamp,
 			ValidationTimestamp:   handler.settings.ValidationTimestamp(),
 		}
 		for _, utxo := range utxos {
-			if utxo.TransactionId() == transaction.Id() && utxo.OutputIndex() == uint16(lastOutputIndex) {
+			if utxo.TransactionId() == searchedUtxo.TransactionId() && utxo.OutputIndex() == searchedUtxo.OutputIndex() {
 				progress.TransactionStatus = "confirmed"
 				handler.sendResponse(writer, progress)
 				return
@@ -95,7 +88,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			return
 		}
 		for _, validatedTransaction := range blocks[0].Transactions() {
-			if validatedTransaction.Id() == transaction.Id() {
+			if validatedTransaction.Id() == searchedUtxo.TransactionId() {
 				progress.TransactionStatus = "validated"
 				handler.sendResponse(writer, progress)
 				return
@@ -115,7 +108,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			return
 		}
 		for _, pendingTransaction := range transactions {
-			if pendingTransaction.Id() == transaction.Id() {
+			if pendingTransaction.Id() == searchedUtxo.TransactionId() {
 				progress.TransactionStatus = "sent"
 				handler.sendResponse(writer, progress)
 				return
@@ -129,7 +122,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 	}
 }
 
-func (handler *Handler) sendResponse(writer http.ResponseWriter, progress *Progress) {
+func (handler *Handler) sendResponse(writer http.ResponseWriter, progress *output.Progress) {
 	marshaledResponse, err := json.Marshal(progress)
 	if err != nil {
 		handler.logger.Error(fmt.Errorf("failed to marshal progress: %w", err).Error())

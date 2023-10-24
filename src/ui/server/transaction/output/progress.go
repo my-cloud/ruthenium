@@ -1,4 +1,4 @@
-package status
+package output
 
 type Progress struct {
 	CurrentBlockTimestamp int64  `json:"current_block_timestamp"`
