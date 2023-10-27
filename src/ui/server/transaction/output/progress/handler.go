@@ -53,14 +53,14 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		now := handler.watch.Now().UnixNano()
 		currentBlockHeight := (now - genesisTimestamp) / handler.settings.ValidationTimestamp()
 		currentBlockTimestamp := genesisTimestamp + currentBlockHeight*handler.settings.ValidationTimestamp()
-		progress := &output.Progress{
+		progressInfo := &output.ProgressInfo{
 			CurrentBlockTimestamp: currentBlockTimestamp,
 			ValidationTimestamp:   handler.settings.ValidationTimestamp(),
 		}
 		for _, utxo := range utxos {
 			if utxo.TransactionId() == searchedUtxo.TransactionId() && utxo.OutputIndex() == searchedUtxo.OutputIndex() {
-				progress.TransactionStatus = "confirmed"
-				handler.sendResponse(writer, progress)
+				progressInfo.TransactionStatus = "confirmed"
+				handler.sendResponse(writer, progressInfo)
 				return
 			}
 		}
@@ -89,8 +89,8 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		}
 		for _, validatedTransaction := range blocks[0].Transactions() {
 			if validatedTransaction.Id() == searchedUtxo.TransactionId() {
-				progress.TransactionStatus = "validated"
-				handler.sendResponse(writer, progress)
+				progressInfo.TransactionStatus = "validated"
+				handler.sendResponse(writer, progressInfo)
 				return
 			}
 		}
@@ -109,20 +109,20 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		}
 		for _, pendingTransaction := range transactions {
 			if pendingTransaction.Id() == searchedUtxo.TransactionId() {
-				progress.TransactionStatus = "sent"
-				handler.sendResponse(writer, progress)
+				progressInfo.TransactionStatus = "sent"
+				handler.sendResponse(writer, progressInfo)
 				return
 			}
 		}
-		progress.TransactionStatus = "rejected"
-		handler.sendResponse(writer, progress)
+		progressInfo.TransactionStatus = "rejected"
+		handler.sendResponse(writer, progressInfo)
 	default:
 		handler.logger.Error("invalid HTTP method")
 		writer.WriteHeader(http.StatusBadRequest)
 	}
 }
 
-func (handler *Handler) sendResponse(writer http.ResponseWriter, progress *output.Progress) {
+func (handler *Handler) sendResponse(writer http.ResponseWriter, progress *output.ProgressInfo) {
 	marshaledResponse, err := json.Marshal(progress)
 	if err != nil {
 		handler.logger.Error(fmt.Errorf("failed to marshal progress: %w", err).Error())

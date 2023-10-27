@@ -238,10 +238,10 @@ func Test_ServeHTTP_TransactionNotFound_ReturnsRejected(t *testing.T) {
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 	expectedStatus := "rejected"
 	response := recorder.Body.Bytes()
-	var progress *output.Progress
-	err := json.Unmarshal(response, &progress)
+	var progressInfo *output.ProgressInfo
+	err := json.Unmarshal(response, &progressInfo)
 	fmt.Println(err)
-	actualStatus := progress.TransactionStatus
+	actualStatus := progressInfo.TransactionStatus
 	test.Assert(t, actualStatus == expectedStatus, fmt.Sprintf("Wrong response. expected: %s actual: %s", expectedStatus, actualStatus))
 }
 
@@ -280,10 +280,10 @@ func Test_ServeHTTP_UtxoFound_ReturnsConfirmed(t *testing.T) {
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 	expectedStatus := "confirmed"
 	response := recorder.Body.Bytes()
-	var progress *output.Progress
-	err := json.Unmarshal(response, &progress)
+	var progressInfo *output.ProgressInfo
+	err := json.Unmarshal(response, &progressInfo)
 	fmt.Println(err)
-	actualStatus := progress.TransactionStatus
+	actualStatus := progressInfo.TransactionStatus
 	test.Assert(t, actualStatus == expectedStatus, fmt.Sprintf("Wrong response. expected: %s actual: %s", expectedStatus, actualStatus))
 }
 
@@ -324,10 +324,10 @@ func Test_ServeHTTP_ValidatedTransactionFound_ReturnsValidated(t *testing.T) {
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 	expectedStatus := "validated"
 	response := recorder.Body.Bytes()
-	var progress *output.Progress
-	err := json.Unmarshal(response, &progress)
+	var progressInfo *output.ProgressInfo
+	err := json.Unmarshal(response, &progressInfo)
 	fmt.Println(err)
-	actualStatus := progress.TransactionStatus
+	actualStatus := progressInfo.TransactionStatus
 	test.Assert(t, actualStatus == expectedStatus, fmt.Sprintf("Wrong response. expected: %s actual: %s", expectedStatus, actualStatus))
 }
 
@@ -371,9 +371,9 @@ func Test_ServeHTTP_PendingTransactionFound_ReturnsSent(t *testing.T) {
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 	expectedStatus := "sent"
 	response := recorder.Body.Bytes()
-	var progress *output.Progress
-	err := json.Unmarshal(response, &progress)
+	var progressInfo *output.ProgressInfo
+	err := json.Unmarshal(response, &progressInfo)
 	fmt.Println(err)
-	actualStatus := progress.TransactionStatus
+	actualStatus := progressInfo.TransactionStatus
 	test.Assert(t, actualStatus == expectedStatus, fmt.Sprintf("Wrong response. expected: %s actual: %s", expectedStatus, actualStatus))
 }
