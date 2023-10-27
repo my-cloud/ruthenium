@@ -35,6 +35,10 @@ func (server *Server) SetHandleFirstBlockTimestampRequest(endpoint string) {
 	server.SetHandle(endpoint, server.handler.HandleFirstBlockTimestampRequest)
 }
 
+func (server *Server) SetHandleSettingsRequest(endpoint string) {
+	server.SetHandle(endpoint, server.handler.HandleSettingsRequest)
+}
+
 func (server *Server) SetHandleTargetsRequest(endpoint string) {
 	server.SetHandle(endpoint, server.handler.HandleTargetsRequest)
 }

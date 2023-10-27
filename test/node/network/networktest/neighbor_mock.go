@@ -27,6 +27,9 @@ var _ network.Neighbor = &NeighborMock{}
 //			GetFirstBlockTimestampFunc: func() (int64, error) {
 //				panic("mock out the GetFirstBlockTimestamp method")
 //			},
+//			GetSettingsFunc: func() ([]byte, error) {
+//				panic("mock out the GetSettings method")
+//			},
 //			GetTransactionsFunc: func() ([]byte, error) {
 //				panic("mock out the GetTransactions method")
 //			},
@@ -55,6 +58,9 @@ type NeighborMock struct {
 	// GetFirstBlockTimestampFunc mocks the GetFirstBlockTimestamp method.
 	GetFirstBlockTimestampFunc func() (int64, error)
 
+	// GetSettingsFunc mocks the GetSettings method.
+	GetSettingsFunc func() ([]byte, error)
+
 	// GetTransactionsFunc mocks the GetTransactions method.
 	GetTransactionsFunc func() ([]byte, error)
 
@@ -82,6 +88,9 @@ type NeighborMock struct {
 		// GetFirstBlockTimestamp holds details about calls to the GetFirstBlockTimestamp method.
 		GetFirstBlockTimestamp []struct {
 		}
+		// GetSettings holds details about calls to the GetSettings method.
+		GetSettings []struct {
+		}
 		// GetTransactions holds details about calls to the GetTransactions method.
 		GetTransactions []struct {
 		}
@@ -102,6 +111,7 @@ type NeighborMock struct {
 	lockAddTransaction         sync.RWMutex
 	lockGetBlocks              sync.RWMutex
 	lockGetFirstBlockTimestamp sync.RWMutex
+	lockGetSettings            sync.RWMutex
 	lockGetTransactions        sync.RWMutex
 	lockGetUtxos               sync.RWMutex
 	lockSendTargets            sync.RWMutex
@@ -196,6 +206,33 @@ func (mock *NeighborMock) GetFirstBlockTimestampCalls() []struct {
 	mock.lockGetFirstBlockTimestamp.RLock()
 	calls = mock.calls.GetFirstBlockTimestamp
 	mock.lockGetFirstBlockTimestamp.RUnlock()
+	return calls
+}
+
+// GetSettings calls GetSettingsFunc.
+func (mock *NeighborMock) GetSettings() ([]byte, error) {
+	if mock.GetSettingsFunc == nil {
+		panic("NeighborMock.GetSettingsFunc: method is nil but Neighbor.GetSettings was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetSettings.Lock()
+	mock.calls.GetSettings = append(mock.calls.GetSettings, callInfo)
+	mock.lockGetSettings.Unlock()
+	return mock.GetSettingsFunc()
+}
+
+// GetSettingsCalls gets all the calls that were made to GetSettings.
+// Check the length with:
+//
+//	len(mockedNeighbor.GetSettingsCalls())
+func (mock *NeighborMock) GetSettingsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetSettings.RLock()
+	calls = mock.calls.GetSettings
+	mock.lockGetSettings.RUnlock()
 	return calls
 }
 

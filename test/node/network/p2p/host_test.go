@@ -15,6 +15,7 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	serverMock.ServeFunc = func() error { return nil }
 	serverMock.SetHandleBlocksRequestFunc = func(string) {}
 	serverMock.SetHandleFirstBlockTimestampRequestFunc = func(string) {}
+	serverMock.SetHandleSettingsRequestFunc = func(string) {}
 	serverMock.SetHandleTargetsRequestFunc = func(string) {}
 	serverMock.SetHandleTransactionRequestFunc = func(string) {}
 	serverMock.SetHandleTransactionsRequestFunc = func(string) {}

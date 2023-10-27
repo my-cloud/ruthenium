@@ -2,6 +2,9 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
+	"os"
 	"time"
 )
 
@@ -21,6 +24,7 @@ type settingsDto struct {
 }
 
 type Settings struct {
+	bytes                           []byte
 	blocksCountLimit                uint64
 	genesisAmountInParticles        uint64
 	halfLifeInNanoseconds           float64
@@ -34,6 +38,26 @@ type Settings struct {
 	validationTimer                 time.Duration
 	validationTimeout               time.Duration
 	verificationsCountPerValidation int64
+}
+
+func NewSettings(path string) (*Settings, error) {
+	jsonFile, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("unable to open file: %w", err)
+	}
+	var settings *Settings
+	bytes, err := io.ReadAll(jsonFile)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read file: %w", err)
+	}
+	if err = jsonFile.Close(); err != nil {
+		return nil, fmt.Errorf("unable to close file: %w", err)
+	}
+	if err = json.Unmarshal(bytes, &settings); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal: %w", err)
+	}
+	settings.bytes = bytes
+	return settings, nil
 }
 
 func (settings *Settings) UnmarshalJSON(data []byte) error {
@@ -57,6 +81,10 @@ func (settings *Settings) UnmarshalJSON(data []byte) error {
 	settings.validationTimeout = time.Duration(dto.ValidationTimeoutInSeconds) * time.Second
 	settings.verificationsCountPerValidation = dto.VerificationsCountPerValidation
 	return nil
+}
+
+func (settings *Settings) Bytes() []byte {
+	return settings.bytes
 }
 
 func (settings *Settings) BlocksCountLimit() uint64 {

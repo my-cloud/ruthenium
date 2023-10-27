@@ -39,6 +39,10 @@ func (neighbor *Neighbor) GetFirstBlockTimestamp() (int64, error) {
 	return timestamp, err
 }
 
+func (neighbor *Neighbor) GetSettings() ([]byte, error) {
+	return neighbor.sendRequest(settingsEndpoint, []byte{})
+}
+
 func (neighbor *Neighbor) SendTargets(targets []string) error {
 	_, err := neighbor.sendRequest(targetsEndpoint, targets)
 	return err

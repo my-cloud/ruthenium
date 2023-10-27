@@ -14,6 +14,7 @@ const BadRequest = "bad request"
 
 type Handler struct {
 	blockchain       protocol.Blockchain
+	settings         []byte
 	synchronizer     network.Synchronizer
 	transactionsPool protocol.TransactionsPool
 	watch            clock.Watch
@@ -21,11 +22,12 @@ type Handler struct {
 }
 
 func NewHandler(blockchain protocol.Blockchain,
+	settings []byte,
 	synchronizer network.Synchronizer,
 	transactionsPool protocol.TransactionsPool,
 	watch clock.Watch,
 	logger log.Logger) *Handler {
-	return &Handler{blockchain, synchronizer, transactionsPool, watch, logger}
+	return &Handler{blockchain, settings, synchronizer, transactionsPool, watch, logger}
 }
 
 func (handler *Handler) HandleBlocksRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
@@ -49,6 +51,12 @@ func (handler *Handler) HandleFirstBlockTimestampRequest(_ context.Context, _ gp
 		return res, err
 	}
 	res.SetBytes(timestampBytes)
+	return res, nil
+}
+
+func (handler *Handler) HandleSettingsRequest(_ context.Context, _ gp2p.Data) (gp2p.Data, error) {
+	res := gp2p.Data{}
+	res.SetBytes(handler.settings)
 	return res, nil
 }
 
