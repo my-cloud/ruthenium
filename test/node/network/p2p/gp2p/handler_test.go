@@ -11,6 +11,7 @@ import (
 	"github.com/my-cloud/ruthenium/test/node/clock/clocktest"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
 	"github.com/my-cloud/ruthenium/test/node/protocol/protocoltest"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -51,6 +52,20 @@ func Test_HandleTargetsRequest_AddValidTargets_AddTargetsCalled(t *testing.T) {
 	waitGroup.Wait()
 	isMethodCalled := len(synchronizerMock.AddTargetsCalls()) == 1
 	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
+}
+
+func Test_HandleSettingsRequest_ValidRequest_SettingsCalled(t *testing.T) {
+	// Arrange
+	expectedSettings := []byte{0}
+	handler := gp2p2.NewHandler(new(protocoltest.BlockchainMock), expectedSettings, new(networktest.SynchronizerMock), new(protocoltest.TransactionsPoolMock), new(clocktest.WatchMock), logtest.NewLoggerMock())
+	req := gp2p.Data{}
+
+	// Act
+	data, _ := handler.HandleSettingsRequest(context.TODO(), req)
+
+	// Assert
+	actualSettings := data.GetBytes()
+	test.Assert(t, reflect.DeepEqual(expectedSettings, actualSettings), "Settings are not the expected ones.")
 }
 
 func Test_HandleFirstBlockTimestampRequest_ValidRequest_FirstBlockTimestampCalled(t *testing.T) {
