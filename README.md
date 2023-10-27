@@ -3,14 +3,10 @@
 [![Build](https://img.shields.io/github/actions/workflow/status/my-cloud/ruthenium/build.yml?logo=github)](https://github.com/my-cloud/ruthenium/actions?query=workflow%3ABuild+event%3Apush+branch%3Amain)
 
 <div style="text-align: center">
-<img src="https://github.com/my-cloud/ruthenium/blob/main/doc/coin.png?raw=true" alt="Ruthenium coin" width="192" height="192"/>
-</div>
-
-<div style="text-align: center">
 <img src="doc/coin.png" alt="Ruthenium coin" width="192" height="192"/>
 </div>
 
-![coin](doc/coin.png)
+<img src="doc/coin.png" alt="Ruthenium coin" width="192" height="192" style="display: block; margin-left: auto; margin-right: auto;"/>
 
 ## Description
 [![Doc](https://img.shields.io/badge/doc-wiki-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
