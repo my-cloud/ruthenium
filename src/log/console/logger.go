@@ -65,6 +65,6 @@ func (logger *Logger) Error(msg string) {
 
 func (logger *Logger) Fatal(msg string) {
 	if logger.level <= Fatal {
-		log.Println("FATAL:", msg)
+		log.Panicln("FATAL:", msg)
 	}
 }

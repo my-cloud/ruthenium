@@ -5,11 +5,49 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/config"
 	"github.com/my-cloud/ruthenium/test"
+	"os"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
 
-func Test_UnmarshalJSON_ValidBytes_Unmarshalled(t *testing.T) {
+func Test_NewSettings_UnableToOpenFile_ReturnsError(t *testing.T) {
+	// Arrange
+	// Act
+	_, err := config.NewSettings("")
+
+	// Assert
+	test.Assert(t, err != nil, "Error is nil whereas it should not.")
+	if err != nil {
+		expectedErrorMessage := "unable to open file"
+		actualErrorMessage := err.Error()
+		test.Assert(t, strings.Contains(actualErrorMessage, expectedErrorMessage), fmt.Sprintf("Wrong error message.\nExpected: %s\nActual:   %s", expectedErrorMessage, actualErrorMessage))
+	}
+}
+
+func Test_NewSettings_UnableToUnmarshalBytes_ReturnsError(t *testing.T) {
+	// Arrange
+	jsonFile, _ := os.CreateTemp("", "Test_NewSettings_UnableToUnmarshalBytes_ReturnsError.json")
+	jsonFileName := jsonFile.Name()
+	defer func() { _ = os.Remove(jsonFileName) }()
+	jsonData := []byte(`{`)
+	_, _ = jsonFile.Write(jsonData)
+	_ = jsonFile.Close()
+
+	// Act
+	_, err := config.NewSettings(jsonFileName)
+
+	// Assert
+	test.Assert(t, err != nil, "Error is nil whereas it should not.")
+	if err != nil {
+		expectedErrorMessage := "unable to unmarshal"
+		actualErrorMessage := err.Error()
+		test.Assert(t, strings.Contains(actualErrorMessage, expectedErrorMessage), fmt.Sprintf("Wrong error message.\nExpected: %s\nActual:   %s", expectedErrorMessage, actualErrorMessage))
+	}
+}
+
+func Test_NewSettings_ValidBytes_NoError(t *testing.T) {
 	// Arrange
 	var blocksCountLimit uint64 = 1
 	var genesisAmountInParticles uint64 = 2
@@ -50,13 +88,18 @@ func Test_UnmarshalJSON_ValidBytes_Unmarshalled(t *testing.T) {
 		ValidationTimeoutInSeconds:       validationTimeoutInSeconds,
 		VerificationsCountPerValidation:  verificationsCountPerValidation,
 	})
-	var settings *config.Settings
+	jsonFile, _ := os.CreateTemp("", "Test_NewSettings_ValidBytes_NoError.json")
+	jsonFileName := jsonFile.Name()
+	defer func() { _ = os.Remove(jsonFileName) }()
+	_, _ = jsonFile.Write(bytes)
+	_ = jsonFile.Close()
 
 	// Act
-	err := json.Unmarshal(bytes, &settings)
+	settings, _ := config.NewSettings(jsonFileName)
 
 	// Assert
-	test.Assert(t, err == nil && settings != nil, "Error is nil whereas it should not be")
+	test.Assert(t, settings != nil, "Settings are nil whereas it should not.")
+	actualBytes := settings.Bytes()
 	actualBlocksCountLimit := settings.BlocksCountLimit()
 	actualGenesisAmountInParticles := settings.GenesisAmountInParticles()
 	actualHalfLifeInNanoseconds := settings.HalfLifeInNanoseconds()
@@ -70,6 +113,7 @@ func Test_UnmarshalJSON_ValidBytes_Unmarshalled(t *testing.T) {
 	actualValidationTimestamp := settings.ValidationTimestamp()
 	actualValidationTimeout := settings.ValidationTimeout()
 	actualVerificationsCountPerValidation := settings.VerificationsCountPerValidation()
+	test.Assert(t, reflect.DeepEqual(actualBytes, bytes), fmt.Sprintf("wrong bytes. expected: %v, actual: %v", bytes, actualBytes))
 	test.Assert(t, actualBlocksCountLimit == blocksCountLimit, fmt.Sprintf("wrong blocksCountLimit. expected: %v, actual: %v", blocksCountLimit, actualBlocksCountLimit))
 	test.Assert(t, actualGenesisAmountInParticles == genesisAmountInParticles, fmt.Sprintf("wrong genesisAmountInParticles. expected: %v, actual: %v", genesisAmountInParticles, actualGenesisAmountInParticles))
 	expectedHalfLifeInNanoseconds := halfLifeInDays * 24 * float64(time.Hour.Nanoseconds())

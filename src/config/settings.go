@@ -56,7 +56,6 @@ func NewSettings(path string) (*Settings, error) {
 	if err = json.Unmarshal(bytes, &settings); err != nil {
 		return nil, fmt.Errorf("unable to unmarshal: %w", err)
 	}
-	settings.bytes = bytes
 	return settings, nil
 }
 
@@ -66,6 +65,7 @@ func (settings *Settings) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+	settings.bytes = data
 	settings.blocksCountLimit = dto.BlocksCountLimit
 	settings.genesisAmountInParticles = dto.GenesisAmountInParticles
 	hoursByDay := 24.

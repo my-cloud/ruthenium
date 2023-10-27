@@ -60,14 +60,13 @@ func decodeAddress(mnemonic *string, derivationPath *string, password *string, p
 }
 
 func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *string, port *int, address string, logger *console.Logger) *p2p.Host {
-	parser := file.NewJsonParser()
 	settings, err := config.NewSettings(*settingsPath)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
 	}
 	registry := poh.NewRegistry(*infuraKey, logger)
 	watch := tick.NewWatch()
-	synchronizer := createSynchronizer(parser, *seedsPath, *ip, *port, settings, watch, logger)
+	synchronizer := createSynchronizer(*seedsPath, *ip, *port, settings, watch, logger)
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	transactionsPool := validation.NewTransactionsPool(blockchain, settings, synchronizer, address, logger)
 	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, settings.SynchronizationTimer(), 1, 0)
@@ -82,8 +81,9 @@ func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *
 	return p2p.NewHost(server, synchronizationEngine, validationEngine, verificationEngine, logger)
 }
 
-func createSynchronizer(parser *file.JsonParser, seedsPath string, hostIp string, port int, settings *config.Settings, watch *tick.Watch, logger *console.Logger) *p2p.Synchronizer {
+func createSynchronizer(seedsPath string, hostIp string, port int, settings *config.Settings, watch *tick.Watch, logger *console.Logger) *p2p.Synchronizer {
 	var seedsStringTargets []string
+	parser := file.NewJsonParser()
 	err := parser.Parse(seedsPath, &seedsStringTargets)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to parse seeds: %w", err).Error())
