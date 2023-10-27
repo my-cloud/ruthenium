@@ -85,7 +85,7 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactionsBytes []byte
 			return fmt.Errorf("failed to unmarshal transactions: %w", err)
 		}
 	}
-	block := NewBlock(timestamp, previousHash, transactions, addedRegisteredAddresses, removedRegisteredAddresses)
+	block := NewBlock(previousHash, addedRegisteredAddresses, removedRegisteredAddresses, timestamp, transactions)
 	return blockchain.addBlock(block)
 }
 
@@ -608,7 +608,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *Block, previousBlockTim
 				return fmt.Errorf("a neighbor block transaction timestamp is too old: transaction timestamp: %d, id: %s", transaction.Timestamp(), transaction.Id())
 			}
 			for _, output := range transaction.Outputs() {
-				if output.IsRegistered() {
+				if output.IsYielding() {
 					if err := blockchain.isRegistered(output.Address(), addedRegisteredAddresses, removedRegisteredAddresses); err != nil {
 						return err
 					}
@@ -691,13 +691,13 @@ func removeUtxo(utxos []*Utxo, transactionId string, outputIndex uint16) []*Utxo
 
 func verifyIncomes(utxosByAddress map[string][]*Utxo) error {
 	for address, utxos := range utxosByAddress {
-		var hasIncome bool
+		var isYielding bool
 		for _, utxo := range utxos {
-			if utxo.IsRegistered() {
-				if hasIncome {
+			if utxo.IsYielding() {
+				if isYielding {
 					return fmt.Errorf("income requested for several UTXOs for address: %s", address)
 				}
-				hasIncome = true
+				isYielding = true
 			}
 		}
 	}

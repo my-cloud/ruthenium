@@ -1,4 +1,4 @@
-package info
+package progress
 
 import (
 	"bytes"
@@ -6,7 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
-	"github.com/my-cloud/ruthenium/src/ui/server/transaction/status"
+	"github.com/my-cloud/ruthenium/src/ui/server/transaction/output"
+	"github.com/my-cloud/ruthenium/src/ui/server/transaction/output/progress"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/log/logtest"
 	"github.com/my-cloud/ruthenium/test/node/clock/clocktest"
@@ -26,7 +27,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	neighborMock := new(networktest.NeighborMock)
 	watchMock := new(clocktest.WatchMock)
 	settings := new(servertest.SettingsMock)
-	handler := status.NewHandler(neighborMock, settings, watchMock, logger)
+	handler := progress.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	invalidHttpMethods := []string{http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
 	for _, method := range invalidHttpMethods {
@@ -43,7 +44,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	}
 }
 
-func Test_ServeHTTP_UndecipherableTransaction_BadRequest(t *testing.T) {
+func Test_ServeHTTP_UndecipherableUtxo_BadRequest(t *testing.T) {
 	// Arrange
 	neighborMock := new(networktest.NeighborMock)
 	settings := new(servertest.SettingsMock)
@@ -54,7 +55,7 @@ func Test_ServeHTTP_UndecipherableTransaction_BadRequest(t *testing.T) {
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	watchMock := new(clocktest.WatchMock)
 	logger := logtest.NewLoggerMock()
-	handler := status.NewHandler(neighborMock, settings, watchMock, logger)
+	handler := progress.NewHandler(neighborMock, settings, watchMock, logger)
 	data := ""
 	marshalledData, _ := json.Marshal(data)
 	body := bytes.NewReader(marshalledData)
@@ -65,7 +66,7 @@ func Test_ServeHTTP_UndecipherableTransaction_BadRequest(t *testing.T) {
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	isNeighborMethodCalled := len(neighborMock.AddTransactionCalls()) != 0
+	isNeighborMethodCalled := len(neighborMock.GetUtxosCalls()) != 0
 	test.Assert(t, !isNeighborMethodCalled, "Neighbor method is called whereas it should not.")
 	expectedStatusCode := 400
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -83,11 +84,11 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
 	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := status.NewHandler(neighborMock, settings, watchMock, logger)
+	handler := progress.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	transaction, _ := verification.NewRewardTransaction("", false, 0, 0)
-	marshalledTransaction, _ := json.Marshal(transaction)
-	body := bytes.NewReader(marshalledTransaction)
+	utxo := verification.NewUtxo(&verification.InputInfo{}, &verification.Output{}, 0)
+	marshalledUtxo, _ := json.Marshal(utxo)
+	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
 
 	// Act
@@ -115,11 +116,11 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
 	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := status.NewHandler(neighborMock, settings, watchMock, logger)
+	handler := progress.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	transaction, _ := verification.NewRewardTransaction("", false, 0, 0)
-	marshalledTransaction, _ := json.Marshal(transaction)
-	body := bytes.NewReader(marshalledTransaction)
+	utxo := verification.NewUtxo(&verification.InputInfo{}, &verification.Output{}, 0)
+	marshalledUtxo, _ := json.Marshal(utxo)
+	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
 
 	// Act
@@ -148,11 +149,11 @@ func Test_ServeHTTP_GetBlocksError_ReturnsInternalServerError(t *testing.T) {
 	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
 	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := status.NewHandler(neighborMock, settings, watchMock, logger)
+	handler := progress.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	transaction, _ := verification.NewRewardTransaction("", false, 0, 0)
-	marshalledTransaction, _ := json.Marshal(transaction)
-	body := bytes.NewReader(marshalledTransaction)
+	utxo := verification.NewUtxo(&verification.InputInfo{}, &verification.Output{}, 0)
+	marshalledUtxo, _ := json.Marshal(utxo)
+	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
 
 	// Act
@@ -172,7 +173,7 @@ func Test_ServeHTTP_GetTransactionsError_ReturnsInternalServerError(t *testing.T
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
-	blocks := []*verification.Block{verification.NewBlock(0, [32]byte{}, nil, nil, nil)}
+	blocks := []*verification.Block{verification.NewBlock([32]byte{}, nil, nil, 0, nil)}
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return nil, errors.New("") }
@@ -184,11 +185,11 @@ func Test_ServeHTTP_GetTransactionsError_ReturnsInternalServerError(t *testing.T
 	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
 	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := status.NewHandler(neighborMock, settings, watchMock, logger)
+	handler := progress.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	transaction, _ := verification.NewRewardTransaction("", false, 0, 0)
-	marshalledTransaction, _ := json.Marshal(transaction)
-	body := bytes.NewReader(marshalledTransaction)
+	utxo := verification.NewUtxo(&verification.InputInfo{}, &verification.Output{}, 0)
+	marshalledUtxo, _ := json.Marshal(utxo)
+	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
 
 	// Act
@@ -208,7 +209,7 @@ func Test_ServeHTTP_TransactionNotFound_ReturnsRejected(t *testing.T) {
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
-	blocks := []*verification.Block{verification.NewBlock(0, [32]byte{}, nil, nil, nil)}
+	blocks := []*verification.Block{verification.NewBlock([32]byte{}, nil, nil, 0, nil)}
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledEmptyArray, nil }
@@ -220,11 +221,11 @@ func Test_ServeHTTP_TransactionNotFound_ReturnsRejected(t *testing.T) {
 	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
 	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := status.NewHandler(neighborMock, settings, watchMock, logger)
+	handler := progress.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	transaction, _ := verification.NewRewardTransaction("", false, 0, 0)
-	marshalledTransaction, _ := json.Marshal(transaction)
-	body := bytes.NewReader(marshalledTransaction)
+	utxo := verification.NewUtxo(&verification.InputInfo{}, &verification.Output{}, 0)
+	marshalledUtxo, _ := json.Marshal(utxo)
+	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
 
 	// Act
@@ -237,10 +238,10 @@ func Test_ServeHTTP_TransactionNotFound_ReturnsRejected(t *testing.T) {
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 	expectedStatus := "rejected"
 	response := recorder.Body.Bytes()
-	var progress *status.Progress
-	err := json.Unmarshal(response, &progress)
+	var progressInfo *output.ProgressInfo
+	err := json.Unmarshal(response, &progressInfo)
 	fmt.Println(err)
-	actualStatus := progress.TransactionStatus
+	actualStatus := progressInfo.TransactionStatus
 	test.Assert(t, actualStatus == expectedStatus, fmt.Sprintf("Wrong response. expected: %s actual: %s", expectedStatus, actualStatus))
 }
 
@@ -252,8 +253,8 @@ func Test_ServeHTTP_UtxoFound_ReturnsConfirmed(t *testing.T) {
 	transactionId := transaction.Id()
 	inputInfo := verification.NewInputInfo(0, transactionId)
 	utxo := verification.NewUtxo(inputInfo, &verification.Output{}, 0)
-	marshalledEmptyUtxos, _ := json.Marshal([]*verification.Utxo{utxo})
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
+	marshalledUtxos, _ := json.Marshal([]*verification.Utxo{utxo})
+	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(clocktest.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
@@ -263,10 +264,10 @@ func Test_ServeHTTP_UtxoFound_ReturnsConfirmed(t *testing.T) {
 	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
 	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := status.NewHandler(neighborMock, settings, watchMock, logger)
+	handler := progress.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	marshalledTransaction, _ := json.Marshal(transaction)
-	body := bytes.NewReader(marshalledTransaction)
+	marshalledUtxo, _ := json.Marshal(utxo)
+	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
 
 	// Act
@@ -279,10 +280,10 @@ func Test_ServeHTTP_UtxoFound_ReturnsConfirmed(t *testing.T) {
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 	expectedStatus := "confirmed"
 	response := recorder.Body.Bytes()
-	var progress *status.Progress
-	err := json.Unmarshal(response, &progress)
+	var progressInfo *output.ProgressInfo
+	err := json.Unmarshal(response, &progressInfo)
 	fmt.Println(err)
-	actualStatus := progress.TransactionStatus
+	actualStatus := progressInfo.TransactionStatus
 	test.Assert(t, actualStatus == expectedStatus, fmt.Sprintf("Wrong response. expected: %s actual: %s", expectedStatus, actualStatus))
 }
 
@@ -294,7 +295,7 @@ func Test_ServeHTTP_ValidatedTransactionFound_ReturnsValidated(t *testing.T) {
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	transaction, _ := verification.NewRewardTransaction("", false, 0, 0)
-	blocks := []*verification.Block{verification.NewBlock(0, [32]byte{}, []*verification.Transaction{transaction}, nil, nil)}
+	blocks := []*verification.Block{verification.NewBlock([32]byte{}, nil, nil, 0, []*verification.Transaction{transaction})}
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	watchMock := new(clocktest.WatchMock)
@@ -305,10 +306,12 @@ func Test_ServeHTTP_ValidatedTransactionFound_ReturnsValidated(t *testing.T) {
 	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
 	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := status.NewHandler(neighborMock, settings, watchMock, logger)
+	handler := progress.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	marshalledTransaction, _ := json.Marshal(transaction)
-	body := bytes.NewReader(marshalledTransaction)
+	outputIndex := 0
+	utxo := verification.NewUtxo(verification.NewInputInfo(uint16(outputIndex), transaction.Id()), transaction.Outputs()[outputIndex], transaction.Timestamp())
+	marshalledUtxo, _ := json.Marshal(utxo)
+	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
 
 	// Act
@@ -321,10 +324,10 @@ func Test_ServeHTTP_ValidatedTransactionFound_ReturnsValidated(t *testing.T) {
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 	expectedStatus := "validated"
 	response := recorder.Body.Bytes()
-	var progress *status.Progress
-	err := json.Unmarshal(response, &progress)
+	var progressInfo *output.ProgressInfo
+	err := json.Unmarshal(response, &progressInfo)
 	fmt.Println(err)
-	actualStatus := progress.TransactionStatus
+	actualStatus := progressInfo.TransactionStatus
 	test.Assert(t, actualStatus == expectedStatus, fmt.Sprintf("Wrong response. expected: %s actual: %s", expectedStatus, actualStatus))
 }
 
@@ -335,7 +338,7 @@ func Test_ServeHTTP_PendingTransactionFound_ReturnsSent(t *testing.T) {
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
-	blocks := []*verification.Block{verification.NewBlock(0, [32]byte{}, nil, nil, nil)}
+	blocks := []*verification.Block{verification.NewBlock([32]byte{}, nil, nil, 0, nil)}
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	transaction, _ := verification.NewRewardTransaction("", false, 0, 0)
@@ -350,10 +353,12 @@ func Test_ServeHTTP_PendingTransactionFound_ReturnsSent(t *testing.T) {
 	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
 	settings.ParticlesPerTokenFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := status.NewHandler(neighborMock, settings, watchMock, logger)
+	handler := progress.NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	marshalledTransaction, _ := json.Marshal(transaction)
-	body := bytes.NewReader(marshalledTransaction)
+	outputIndex := 0
+	utxo := verification.NewUtxo(verification.NewInputInfo(uint16(outputIndex), transaction.Id()), transaction.Outputs()[outputIndex], transaction.Timestamp())
+	marshalledUtxo, _ := json.Marshal(utxo)
+	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
 
 	// Act
@@ -366,9 +371,9 @@ func Test_ServeHTTP_PendingTransactionFound_ReturnsSent(t *testing.T) {
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 	expectedStatus := "sent"
 	response := recorder.Body.Bytes()
-	var progress *status.Progress
-	err := json.Unmarshal(response, &progress)
+	var progressInfo *output.ProgressInfo
+	err := json.Unmarshal(response, &progressInfo)
 	fmt.Println(err)
-	actualStatus := progress.TransactionStatus
+	actualStatus := progressInfo.TransactionStatus
 	test.Assert(t, actualStatus == expectedStatus, fmt.Sprintf("Wrong response. expected: %s actual: %s", expectedStatus, actualStatus))
 }

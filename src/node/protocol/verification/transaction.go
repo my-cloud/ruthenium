@@ -25,8 +25,8 @@ type Transaction struct {
 	rewardValue            uint64
 }
 
-func NewRewardTransaction(address string, hasIncome bool, timestamp int64, value uint64) (*Transaction, error) {
-	outputs := []*Output{NewOutput(address, hasIncome, value)}
+func NewRewardTransaction(address string, isYielding bool, timestamp int64, value uint64) (*Transaction, error) {
+	outputs := []*Output{NewOutput(address, isYielding, value)}
 	var inputs []*Input
 	id, err := generateId(inputs, outputs, timestamp)
 	if err != nil {

@@ -238,9 +238,9 @@ Example
 
 ```
 {
-  "address":       string
-  "is_registered": bool
-  "value":         uint64
+  "address":     string
+  "is_yielding": bool
+  "value":       uint64
 }
 ```
 </td>
@@ -259,7 +259,7 @@ The value at the transaction timestamp
 ```
 {
   "address": "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
-  "has_income": true
+  "is_yielding": true
   "value": 0
 }
 ```

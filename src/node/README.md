@@ -112,11 +112,11 @@ Example
 
 ```
 {
-  "timestamp":                    int64
   "previous_hash":                [32]byte
-  "transactions":                 []Transaction
   "added_registered_addresses":   []string
   "removed_registered_addresses": []string
+  "timestamp":                    int64
+  "transactions":                 []Transaction
 }
 ```
 </td>
@@ -124,11 +124,11 @@ Example
 
 ```
 
-The block timestamp
 The hash of the previous block in the chain
-The block transactions
 The added addresses registered in the PoH registry compared to the previous block
 The removed addresses registered in the PoH registry compared to the previous block
+The block timestamp
+The block transactions
 
 ```
 </td>
@@ -136,11 +136,11 @@ The removed addresses registered in the PoH registry compared to the previous bl
 
 ```
 {
-  "timestamp": 1667768884780639700
   "previous_hash": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
-  "transactions": []
   "added_registered_addresses": ["0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"]
   "removed_registered_addresses": ["0xb1477DcBBea001a339a92b031d14a011e36D008F"]
+  "timestamp": 1667768884780639700
+  "transactions": []
 }
 ```
 </td>
@@ -211,9 +211,9 @@ Example
 
 ```
 {
-  "address":       string
-  "is_registered": bool
-  "value":         uint64
+  "address":     string
+  "is_yielding": bool
+  "value":       uint64
 }
 ```
 </td>
@@ -232,7 +232,7 @@ The value at the transaction timestamp
 ```
 {
   "address": "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
-  "has_income": true
+  "is_yielding": true
   "value": 0
 }
 ```
@@ -348,7 +348,7 @@ Example
 {
   "address":        string
   "block_height":   int
-  "has_income":     bool
+  "is_yielding":     bool
   "output_index":   uint16
   "transaction_id": string
   "value":          uint64
@@ -375,7 +375,7 @@ The value at the transaction timestamp
 {
   "address": "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
   "block_height": 0
-  "has_income": true
+  "is_yielding": true
   "output_index": 0
   "transaction_id": "8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d"
   "value": 0
