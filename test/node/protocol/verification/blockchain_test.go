@@ -440,7 +440,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := verification.NewBlock(now, hash2, transactions, []string{address}, nil)
+	block3 := verification.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*verification.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
@@ -501,7 +501,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := verification.NewBlock(now, hash2, transactions, []string{address}, nil)
+	block3 := verification.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*verification.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
@@ -563,7 +563,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := verification.NewBlock(now, hash2, transactions, []string{address}, nil)
+	block3 := verification.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*verification.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
@@ -625,7 +625,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := verification.NewBlock(now, hash2, transactions, []string{address}, nil)
+	block3 := verification.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*verification.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
@@ -688,7 +688,7 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := verification.NewBlock(now, hash2, transactions, []string{address}, nil)
+	block3 := verification.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*verification.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
@@ -750,7 +750,7 @@ func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplace
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := verification.NewBlock(now, hash2, transactions, []string{address}, nil)
+	block3 := verification.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*verification.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
@@ -800,7 +800,7 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	hash2, _ := block2.Hash()
 	rewardTransaction, _ := verification.NewRewardTransaction(notRegisteredAddress, false, now, 0)
 	transactions := []*verification.Transaction{rewardTransaction}
-	block3 := verification.NewBlock(now, hash2, transactions, []string{notRegisteredAddress}, nil)
+	block3 := verification.NewBlock(hash2, []string{notRegisteredAddress}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*verification.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
@@ -863,7 +863,7 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasNotBeenAdded_IsNotReplac
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := verification.NewBlock(now, hash2, transactions, []string{address}, nil)
+	block3 := verification.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*verification.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
@@ -926,7 +926,7 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasBeenRemoved_IsNotReplace
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := verification.NewBlock(now, hash2, transactions, []string{address}, []string{removedAddress})
+	block3 := verification.NewBlock(hash2, []string{address}, []string{removedAddress}, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*verification.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)

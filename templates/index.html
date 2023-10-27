@@ -110,7 +110,7 @@
     });
 
     $(function () {
-        let pendingTransaction;
+        let lastRestUtxo;
 
         $("#send_tokens_button").click(function () {
             if (!keyPair) {
@@ -154,12 +154,12 @@
                 const recipientAddress = $("#recipient_address").val();
                 const spend = {
                     "address": recipientAddress,
-                    "is_registered": false,
+                    "is_yielding": false,
                     "value": value,
                 }
                 const rest = {
                     "address": senderAddress,
-                    "is_registered": isIncomeUpdateRequested,
+                    "is_yielding": isIncomeUpdateRequested,
                     "value": response.rest,
                 }
                 const transaction = {
@@ -177,7 +177,14 @@
                     success: function (response) {
                         if (response === "success") {
                             alert("Send success");
-                            pendingTransaction = transaction
+                            lastRestUtxo = {
+                                "address": rest.address,
+                                "timestamp": transaction.timestamp,
+                                "is_yielding": rest.is_yielding,
+                                "output_index": 1,
+                                "transaction_id": transaction.id,
+                                "value": rest.value,
+                            }
                         } else {
                             alert("Send failed: " + response)
                         }
@@ -249,15 +256,15 @@
 
         function refresh_progress() {
             const progressBar = document.querySelector('.progress-circle');
-            if (pendingTransaction === undefined) {
+            if (lastRestUtxo === undefined) {
                 progressBar.style.background = `conic-gradient(white 100%, white 0)`;
                 progressBar.textContent = "";
             } else {
                 $.ajax({
-                    url: "/transaction/status",
+                    url: "/transaction/output/progress",
                     type: "PUT",
                     contentType: "application/json",
-                    data: JSON.stringify(pendingTransaction),
+                    data: JSON.stringify(lastRestUtxo),
                     success: function (response) {
                         const now = new Date().getTime() * 1000000
                         let angle = (now - response.current_block_timestamp) / response.validation_timestamp * 100

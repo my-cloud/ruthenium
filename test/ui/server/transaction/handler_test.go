@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/node/protocol/verification"
+	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/my-cloud/ruthenium/src/ui/server/transaction"
 	"github.com/my-cloud/ruthenium/test"
 	"github.com/my-cloud/ruthenium/test/log/logtest"
 	"github.com/my-cloud/ruthenium/test/node/network/networktest"
