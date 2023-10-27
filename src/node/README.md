@@ -211,9 +211,9 @@ Example
 
 ```
 {
-  "address":       string
-  "is_registered": bool
-  "value":         uint64
+  "address":     string
+  "is_yielding": bool
+  "value":       uint64
 }
 ```
 </td>
@@ -232,7 +232,7 @@ The value at the transaction timestamp
 ```
 {
   "address": "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
-  "has_income": true
+  "is_yielding": true
   "value": 0
 }
 ```
@@ -348,7 +348,7 @@ Example
 {
   "address":        string
   "block_height":   int
-  "has_income":     bool
+  "is_yielding":     bool
   "output_index":   uint16
   "transaction_id": string
   "value":          uint64
@@ -375,7 +375,7 @@ The value at the transaction timestamp
 {
   "address": "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
   "block_height": 0
-  "has_income": true
+  "is_yielding": true
   "output_index": 0
   "transaction_id": "8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d"
   "value": 0

@@ -5,26 +5,26 @@ import (
 )
 
 type outputDto struct {
-	Address      string `json:"address"`
-	IsRegistered bool   `json:"is_registered"`
-	Value        uint64 `json:"value"`
+	Address    string `json:"address"`
+	IsYielding bool   `json:"is_yielding"`
+	Value      uint64 `json:"value"`
 }
 
 type Output struct {
-	address      string
-	isRegistered bool
-	value        uint64
+	address    string
+	isYielding bool
+	value      uint64
 }
 
-func NewOutput(address string, isRegistered bool, value uint64) *Output {
-	return &Output{address, isRegistered, value}
+func NewOutput(address string, isYielding bool, value uint64) *Output {
+	return &Output{address, isYielding, value}
 }
 
 func (output *Output) MarshalJSON() ([]byte, error) {
 	return json.Marshal(outputDto{
-		Address:      output.address,
-		IsRegistered: output.isRegistered,
-		Value:        output.value,
+		Address:    output.address,
+		IsYielding: output.isYielding,
+		Value:      output.value,
 	})
 }
 
@@ -35,7 +35,7 @@ func (output *Output) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	output.address = dto.Address
-	output.isRegistered = dto.IsRegistered
+	output.isYielding = dto.IsYielding
 	output.value = dto.Value
 	return nil
 }
@@ -44,8 +44,8 @@ func (output *Output) Address() string {
 	return output.address
 }
 
-func (output *Output) IsRegistered() bool {
-	return output.isRegistered
+func (output *Output) IsYielding() bool {
+	return output.isYielding
 }
 
 func (output *Output) InitialValue() uint64 {

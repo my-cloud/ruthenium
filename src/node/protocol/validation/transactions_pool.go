@@ -83,11 +83,11 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	nextBlockTimestamp := lastBlockTimestamp + pool.settings.ValidationTimestamp()
 	var reward uint64
 	var newAddresses []string
-	var hasIncome bool
+	var isYielding bool
 	if lastBlockTimestamp == 0 {
 		reward = pool.settings.GenesisAmountInParticles()
 		newAddresses = []string{pool.validatorAddress}
-		hasIncome = true
+		isYielding = true
 	} else if lastBlockTimestamp == timestamp {
 		pool.logger.Error("unable to create block, a block with the same timestamp is already in the blockchain")
 		return
@@ -152,12 +152,12 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	}
 	for _, transaction := range transactions {
 		for _, output := range transaction.Outputs() {
-			if output.IsRegistered() {
+			if output.IsYielding() {
 				newAddresses = append(newAddresses, output.Address())
 			}
 		}
 	}
-	rewardTransaction, err := verification.NewRewardTransaction(pool.validatorAddress, hasIncome, timestamp, reward)
+	rewardTransaction, err := verification.NewRewardTransaction(pool.validatorAddress, isYielding, timestamp, reward)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("unable to create block, failed to create reward transaction: %w", err).Error())
 		return

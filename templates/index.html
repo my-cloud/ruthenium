@@ -154,12 +154,12 @@
                 const recipientAddress = $("#recipient_address").val();
                 const spend = {
                     "address": recipientAddress,
-                    "is_registered": false,
+                    "is_yielding": false,
                     "value": value,
                 }
                 const rest = {
                     "address": senderAddress,
-                    "is_registered": isIncomeUpdateRequested,
+                    "is_yielding": isIncomeUpdateRequested,
                     "value": response.rest,
                 }
                 const transaction = {
@@ -180,7 +180,7 @@
                             lastRestUtxo = {
                                 "address": rest.address,
                                 "timestamp": transaction.timestamp,
-                                "has_income": rest.is_registered,
+                                "is_yielding": rest.is_yielding,
                                 "output_index": 1,
                                 "transaction_id": transaction.id,
                                 "value": rest.value,

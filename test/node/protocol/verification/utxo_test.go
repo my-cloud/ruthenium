@@ -19,7 +19,7 @@ const (
 )
 
 // ////////////////////////////////// WITH INCOME ////////////////////////////////////
-func Test_Value_ValueIsMaxUint64AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
+func Test_Value_ValueIsMaxUint64AndIsYielding_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = math.MaxUint64 // 18446744073709551615
 	output := verification.NewOutput("", true, value)
@@ -33,7 +33,7 @@ func Test_Value_ValueIsMaxUint64AndHasIncome_ReturnsValueWithIncome(t *testing.T
 	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
 }
 
-func Test_Value_ValueIsTwiceTheLimitAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
+func Test_Value_ValueIsTwiceTheLimitAndIsYielding_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
 	value := 2 * limit
 	output := verification.NewOutput("", true, value)
@@ -47,7 +47,7 @@ func Test_Value_ValueIsTwiceTheLimitAndHasIncome_ReturnsValueWithIncome(t *testi
 	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
 }
 
-func Test_Value_ValueIsLimitAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
+func Test_Value_ValueIsLimitAndIsYielding_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
 	value := limit
 	output := verification.NewOutput("", true, value)
@@ -64,7 +64,7 @@ func Test_Value_ValueIsLimitAndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
 }
 
-func Test_Value_ValueIs1AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
+func Test_Value_ValueIs1AndIsYielding_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = 1
 	output := verification.NewOutput("", true, value)
@@ -80,7 +80,7 @@ func Test_Value_ValueIs1AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 	test.Assert(t, actualValueAfter1Minute >= value, fmt.Sprintf("Wrong value. Expected a value >= %d - Actual: %d", value, actualValueAfter1Minute))
 }
 
-func Test_Value_ValueIs0AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
+func Test_Value_ValueIs0AndIsYielding_ReturnsValueWithIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = 0
 	output := verification.NewOutput("", true, value)
@@ -94,7 +94,7 @@ func Test_Value_ValueIs0AndHasIncome_ReturnsValueWithIncome(t *testing.T) {
 	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
 }
 
-func Test_Value_SamePortionOfHalfLifeElapsedWithIncome_ReturnsSameValue(t *testing.T) {
+func Test_Value_SamePortionOfHalfLifeElapsedAndIsYielding_ReturnsSameValue(t *testing.T) {
 	// Arrange
 	var value uint64 = 0
 	output := verification.NewOutput("", true, value)
@@ -109,7 +109,7 @@ func Test_Value_SamePortionOfHalfLifeElapsedWithIncome_ReturnsSameValue(t *testi
 	test.Assert(t, value1 == value2, "Values are not equals whereas it should be")
 }
 
-func Test_Value_SameElapsedTimeWithIncome_ReturnsSameValue(t *testing.T) {
+func Test_Value_SameElapsedTimeAndIsYielding_ReturnsSameValue(t *testing.T) {
 	// Arrange
 	var value uint64 = 0
 	var outputTimestamp1 int64 = 0
@@ -130,7 +130,7 @@ func Test_Value_SameElapsedTimeWithIncome_ReturnsSameValue(t *testing.T) {
 }
 
 // ////////////////////////////////// WITHOUT INCOME ////////////////////////////////////
-func Test_Value_ValueIsMaxUint64AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
+func Test_Value_ValueIsMaxUint64AndIsNotYielding_ReturnsValueWithoutIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = math.MaxUint64 // 18446744073709551615
 	output := verification.NewOutput("", false, value)
@@ -144,7 +144,7 @@ func Test_Value_ValueIsMaxUint64AndHasNoIncome_ReturnsValueWithoutIncome(t *test
 	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
 }
 
-func Test_Value_ValueIsTwiceTheLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
+func Test_Value_ValueIsTwiceTheLimitAndIsNotYielding_ReturnsValueWithoutIncome(t *testing.T) {
 	// Arrange
 	value := 2 * limit
 	output := verification.NewOutput("", false, value)
@@ -158,7 +158,7 @@ func Test_Value_ValueIsTwiceTheLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *
 	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
 }
 
-func Test_Value_ValueIsLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
+func Test_Value_ValueIsLimitAndIsNotYielding_ReturnsValueWithoutIncome(t *testing.T) {
 	// Arrange
 	value := limit
 	output := verification.NewOutput("", false, value)
@@ -172,7 +172,7 @@ func Test_Value_ValueIsLimitAndHasNoIncome_ReturnsValueWithoutIncome(t *testing.
 	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
 }
 
-func Test_Value_ValueIs1AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
+func Test_Value_ValueIs1AndIsNotYielding_ReturnsValueWithoutIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = 1
 	output := verification.NewOutput("", false, value)
@@ -189,7 +189,7 @@ func Test_Value_ValueIs1AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
 	test.Assert(t, actualValueAfter1Minute == expectedValueAfter1Minute, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfter1Minute, actualValueAfter1Minute))
 }
 
-func Test_Value_ValueIs0AndHasNoIncome_ReturnsValueWithoutIncome(t *testing.T) {
+func Test_Value_ValueIs0AndIsNotYielding_ReturnsValueWithoutIncome(t *testing.T) {
 	// Arrange
 	var value uint64 = 0
 	output := verification.NewOutput("", false, value)
