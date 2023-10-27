@@ -112,11 +112,11 @@ Example
 
 ```
 {
-  "timestamp":                    int64
   "previous_hash":                [32]byte
-  "transactions":                 []Transaction
   "added_registered_addresses":   []string
   "removed_registered_addresses": []string
+  "timestamp":                    int64
+  "transactions":                 []Transaction
 }
 ```
 </td>
@@ -124,11 +124,11 @@ Example
 
 ```
 
-The block timestamp
 The hash of the previous block in the chain
-The block transactions
 The added addresses registered in the PoH registry compared to the previous block
 The removed addresses registered in the PoH registry compared to the previous block
+The block timestamp
+The block transactions
 
 ```
 </td>
@@ -136,11 +136,11 @@ The removed addresses registered in the PoH registry compared to the previous bl
 
 ```
 {
-  "timestamp": 1667768884780639700
   "previous_hash": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
-  "transactions": []
   "added_registered_addresses": ["0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"]
   "removed_registered_addresses": ["0xb1477DcBBea001a339a92b031d14a011e36D008F"]
+  "timestamp": 1667768884780639700
+  "transactions": []
 }
 ```
 </td>

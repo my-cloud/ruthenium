@@ -8,22 +8,22 @@ import (
 
 type blockDto struct {
 	PreviousHash               [32]byte       `json:"previous_hash"`
-	Transactions               []*Transaction `json:"transactions"`
-	Timestamp                  int64          `json:"timestamp"`
 	AddedRegisteredAddresses   []string       `json:"added_registered_addresses"`
 	RemovedRegisteredAddresses []string       `json:"removed_registered_addresses"`
+	Timestamp                  int64          `json:"timestamp"`
+	Transactions               []*Transaction `json:"transactions"`
 }
 
 type Block struct {
 	previousHash               [32]byte
-	transactions               []*Transaction
-	timestamp                  int64
 	addedRegisteredAddresses   []string
 	removedRegisteredAddresses []string
+	timestamp                  int64
+	transactions               []*Transaction
 }
 
-func NewBlock(previousHash [32]byte, transactions []*Transaction, timestamp int64, addedRegisteredAddresses []string, removedRegisteredAddresses []string) *Block {
-	return &Block{previousHash, transactions, timestamp, addedRegisteredAddresses, removedRegisteredAddresses}
+func NewBlock(previousHash [32]byte, addedRegisteredAddresses []string, removedRegisteredAddresses []string, timestamp int64, transactions []*Transaction) *Block {
+	return &Block{previousHash, addedRegisteredAddresses, removedRegisteredAddresses, timestamp, transactions}
 }
 
 func (block *Block) UnmarshalJSON(data []byte) error {
@@ -33,20 +33,20 @@ func (block *Block) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	block.previousHash = dto.PreviousHash
-	block.transactions = dto.Transactions
-	block.timestamp = dto.Timestamp
 	block.addedRegisteredAddresses = dto.AddedRegisteredAddresses
 	block.removedRegisteredAddresses = dto.RemovedRegisteredAddresses
+	block.timestamp = dto.Timestamp
+	block.transactions = dto.Transactions
 	return nil
 }
 
 func (block *Block) MarshalJSON() ([]byte, error) {
 	return json.Marshal(blockDto{
 		PreviousHash:               block.previousHash,
-		Transactions:               block.transactions,
-		Timestamp:                  block.timestamp,
 		AddedRegisteredAddresses:   block.addedRegisteredAddresses,
 		RemovedRegisteredAddresses: block.removedRegisteredAddresses,
+		Timestamp:                  block.timestamp,
+		Transactions:               block.transactions,
 	})
 }
 
@@ -75,18 +75,18 @@ func (block *Block) PreviousHash() [32]byte {
 	return block.previousHash
 }
 
-func (block *Block) Transactions() []*Transaction {
-	return block.transactions
-}
-
-func (block *Block) Timestamp() int64 {
-	return block.timestamp
-}
-
 func (block *Block) AddedRegisteredAddresses() []string {
 	return block.addedRegisteredAddresses
 }
 
 func (block *Block) RemovedRegisteredAddresses() []string {
 	return block.removedRegisteredAddresses
+}
+
+func (block *Block) Timestamp() int64 {
+	return block.timestamp
+}
+
+func (block *Block) Transactions() []*Transaction {
+	return block.transactions
 }
