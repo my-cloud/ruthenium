@@ -6,7 +6,7 @@
 <img src="doc/coin.png" alt="Ruthenium coin" width="192" height="192"/>
 </div>
 
-<img src="doc/coin.png" alt="Ruthenium coin" width="30%" style="display: block; margin-left: 35%;"/>
+<img src="doc/coin.png" alt="Ruthenium coin" width="20%" style="display: block; margin-left: 40%;"/>
 
 ## Description
 [![Doc](https://img.shields.io/badge/doc-wiki-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
