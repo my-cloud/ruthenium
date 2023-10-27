@@ -2,7 +2,7 @@
 [![Release](https://img.shields.io/github/release/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/my-cloud/ruthenium/build.yml?logo=github)](https://github.com/my-cloud/ruthenium/actions?query=workflow%3ABuild+event%3Apush+branch%3Amain)
 
-<img src="doc/coin.png" alt="Ruthenium coin" width="20%" style="display: block; margin-left: 40%;"/>
+<img src="doc/ruthenium-coin.png" alt="Ruthenium coin" width="20%" style="display: block; margin-left: 40%;"/>
 
 ## Description
 [![Doc](https://img.shields.io/badge/doc-wiki-blue?logo=github)](https://github.com/my-cloud/ruthenium/wiki)
