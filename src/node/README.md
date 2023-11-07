@@ -61,6 +61,17 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 * **response value:** *none*
 </details>
 
+### Node
+<details>
+<summary><b>Get settings</b></summary>
+
+![/settings](https://img.shields.io/badge//settings-dimgray?style=flat-square)
+
+*Description:* Get node settings.
+* **request value:** [settings](#settings)
+* **response value:** *none*
+</details>
+
 ### Transactions pool
 <details>
 <summary><b>Add transaction</b></summary>
@@ -234,6 +245,78 @@ The value at the transaction timestamp
   "address": "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
   "is_yielding": true
   "value": 0
+}
+```
+</td>
+</tr>
+</table>
+
+#### Settings
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+{
+	"blocksCountLimit":                 uint64
+	"genesisAmount":                    uint64
+	"halfLifeInDays":                   float64
+	"incomeBase":                       uint64
+	"incomeLimit":                      uint64
+	"maxOutboundsCount":                int
+	"minimalTransactionFee":            uint64
+	"smallestUnitsPerCoin":                uint64
+	"synchronizationIntervalInSeconds": int
+	"validationIntervalInSeconds":      int64
+	"validationTimeoutInSeconds":       int64
+	"verificationsCountPerValidation":  int64
+}
+```
+</td>
+<td>
+
+```
+
+	The maximum blocks count returned by a blocks request
+	The genesis amount in smallest unit
+	The half-life in days
+	The income base in smallest unit
+	The income limit in smallest unit
+	The maximum node outbounds count
+	The minimal transaction fee in smallest unit
+	The number of smallest uints per coin
+	The synchronization interval in seconds
+	The validation interval in seconds
+	The validation timeout in seconds
+	The verifications count per validation
+
+```
+</td>
+<td>
+
+```
+{
+  "blocksCountLimit": 1440,
+  "genesisAmount": 5000000000000,
+  "halfLifeInDays": 373.59,
+  "incomeBase": 100000000000,
+  "incomeLimit": 5000000000000,
+  "maxOutboundsCount": 8,
+  "minimalTransactionFee": 1000,
+  "smallestUnitsPerCoin": 100000000,
+  "synchronizationIntervalInSeconds": 10,
+  "validationIntervalInSeconds": 60,
+  "validationTimeoutInSeconds": 5,
+  "verificationsCountPerValidation": 6
 }
 ```
 </td>

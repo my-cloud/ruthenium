@@ -154,8 +154,8 @@ func Test_AddTransaction_InvalidPublicKey_TransactionNotAdded(t *testing.T) {
 	}
 	var genesisValue uint64 = 0
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
@@ -201,8 +201,8 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	}
 	var genesisValue uint64 = 0
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
@@ -284,8 +284,8 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t 
 	}
 	var genesisValue uint64 = 0
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
@@ -324,8 +324,8 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *test
 	}
 	var genesisValue uint64 = 0
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
@@ -364,8 +364,8 @@ func Test_Validate_ValidTransaction_TransactionsValidated(t *testing.T) {
 	}
 	var genesisValue uint64 = 0
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }

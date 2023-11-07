@@ -47,9 +47,9 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		var balance uint64
 		for _, utxo := range utxos {
 			now := handler.watch.Now().UnixNano()
-			balance += utxo.Value(now, handler.settings.HalfLifeInNanoseconds(), handler.settings.IncomeBaseInParticles(), handler.settings.IncomeLimitInParticles())
+			balance += utxo.Value(now, handler.settings.HalfLifeInNanoseconds(), handler.settings.IncomeBase(), handler.settings.IncomeLimit())
 		}
-		marshaledAmount, err := json.Marshal(float64(balance) / float64(handler.settings.ParticlesPerToken()))
+		marshaledAmount, err := json.Marshal(float64(balance) / float64(handler.settings.SmallestUnitsPerCoin()))
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to marshal amount: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)

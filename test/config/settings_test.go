@@ -50,39 +50,39 @@ func Test_NewSettings_UnableToUnmarshalBytes_ReturnsError(t *testing.T) {
 func Test_NewSettings_ValidBytes_NoError(t *testing.T) {
 	// Arrange
 	var blocksCountLimit uint64 = 1
-	var genesisAmountInParticles uint64 = 2
+	var genesisAmount uint64 = 2
 	var halfLifeInDays float64 = 3
-	var incomeBaseInParticles uint64 = 4
-	var incomeLimitInParticles uint64 = 5
+	var incomeBase uint64 = 4
+	var incomeLimit uint64 = 5
 	var maxOutboundsCount int = 6
 	var minimalTransactionFee uint64 = 7
-	var particlesPerToken uint64 = 8
+	var smallestUnitsPerCoin uint64 = 8
 	var synchronizationIntervalInSeconds int = 9
 	var validationIntervalInSeconds int64 = 10
 	var validationTimeoutInSeconds int64 = 11
 	var verificationsCountPerValidation int64 = 12
 	bytes, _ := json.Marshal(struct {
 		BlocksCountLimit                 uint64
-		GenesisAmountInParticles         uint64
+		GenesisAmount                    uint64
 		HalfLifeInDays                   float64
-		IncomeBaseInParticles            uint64
-		IncomeLimitInParticles           uint64
+		IncomeBase                       uint64
+		IncomeLimit                      uint64
 		MaxOutboundsCount                int
 		MinimalTransactionFee            uint64
-		ParticlesPerToken                uint64
+		SmallestUnitsPerCoin             uint64
 		SynchronizationIntervalInSeconds int
 		ValidationIntervalInSeconds      int64
 		ValidationTimeoutInSeconds       int64
 		VerificationsCountPerValidation  int64
 	}{
 		BlocksCountLimit:                 blocksCountLimit,
-		GenesisAmountInParticles:         genesisAmountInParticles,
+		GenesisAmount:                    genesisAmount,
 		HalfLifeInDays:                   halfLifeInDays,
-		IncomeBaseInParticles:            incomeBaseInParticles,
-		IncomeLimitInParticles:           incomeLimitInParticles,
+		IncomeBase:                       incomeBase,
+		IncomeLimit:                      incomeLimit,
 		MaxOutboundsCount:                maxOutboundsCount,
 		MinimalTransactionFee:            minimalTransactionFee,
-		ParticlesPerToken:                particlesPerToken,
+		SmallestUnitsPerCoin:             smallestUnitsPerCoin,
 		SynchronizationIntervalInSeconds: synchronizationIntervalInSeconds,
 		ValidationIntervalInSeconds:      validationIntervalInSeconds,
 		ValidationTimeoutInSeconds:       validationTimeoutInSeconds,
@@ -101,13 +101,13 @@ func Test_NewSettings_ValidBytes_NoError(t *testing.T) {
 	test.Assert(t, settings != nil, "Settings are nil whereas it should not.")
 	actualBytes := settings.Bytes()
 	actualBlocksCountLimit := settings.BlocksCountLimit()
-	actualGenesisAmountInParticles := settings.GenesisAmountInParticles()
+	actualGenesisAmount := settings.GenesisAmount()
 	actualHalfLifeInNanoseconds := settings.HalfLifeInNanoseconds()
-	actualIncomeBaseInParticles := settings.IncomeBaseInParticles()
-	actualIncomeLimitInParticles := settings.IncomeLimitInParticles()
+	actualIncomeBase := settings.IncomeBase()
+	actualIncomeLimit := settings.IncomeLimit()
 	actualMaxOutboundsCount := settings.MaxOutboundsCount()
 	actualMinimalTransactionFee := settings.MinimalTransactionFee()
-	actualParticlesPerToken := settings.ParticlesPerToken()
+	actualSmallestUnitsPerCoin := settings.SmallestUnitsPerCoin()
 	actualSynchronizationTimer := settings.SynchronizationTimer()
 	actualValidationTimer := settings.ValidationTimer()
 	actualValidationTimestamp := settings.ValidationTimestamp()
@@ -115,14 +115,14 @@ func Test_NewSettings_ValidBytes_NoError(t *testing.T) {
 	actualVerificationsCountPerValidation := settings.VerificationsCountPerValidation()
 	test.Assert(t, reflect.DeepEqual(actualBytes, bytes), fmt.Sprintf("wrong bytes. expected: %v, actual: %v", bytes, actualBytes))
 	test.Assert(t, actualBlocksCountLimit == blocksCountLimit, fmt.Sprintf("wrong blocksCountLimit. expected: %v, actual: %v", blocksCountLimit, actualBlocksCountLimit))
-	test.Assert(t, actualGenesisAmountInParticles == genesisAmountInParticles, fmt.Sprintf("wrong genesisAmountInParticles. expected: %v, actual: %v", genesisAmountInParticles, actualGenesisAmountInParticles))
+	test.Assert(t, actualGenesisAmount == genesisAmount, fmt.Sprintf("wrong genesisAmount. expected: %v, actual: %v", genesisAmount, actualGenesisAmount))
 	expectedHalfLifeInNanoseconds := halfLifeInDays * 24 * float64(time.Hour.Nanoseconds())
 	test.Assert(t, actualHalfLifeInNanoseconds == expectedHalfLifeInNanoseconds, fmt.Sprintf("wrong halfLifeInNanoseconds. expected: %v, actual: %v", expectedHalfLifeInNanoseconds, actualHalfLifeInNanoseconds))
-	test.Assert(t, actualIncomeBaseInParticles == incomeBaseInParticles, fmt.Sprintf("wrong incomeBaseInParticles. expected: %v, actual: %v", incomeBaseInParticles, actualIncomeBaseInParticles))
-	test.Assert(t, actualIncomeLimitInParticles == incomeLimitInParticles, fmt.Sprintf("wrong incomeLimitInParticles. expected: %v, actual: %v", incomeLimitInParticles, actualIncomeLimitInParticles))
+	test.Assert(t, actualIncomeBase == incomeBase, fmt.Sprintf("wrong incomeBase. expected: %v, actual: %v", incomeBase, actualIncomeBase))
+	test.Assert(t, actualIncomeLimit == incomeLimit, fmt.Sprintf("wrong incomeLimit. expected: %v, actual: %v", incomeLimit, actualIncomeLimit))
 	test.Assert(t, actualMaxOutboundsCount == maxOutboundsCount, fmt.Sprintf("wrong maxOutboundsCount. expected: %v, actual: %v", maxOutboundsCount, actualMaxOutboundsCount))
 	test.Assert(t, actualMinimalTransactionFee == minimalTransactionFee, fmt.Sprintf("wrong minimalTransactionFee. expected: %v, actual: %v", minimalTransactionFee, actualMinimalTransactionFee))
-	test.Assert(t, actualParticlesPerToken == particlesPerToken, fmt.Sprintf("wrong particlesPerToken. expected: %v, actual: %v", particlesPerToken, actualParticlesPerToken))
+	test.Assert(t, actualSmallestUnitsPerCoin == smallestUnitsPerCoin, fmt.Sprintf("wrong smallestUnitsPerCoin. expected: %v, actual: %v", smallestUnitsPerCoin, actualSmallestUnitsPerCoin))
 	expectedSynchronizationTimer := time.Duration(synchronizationIntervalInSeconds) * time.Second
 	test.Assert(t, actualSynchronizationTimer == expectedSynchronizationTimer, fmt.Sprintf("wrong synchronizationTimer. expected: %v, actual: %v", expectedSynchronizationTimer, actualSynchronizationTimer))
 	expectedValidationTimer := time.Duration(validationIntervalInSeconds) * time.Second

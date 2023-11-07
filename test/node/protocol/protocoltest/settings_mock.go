@@ -22,17 +22,17 @@ var _ protocol.Settings = &SettingsMock{}
 //			BlocksCountLimitFunc: func() uint64 {
 //				panic("mock out the BlocksCountLimit method")
 //			},
-//			GenesisAmountInParticlesFunc: func() uint64 {
-//				panic("mock out the GenesisAmountInParticles method")
+//			GenesisAmountFunc: func() uint64 {
+//				panic("mock out the GenesisAmount method")
 //			},
 //			HalfLifeInNanosecondsFunc: func() float64 {
 //				panic("mock out the HalfLifeInNanoseconds method")
 //			},
-//			IncomeBaseInParticlesFunc: func() uint64 {
-//				panic("mock out the IncomeBaseInParticles method")
+//			IncomeBaseFunc: func() uint64 {
+//				panic("mock out the IncomeBase method")
 //			},
-//			IncomeLimitInParticlesFunc: func() uint64 {
-//				panic("mock out the IncomeLimitInParticles method")
+//			IncomeLimitFunc: func() uint64 {
+//				panic("mock out the IncomeLimit method")
 //			},
 //			MinimalTransactionFeeFunc: func() uint64 {
 //				panic("mock out the MinimalTransactionFee method")
@@ -53,17 +53,17 @@ type SettingsMock struct {
 	// BlocksCountLimitFunc mocks the BlocksCountLimit method.
 	BlocksCountLimitFunc func() uint64
 
-	// GenesisAmountInParticlesFunc mocks the GenesisAmountInParticles method.
-	GenesisAmountInParticlesFunc func() uint64
+	// GenesisAmountFunc mocks the GenesisAmount method.
+	GenesisAmountFunc func() uint64
 
 	// HalfLifeInNanosecondsFunc mocks the HalfLifeInNanoseconds method.
 	HalfLifeInNanosecondsFunc func() float64
 
-	// IncomeBaseInParticlesFunc mocks the IncomeBaseInParticles method.
-	IncomeBaseInParticlesFunc func() uint64
+	// IncomeBaseFunc mocks the IncomeBase method.
+	IncomeBaseFunc func() uint64
 
-	// IncomeLimitInParticlesFunc mocks the IncomeLimitInParticles method.
-	IncomeLimitInParticlesFunc func() uint64
+	// IncomeLimitFunc mocks the IncomeLimit method.
+	IncomeLimitFunc func() uint64
 
 	// MinimalTransactionFeeFunc mocks the MinimalTransactionFee method.
 	MinimalTransactionFeeFunc func() uint64
@@ -79,17 +79,17 @@ type SettingsMock struct {
 		// BlocksCountLimit holds details about calls to the BlocksCountLimit method.
 		BlocksCountLimit []struct {
 		}
-		// GenesisAmountInParticles holds details about calls to the GenesisAmountInParticles method.
-		GenesisAmountInParticles []struct {
+		// GenesisAmount holds details about calls to the GenesisAmount method.
+		GenesisAmount []struct {
 		}
 		// HalfLifeInNanoseconds holds details about calls to the HalfLifeInNanoseconds method.
 		HalfLifeInNanoseconds []struct {
 		}
-		// IncomeBaseInParticles holds details about calls to the IncomeBaseInParticles method.
-		IncomeBaseInParticles []struct {
+		// IncomeBase holds details about calls to the IncomeBase method.
+		IncomeBase []struct {
 		}
-		// IncomeLimitInParticles holds details about calls to the IncomeLimitInParticles method.
-		IncomeLimitInParticles []struct {
+		// IncomeLimit holds details about calls to the IncomeLimit method.
+		IncomeLimit []struct {
 		}
 		// MinimalTransactionFee holds details about calls to the MinimalTransactionFee method.
 		MinimalTransactionFee []struct {
@@ -101,14 +101,14 @@ type SettingsMock struct {
 		ValidationTimestamp []struct {
 		}
 	}
-	lockBlocksCountLimit         sync.RWMutex
-	lockGenesisAmountInParticles sync.RWMutex
-	lockHalfLifeInNanoseconds    sync.RWMutex
-	lockIncomeBaseInParticles    sync.RWMutex
-	lockIncomeLimitInParticles   sync.RWMutex
-	lockMinimalTransactionFee    sync.RWMutex
-	lockValidationTimeout        sync.RWMutex
-	lockValidationTimestamp      sync.RWMutex
+	lockBlocksCountLimit      sync.RWMutex
+	lockGenesisAmount         sync.RWMutex
+	lockHalfLifeInNanoseconds sync.RWMutex
+	lockIncomeBase            sync.RWMutex
+	lockIncomeLimit           sync.RWMutex
+	lockMinimalTransactionFee sync.RWMutex
+	lockValidationTimeout     sync.RWMutex
+	lockValidationTimestamp   sync.RWMutex
 }
 
 // BlocksCountLimit calls BlocksCountLimitFunc.
@@ -138,30 +138,30 @@ func (mock *SettingsMock) BlocksCountLimitCalls() []struct {
 	return calls
 }
 
-// GenesisAmountInParticles calls GenesisAmountInParticlesFunc.
-func (mock *SettingsMock) GenesisAmountInParticles() uint64 {
-	if mock.GenesisAmountInParticlesFunc == nil {
-		panic("SettingsMock.GenesisAmountInParticlesFunc: method is nil but Settings.GenesisAmountInParticles was just called")
+// GenesisAmount calls GenesisAmountFunc.
+func (mock *SettingsMock) GenesisAmount() uint64 {
+	if mock.GenesisAmountFunc == nil {
+		panic("SettingsMock.GenesisAmountFunc: method is nil but Settings.GenesisAmount was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGenesisAmountInParticles.Lock()
-	mock.calls.GenesisAmountInParticles = append(mock.calls.GenesisAmountInParticles, callInfo)
-	mock.lockGenesisAmountInParticles.Unlock()
-	return mock.GenesisAmountInParticlesFunc()
+	mock.lockGenesisAmount.Lock()
+	mock.calls.GenesisAmount = append(mock.calls.GenesisAmount, callInfo)
+	mock.lockGenesisAmount.Unlock()
+	return mock.GenesisAmountFunc()
 }
 
-// GenesisAmountInParticlesCalls gets all the calls that were made to GenesisAmountInParticles.
+// GenesisAmountCalls gets all the calls that were made to GenesisAmount.
 // Check the length with:
 //
-//	len(mockedSettings.GenesisAmountInParticlesCalls())
-func (mock *SettingsMock) GenesisAmountInParticlesCalls() []struct {
+//	len(mockedSettings.GenesisAmountCalls())
+func (mock *SettingsMock) GenesisAmountCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGenesisAmountInParticles.RLock()
-	calls = mock.calls.GenesisAmountInParticles
-	mock.lockGenesisAmountInParticles.RUnlock()
+	mock.lockGenesisAmount.RLock()
+	calls = mock.calls.GenesisAmount
+	mock.lockGenesisAmount.RUnlock()
 	return calls
 }
 
@@ -192,57 +192,57 @@ func (mock *SettingsMock) HalfLifeInNanosecondsCalls() []struct {
 	return calls
 }
 
-// IncomeBaseInParticles calls IncomeBaseInParticlesFunc.
-func (mock *SettingsMock) IncomeBaseInParticles() uint64 {
-	if mock.IncomeBaseInParticlesFunc == nil {
-		panic("SettingsMock.IncomeBaseInParticlesFunc: method is nil but Settings.IncomeBaseInParticles was just called")
+// IncomeBase calls IncomeBaseFunc.
+func (mock *SettingsMock) IncomeBase() uint64 {
+	if mock.IncomeBaseFunc == nil {
+		panic("SettingsMock.IncomeBaseFunc: method is nil but Settings.IncomeBase was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockIncomeBaseInParticles.Lock()
-	mock.calls.IncomeBaseInParticles = append(mock.calls.IncomeBaseInParticles, callInfo)
-	mock.lockIncomeBaseInParticles.Unlock()
-	return mock.IncomeBaseInParticlesFunc()
+	mock.lockIncomeBase.Lock()
+	mock.calls.IncomeBase = append(mock.calls.IncomeBase, callInfo)
+	mock.lockIncomeBase.Unlock()
+	return mock.IncomeBaseFunc()
 }
 
-// IncomeBaseInParticlesCalls gets all the calls that were made to IncomeBaseInParticles.
+// IncomeBaseCalls gets all the calls that were made to IncomeBase.
 // Check the length with:
 //
-//	len(mockedSettings.IncomeBaseInParticlesCalls())
-func (mock *SettingsMock) IncomeBaseInParticlesCalls() []struct {
+//	len(mockedSettings.IncomeBaseCalls())
+func (mock *SettingsMock) IncomeBaseCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockIncomeBaseInParticles.RLock()
-	calls = mock.calls.IncomeBaseInParticles
-	mock.lockIncomeBaseInParticles.RUnlock()
+	mock.lockIncomeBase.RLock()
+	calls = mock.calls.IncomeBase
+	mock.lockIncomeBase.RUnlock()
 	return calls
 }
 
-// IncomeLimitInParticles calls IncomeLimitInParticlesFunc.
-func (mock *SettingsMock) IncomeLimitInParticles() uint64 {
-	if mock.IncomeLimitInParticlesFunc == nil {
-		panic("SettingsMock.IncomeLimitInParticlesFunc: method is nil but Settings.IncomeLimitInParticles was just called")
+// IncomeLimit calls IncomeLimitFunc.
+func (mock *SettingsMock) IncomeLimit() uint64 {
+	if mock.IncomeLimitFunc == nil {
+		panic("SettingsMock.IncomeLimitFunc: method is nil but Settings.IncomeLimit was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockIncomeLimitInParticles.Lock()
-	mock.calls.IncomeLimitInParticles = append(mock.calls.IncomeLimitInParticles, callInfo)
-	mock.lockIncomeLimitInParticles.Unlock()
-	return mock.IncomeLimitInParticlesFunc()
+	mock.lockIncomeLimit.Lock()
+	mock.calls.IncomeLimit = append(mock.calls.IncomeLimit, callInfo)
+	mock.lockIncomeLimit.Unlock()
+	return mock.IncomeLimitFunc()
 }
 
-// IncomeLimitInParticlesCalls gets all the calls that were made to IncomeLimitInParticles.
+// IncomeLimitCalls gets all the calls that were made to IncomeLimit.
 // Check the length with:
 //
-//	len(mockedSettings.IncomeLimitInParticlesCalls())
-func (mock *SettingsMock) IncomeLimitInParticlesCalls() []struct {
+//	len(mockedSettings.IncomeLimitCalls())
+func (mock *SettingsMock) IncomeLimitCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockIncomeLimitInParticles.RLock()
-	calls = mock.calls.IncomeLimitInParticles
-	mock.lockIncomeLimitInParticles.RUnlock()
+	mock.lockIncomeLimit.RLock()
+	calls = mock.calls.IncomeLimit
+	mock.lockIncomeLimit.RUnlock()
 	return calls
 }
 
