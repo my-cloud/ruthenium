@@ -274,7 +274,7 @@ Example
 	"incomeLimit":                      uint64
 	"maxOutboundsCount":                int
 	"minimalTransactionFee":            uint64
-	"smallestUnitsPerCoin":                uint64
+	"smallestUnitsPerCoin":             uint64
 	"synchronizationIntervalInSeconds": int
 	"validationIntervalInSeconds":      int64
 	"validationTimeoutInSeconds":       int64
