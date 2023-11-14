@@ -12,7 +12,6 @@ RUN CGO_ENABLED=0 go build -o observernode cmd/observernode/main.go
 
 FROM gcr.io/distroless/static-debian11
 WORKDIR /app
-COPY ./walletapplication /app/walletapplication
 COPY --from=builder /app/config /app/config
 COPY --from=builder /app/validatornode /app
 COPY --from=builder /app/observernode /app
