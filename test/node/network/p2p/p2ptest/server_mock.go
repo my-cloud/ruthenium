@@ -27,6 +27,9 @@ var _ p2p.Server = &ServerMock{}
 //			SetHandleFirstBlockTimestampRequestFunc: func(endpoint string)  {
 //				panic("mock out the SetHandleFirstBlockTimestampRequest method")
 //			},
+//			SetHandleSettingsRequestFunc: func(endpoint string)  {
+//				panic("mock out the SetHandleSettingsRequest method")
+//			},
 //			SetHandleTargetsRequestFunc: func(endpoint string)  {
 //				panic("mock out the SetHandleTargetsRequest method")
 //			},
@@ -55,6 +58,9 @@ type ServerMock struct {
 	// SetHandleFirstBlockTimestampRequestFunc mocks the SetHandleFirstBlockTimestampRequest method.
 	SetHandleFirstBlockTimestampRequestFunc func(endpoint string)
 
+	// SetHandleSettingsRequestFunc mocks the SetHandleSettingsRequest method.
+	SetHandleSettingsRequestFunc func(endpoint string)
+
 	// SetHandleTargetsRequestFunc mocks the SetHandleTargetsRequest method.
 	SetHandleTargetsRequestFunc func(endpoint string)
 
@@ -82,6 +88,11 @@ type ServerMock struct {
 			// Endpoint is the endpoint argument value.
 			Endpoint string
 		}
+		// SetHandleSettingsRequest holds details about calls to the SetHandleSettingsRequest method.
+		SetHandleSettingsRequest []struct {
+			// Endpoint is the endpoint argument value.
+			Endpoint string
+		}
 		// SetHandleTargetsRequest holds details about calls to the SetHandleTargetsRequest method.
 		SetHandleTargetsRequest []struct {
 			// Endpoint is the endpoint argument value.
@@ -106,6 +117,7 @@ type ServerMock struct {
 	lockServe                               sync.RWMutex
 	lockSetHandleBlocksRequest              sync.RWMutex
 	lockSetHandleFirstBlockTimestampRequest sync.RWMutex
+	lockSetHandleSettingsRequest            sync.RWMutex
 	lockSetHandleTargetsRequest             sync.RWMutex
 	lockSetHandleTransactionRequest         sync.RWMutex
 	lockSetHandleTransactionsRequest        sync.RWMutex
@@ -200,6 +212,38 @@ func (mock *ServerMock) SetHandleFirstBlockTimestampRequestCalls() []struct {
 	mock.lockSetHandleFirstBlockTimestampRequest.RLock()
 	calls = mock.calls.SetHandleFirstBlockTimestampRequest
 	mock.lockSetHandleFirstBlockTimestampRequest.RUnlock()
+	return calls
+}
+
+// SetHandleSettingsRequest calls SetHandleSettingsRequestFunc.
+func (mock *ServerMock) SetHandleSettingsRequest(endpoint string) {
+	if mock.SetHandleSettingsRequestFunc == nil {
+		panic("ServerMock.SetHandleSettingsRequestFunc: method is nil but Server.SetHandleSettingsRequest was just called")
+	}
+	callInfo := struct {
+		Endpoint string
+	}{
+		Endpoint: endpoint,
+	}
+	mock.lockSetHandleSettingsRequest.Lock()
+	mock.calls.SetHandleSettingsRequest = append(mock.calls.SetHandleSettingsRequest, callInfo)
+	mock.lockSetHandleSettingsRequest.Unlock()
+	mock.SetHandleSettingsRequestFunc(endpoint)
+}
+
+// SetHandleSettingsRequestCalls gets all the calls that were made to SetHandleSettingsRequest.
+// Check the length with:
+//
+//	len(mockedServer.SetHandleSettingsRequestCalls())
+func (mock *ServerMock) SetHandleSettingsRequestCalls() []struct {
+	Endpoint string
+} {
+	var calls []struct {
+		Endpoint string
+	}
+	mock.lockSetHandleSettingsRequest.RLock()
+	calls = mock.calls.SetHandleSettingsRequest
+	mock.lockSetHandleSettingsRequest.RUnlock()
 	return calls
 }
 

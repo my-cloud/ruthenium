@@ -199,7 +199,7 @@ func Test_UtxosByAddress_UnknownAddress_ReturnsEmptyArray(t *testing.T) {
 	genesisValidatorAddress := ""
 	var genesisAmount uint64 = 0
 	settings := new(protocoltest.SettingsMock)
-	settings.GenesisAmountInParticlesFunc = func() uint64 { return genesisAmount }
+	settings.GenesisAmountFunc = func() uint64 { return genesisAmount }
 	blockchain := verification.NewBlockchain(nil, settings, nil, logger)
 
 	// Act
@@ -219,7 +219,7 @@ func Test_Utxos_UtxoExists_ReturnsUtxo(t *testing.T) {
 	synchronizer := new(networktest.SynchronizerMock)
 	var validationInterval int64 = 1
 	settings := new(protocoltest.SettingsMock)
-	settings.GenesisAmountInParticlesFunc = func() uint64 { return 1 }
+	settings.GenesisAmountFunc = func() uint64 { return 1 }
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	registeredAddress := ""
 	var expectedValue uint64 = 1
@@ -454,8 +454,8 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 0 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
@@ -515,8 +515,8 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
@@ -577,8 +577,8 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
@@ -639,8 +639,8 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
@@ -702,8 +702,8 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
@@ -764,8 +764,8 @@ func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplace
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
@@ -814,8 +814,8 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
@@ -877,8 +877,8 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasNotBeenAdded_IsNotReplac
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
@@ -940,8 +940,8 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasBeenRemoved_IsNotReplace
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(protocoltest.SettingsMock)
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
@@ -977,8 +977,8 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	}
 	settings := new(protocoltest.SettingsMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 1 }
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
@@ -1033,8 +1033,8 @@ func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	}
 	settings := new(protocoltest.SettingsMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 2 }
-	settings.IncomeBaseInParticlesFunc = func() uint64 { return 0 }
-	settings.IncomeLimitInParticlesFunc = func() uint64 { return 1 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }

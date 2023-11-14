@@ -2,9 +2,9 @@ package server
 
 type Settings interface {
 	HalfLifeInNanoseconds() float64
-	IncomeBaseInParticles() uint64
-	IncomeLimitInParticles() uint64
+	IncomeBase() uint64
+	IncomeLimit() uint64
 	MinimalTransactionFee() uint64
-	ParticlesPerToken() uint64
+	SmallestUnitsPerCoin() uint64
 	ValidationTimestamp() int64
 }

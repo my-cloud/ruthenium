@@ -1,11 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/my-cloud/ruthenium/src/config"
 	"github.com/my-cloud/ruthenium/src/environment"
-	"github.com/my-cloud/ruthenium/src/file"
 	"github.com/my-cloud/ruthenium/src/log/console"
 	"github.com/my-cloud/ruthenium/src/node/clock/tick"
 	"github.com/my-cloud/ruthenium/src/node/network/p2p"
@@ -20,6 +20,7 @@ import (
 	"github.com/my-cloud/ruthenium/src/ui/server/wallet/amount"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func main() {
@@ -27,22 +28,25 @@ func main() {
 	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue("127.0.0.1"), "The node host IP or DNS address")
 	hostPort := flag.Int("host-port", environment.NewVariable("HOST_PORT").GetIntValue(10600), "The TCP port number of the host node")
 	templatesPath := flag.String("templates-path", environment.NewVariable("TEMPLATES_PATH").GetStringValue("templates"), "The UI templates path")
-	settingsPath := flag.String("settings-path", environment.NewVariable("SETTINGS_PATH").GetStringValue("config/settings.json"), "The settings file path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level (possible values: 'debug', 'info', 'warn', 'error', 'fatal')")
 
 	flag.Parse()
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
 	target := p2p.NewTarget(*hostIp, strconv.Itoa(*hostPort))
 	ipFinder := net.NewIpFinder(logger)
-	var settings *config.Settings
-	parser := file.NewJsonParser()
-	if err := parser.Parse(*settingsPath, &settings); err != nil {
-		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
-	}
-	clientFactory := gp2p.NewClientFactory(ipFinder, settings)
+	clientFactory := gp2p.NewClientFactory(ipFinder, time.Minute)
 	host, err := p2p.NewNeighbor(target, clientFactory)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
+	}
+	settingsBytes, err := host.GetSettings()
+	if err != nil {
+		logger.Fatal(fmt.Errorf("unable to get settings: %w", err).Error())
+	}
+	var settings *config.Settings
+	err = json.Unmarshal(settingsBytes, &settings)
+	if err != nil {
+		logger.Fatal(fmt.Errorf("unable to unmarshal settings: %w", err).Error())
 	}
 	watch := tick.NewWatch()
 	http.Handle("/", index.NewHandler(*templatesPath, logger))

@@ -85,7 +85,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	var newAddresses []string
 	var isYielding bool
 	if lastBlockTimestamp == 0 {
-		reward = pool.settings.GenesisAmountInParticles()
+		reward = pool.settings.GenesisAmount()
 		newAddresses = []string{pool.validatorAddress}
 		isYielding = true
 	} else if lastBlockTimestamp == timestamp {

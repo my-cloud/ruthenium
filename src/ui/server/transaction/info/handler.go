@@ -82,7 +82,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		var walletBalance uint64
 		var values []uint64
 		for _, utxo := range utxos {
-			utxoValue := utxo.Value(nextBlockTimestamp, handler.settings.HalfLifeInNanoseconds(), handler.settings.IncomeBaseInParticles(), handler.settings.IncomeLimitInParticles())
+			utxoValue := utxo.Value(nextBlockTimestamp, handler.settings.HalfLifeInNanoseconds(), handler.settings.IncomeBase(), handler.settings.IncomeLimit())
 			walletBalance += utxoValue
 			if isConsolidationRequired {
 				selectedInputs = append(selectedInputs, utxo.InputInfo)

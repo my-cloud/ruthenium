@@ -60,21 +60,19 @@ func decodeAddress(mnemonic *string, derivationPath *string, password *string, p
 }
 
 func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *string, port *int, address string, logger *console.Logger) *p2p.Host {
-	parser := file.NewJsonParser()
-	var settings *config.Settings
-	err := parser.Parse(*settingsPath, &settings)
+	settings, err := config.NewSettings(*settingsPath)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
 	}
 	registry := poh.NewRegistry(*infuraKey, logger)
 	watch := tick.NewWatch()
-	synchronizer := createSynchronizer(parser, *seedsPath, *ip, *port, settings, watch, logger)
+	synchronizer := createSynchronizer(*seedsPath, *ip, *port, settings, watch, logger)
 	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
 	transactionsPool := validation.NewTransactionsPool(blockchain, settings, synchronizer, address, logger)
 	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, settings.SynchronizationTimer(), 1, 0)
 	validationEngine := tick.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)
 	verificationEngine := tick.NewEngine(blockchain.Update, watch, settings.ValidationTimer(), settings.VerificationsCountPerValidation(), 1)
-	handler := gp2p.NewHandler(blockchain, synchronizer, transactionsPool, watch, logger)
+	handler := gp2p.NewHandler(blockchain, settings.Bytes(), synchronizer, transactionsPool, watch, logger)
 	serverFactory := gp2p.NewServerFactory(handler, settings)
 	server, err := serverFactory.CreateServer(*port)
 	if err != nil {
@@ -83,8 +81,9 @@ func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *
 	return p2p.NewHost(server, synchronizationEngine, validationEngine, verificationEngine, logger)
 }
 
-func createSynchronizer(parser *file.JsonParser, seedsPath string, hostIp string, port int, settings *config.Settings, watch *tick.Watch, logger *console.Logger) *p2p.Synchronizer {
+func createSynchronizer(seedsPath string, hostIp string, port int, settings *config.Settings, watch *tick.Watch, logger *console.Logger) *p2p.Synchronizer {
 	var seedsStringTargets []string
+	parser := file.NewJsonParser()
 	err := parser.Parse(seedsPath, &seedsStringTargets)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to parse seeds: %w", err).Error())
@@ -100,6 +99,6 @@ func createSynchronizer(parser *file.JsonParser, seedsPath string, hostIp string
 			logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
 		}
 	}
-	clientFactory := gp2p.NewClientFactory(ipFinder, settings)
+	clientFactory := gp2p.NewClientFactory(ipFinder, settings.ValidationTimeout())
 	return p2p.NewSynchronizer(clientFactory, hostIp, strconv.Itoa(port), settings.MaxOutboundsCount(), scoresBySeedTarget, watch)
 }

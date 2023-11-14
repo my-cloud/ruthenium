@@ -8,6 +8,7 @@ import (
 const (
 	blocksEndpoint              = "blocks"
 	firstBlockTimestampEndpoint = "first-block-timestamp"
+	settingsEndpoint            = "settings"
 	targetsEndpoint             = "targets"
 	transactionEndpoint         = "transaction"
 	transactionsEndpoint        = "transactions"
@@ -37,6 +38,7 @@ func (host *Host) Run() error {
 func (host *Host) setServerHandles() {
 	host.server.SetHandleBlocksRequest(blocksEndpoint)
 	host.server.SetHandleFirstBlockTimestampRequest(firstBlockTimestampEndpoint)
+	host.server.SetHandleSettingsRequest(settingsEndpoint)
 	host.server.SetHandleTargetsRequest(targetsEndpoint)
 	host.server.SetHandleTransactionRequest(transactionEndpoint)
 	host.server.SetHandleTransactionsRequest(transactionsEndpoint)

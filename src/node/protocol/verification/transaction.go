@@ -103,7 +103,7 @@ func (transaction *Transaction) Fee(settings protocol.Settings, timestamp int64,
 		if err != nil {
 			return 0, err
 		}
-		value := utxo.Value(timestamp, settings.HalfLifeInNanoseconds(), settings.IncomeBaseInParticles(), settings.IncomeLimitInParticles())
+		value := utxo.Value(timestamp, settings.HalfLifeInNanoseconds(), settings.IncomeBase(), settings.IncomeLimit())
 		inputsValue += value
 	}
 	for _, output := range transaction.outputs {

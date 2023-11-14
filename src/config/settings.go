@@ -2,18 +2,21 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
+	"os"
 	"time"
 )
 
 type settingsDto struct {
 	BlocksCountLimit                 uint64
-	GenesisAmountInParticles         uint64
+	GenesisAmount                    uint64
 	HalfLifeInDays                   float64
-	IncomeBaseInParticles            uint64
-	IncomeLimitInParticles           uint64
+	IncomeBase                       uint64
+	IncomeLimit                      uint64
 	MaxOutboundsCount                int
 	MinimalTransactionFee            uint64
-	ParticlesPerToken                uint64
+	SmallestUnitsPerCoin             uint64
 	SynchronizationIntervalInSeconds int
 	ValidationIntervalInSeconds      int64
 	ValidationTimeoutInSeconds       int64
@@ -21,19 +24,39 @@ type settingsDto struct {
 }
 
 type Settings struct {
+	bytes                           []byte
 	blocksCountLimit                uint64
-	genesisAmountInParticles        uint64
+	genesisAmount                   uint64
 	halfLifeInNanoseconds           float64
-	incomeBaseInParticles           uint64
-	incomeLimitInParticles          uint64
+	incomeBase                      uint64
+	incomeLimit                     uint64
 	maxOutboundsCount               int
 	minimalTransactionFee           uint64
-	particlesPerToken               uint64
+	smallestUnitsPerCoin            uint64
 	synchronizationTimer            time.Duration
 	validationTimestamp             int64
 	validationTimer                 time.Duration
 	validationTimeout               time.Duration
 	verificationsCountPerValidation int64
+}
+
+func NewSettings(path string) (*Settings, error) {
+	jsonFile, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("unable to open file: %w", err)
+	}
+	var settings *Settings
+	bytes, err := io.ReadAll(jsonFile)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read file: %w", err)
+	}
+	if err = jsonFile.Close(); err != nil {
+		return nil, fmt.Errorf("unable to close file: %w", err)
+	}
+	if err = json.Unmarshal(bytes, &settings); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal: %w", err)
+	}
+	return settings, nil
 }
 
 func (settings *Settings) UnmarshalJSON(data []byte) error {
@@ -42,15 +65,16 @@ func (settings *Settings) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+	settings.bytes = data
 	settings.blocksCountLimit = dto.BlocksCountLimit
-	settings.genesisAmountInParticles = dto.GenesisAmountInParticles
+	settings.genesisAmount = dto.GenesisAmount
 	hoursByDay := 24.
 	settings.halfLifeInNanoseconds = dto.HalfLifeInDays * hoursByDay * float64(time.Hour.Nanoseconds())
-	settings.incomeBaseInParticles = dto.IncomeBaseInParticles
-	settings.incomeLimitInParticles = dto.IncomeLimitInParticles
+	settings.incomeBase = dto.IncomeBase
+	settings.incomeLimit = dto.IncomeLimit
 	settings.maxOutboundsCount = dto.MaxOutboundsCount
 	settings.minimalTransactionFee = dto.MinimalTransactionFee
-	settings.particlesPerToken = dto.ParticlesPerToken
+	settings.smallestUnitsPerCoin = dto.SmallestUnitsPerCoin
 	settings.synchronizationTimer = time.Duration(dto.SynchronizationIntervalInSeconds) * time.Second
 	settings.validationTimestamp = dto.ValidationIntervalInSeconds * time.Second.Nanoseconds()
 	settings.validationTimer = time.Duration(dto.ValidationIntervalInSeconds) * time.Second
@@ -59,24 +83,28 @@ func (settings *Settings) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (settings *Settings) Bytes() []byte {
+	return settings.bytes
+}
+
 func (settings *Settings) BlocksCountLimit() uint64 {
 	return settings.blocksCountLimit
 }
 
-func (settings *Settings) GenesisAmountInParticles() uint64 {
-	return settings.genesisAmountInParticles
+func (settings *Settings) GenesisAmount() uint64 {
+	return settings.genesisAmount
 }
 
 func (settings *Settings) HalfLifeInNanoseconds() float64 {
 	return settings.halfLifeInNanoseconds
 }
 
-func (settings *Settings) IncomeBaseInParticles() uint64 {
-	return settings.incomeBaseInParticles
+func (settings *Settings) IncomeBase() uint64 {
+	return settings.incomeBase
 }
 
-func (settings *Settings) IncomeLimitInParticles() uint64 {
-	return settings.incomeLimitInParticles
+func (settings *Settings) IncomeLimit() uint64 {
+	return settings.incomeLimit
 }
 
 func (settings *Settings) MaxOutboundsCount() int {
@@ -87,8 +115,8 @@ func (settings *Settings) MinimalTransactionFee() uint64 {
 	return settings.minimalTransactionFee
 }
 
-func (settings *Settings) ParticlesPerToken() uint64 {
-	return settings.particlesPerToken
+func (settings *Settings) SmallestUnitsPerCoin() uint64 {
+	return settings.smallestUnitsPerCoin
 }
 
 func (settings *Settings) SynchronizationTimer() time.Duration {

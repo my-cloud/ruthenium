@@ -169,6 +169,42 @@ func Test_SendTargets_Error_ReturnsError(t *testing.T) {
 	test.Assert(t, err != nil, "Error is nil whereas it should not.")
 }
 
+func Test_GetSettings_NoError_ClientCalled(t *testing.T) {
+	// Arrange
+	clientMock := new(p2ptest.ClientMock)
+	clientMock.SendFunc = func(string, []byte) ([]byte, error) { return []byte{}, nil }
+	clientFactoryMock := new(p2ptest.ClientFactoryMock)
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
+	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
+
+	// Act
+	_, err := neighbor.GetSettings()
+
+	// Assert
+	sendCalls := clientMock.SendCalls()
+	isSendCalledOnce := len(sendCalls) == 1
+	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
+	test.Assert(t, err == nil, "Error is not nil whereas it should be.")
+}
+
+func Test_GetSettings_Error_ReturnsError(t *testing.T) {
+	// Arrange
+	clientMock := new(p2ptest.ClientMock)
+	clientMock.SendFunc = func(string, []byte) ([]byte, error) { return []byte{}, errors.New("") }
+	clientFactoryMock := new(p2ptest.ClientFactoryMock)
+	clientFactoryMock.CreateClientFunc = func(string, string) (p2p.Client, error) { return clientMock, nil }
+	neighbor, _ := p2p.NewNeighbor(new(p2p.Target), clientFactoryMock)
+
+	// Act
+	_, err := neighbor.GetSettings()
+
+	// Assert
+	sendCalls := clientMock.SendCalls()
+	isSendCalledOnce := len(sendCalls) == 1
+	test.Assert(t, isSendCalledOnce, "Client is not called a single time whereas it should be.")
+	test.Assert(t, err != nil, "Error is nil whereas it should not.")
+}
+
 func Test_AddTransaction_NoError_ClientCalled(t *testing.T) {
 	// Arrange
 	clientMock := new(p2ptest.ClientMock)
