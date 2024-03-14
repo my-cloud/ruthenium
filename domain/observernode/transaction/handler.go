@@ -3,11 +3,10 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain"
+	"github.com/my-cloud/ruthenium/domain/ledger"
+	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/observernode"
-	"github.com/my-cloud/ruthenium/domain/validatornode/validation"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
-	"github.com/my-cloud/ruthenium/infrastructure/network"
 	"net/http"
 )
 
@@ -25,7 +24,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 	case http.MethodPost:
 		jsonWriter := observernode.NewIoWriter(writer, handler.logger)
 		decoder := json.NewDecoder(req.Body)
-		var transaction *domain.Transaction
+		var transaction *ledger.Transaction
 		err := decoder.Decode(&transaction)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to decode transaction: %w", err).Error())
@@ -33,7 +32,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write("invalid transaction")
 			return
 		}
-		transactionRequest := validation.NewTransactionRequest(transaction, handler.host.Target())
+		transactionRequest := ledger.NewTransactionRequest(transaction, handler.host.Target())
 		marshaledTransaction, err := json.Marshal(transactionRequest)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to marshal transaction request: %w", err).Error())

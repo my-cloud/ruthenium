@@ -3,11 +3,11 @@ package amount
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain"
+	"github.com/my-cloud/ruthenium/domain/clock"
+	"github.com/my-cloud/ruthenium/domain/ledger"
+	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/observernode"
-	"github.com/my-cloud/ruthenium/infrastructure/clock"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
-	"github.com/my-cloud/ruthenium/infrastructure/network"
 	"net/http"
 )
 
@@ -37,7 +37,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var utxos []*domain.Utxo
+		var utxos []*ledger.Utxo
 		err = json.Unmarshal(utxosBytes, &utxos)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to unmarshal UTXOs: %w", err).Error())

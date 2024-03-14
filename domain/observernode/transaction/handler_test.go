@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain"
+	"github.com/my-cloud/ruthenium/domain/ledger"
+	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
-	"github.com/my-cloud/ruthenium/infrastructure/network"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -69,7 +69,7 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	neighborMock.AddTransactionFunc = func([]byte) error { return errors.New("") }
 	logger := log.NewLoggerMock()
 	handler := NewHandler(neighborMock, logger)
-	transactionRequest, _ := domain.NewRewardTransaction("", false, 0, 0)
+	transactionRequest, _ := ledger.NewRewardTransaction("", false, 0, 0)
 	marshalledTransaction, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(marshalledTransaction)
 	recorder := httptest.NewRecorder()
@@ -93,7 +93,7 @@ func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	neighborMock.AddTransactionFunc = func([]byte) error { return nil }
 	logger := log.NewLoggerMock()
 	handler := NewHandler(neighborMock, logger)
-	transactionRequest, _ := domain.NewRewardTransaction("", false, 0, 0)
+	transactionRequest, _ := ledger.NewRewardTransaction("", false, 0, 0)
 	marshalledTransaction, _ := json.Marshal(transactionRequest)
 	body := bytes.NewReader(marshalledTransaction)
 	recorder := httptest.NewRecorder()

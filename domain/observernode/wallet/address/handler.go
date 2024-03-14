@@ -3,8 +3,8 @@ package address
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/my-cloud/ruthenium/domain/encryption"
 	"github.com/my-cloud/ruthenium/domain/observernode"
-	"github.com/my-cloud/ruthenium/infrastructure/encryption"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
 	"net/http"
 )

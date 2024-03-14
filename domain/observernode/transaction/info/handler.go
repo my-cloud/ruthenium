@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain"
+	"github.com/my-cloud/ruthenium/domain/clock"
+	"github.com/my-cloud/ruthenium/domain/ledger"
+	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/observernode"
-	"github.com/my-cloud/ruthenium/infrastructure/clock"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
-	"github.com/my-cloud/ruthenium/infrastructure/network"
 	"math"
 	"net/http"
 	"strconv"
@@ -61,7 +61,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var utxos []*domain.Utxo
+		var utxos []*ledger.Utxo
 		err = json.Unmarshal(utxosBytes, &utxos)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to unmarshal UTXOs: %w", err).Error())
@@ -74,11 +74,11 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var selectedInputs []*domain.InputInfo
+		var selectedInputs []*ledger.InputInfo
 		now := handler.watch.Now().UnixNano()
 		nextBlockHeight := (now-genesisTimestamp)/handler.settings.ValidationTimestamp() + 1
 		nextBlockTimestamp := genesisTimestamp + nextBlockHeight*handler.settings.ValidationTimestamp()
-		utxosByValue := make(map[uint64][]*domain.InputInfo)
+		utxosByValue := make(map[uint64][]*ledger.InputInfo)
 		var walletBalance uint64
 		var values []uint64
 		for _, utxo := range utxos {

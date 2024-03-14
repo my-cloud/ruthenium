@@ -1,11 +1,11 @@
 package info
 
 import (
-	"github.com/my-cloud/ruthenium/domain"
+	"github.com/my-cloud/ruthenium/domain/ledger"
 )
 
 type TransactionInfo struct {
-	Inputs    []*domain.InputInfo `json:"inputs"`
+	Inputs    []*ledger.InputInfo `json:"inputs"`
 	Rest      uint64              `json:"rest"`
 	Timestamp int64               `json:"timestamp"`
 }

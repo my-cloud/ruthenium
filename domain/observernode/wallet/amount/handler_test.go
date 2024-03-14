@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain"
+	"github.com/my-cloud/ruthenium/domain/clock"
+	"github.com/my-cloud/ruthenium/domain/ledger"
+	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/observernode"
-	"github.com/my-cloud/ruthenium/infrastructure/clock"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
-	"github.com/my-cloud/ruthenium/infrastructure/network"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -95,7 +95,7 @@ func Test_ServeHTTP_ValidRequest_ReturnsAmount(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
-	marshalledEmptyUtxos, _ := json.Marshal([]*domain.Utxo{})
+	marshalledEmptyUtxos, _ := json.Marshal([]*ledger.Utxo{})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }

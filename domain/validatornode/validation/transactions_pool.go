@@ -5,21 +5,22 @@ import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/domain"
+	"github.com/my-cloud/ruthenium/domain/clock"
+	"github.com/my-cloud/ruthenium/domain/clock/tick"
+	"github.com/my-cloud/ruthenium/domain/ledger"
+	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/validatornode"
-	"github.com/my-cloud/ruthenium/infrastructure/clock"
-	"github.com/my-cloud/ruthenium/infrastructure/clock/tick"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
-	"github.com/my-cloud/ruthenium/infrastructure/network"
 	"math/rand"
 	"sync"
 	"time"
 )
 
 type TransactionsPool struct {
-	transactions []*domain.Transaction
+	transactions []*ledger.Transaction
 	mutex        sync.RWMutex
 
-	blockchain       validatornode.Blockchain
+	blockchain       domain.Blockchain
 	settings         validatornode.Settings
 	synchronizer     network.Synchronizer
 	validatorAddress string
@@ -28,7 +29,7 @@ type TransactionsPool struct {
 	logger log.Logger
 }
 
-func NewTransactionsPool(blockchain validatornode.Blockchain, settings validatornode.Settings, synchronizer network.Synchronizer, validatorAddress string, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain domain.Blockchain, settings validatornode.Settings, synchronizer network.Synchronizer, validatorAddress string, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blockchain = blockchain
 	pool.settings = settings
@@ -40,7 +41,7 @@ func NewTransactionsPool(blockchain validatornode.Blockchain, settings validator
 }
 
 func (pool *TransactionsPool) AddTransaction(transactionRequestBytes []byte, hostTarget string) {
-	var transactionRequest TransactionRequest
+	var transactionRequest ledger.TransactionRequest
 	if err := json.Unmarshal(transactionRequestBytes, &transactionRequest); err != nil {
 		pool.logger.Debug(fmt.Errorf("failed to unmarshal transaction: %w", err).Error())
 		return
@@ -52,7 +53,7 @@ func (pool *TransactionsPool) AddTransaction(transactionRequestBytes []byte, hos
 		return
 	}
 	pool.synchronizer.Incentive(transactionRequest.TransactionBroadcasterTarget())
-	newTransactionRequest := NewTransactionRequest(transaction, hostTarget)
+	newTransactionRequest := ledger.NewTransactionRequest(transaction, hostTarget)
 	marshaledTransactionRequest, err := json.Marshal(newTransactionRequest)
 	if err != nil {
 		pool.logger.Debug(fmt.Errorf("failed to marshal transaction request: %w", err).Error())
@@ -107,7 +108,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	rand.Shuffle(len(transactions), func(i, j int) {
 		transactions[i], transactions[j] = transactions[j], transactions[i]
 	})
-	var rejectedTransactions []*domain.Transaction
+	var rejectedTransactions []*ledger.Transaction
 	for _, transaction := range transactions {
 		if timestamp < transaction.Timestamp() {
 			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too far in the future, transaction: %v", transaction))
@@ -157,7 +158,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			}
 		}
 	}
-	rewardTransaction, err := domain.NewRewardTransaction(pool.validatorAddress, isYielding, timestamp, reward)
+	rewardTransaction, err := ledger.NewRewardTransaction(pool.validatorAddress, isYielding, timestamp, reward)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("unable to create block, failed to create reward transaction: %w", err).Error())
 		return
@@ -186,7 +187,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	pool.logger.Debug(fmt.Sprintf("reward: %d", reward))
 }
 
-func (pool *TransactionsPool) addTransaction(transaction *domain.Transaction) error {
+func (pool *TransactionsPool) addTransaction(transaction *ledger.Transaction) error {
 	blockchainCopy := pool.blockchain.Copy()
 	lastBlockTimestamp := blockchainCopy.LastBlockTimestamp()
 	if lastBlockTimestamp == 0 {
@@ -217,7 +218,7 @@ func (pool *TransactionsPool) addTransaction(transaction *domain.Transaction) er
 	if err != nil {
 		return fmt.Errorf("failed to verify fee: %w", err)
 	}
-	transactions := []*domain.Transaction{transaction}
+	transactions := []*ledger.Transaction{transaction}
 	transactionsBytes, err := json.Marshal(transactions)
 	if err != nil {
 		return fmt.Errorf("failed to marshal transactions: %w", err)
@@ -240,7 +241,7 @@ func (pool *TransactionsPool) clear() {
 	pool.transactions = nil
 }
 
-func removeTransaction(transactions []*domain.Transaction, removedTransaction *domain.Transaction) []*domain.Transaction {
+func removeTransaction(transactions []*ledger.Transaction, removedTransaction *ledger.Transaction) []*ledger.Transaction {
 	for i := 0; i < len(transactions); i++ {
 		if transactions[i] == removedTransaction {
 			transactions = append(transactions[:i], transactions[i+1:]...)

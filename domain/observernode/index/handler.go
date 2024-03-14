@@ -20,7 +20,7 @@ func NewHandler(templatesPath string, logger log.Logger) *Handler {
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		t, err := template.ParseFiles(path.Join(handler.templatesPath, "index.html"))
+		t, err := template.ParseFiles(path.Join(handler.templatesPath, "template.html"))
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to parse the template: %w", err).Error())
 			return

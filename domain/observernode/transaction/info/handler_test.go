@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain"
+	"github.com/my-cloud/ruthenium/domain/clock"
+	"github.com/my-cloud/ruthenium/domain/ledger"
+	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/observernode"
-	"github.com/my-cloud/ruthenium/infrastructure/clock"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
-	"github.com/my-cloud/ruthenium/infrastructure/network"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -141,7 +141,7 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 	// Arrange
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
-	marshalledEmptyUtxos, _ := json.Marshal([]*domain.Utxo{})
+	marshalledEmptyUtxos, _ := json.Marshal([]*ledger.Utxo{})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
 	watchMock := new(clock.WatchMock)
@@ -169,7 +169,7 @@ func Test_ServeHTTP_InsufficientWalletBalance_ReturnsMethodNotAllowed(t *testing
 	// Arrange
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
-	marshalledEmptyUtxos, _ := json.Marshal([]*domain.Utxo{})
+	marshalledEmptyUtxos, _ := json.Marshal([]*ledger.Utxo{})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(clock.WatchMock)
@@ -200,16 +200,16 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
 
-	inputInfo1 := domain.NewInputInfo(0, "")
-	inputInfo2 := domain.NewInputInfo(1, "")
-	inputInfo3 := domain.NewInputInfo(2, "")
-	output1 := domain.NewOutput("", false, 1)
-	output2 := domain.NewOutput("", false, 2)
-	output3 := domain.NewOutput("", false, 0)
-	utxos := []*domain.Utxo{
-		domain.NewUtxo(inputInfo1, output1, 1),
-		domain.NewUtxo(inputInfo2, output2, 1),
-		domain.NewUtxo(inputInfo3, output3, 1),
+	inputInfo1 := ledger.NewInputInfo(0, "")
+	inputInfo2 := ledger.NewInputInfo(1, "")
+	inputInfo3 := ledger.NewInputInfo(2, "")
+	output1 := ledger.NewOutput("", false, 1)
+	output2 := ledger.NewOutput("", false, 2)
+	output3 := ledger.NewOutput("", false, 0)
+	utxos := []*ledger.Utxo{
+		ledger.NewUtxo(inputInfo1, output1, 1),
+		ledger.NewUtxo(inputInfo2, output2, 1),
+		ledger.NewUtxo(inputInfo3, output3, 1),
 	}
 	marshalledUtxos, _ := json.Marshal(utxos)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
@@ -246,13 +246,13 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
-	inputInfo1 := domain.NewInputInfo(0, "")
-	inputInfo2 := domain.NewInputInfo(2, "")
-	output1 := domain.NewOutput("", false, 1)
-	output2 := domain.NewOutput("", false, 2)
-	utxos := []*domain.Utxo{
-		domain.NewUtxo(inputInfo1, output1, 1),
-		domain.NewUtxo(inputInfo2, output2, 1),
+	inputInfo1 := ledger.NewInputInfo(0, "")
+	inputInfo2 := ledger.NewInputInfo(2, "")
+	output1 := ledger.NewOutput("", false, 1)
+	output2 := ledger.NewOutput("", false, 2)
+	utxos := []*ledger.Utxo{
+		ledger.NewUtxo(inputInfo1, output1, 1),
+		ledger.NewUtxo(inputInfo2, output2, 1),
 	}
 	marshalledUtxos, _ := json.Marshal(utxos)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }

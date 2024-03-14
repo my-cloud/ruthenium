@@ -3,12 +3,11 @@ package verification
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain"
+	"github.com/my-cloud/ruthenium/domain/encryption"
+	"github.com/my-cloud/ruthenium/domain/ledger"
+	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/validatornode"
-	"github.com/my-cloud/ruthenium/domain/validatornode/validation"
-	"github.com/my-cloud/ruthenium/infrastructure/encryption"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
-	"github.com/my-cloud/ruthenium/infrastructure/network"
 	"github.com/my-cloud/ruthenium/infrastructure/test"
 	"testing"
 	"time"
@@ -47,7 +46,7 @@ func Test_Blocks_BlocksCountLimitSetToZero_ReturnsEmptyArray(t *testing.T) {
 	blocksBytes := blockchain.Blocks(0)
 
 	// Assert
-	var blocks []*domain.Block
+	var blocks []*ledger.Block
 	_ = json.Unmarshal(blocksBytes, &blocks)
 	test.Assert(t, len(blocks) == 0, "blocks should be empty")
 }
@@ -70,7 +69,7 @@ func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
 	blocksBytes := blockchain.Blocks(0)
 
 	// Assert
-	var blocks []*domain.Block
+	var blocks []*ledger.Block
 	_ = json.Unmarshal(blocksBytes, &blocks)
 	actualBlocksCount := uint64(len(blocks))
 	test.Assert(t, actualBlocksCount == expectedBlocksCount, fmt.Sprintf("blocks count is %d whereas it should be %d", actualBlocksCount, expectedBlocksCount))
@@ -94,7 +93,7 @@ func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
 	blocksBytes := blockchain.Blocks(0)
 
 	// Assert
-	var blocks []*domain.Block
+	var blocks []*ledger.Block
 	_ = json.Unmarshal(blocksBytes, &blocks)
 	actualBlocksCount := uint64(len(blocks))
 	test.Assert(t, actualBlocksCount == expectedBlocksCount, fmt.Sprintf("blocks count is %d whereas it should be %d", actualBlocksCount, expectedBlocksCount))
@@ -117,7 +116,7 @@ func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsEmptyArray(t 
 
 	// Assert
 	expectedBlocksCount := 0
-	var blocks []*domain.Block
+	var blocks []*ledger.Block
 	_ = json.Unmarshal(blocksBytes, &blocks)
 	actualBlocksCount := len(blocks)
 	test.Assert(t, actualBlocksCount == expectedBlocksCount, fmt.Sprintf("blocks count is %d whereas it should be %d", actualBlocksCount, expectedBlocksCount))
@@ -205,7 +204,7 @@ func Test_UtxosByAddress_UnknownAddress_ReturnsEmptyArray(t *testing.T) {
 	utxosBytes := blockchain.Utxos(genesisValidatorAddress)
 
 	// Assert
-	var utxos []*domain.Utxo
+	var utxos []*ledger.Utxo
 	_ = json.Unmarshal(utxosBytes, &utxos)
 	test.Assert(t, len(utxos) == 0, "utxos should be empty")
 }
@@ -223,8 +222,8 @@ func Test_Utxos_UtxoExists_ReturnsUtxo(t *testing.T) {
 	registeredAddress := ""
 	var expectedValue uint64 = 1
 	var genesisTimestamp int64 = 0
-	transaction, _ := domain.NewRewardTransaction(registeredAddress, true, genesisTimestamp+validationInterval, expectedValue)
-	transactions := []*domain.Transaction{transaction}
+	transaction, _ := ledger.NewRewardTransaction(registeredAddress, true, genesisTimestamp+validationInterval, expectedValue)
+	transactions := []*ledger.Transaction{transaction}
 	transactionsBytes, _ := json.Marshal(transactions)
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
 	_ = blockchain.AddBlock(genesisTimestamp+validationInterval, transactionsBytes, []string{registeredAddress})
@@ -234,7 +233,7 @@ func Test_Utxos_UtxoExists_ReturnsUtxo(t *testing.T) {
 	utxosBytes := blockchain.Utxos(registeredAddress)
 
 	// Assert
-	var utxos []*domain.Utxo
+	var utxos []*ledger.Utxo
 	_ = json.Unmarshal(utxosBytes, &utxos)
 	actualValue := utxos[0].Value(genesisTimestamp+2*validationInterval, 1, 1, 1)
 	test.Assert(t, actualValue == expectedValue, fmt.Sprintf("utxo amount is %d whereas it should be %d", actualValue, expectedValue))
@@ -263,17 +262,17 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	_ = blockchain.AddBlock(now-5*validationTimestamp, nil, nil)
 	_ = blockchain.AddBlock(now-4*validationTimestamp, nil, nil)
 	blocksBytes := blockchain.Blocks(0)
-	var blocks []*domain.Block
+	var blocks []*ledger.Block
 	_ = json.Unmarshal(blocksBytes, &blocks)
 	genesisBlockHash := blocks[1].PreviousHash()
-	block1 := domain.NewRewardedBlock(genesisBlockHash, now-4*validationTimestamp)
+	block1 := ledger.NewRewardedBlock(genesisBlockHash, now-4*validationTimestamp)
 	hash1, _ := block1.Hash()
-	block2 := domain.NewRewardedBlock(hash1, now-3*validationTimestamp)
+	block2 := ledger.NewRewardedBlock(hash1, now-3*validationTimestamp)
 	hash2, _ := block2.Hash()
-	block3 := domain.NewRewardedBlock(hash2, now-2*validationTimestamp)
+	block3 := ledger.NewRewardedBlock(hash2, now-2*validationTimestamp)
 	hash3, _ := block3.Hash()
-	block4 := domain.NewRewardedBlock(hash3, now-validationTimestamp)
-	neighborBlocks := []*domain.Block{blocks[0], block1, block2, block3, block4}
+	block4 := ledger.NewRewardedBlock(hash3, now-validationTimestamp)
+	neighborBlocks := []*ledger.Block{blocks[0], block1, block2, block3, block4}
 	neighborBlocksBytes, _ := json.Marshal(neighborBlocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		return neighborBlocksBytes, nil
@@ -349,10 +348,10 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-				block1 := domain.NewRewardedBlock([32]byte{}, tt.args.firstBlockTimestamp)
+				block1 := ledger.NewRewardedBlock([32]byte{}, tt.args.firstBlockTimestamp)
 				hash, _ := block1.Hash()
-				block2 := domain.NewRewardedBlock(hash, tt.args.secondBlockTimestamp)
-				blocks := []*domain.Block{block1, block2}
+				block2 := ledger.NewRewardedBlock(hash, tt.args.secondBlockTimestamp)
+				blocks := []*ledger.Block{block1, block2}
 				blockBytes, _ := json.Marshal(blocks)
 				return blockBytes, nil
 			}
@@ -379,10 +378,10 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	var validationTimestamp int64 = 1
 	now := validationTimestamp
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-		block1 := domain.NewRewardedBlock([32]byte{}, now)
+		block1 := ledger.NewRewardedBlock([32]byte{}, now)
 		hash, _ := block1.Hash()
-		block2 := domain.NewRewardedBlock(hash, now+validationTimestamp)
-		blocks := []*domain.Block{block1, block2}
+		block2 := ledger.NewRewardedBlock(hash, now+validationTimestamp)
+		blocks := []*ledger.Block{block1, block2}
 		blockBytes, _ := json.Marshal(blocks)
 		return blockBytes, nil
 	}
@@ -424,24 +423,24 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	now := 2 * validationTimestamp
 	var incomeLimit uint64 = 1
 	genesisAmount := 2 * incomeLimit
-	block1 := domain.NewGenesisBlock(address, genesisAmount)
+	block1 := ledger.NewGenesisBlock(address, genesisAmount)
 	hash1, _ := block1.Hash()
-	block2 := domain.NewRewardedBlock(hash1, now-validationTimestamp)
+	block2 := ledger.NewRewardedBlock(hash1, now-validationTimestamp)
 	hash2, _ := block2.Hash()
 	genesisTransaction := block1.Transactions()[0]
 	var genesisOutputIndex uint16 = 0
-	invalidTransactionRequestBytes := domain.NewSignedTransactionRequest(genesisAmount, invalidTransactionFee, genesisOutputIndex, "A", privateKey, publicKey, now, genesisTransaction.Id(), genesisAmount, false)
-	var invalidTransactionRequest *validation.TransactionRequest
+	invalidTransactionRequestBytes := ledger.NewSignedTransactionRequest(genesisAmount, invalidTransactionFee, genesisOutputIndex, "A", privateKey, publicKey, now, genesisTransaction.Id(), genesisAmount, false)
+	var invalidTransactionRequest *ledger.TransactionRequest
 	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
 	invalidTransaction := invalidTransactionRequest.Transaction()
-	rewardTransaction, _ := domain.NewRewardTransaction(address, false, now, 1)
-	transactions := []*domain.Transaction{
+	rewardTransaction, _ := ledger.NewRewardTransaction(address, false, now, 1)
+	transactions := []*ledger.Transaction{
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := domain.NewBlock(hash2, []string{address}, nil, now, transactions)
+	block3 := ledger.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-		blocks := []*domain.Block{block1, block2, block3}
+		blocks := []*ledger.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
@@ -485,24 +484,24 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
-	block1 := domain.NewGenesisBlock(address, genesisAmount)
+	block1 := ledger.NewGenesisBlock(address, genesisAmount)
 	hash1, _ := block1.Hash()
-	block2 := domain.NewRewardedBlock(hash1, now-validationTimestamp)
+	block2 := ledger.NewRewardedBlock(hash1, now-validationTimestamp)
 	hash2, _ := block2.Hash()
 	genesisTransaction := block1.Transactions()[0]
 	var genesisOutputIndex uint16 = 0
-	invalidTransactionRequestBytes := domain.NewSignedTransactionRequest(genesisAmount, invalidTransactionFee, genesisOutputIndex, "A", privateKey, publicKey, now, genesisTransaction.Id(), genesisAmount, false)
-	var invalidTransactionRequest *validation.TransactionRequest
+	invalidTransactionRequestBytes := ledger.NewSignedTransactionRequest(genesisAmount, invalidTransactionFee, genesisOutputIndex, "A", privateKey, publicKey, now, genesisTransaction.Id(), genesisAmount, false)
+	var invalidTransactionRequest *ledger.TransactionRequest
 	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
 	invalidTransaction := invalidTransactionRequest.Transaction()
-	rewardTransaction, _ := domain.NewRewardTransaction(address, false, now, 1)
-	transactions := []*domain.Transaction{
+	rewardTransaction, _ := ledger.NewRewardTransaction(address, false, now, 1)
+	transactions := []*ledger.Transaction{
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := domain.NewBlock(hash2, []string{address}, nil, now, transactions)
+	block3 := ledger.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-		blocks := []*domain.Block{block1, block2, block3}
+		blocks := []*ledger.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
@@ -547,24 +546,24 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
-	block1 := domain.NewGenesisBlock(address, genesisAmount)
+	block1 := ledger.NewGenesisBlock(address, genesisAmount)
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := block1.Transactions()[0]
-	invalidTransactionRequestBytes := domain.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey, publicKey, now+validationTimestamp, genesisTransaction.Id(), genesisAmount, false)
-	var invalidTransactionRequest *validation.TransactionRequest
+	invalidTransactionRequestBytes := ledger.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey, publicKey, now+validationTimestamp, genesisTransaction.Id(), genesisAmount, false)
+	var invalidTransactionRequest *ledger.TransactionRequest
 	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
 	invalidTransaction := invalidTransactionRequest.Transaction()
 	hash1, _ := block1.Hash()
-	block2 := domain.NewRewardedBlock(hash1, now-validationTimestamp)
+	block2 := ledger.NewRewardedBlock(hash1, now-validationTimestamp)
 	hash2, _ := block2.Hash()
-	rewardTransaction, _ := domain.NewRewardTransaction(address, false, now, 0)
-	transactions := []*domain.Transaction{
+	rewardTransaction, _ := ledger.NewRewardTransaction(address, false, now, 0)
+	transactions := []*ledger.Transaction{
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := domain.NewBlock(hash2, []string{address}, nil, now, transactions)
+	block3 := ledger.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-		blocks := []*domain.Block{block1, block2, block3}
+		blocks := []*ledger.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
@@ -609,24 +608,24 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
-	block1 := domain.NewGenesisBlock(address, genesisAmount)
+	block1 := ledger.NewGenesisBlock(address, genesisAmount)
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := block1.Transactions()[0]
-	invalidTransactionRequestBytes := domain.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey, publicKey, now-validationTimestamp-1, genesisTransaction.Id(), genesisAmount, false)
-	var invalidTransactionRequest *validation.TransactionRequest
+	invalidTransactionRequestBytes := ledger.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey, publicKey, now-validationTimestamp-1, genesisTransaction.Id(), genesisAmount, false)
+	var invalidTransactionRequest *ledger.TransactionRequest
 	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
 	invalidTransaction := invalidTransactionRequest.Transaction()
 	hash1, _ := block1.Hash()
-	block2 := domain.NewRewardedBlock(hash1, now-validationTimestamp)
+	block2 := ledger.NewRewardedBlock(hash1, now-validationTimestamp)
 	hash2, _ := block2.Hash()
-	rewardTransaction, _ := domain.NewRewardTransaction(address, false, now, 0)
-	transactions := []*domain.Transaction{
+	rewardTransaction, _ := ledger.NewRewardTransaction(address, false, now, 0)
+	transactions := []*ledger.Transaction{
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := domain.NewBlock(hash2, []string{address}, nil, now, transactions)
+	block3 := ledger.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-		blocks := []*domain.Block{block1, block2, block3}
+		blocks := []*ledger.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
@@ -672,24 +671,24 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
-	block1 := domain.NewGenesisBlock(address, genesisAmount)
+	block1 := ledger.NewGenesisBlock(address, genesisAmount)
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := block1.Transactions()[0]
-	invalidTransactionRequestBytes := domain.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey2, publicKey, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, false)
-	var invalidTransactionRequest *validation.TransactionRequest
+	invalidTransactionRequestBytes := ledger.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey2, publicKey, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, false)
+	var invalidTransactionRequest *ledger.TransactionRequest
 	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
 	invalidTransaction := invalidTransactionRequest.Transaction()
 	hash1, _ := block1.Hash()
-	block2 := domain.NewRewardedBlock(hash1, now-validationTimestamp)
+	block2 := ledger.NewRewardedBlock(hash1, now-validationTimestamp)
 	hash2, _ := block2.Hash()
-	rewardTransaction, _ := domain.NewRewardTransaction(address, false, now, 0)
-	transactions := []*domain.Transaction{
+	rewardTransaction, _ := ledger.NewRewardTransaction(address, false, now, 0)
+	transactions := []*ledger.Transaction{
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := domain.NewBlock(hash2, []string{address}, nil, now, transactions)
+	block3 := ledger.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-		blocks := []*domain.Block{block1, block2, block3}
+		blocks := []*ledger.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
@@ -734,24 +733,24 @@ func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplace
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
-	block1 := domain.NewGenesisBlock(address, genesisAmount)
+	block1 := ledger.NewGenesisBlock(address, genesisAmount)
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := block1.Transactions()[0]
-	invalidTransactionRequestBytes := domain.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey2, publicKey2, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, false)
-	var invalidTransactionRequest *validation.TransactionRequest
+	invalidTransactionRequestBytes := ledger.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, "A", privateKey2, publicKey2, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, false)
+	var invalidTransactionRequest *ledger.TransactionRequest
 	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
 	invalidTransaction := invalidTransactionRequest.Transaction()
 	hash1, _ := block1.Hash()
-	block2 := domain.NewRewardedBlock(hash1, now-validationTimestamp)
+	block2 := ledger.NewRewardedBlock(hash1, now-validationTimestamp)
 	hash2, _ := block2.Hash()
-	rewardTransaction, _ := domain.NewRewardTransaction(address, false, now, 0)
-	transactions := []*domain.Transaction{
+	rewardTransaction, _ := ledger.NewRewardTransaction(address, false, now, 0)
+	transactions := []*ledger.Transaction{
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := domain.NewBlock(hash2, []string{address}, nil, now, transactions)
+	block3 := ledger.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-		blocks := []*domain.Block{block1, block2, block3}
+		blocks := []*ledger.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
@@ -793,15 +792,15 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
-	block1 := domain.NewGenesisBlock(notRegisteredAddress, genesisAmount)
+	block1 := ledger.NewGenesisBlock(notRegisteredAddress, genesisAmount)
 	hash1, _ := block1.Hash()
-	block2 := domain.NewRewardedBlock(hash1, now-validationTimestamp)
+	block2 := ledger.NewRewardedBlock(hash1, now-validationTimestamp)
 	hash2, _ := block2.Hash()
-	rewardTransaction, _ := domain.NewRewardTransaction(notRegisteredAddress, false, now, 0)
-	transactions := []*domain.Transaction{rewardTransaction}
-	block3 := domain.NewBlock(hash2, []string{notRegisteredAddress}, nil, now, transactions)
+	rewardTransaction, _ := ledger.NewRewardTransaction(notRegisteredAddress, false, now, 0)
+	transactions := []*ledger.Transaction{rewardTransaction}
+	block3 := ledger.NewBlock(hash2, []string{notRegisteredAddress}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-		blocks := []*domain.Block{block1, block2, block3}
+		blocks := []*ledger.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
@@ -846,25 +845,25 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasNotBeenAdded_IsNotReplac
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
 	address := test.Address
-	block1 := domain.NewGenesisBlock(address, genesisAmount)
+	block1 := ledger.NewGenesisBlock(address, genesisAmount)
 	notAddedAddress := test.Address2
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := block1.Transactions()[0]
-	invalidTransactionRequestBytes := domain.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, notAddedAddress, privateKey, publicKey, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, true)
-	var invalidTransactionRequest *validation.TransactionRequest
+	invalidTransactionRequestBytes := ledger.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, notAddedAddress, privateKey, publicKey, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, true)
+	var invalidTransactionRequest *ledger.TransactionRequest
 	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
 	invalidTransaction := invalidTransactionRequest.Transaction()
 	hash1, _ := block1.Hash()
-	block2 := domain.NewRewardedBlock(hash1, now-validationTimestamp)
+	block2 := ledger.NewRewardedBlock(hash1, now-validationTimestamp)
 	hash2, _ := block2.Hash()
-	rewardTransaction, _ := domain.NewRewardTransaction(address, false, now, 0)
-	transactions := []*domain.Transaction{
+	rewardTransaction, _ := ledger.NewRewardTransaction(address, false, now, 0)
+	transactions := []*ledger.Transaction{
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := domain.NewBlock(hash2, []string{address}, nil, now, transactions)
+	block3 := ledger.NewBlock(hash2, []string{address}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-		blocks := []*domain.Block{block1, block2, block3}
+		blocks := []*ledger.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
@@ -909,25 +908,25 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasBeenRemoved_IsNotReplace
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
 	address := test.Address
-	block1 := domain.NewGenesisBlock(address, genesisAmount)
+	block1 := ledger.NewGenesisBlock(address, genesisAmount)
 	removedAddress := test.Address2
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := block1.Transactions()[0]
-	invalidTransactionRequestBytes := domain.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, removedAddress, privateKey, publicKey, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, true)
-	var invalidTransactionRequest *validation.TransactionRequest
+	invalidTransactionRequestBytes := ledger.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, removedAddress, privateKey, publicKey, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, true)
+	var invalidTransactionRequest *ledger.TransactionRequest
 	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
 	invalidTransaction := invalidTransactionRequest.Transaction()
 	hash1, _ := block1.Hash()
-	block2 := domain.NewRewardedBlock(hash1, now-validationTimestamp)
+	block2 := ledger.NewRewardedBlock(hash1, now-validationTimestamp)
 	hash2, _ := block2.Hash()
-	rewardTransaction, _ := domain.NewRewardTransaction(address, false, now, 0)
-	transactions := []*domain.Transaction{
+	rewardTransaction, _ := ledger.NewRewardTransaction(address, false, now, 0)
+	transactions := []*ledger.Transaction{
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := domain.NewBlock(hash2, []string{address}, []string{removedAddress}, now, transactions)
+	block3 := ledger.NewBlock(hash2, []string{address}, []string{removedAddress}, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-		blocks := []*domain.Block{block1, block2, block3}
+		blocks := []*ledger.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
@@ -983,24 +982,24 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
-	rewardTransaction1, _ := domain.NewRewardTransaction(test.Address, false, now-2*validationTimestamp, 0)
-	transactionsBytes1, _ := json.Marshal([]*domain.Transaction{rewardTransaction1})
+	rewardTransaction1, _ := ledger.NewRewardTransaction(test.Address, false, now-2*validationTimestamp, 0)
+	transactionsBytes1, _ := json.Marshal([]*ledger.Transaction{rewardTransaction1})
 	_ = blockchain.AddBlock(now-2*validationTimestamp, transactionsBytes1, nil)
 	blocksBytes := blockchain.Blocks(0)
-	var blocks []*domain.Block
+	var blocks []*ledger.Block
 	_ = json.Unmarshal(blocksBytes, &blocks)
-	rewardTransaction2, _ := domain.NewRewardTransaction(test.Address, false, now-validationTimestamp, 0)
-	transactionsBytes2, _ := json.Marshal([]*domain.Transaction{rewardTransaction2})
+	rewardTransaction2, _ := ledger.NewRewardTransaction(test.Address, false, now-validationTimestamp, 0)
+	transactionsBytes2, _ := json.Marshal([]*ledger.Transaction{rewardTransaction2})
 	_ = blockchain.AddBlock(now-validationTimestamp, transactionsBytes2, nil)
-	rewardTransaction3, _ := domain.NewRewardTransaction(test.Address, false, now, 0)
-	transactionsBytes3, _ := json.Marshal([]*domain.Transaction{rewardTransaction3})
+	rewardTransaction3, _ := ledger.NewRewardTransaction(test.Address, false, now, 0)
+	transactionsBytes3, _ := json.Marshal([]*ledger.Transaction{rewardTransaction3})
 	_ = blockchain.AddBlock(now, transactionsBytes3, nil)
 	hash1, _ := blocks[0].Hash()
-	block2 := domain.NewRewardedBlock(hash1, now-validationTimestamp)
+	block2 := ledger.NewRewardedBlock(hash1, now-validationTimestamp)
 	hash2, _ := block2.Hash()
-	block3 := domain.NewRewardedBlock(hash2, now)
+	block3 := ledger.NewRewardedBlock(hash2, now)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-		neighborBlocks := []*domain.Block{block3}
+		neighborBlocks := []*ledger.Block{block3}
 		neighborBlocksBytes, _ := json.Marshal(neighborBlocks)
 		return neighborBlocksBytes, nil
 	}
@@ -1039,22 +1038,22 @@ func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
-	rewardTransaction1, _ := domain.NewRewardTransaction(test.Address, false, now-2*validationTimestamp, 0)
-	transactionsBytes1, _ := json.Marshal([]*domain.Transaction{rewardTransaction1})
+	rewardTransaction1, _ := ledger.NewRewardTransaction(test.Address, false, now-2*validationTimestamp, 0)
+	transactionsBytes1, _ := json.Marshal([]*ledger.Transaction{rewardTransaction1})
 	_ = blockchain.AddBlock(now-2*validationTimestamp, transactionsBytes1, nil)
-	rewardTransaction2, _ := domain.NewRewardTransaction(test.Address, false, now-validationTimestamp, 0)
-	transactionsBytes2, _ := json.Marshal([]*domain.Transaction{rewardTransaction2})
+	rewardTransaction2, _ := ledger.NewRewardTransaction(test.Address, false, now-validationTimestamp, 0)
+	transactionsBytes2, _ := json.Marshal([]*ledger.Transaction{rewardTransaction2})
 	_ = blockchain.AddBlock(now-validationTimestamp, transactionsBytes2, nil)
 	blocksBytes := blockchain.Blocks(0)
-	var blocks []*domain.Block
+	var blocks []*ledger.Block
 	_ = json.Unmarshal(blocksBytes, &blocks)
-	rewardTransaction3, _ := domain.NewRewardTransaction(test.Address, false, now, 0)
-	transactionsBytes3, _ := json.Marshal([]*domain.Transaction{rewardTransaction3})
+	rewardTransaction3, _ := ledger.NewRewardTransaction(test.Address, false, now, 0)
+	transactionsBytes3, _ := json.Marshal([]*ledger.Transaction{rewardTransaction3})
 	_ = blockchain.AddBlock(now, transactionsBytes3, nil)
 	hash2, _ := blocks[1].Hash()
-	block3 := domain.NewRewardedBlock(hash2, now)
+	block3 := ledger.NewRewardedBlock(hash2, now)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-		neighborBlocks := []*domain.Block{block3}
+		neighborBlocks := []*ledger.Block{block3}
 		neighborBlocksBytes, _ := json.Marshal(neighborBlocks)
 		return neighborBlocksBytes, nil
 	}

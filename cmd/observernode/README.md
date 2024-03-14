@@ -1,22 +1,22 @@
 # Observer Node
-The user interface (UI) server lets to have a graphical user interface to easily communicate with a Ruthenium [host node](../validatornode/README.md).
-Any other implementation of this UI server can communicate with a node using its [API](../validatornode/README.md#api).
-In this repository, the UI is described in a simple `index.html`. Any other implementation of this UI can communicate with the UI server using its [API](#api). 
+The observer node interacts with the [validator node](../validatornode/README.md) through a P2P connection, and exposes a HTTP REST [API](#api)
+Any other implementation of this observer node can communicate with a validator node using its [API](../validatornode/README.md#api).
+In this repository, a simple user interface is defined in a `template.html`.
 
 ## Prerequisites
 A Ruthenium node must be running.
 
 ## Launch
-At root level (ruthenium folder), run the ui using the command `go run src/ui/main.go` with the add of some [program arguments](#program-arguments). For example:
+At root level (ruthenium folder), run the observer node using the command `go run cmd/validatornode/main.go` with the add of some [program arguments](#program-arguments). For example:
 ```
-go run src/ui/main.go -host-ip=0.0.0.0
+go run cmd/validatornode/main.go -host-ip=0.0.0.0
 ```
 
 ## Program arguments:
 ```
--port: The TCP port number for the UI server (default: "8080")
--host-ip: The node host IP or DNS address (default: "127.0.0.1")
--host-port: The TCP port number of the host node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
+-port: The TCP port number for the observer node (default: "8080")
+-host-ip: The validator node IP or DNS address (default: "127.0.0.1")
+-host-port: The TCP port number of the validator node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
 -templates-path: The UI templates path (default: "templates")
 -log-level: The log level (accepted values: "debug", "info", "warn", "error", "fatal", default: "info")
 ```
@@ -24,7 +24,7 @@ go run src/ui/main.go -host-ip=0.0.0.0
 Using a web browser, go to `http://localhost:8080` (If needed, replace `localhost` by the UI server IP address and `8080` by the TCP port number for the UI server)
 
 ## API
-Base URL: `<UI server IP>:<UI server port>` (example: `localhost:8080`)
+Base URL: `<observer node IP>:<observer node port>` (example: `localhost:8080`)
 
 ### Transactions pool
 <details>

@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/my-cloud/ruthenium/domain/clock/tick"
+	"github.com/my-cloud/ruthenium/domain/network/p2p"
+	"github.com/my-cloud/ruthenium/domain/network/p2p/gp2p"
+	"github.com/my-cloud/ruthenium/domain/network/p2p/net"
 	"github.com/my-cloud/ruthenium/domain/observernode/index"
 	"github.com/my-cloud/ruthenium/domain/observernode/transaction"
 	"github.com/my-cloud/ruthenium/domain/observernode/transaction/info"
@@ -11,23 +15,19 @@ import (
 	"github.com/my-cloud/ruthenium/domain/observernode/transactions"
 	"github.com/my-cloud/ruthenium/domain/observernode/wallet/address"
 	"github.com/my-cloud/ruthenium/domain/observernode/wallet/amount"
-	"github.com/my-cloud/ruthenium/infrastructure/clock/tick"
 	"github.com/my-cloud/ruthenium/infrastructure/config"
 	"github.com/my-cloud/ruthenium/infrastructure/environment"
 	"github.com/my-cloud/ruthenium/infrastructure/log/console"
-	"github.com/my-cloud/ruthenium/infrastructure/network/p2p"
-	"github.com/my-cloud/ruthenium/infrastructure/network/p2p/gp2p"
-	"github.com/my-cloud/ruthenium/infrastructure/network/p2p/net"
 	"net/http"
 	"strconv"
 	"time"
 )
 
 func main() {
-	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(8080), "The TCP port number of the UI server")
-	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue("127.0.0.1"), "The node host IP or DNS address")
-	hostPort := flag.Int("host-port", environment.NewVariable("HOST_PORT").GetIntValue(10600), "The TCP port number of the host node")
-	templatesPath := flag.String("templates-path", environment.NewVariable("TEMPLATES_PATH").GetStringValue("cmd/walletapplication"), "The UI templates path")
+	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(8080), "The TCP port number of the observer node")
+	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue("127.0.0.1"), "The validator node IP or DNS address")
+	hostPort := flag.Int("host-port", environment.NewVariable("HOST_PORT").GetIntValue(10600), "The TCP port number of the validator node")
+	templatesPath := flag.String("templates-path", environment.NewVariable("TEMPLATES_PATH").GetStringValue("domain/observernode/index"), "The UI templates path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level (possible values: 'debug', 'info', 'warn', 'error', 'fatal')")
 
 	flag.Parse()

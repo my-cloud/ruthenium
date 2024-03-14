@@ -1,14 +1,14 @@
 # Validator Node
-In this repository, the host node is an implementation following the Ruthenium protocol. Any other implementation can contribute to run the network if it exposes the same [API](#api) and follows the protocol described in the Ruthenium [whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper).
+In this repository, the validator node is one implementation of the Ruthenium protocol. Any other implementation can contribute to run the network if it exposes the same [API](#api) and follows the protocol described in the Ruthenium [whitepaper](https://github.com/my-cloud/ruthenium/wiki/Whitepaper).
 
 ## Prerequisites
 * A firewall port must be open. The port number will be the value of the `port` [program argument](#program-arguments).
 * In order to [validate](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#validation) [blocks](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#block) or get an [income](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#income), the node wallet address must be registered in the [Proof of Humanity](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#proof-of-humanity) registry.
 
 ## Launch
-At root level (ruthenium folder), run the node using the command `go run src/node/main.go` with the add of some [program argument](#program-arguments). For example:
+At root level (ruthenium folder), run the validator node using the command `go run cmd/validatornode/main.go` with the add of some [program argument](#program-arguments). For example:
 ```
-go run src/node/main.go -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0fe1562dc1749479d9715afd
+go run cmd/validator/main.go -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0fe1562dc1749479d9715afd
 ```
 
 ## Program arguments:
@@ -18,15 +18,15 @@ go run src/node/main.go -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0
 -password: The mnemonic password (unused if the mnemonic is omitted)
 -private-key: The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)
 -infura-key: The infura key (required to check the proof of humanity)
--ip: The node IP or DNS address (detected if not provided)
--port: The TCP port number of the host node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
+-ip: The validator node IP or DNS address (detected if not provided)
+-port: The TCP port number of the validator node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
 -settings-path: The settings file path (default: "config/settings.json")
 -seeds-path: The seeds file path (default: "config/seeds.json")
 -log-level: The log level (accepted values: "debug", "info", "warn", "error", "fatal", default: "info")
 ```
   
 ## API
-Base URL: `<node IP>:<node port>` (example: seed-styx.ruthenium.my-cloud.me:10600)
+Base URL: `<validator node IP>:<validator node port>` (example: seed-styx.ruthenium.my-cloud.me:10600)
 
 Each request value or response value shall be marshaled to bytes or un-marshaled from bytes. All fields are required.
 

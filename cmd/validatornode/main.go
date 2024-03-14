@@ -7,16 +7,16 @@ import (
 	"github.com/my-cloud/ruthenium/infrastructure/file"
 	"strconv"
 
+	"github.com/my-cloud/ruthenium/domain/clock/tick"
+	"github.com/my-cloud/ruthenium/domain/encryption"
+	"github.com/my-cloud/ruthenium/domain/network/p2p"
+	"github.com/my-cloud/ruthenium/domain/network/p2p/gp2p"
+	"github.com/my-cloud/ruthenium/domain/network/p2p/net"
 	"github.com/my-cloud/ruthenium/domain/validatornode/poh"
 	"github.com/my-cloud/ruthenium/domain/validatornode/validation"
 	"github.com/my-cloud/ruthenium/domain/validatornode/verification"
-	"github.com/my-cloud/ruthenium/infrastructure/clock/tick"
-	"github.com/my-cloud/ruthenium/infrastructure/encryption"
 	"github.com/my-cloud/ruthenium/infrastructure/environment"
 	"github.com/my-cloud/ruthenium/infrastructure/log/console"
-	"github.com/my-cloud/ruthenium/infrastructure/network/p2p"
-	"github.com/my-cloud/ruthenium/infrastructure/network/p2p/gp2p"
-	"github.com/my-cloud/ruthenium/infrastructure/network/p2p/net"
 )
 
 func main() {
@@ -25,8 +25,8 @@ func main() {
 	password := flag.String("password", environment.NewVariable("PASSWORD").GetStringValue(""), "The mnemonic password (unused if the mnemonic is omitted)")
 	privateKeyString := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)")
 	infuraKey := flag.String("infura-key", environment.NewVariable("INFURA_KEY").GetStringValue(""), "The infura key (required to check the proof of humanity)")
-	ip := flag.String("ip", environment.NewVariable("IP").GetStringValue(""), "The node IP or DNS address (detected if not provided)")
-	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(10600), "The TCP port number of the host node")
+	ip := flag.String("ip", environment.NewVariable("IP").GetStringValue(""), "The validatornode IP or DNS address (detected if not provided)")
+	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(10600), "The TCP port number of the host validatornode")
 	settingsPath := flag.String("settings-path", environment.NewVariable("SETTINGS_PATH").GetStringValue("config/settings.json"), "The settings file path")
 	seedsPath := flag.String("seeds-path", environment.NewVariable("SEEDS_PATH").GetStringValue("config/seeds.json"), "The seeds file path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level (possible values: 'debug', 'info', 'warn', 'error', 'fatal')")
@@ -35,7 +35,7 @@ func main() {
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
 	address := decodeAddress(mnemonic, derivationPath, password, privateKeyString, logger)
 	host := createHost(settingsPath, infuraKey, seedsPath, ip, port, address, logger)
-	logger.Info(fmt.Sprintf("host node starting for address: %s", address))
+	logger.Info(fmt.Sprintf("host validatornode starting for address: %s", address))
 	err := host.Run()
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to run host: %w", err).Error())

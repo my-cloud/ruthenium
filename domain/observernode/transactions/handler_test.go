@@ -3,8 +3,8 @@ package transactions
 import (
 	"errors"
 	"fmt"
+	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
-	"github.com/my-cloud/ruthenium/infrastructure/network"
 	"github.com/my-cloud/ruthenium/infrastructure/test"
 	"net/http"
 	"net/http/httptest"

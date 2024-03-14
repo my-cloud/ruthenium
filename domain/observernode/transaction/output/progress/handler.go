@@ -3,12 +3,12 @@ package progress
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain"
+	"github.com/my-cloud/ruthenium/domain/clock"
+	"github.com/my-cloud/ruthenium/domain/ledger"
+	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/observernode"
 	"github.com/my-cloud/ruthenium/domain/observernode/transaction/output"
-	"github.com/my-cloud/ruthenium/infrastructure/clock"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
-	"github.com/my-cloud/ruthenium/infrastructure/network"
 	"net/http"
 )
 
@@ -28,7 +28,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 	case http.MethodPut:
 		jsonWriter := observernode.NewIoWriter(writer, handler.logger)
 		decoder := json.NewDecoder(req.Body)
-		var searchedUtxo *domain.Utxo
+		var searchedUtxo *ledger.Utxo
 		err := decoder.Decode(&searchedUtxo)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to decode utxo: %w", err).Error())
@@ -42,7 +42,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var utxos []*domain.Utxo
+		var utxos []*ledger.Utxo
 		err = json.Unmarshal(utxosBytes, &utxos)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to unmarshal UTXOs: %w", err).Error())
@@ -75,7 +75,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var blocks []*domain.Block
+		var blocks []*ledger.Block
 		err = json.Unmarshal(blocksBytes, &blocks)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to unmarshal blocks: %w", err).Error())
@@ -100,7 +100,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var transactions []*domain.Transaction
+		var transactions []*ledger.Transaction
 		err = json.Unmarshal(transactionsBytes, &transactions)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to unmarshal transactions: %w", err).Error())
