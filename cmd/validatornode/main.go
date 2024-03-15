@@ -25,8 +25,8 @@ func main() {
 	password := flag.String("password", environment.NewVariable("PASSWORD").GetStringValue(""), "The mnemonic password (unused if the mnemonic is omitted)")
 	privateKeyString := flag.String("private-key", environment.NewVariable("PRIVATE_KEY").GetStringValue(""), "The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)")
 	infuraKey := flag.String("infura-key", environment.NewVariable("INFURA_KEY").GetStringValue(""), "The infura key (required to check the proof of humanity)")
-	ip := flag.String("ip", environment.NewVariable("IP").GetStringValue(""), "The validatornode IP or DNS address (detected if not provided)")
-	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(10600), "The TCP port number of the host validatornode")
+	ip := flag.String("ip", environment.NewVariable("IP").GetStringValue(""), "The validator node IP or DNS address (detected if not provided)")
+	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(10600), "The TCP port number of the validator node")
 	settingsPath := flag.String("settings-path", environment.NewVariable("SETTINGS_PATH").GetStringValue("config/settings.json"), "The settings file path")
 	seedsPath := flag.String("seeds-path", environment.NewVariable("SEEDS_PATH").GetStringValue("config/seeds.json"), "The seeds file path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level (possible values: 'debug', 'info', 'warn', 'error', 'fatal')")
@@ -34,8 +34,8 @@ func main() {
 	flag.Parse()
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
 	address := decodeAddress(mnemonic, derivationPath, password, privateKeyString, logger)
-	host := createHost(settingsPath, infuraKey, seedsPath, ip, port, address, logger)
-	logger.Info(fmt.Sprintf("host validatornode starting for address: %s", address))
+	host := createNode(settingsPath, infuraKey, seedsPath, ip, port, address, logger)
+	logger.Info(fmt.Sprintf("validator node running for address: %s", address))
 	err := host.Run()
 	if err != nil {
 		logger.Fatal(fmt.Errorf("failed to run host: %w", err).Error())
@@ -59,7 +59,7 @@ func decodeAddress(mnemonic *string, derivationPath *string, password *string, p
 	return publicKey.Address()
 }
 
-func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *string, port *int, address string, logger *console.Logger) *p2p.Host {
+func createNode(settingsPath *string, infuraKey *string, seedsPath *string, ip *string, port *int, address string, logger *console.Logger) *p2p.Node {
 	settings, err := config.NewSettings(*settingsPath)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
@@ -73,12 +73,11 @@ func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *
 	validationEngine := clock.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)
 	verificationEngine := clock.NewEngine(blockchain.Update, watch, settings.ValidationTimer(), settings.VerificationsCountPerValidation(), 1)
 	handler := gp2p.NewHandler(blockchain, settings.Bytes(), neighborhood, transactionsPool, watch, logger)
-	serverFactory := gp2p.NewServerFactory(handler, settings)
-	server, err := serverFactory.CreateServer(*port)
+	host, err := gp2p.NewHost(*port, handler, settings.ValidationTimeout())
 	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to create server: %w", err).Error())
+		logger.Fatal(fmt.Errorf("failed to instantiate host: %w", err).Error())
 	}
-	return p2p.NewHost(server, synchronizationEngine, validationEngine, verificationEngine, logger)
+	return p2p.NewNode(host, synchronizationEngine, validationEngine, verificationEngine, logger)
 }
 
 func createNeighborhood(seedsPath string, hostIp string, port int, settings *config.Settings, watch *clock.Watch, logger *console.Logger) *p2p.Neighborhood {
@@ -99,6 +98,6 @@ func createNeighborhood(seedsPath string, hostIp string, port int, settings *con
 			logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
 		}
 	}
-	clientFactory := gp2p.NewClientFactory(ipFinder, settings.ValidationTimeout())
+	clientFactory := gp2p.NewSenderFactory(ipFinder, settings.ValidationTimeout())
 	return p2p.NewNeighborhood(clientFactory, hostIp, strconv.Itoa(port), settings.MaxOutboundsCount(), scoresBySeedTarget, watch)
 }

@@ -8,16 +8,16 @@ import (
 	"time"
 )
 
-type ClientFactory struct {
+type SenderFactory struct {
 	ipFinder          network.IpFinder
 	connectionTimeout time.Duration
 }
 
-func NewClientFactory(ipFinder network.IpFinder, connectionTimeout time.Duration) *ClientFactory {
-	return &ClientFactory{ipFinder, connectionTimeout}
+func NewSenderFactory(ipFinder network.IpFinder, connectionTimeout time.Duration) *SenderFactory {
+	return &SenderFactory{ipFinder, connectionTimeout}
 }
 
-func (factory *ClientFactory) CreateClient(ip string, port string) (p2p.Client, error) {
+func (factory *SenderFactory) CreateSender(ip string, port string) (p2p.Sender, error) {
 	lookedUpIp, err := factory.ipFinder.LookupIP(ip)
 	if err != nil {
 		return nil, fmt.Errorf("failed to look up IP on addresse %s: %w", ip, err)

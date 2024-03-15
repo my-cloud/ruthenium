@@ -10,7 +10,7 @@ import (
 )
 
 type Neighborhood struct {
-	clientFactory            ClientFactory
+	clientFactory            SenderCreator
 	hostTarget               *Target
 	maxOutboundsCount        int
 	neighbors                []network.Neighbor
@@ -21,7 +21,7 @@ type Neighborhood struct {
 	watch                    domain.TimeProvider
 }
 
-func NewNeighborhood(clientFactory ClientFactory, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTargetValue map[string]int, watch domain.TimeProvider) *Neighborhood {
+func NewNeighborhood(clientFactory SenderCreator, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTargetValue map[string]int, watch domain.TimeProvider) *Neighborhood {
 	neighborhood := new(Neighborhood)
 	neighborhood.clientFactory = clientFactory
 	neighborhood.hostTarget = NewTarget(hostIp, hostPort)

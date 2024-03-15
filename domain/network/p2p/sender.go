@@ -1,5 +1,5 @@
 package p2p
 
-type Client interface {
+type Sender interface {
 	Send(topic string, req []byte) (res []byte, err error)
 }

@@ -7,15 +7,15 @@ import (
 
 type Neighbor struct {
 	target *Target
-	client Client
+	sender Sender
 }
 
-func NewNeighbor(target *Target, clientFactory ClientFactory) (*Neighbor, error) {
-	client, err := clientFactory.CreateClient(target.Ip(), target.Port())
+func NewNeighbor(target *Target, clientFactory SenderCreator) (*Neighbor, error) {
+	sender, err := clientFactory.CreateSender(target.Ip(), target.Port())
 	if err != nil {
-		return nil, fmt.Errorf("failed to create client reaching %s: %w", target.Value(), err)
+		return nil, fmt.Errorf("failed to create sender reaching %s: %w", target.Value(), err)
 	}
-	return &Neighbor{target, client}, nil
+	return &Neighbor{target, sender}, nil
 }
 
 func (neighbor *Neighbor) Target() string {
@@ -27,7 +27,7 @@ func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) ([]byte, error) 
 }
 
 func (neighbor *Neighbor) GetFirstBlockTimestamp() (int64, error) {
-	res, err := neighbor.client.Send(firstBlockTimestampEndpoint, []byte{})
+	res, err := neighbor.sender.Send(firstBlockTimestampEndpoint, []byte{})
 	var timestamp int64
 	if err != nil {
 		return timestamp, err
@@ -49,12 +49,12 @@ func (neighbor *Neighbor) SendTargets(targets []string) error {
 }
 
 func (neighbor *Neighbor) AddTransaction(transaction []byte) error {
-	_, err := neighbor.client.Send(transactionEndpoint, transaction)
+	_, err := neighbor.sender.Send(transactionEndpoint, transaction)
 	return err
 }
 
 func (neighbor *Neighbor) GetTransactions() ([]byte, error) {
-	return neighbor.client.Send(transactionsEndpoint, []byte{})
+	return neighbor.sender.Send(transactionsEndpoint, []byte{})
 }
 
 func (neighbor *Neighbor) GetUtxos(address string) ([]byte, error) {
@@ -66,5 +66,5 @@ func (neighbor *Neighbor) sendRequest(topic string, request interface{}) ([]byte
 	if err != nil {
 		return nil, err
 	}
-	return neighbor.client.Send(topic, bytes)
+	return neighbor.sender.Send(topic, bytes)
 }

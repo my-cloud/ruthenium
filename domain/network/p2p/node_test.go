@@ -22,10 +22,10 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	engineMock.StartFunc = func() {}
 	engineMock.PulseFunc = func() {}
 	logger := log.NewLoggerMock()
-	host := NewHost(serverMock, engineMock, engineMock, engineMock, logger)
+	node := NewNode(serverMock, engineMock, engineMock, engineMock, logger)
 
 	// Act
-	_ = host.Run()
+	_ = node.Run()
 
 	// Assert
 	isServerStarted := len(serverMock.ServeCalls()) == 1

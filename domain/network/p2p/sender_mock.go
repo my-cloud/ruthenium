@@ -7,26 +7,26 @@ import (
 	"sync"
 )
 
-// Ensure, that ClientMock does implement Client.
+// Ensure, that SenderMock does implement Sender.
 // If this is not the case, regenerate this file with moq.
-var _ Client = &ClientMock{}
+var _ Sender = &SenderMock{}
 
-// ClientMock is a mock implementation of Client.
+// SenderMock is a mock implementation of Sender.
 //
-//	func TestSomethingThatUsesClient(t *testing.T) {
+//	func TestSomethingThatUsesSender(t *testing.T) {
 //
-//		// make and configure a mocked Client
-//		mockedClient := &ClientMock{
+//		// make and configure a mocked Sender
+//		mockedSender := &SenderMock{
 //			SendFunc: func(topic string, req []byte) ([]byte, error) {
 //				panic("mock out the Send method")
 //			},
 //		}
 //
-//		// use mockedClient in code that requires Client
+//		// use mockedSender in code that requires Sender
 //		// and then make assertions.
 //
 //	}
-type ClientMock struct {
+type SenderMock struct {
 	// SendFunc mocks the Send method.
 	SendFunc func(topic string, req []byte) ([]byte, error)
 
@@ -44,9 +44,9 @@ type ClientMock struct {
 }
 
 // Send calls SendFunc.
-func (mock *ClientMock) Send(topic string, req []byte) ([]byte, error) {
+func (mock *SenderMock) Send(topic string, req []byte) ([]byte, error) {
 	if mock.SendFunc == nil {
-		panic("ClientMock.SendFunc: method is nil but Client.Send was just called")
+		panic("SenderMock.SendFunc: method is nil but Sender.Send was just called")
 	}
 	callInfo := struct {
 		Topic string
@@ -64,8 +64,8 @@ func (mock *ClientMock) Send(topic string, req []byte) ([]byte, error) {
 // SendCalls gets all the calls that were made to Send.
 // Check the length with:
 //
-//	len(mockedClient.SendCalls())
-func (mock *ClientMock) SendCalls() []struct {
+//	len(mockedSender.SendCalls())
+func (mock *SenderMock) SendCalls() []struct {
 	Topic string
 	Req   []byte
 } {
