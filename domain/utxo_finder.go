@@ -1,3 +1,3 @@
 package domain
 
-type UtxoFinder func(input InputInfo) (Utxo, error)
+type UtxoFinder func(input InputInfoProvider) (UtxoInfoProvider, error)

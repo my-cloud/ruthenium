@@ -1,6 +1,6 @@
 package domain
 
-type InputInfo interface {
+type InputInfoProvider interface {
 	TransactionId() string
 	OutputIndex() uint16
 }

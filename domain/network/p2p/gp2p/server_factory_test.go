@@ -9,7 +9,7 @@ import (
 
 func Test_CreateServer(t *testing.T) {
 	// Arrange
-	settings := new(p2p.SettingsMock)
+	settings := new(p2p.SettingsProviderMock)
 	settings.ValidationTimeoutFunc = func() time.Duration { return 0 }
 	serverFactory := NewServerFactory(nil, settings)
 

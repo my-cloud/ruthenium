@@ -7,17 +7,17 @@ import (
 	"sync"
 )
 
-// Ensure, that TransactionsPoolMock does implement TransactionsPool.
+// Ensure, that TransactionsManagerMock does implement TransactionsManager.
 // If this is not the case, regenerate this file with moq.
-var _ TransactionsPool = &TransactionsPoolMock{}
+var _ TransactionsManager = &TransactionsManagerMock{}
 
-// TransactionsPoolMock is a mock implementation of TransactionsPool.
+// TransactionsManagerMock is a mock implementation of TransactionsManager.
 //
-//	func TestSomethingThatUsesTransactionsPool(t *testing.T) {
+//	func TestSomethingThatUsesTransactionsManager(t *testing.T) {
 //
-//		// make and configure a mocked TransactionsPool
-//		mockedTransactionsPool := &TransactionsPoolMock{
-//			AddTransactionFunc: func(transaction []byte, hostTarget string)  {
+//		// make and configure a mocked TransactionsManager
+//		mockedTransactionsManager := &TransactionsManagerMock{
+//			AddTransactionFunc: func(transactionRequestBytes []byte, hostTarget string)  {
 //				panic("mock out the AddTransaction method")
 //			},
 //			TransactionsFunc: func() []byte {
@@ -25,13 +25,13 @@ var _ TransactionsPool = &TransactionsPoolMock{}
 //			},
 //		}
 //
-//		// use mockedTransactionsPool in code that requires TransactionsPool
+//		// use mockedTransactionsManager in code that requires TransactionsManager
 //		// and then make assertions.
 //
 //	}
-type TransactionsPoolMock struct {
+type TransactionsManagerMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
-	AddTransactionFunc func(transaction []byte, hostTarget string)
+	AddTransactionFunc func(transactionRequestBytes []byte, hostTarget string)
 
 	// TransactionsFunc mocks the Transactions method.
 	TransactionsFunc func() []byte
@@ -40,8 +40,8 @@ type TransactionsPoolMock struct {
 	calls struct {
 		// AddTransaction holds details about calls to the AddTransaction method.
 		AddTransaction []struct {
-			// Transaction is the transaction argument value.
-			Transaction []byte
+			// TransactionRequestBytes is the transactionRequestBytes argument value.
+			TransactionRequestBytes []byte
 			// HostTarget is the hostTarget argument value.
 			HostTarget string
 		}
@@ -54,34 +54,34 @@ type TransactionsPoolMock struct {
 }
 
 // AddTransaction calls AddTransactionFunc.
-func (mock *TransactionsPoolMock) AddTransaction(transaction []byte, hostTarget string) {
+func (mock *TransactionsManagerMock) AddTransaction(transactionRequestBytes []byte, hostTarget string) {
 	if mock.AddTransactionFunc == nil {
-		panic("TransactionsPoolMock.AddTransactionFunc: method is nil but TransactionsPool.AddTransaction was just called")
+		panic("TransactionsManagerMock.AddTransactionFunc: method is nil but TransactionsManager.AddTransaction was just called")
 	}
 	callInfo := struct {
-		Transaction []byte
-		HostTarget  string
+		TransactionRequestBytes []byte
+		HostTarget              string
 	}{
-		Transaction: transaction,
-		HostTarget:  hostTarget,
+		TransactionRequestBytes: transactionRequestBytes,
+		HostTarget:              hostTarget,
 	}
 	mock.lockAddTransaction.Lock()
 	mock.calls.AddTransaction = append(mock.calls.AddTransaction, callInfo)
 	mock.lockAddTransaction.Unlock()
-	mock.AddTransactionFunc(transaction, hostTarget)
+	mock.AddTransactionFunc(transactionRequestBytes, hostTarget)
 }
 
 // AddTransactionCalls gets all the calls that were made to AddTransaction.
 // Check the length with:
 //
-//	len(mockedTransactionsPool.AddTransactionCalls())
-func (mock *TransactionsPoolMock) AddTransactionCalls() []struct {
-	Transaction []byte
-	HostTarget  string
+//	len(mockedTransactionsManager.AddTransactionCalls())
+func (mock *TransactionsManagerMock) AddTransactionCalls() []struct {
+	TransactionRequestBytes []byte
+	HostTarget              string
 } {
 	var calls []struct {
-		Transaction []byte
-		HostTarget  string
+		TransactionRequestBytes []byte
+		HostTarget              string
 	}
 	mock.lockAddTransaction.RLock()
 	calls = mock.calls.AddTransaction
@@ -90,9 +90,9 @@ func (mock *TransactionsPoolMock) AddTransactionCalls() []struct {
 }
 
 // Transactions calls TransactionsFunc.
-func (mock *TransactionsPoolMock) Transactions() []byte {
+func (mock *TransactionsManagerMock) Transactions() []byte {
 	if mock.TransactionsFunc == nil {
-		panic("TransactionsPoolMock.TransactionsFunc: method is nil but TransactionsPool.Transactions was just called")
+		panic("TransactionsManagerMock.TransactionsFunc: method is nil but TransactionsManager.Transactions was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -105,8 +105,8 @@ func (mock *TransactionsPoolMock) Transactions() []byte {
 // TransactionsCalls gets all the calls that were made to Transactions.
 // Check the length with:
 //
-//	len(mockedTransactionsPool.TransactionsCalls())
-func (mock *TransactionsPoolMock) TransactionsCalls() []struct {
+//	len(mockedTransactionsManager.TransactionsCalls())
+func (mock *TransactionsManagerMock) TransactionsCalls() []struct {
 } {
 	var calls []struct {
 	}

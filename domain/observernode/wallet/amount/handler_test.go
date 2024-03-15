@@ -24,7 +24,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
 	watchMock := new(clock.WatchMock)
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	invalidHttpMethods := []string{http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
@@ -47,7 +47,7 @@ func Test_ServeHTTP_InvalidAddress_ReturnsBadRequest(t *testing.T) {
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
 	watchMock := new(clock.WatchMock)
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -71,7 +71,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	neighborMock := new(network.NeighborMock)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(clock.WatchMock)
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -99,7 +99,7 @@ func Test_ServeHTTP_ValidRequest_ReturnsAmount(t *testing.T) {
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }

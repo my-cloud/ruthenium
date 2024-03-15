@@ -8,26 +8,26 @@ import (
 	"time"
 )
 
-// Ensure, that SettingsMock does implement Settings.
+// Ensure, that SettingsProviderMock does implement SettingsProvider.
 // If this is not the case, regenerate this file with moq.
-var _ Settings = &SettingsMock{}
+var _ SettingsProvider = &SettingsProviderMock{}
 
-// SettingsMock is a mock implementation of Settings.
+// SettingsProviderMock is a mock implementation of SettingsProvider.
 //
-//	func TestSomethingThatUsesSettings(t *testing.T) {
+//	func TestSomethingThatUsesSettingsProvider(t *testing.T) {
 //
-//		// make and configure a mocked Settings
-//		mockedSettings := &SettingsMock{
+//		// make and configure a mocked SettingsProvider
+//		mockedSettingsProvider := &SettingsProviderMock{
 //			ValidationTimeoutFunc: func() time.Duration {
 //				panic("mock out the ValidationTimeout method")
 //			},
 //		}
 //
-//		// use mockedSettings in code that requires Settings
+//		// use mockedSettingsProvider in code that requires SettingsProvider
 //		// and then make assertions.
 //
 //	}
-type SettingsMock struct {
+type SettingsProviderMock struct {
 	// ValidationTimeoutFunc mocks the ValidationTimeout method.
 	ValidationTimeoutFunc func() time.Duration
 
@@ -41,9 +41,9 @@ type SettingsMock struct {
 }
 
 // ValidationTimeout calls ValidationTimeoutFunc.
-func (mock *SettingsMock) ValidationTimeout() time.Duration {
+func (mock *SettingsProviderMock) ValidationTimeout() time.Duration {
 	if mock.ValidationTimeoutFunc == nil {
-		panic("SettingsMock.ValidationTimeoutFunc: method is nil but Settings.ValidationTimeout was just called")
+		panic("SettingsProviderMock.ValidationTimeoutFunc: method is nil but SettingsProvider.ValidationTimeout was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -56,8 +56,8 @@ func (mock *SettingsMock) ValidationTimeout() time.Duration {
 // ValidationTimeoutCalls gets all the calls that were made to ValidationTimeout.
 // Check the length with:
 //
-//	len(mockedSettings.ValidationTimeoutCalls())
-func (mock *SettingsMock) ValidationTimeoutCalls() []struct {
+//	len(mockedSettingsProvider.ValidationTimeoutCalls())
+func (mock *SettingsProviderMock) ValidationTimeoutCalls() []struct {
 } {
 	var calls []struct {
 	}

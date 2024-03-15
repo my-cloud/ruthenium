@@ -1,5 +1,5 @@
 package validatornode
 
-type Registry interface {
+type RegistrationsManager interface {
 	IsRegistered(address string) (bool, error)
 }

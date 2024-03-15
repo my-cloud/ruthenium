@@ -7,16 +7,16 @@ import (
 	"sync"
 )
 
-// Ensure, that SettingsMock does implement Settings.
+// Ensure, that SettingsProviderMock does implement SettingsProvider.
 // If this is not the case, regenerate this file with moq.
-var _ Settings = &SettingsMock{}
+var _ SettingsProvider = &SettingsProviderMock{}
 
-// SettingsMock is a mock implementation of Settings.
+// SettingsProviderMock is a mock implementation of SettingsProvider.
 //
-//	func TestSomethingThatUsesSettings(t *testing.T) {
+//	func TestSomethingThatUsesSettingsProvider(t *testing.T) {
 //
-//		// make and configure a mocked Settings
-//		mockedSettings := &SettingsMock{
+//		// make and configure a mocked SettingsProvider
+//		mockedSettingsProvider := &SettingsProviderMock{
 //			HalfLifeInNanosecondsFunc: func() float64 {
 //				panic("mock out the HalfLifeInNanoseconds method")
 //			},
@@ -37,11 +37,11 @@ var _ Settings = &SettingsMock{}
 //			},
 //		}
 //
-//		// use mockedSettings in code that requires Settings
+//		// use mockedSettingsProvider in code that requires SettingsProvider
 //		// and then make assertions.
 //
 //	}
-type SettingsMock struct {
+type SettingsProviderMock struct {
 	// HalfLifeInNanosecondsFunc mocks the HalfLifeInNanoseconds method.
 	HalfLifeInNanosecondsFunc func() float64
 
@@ -90,9 +90,9 @@ type SettingsMock struct {
 }
 
 // HalfLifeInNanoseconds calls HalfLifeInNanosecondsFunc.
-func (mock *SettingsMock) HalfLifeInNanoseconds() float64 {
+func (mock *SettingsProviderMock) HalfLifeInNanoseconds() float64 {
 	if mock.HalfLifeInNanosecondsFunc == nil {
-		panic("SettingsMock.HalfLifeInNanosecondsFunc: method is nil but Settings.HalfLifeInNanoseconds was just called")
+		panic("SettingsProviderMock.HalfLifeInNanosecondsFunc: method is nil but SettingsProvider.HalfLifeInNanoseconds was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -105,8 +105,8 @@ func (mock *SettingsMock) HalfLifeInNanoseconds() float64 {
 // HalfLifeInNanosecondsCalls gets all the calls that were made to HalfLifeInNanoseconds.
 // Check the length with:
 //
-//	len(mockedSettings.HalfLifeInNanosecondsCalls())
-func (mock *SettingsMock) HalfLifeInNanosecondsCalls() []struct {
+//	len(mockedSettingsProvider.HalfLifeInNanosecondsCalls())
+func (mock *SettingsProviderMock) HalfLifeInNanosecondsCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -117,9 +117,9 @@ func (mock *SettingsMock) HalfLifeInNanosecondsCalls() []struct {
 }
 
 // IncomeBase calls IncomeBaseFunc.
-func (mock *SettingsMock) IncomeBase() uint64 {
+func (mock *SettingsProviderMock) IncomeBase() uint64 {
 	if mock.IncomeBaseFunc == nil {
-		panic("SettingsMock.IncomeBaseFunc: method is nil but Settings.IncomeBase was just called")
+		panic("SettingsProviderMock.IncomeBaseFunc: method is nil but SettingsProvider.IncomeBase was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -132,8 +132,8 @@ func (mock *SettingsMock) IncomeBase() uint64 {
 // IncomeBaseCalls gets all the calls that were made to IncomeBase.
 // Check the length with:
 //
-//	len(mockedSettings.IncomeBaseCalls())
-func (mock *SettingsMock) IncomeBaseCalls() []struct {
+//	len(mockedSettingsProvider.IncomeBaseCalls())
+func (mock *SettingsProviderMock) IncomeBaseCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -144,9 +144,9 @@ func (mock *SettingsMock) IncomeBaseCalls() []struct {
 }
 
 // IncomeLimit calls IncomeLimitFunc.
-func (mock *SettingsMock) IncomeLimit() uint64 {
+func (mock *SettingsProviderMock) IncomeLimit() uint64 {
 	if mock.IncomeLimitFunc == nil {
-		panic("SettingsMock.IncomeLimitFunc: method is nil but Settings.IncomeLimit was just called")
+		panic("SettingsProviderMock.IncomeLimitFunc: method is nil but SettingsProvider.IncomeLimit was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -159,8 +159,8 @@ func (mock *SettingsMock) IncomeLimit() uint64 {
 // IncomeLimitCalls gets all the calls that were made to IncomeLimit.
 // Check the length with:
 //
-//	len(mockedSettings.IncomeLimitCalls())
-func (mock *SettingsMock) IncomeLimitCalls() []struct {
+//	len(mockedSettingsProvider.IncomeLimitCalls())
+func (mock *SettingsProviderMock) IncomeLimitCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -171,9 +171,9 @@ func (mock *SettingsMock) IncomeLimitCalls() []struct {
 }
 
 // MinimalTransactionFee calls MinimalTransactionFeeFunc.
-func (mock *SettingsMock) MinimalTransactionFee() uint64 {
+func (mock *SettingsProviderMock) MinimalTransactionFee() uint64 {
 	if mock.MinimalTransactionFeeFunc == nil {
-		panic("SettingsMock.MinimalTransactionFeeFunc: method is nil but Settings.MinimalTransactionFee was just called")
+		panic("SettingsProviderMock.MinimalTransactionFeeFunc: method is nil but SettingsProvider.MinimalTransactionFee was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -186,8 +186,8 @@ func (mock *SettingsMock) MinimalTransactionFee() uint64 {
 // MinimalTransactionFeeCalls gets all the calls that were made to MinimalTransactionFee.
 // Check the length with:
 //
-//	len(mockedSettings.MinimalTransactionFeeCalls())
-func (mock *SettingsMock) MinimalTransactionFeeCalls() []struct {
+//	len(mockedSettingsProvider.MinimalTransactionFeeCalls())
+func (mock *SettingsProviderMock) MinimalTransactionFeeCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -198,9 +198,9 @@ func (mock *SettingsMock) MinimalTransactionFeeCalls() []struct {
 }
 
 // SmallestUnitsPerCoin calls SmallestUnitsPerCoinFunc.
-func (mock *SettingsMock) SmallestUnitsPerCoin() uint64 {
+func (mock *SettingsProviderMock) SmallestUnitsPerCoin() uint64 {
 	if mock.SmallestUnitsPerCoinFunc == nil {
-		panic("SettingsMock.SmallestUnitsPerCoinFunc: method is nil but Settings.SmallestUnitsPerCoin was just called")
+		panic("SettingsProviderMock.SmallestUnitsPerCoinFunc: method is nil but SettingsProvider.SmallestUnitsPerCoin was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -213,8 +213,8 @@ func (mock *SettingsMock) SmallestUnitsPerCoin() uint64 {
 // SmallestUnitsPerCoinCalls gets all the calls that were made to SmallestUnitsPerCoin.
 // Check the length with:
 //
-//	len(mockedSettings.SmallestUnitsPerCoinCalls())
-func (mock *SettingsMock) SmallestUnitsPerCoinCalls() []struct {
+//	len(mockedSettingsProvider.SmallestUnitsPerCoinCalls())
+func (mock *SettingsProviderMock) SmallestUnitsPerCoinCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -225,9 +225,9 @@ func (mock *SettingsMock) SmallestUnitsPerCoinCalls() []struct {
 }
 
 // ValidationTimestamp calls ValidationTimestampFunc.
-func (mock *SettingsMock) ValidationTimestamp() int64 {
+func (mock *SettingsProviderMock) ValidationTimestamp() int64 {
 	if mock.ValidationTimestampFunc == nil {
-		panic("SettingsMock.ValidationTimestampFunc: method is nil but Settings.ValidationTimestamp was just called")
+		panic("SettingsProviderMock.ValidationTimestampFunc: method is nil but SettingsProvider.ValidationTimestamp was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -240,8 +240,8 @@ func (mock *SettingsMock) ValidationTimestamp() int64 {
 // ValidationTimestampCalls gets all the calls that were made to ValidationTimestamp.
 // Check the length with:
 //
-//	len(mockedSettings.ValidationTimestampCalls())
-func (mock *SettingsMock) ValidationTimestampCalls() []struct {
+//	len(mockedSettingsProvider.ValidationTimestampCalls())
+func (mock *SettingsProviderMock) ValidationTimestampCalls() []struct {
 } {
 	var calls []struct {
 	}

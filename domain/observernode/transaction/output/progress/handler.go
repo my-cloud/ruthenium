@@ -14,12 +14,12 @@ import (
 
 type Handler struct {
 	host     network.Neighbor
-	settings observernode.Settings
+	settings observernode.SettingsProvider
 	watch    clock.Watch
 	logger   log.Logger
 }
 
-func NewHandler(host network.Neighbor, settings observernode.Settings, watch clock.Watch, logger log.Logger) *Handler {
+func NewHandler(host network.Neighbor, settings observernode.SettingsProvider, watch clock.Watch, logger log.Logger) *Handler {
 	return &Handler{host, settings, watch, logger}
 }
 

@@ -13,18 +13,18 @@ import (
 const BadRequest = "bad request"
 
 type Handler struct {
-	blockchain       domain.Blockchain
+	blockchain       domain.BlocksManager
 	settings         []byte
 	synchronizer     network.Synchronizer
-	transactionsPool domain.TransactionsPool
+	transactionsPool domain.TransactionsManager
 	watch            clock.Watch
 	logger           log.Logger
 }
 
-func NewHandler(blockchain domain.Blockchain,
+func NewHandler(blockchain domain.BlocksManager,
 	settings []byte,
 	synchronizer network.Synchronizer,
-	transactionsPool domain.TransactionsPool,
+	transactionsPool domain.TransactionsManager,
 	watch clock.Watch,
 	logger log.Logger) *Handler {
 	return &Handler{blockchain, settings, synchronizer, transactionsPool, watch, logger}

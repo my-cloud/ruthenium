@@ -17,15 +17,15 @@ type Blockchain struct {
 	blocks              []*ledger.Block
 	mutex               sync.RWMutex
 	registeredAddresses map[string]bool
-	registry            validatornode.Registry
+	registry            validatornode.RegistrationsManager
 	synchronizer        network.Synchronizer
-	settings            validatornode.Settings
+	settings            validatornode.SettingsProvider
 	utxosByAddress      map[string][]*ledger.Utxo
 	utxosById           map[string][]*ledger.Utxo
 	logger              log.Logger
 }
 
-func NewBlockchain(registry validatornode.Registry, settings validatornode.Settings, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+func NewBlockchain(registry validatornode.RegistrationsManager, settings validatornode.SettingsProvider, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
 	utxosByAddress := make(map[string][]*ledger.Utxo)
 	utxosById := make(map[string][]*ledger.Utxo)
 	registeredAddresses := make(map[string]bool)
@@ -33,7 +33,7 @@ func NewBlockchain(registry validatornode.Registry, settings validatornode.Setti
 	return blockchain
 }
 
-func newBlockchain(blocks []*ledger.Block, registeredAddresses map[string]bool, registry validatornode.Registry, settings validatornode.Settings, synchronizer network.Synchronizer, utxosByAddress map[string][]*ledger.Utxo, utxosById map[string][]*ledger.Utxo, logger log.Logger) *Blockchain {
+func newBlockchain(blocks []*ledger.Block, registeredAddresses map[string]bool, registry validatornode.RegistrationsManager, settings validatornode.SettingsProvider, synchronizer network.Synchronizer, utxosByAddress map[string][]*ledger.Utxo, utxosById map[string][]*ledger.Utxo, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blocks = blocks
 	blockchain.registeredAddresses = registeredAddresses
@@ -113,7 +113,7 @@ func (blockchain *Blockchain) Blocks(startingBlockHeight uint64) []byte {
 	return blocksBytes
 }
 
-func (blockchain *Blockchain) Copy() domain.Blockchain {
+func (blockchain *Blockchain) Copy() domain.BlocksManager {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
 	blocks := make([]*ledger.Block, len(blockchain.blocks))
@@ -313,7 +313,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	}
 }
 
-func (blockchain *Blockchain) Utxo(input domain.InputInfo) (domain.Utxo, error) {
+func (blockchain *Blockchain) Utxo(input domain.InputInfoProvider) (domain.UtxoInfoProvider, error) {
 	utxos, ok := blockchain.utxosById[input.TransactionId()]
 	if !ok || int(input.OutputIndex()) > len(utxos)-1 {
 		return nil, fmt.Errorf("failed to find UTXO, input: %v", input)

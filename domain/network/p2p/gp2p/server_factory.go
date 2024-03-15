@@ -6,10 +6,10 @@ import (
 
 type ServerFactory struct {
 	handler  p2p.Handler
-	settings p2p.Settings
+	settings p2p.SettingsProvider
 }
 
-func NewServerFactory(handler p2p.Handler, settings p2p.Settings) *ServerFactory {
+func NewServerFactory(handler p2p.Handler, settings p2p.SettingsProvider) *ServerFactory {
 	return &ServerFactory{handler, settings}
 }
 

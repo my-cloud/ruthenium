@@ -2,7 +2,7 @@ package validatornode
 
 import "time"
 
-type Settings interface {
+type SettingsProvider interface {
 	BlocksCountLimit() uint64
 	GenesisAmount() uint64
 	HalfLifeInNanoseconds() float64

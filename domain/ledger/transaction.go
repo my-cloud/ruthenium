@@ -96,7 +96,7 @@ func (transaction *Transaction) VerifySignatures(utxoFinder domain.UtxoFinder) e
 	return nil
 }
 
-func (transaction *Transaction) Fee(settings validatornode.Settings, timestamp int64, utxoFinder domain.UtxoFinder) (uint64, error) {
+func (transaction *Transaction) Fee(settings validatornode.SettingsProvider, timestamp int64, utxoFinder domain.UtxoFinder) (uint64, error) {
 	var inputsValue uint64
 	var outputsValue uint64
 	for _, input := range transaction.inputs {

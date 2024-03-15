@@ -7,23 +7,23 @@ import (
 	"sync"
 )
 
-// Ensure, that BlockchainMock does implement Blockchain.
+// Ensure, that BlocksManagerMock does implement BlocksManager.
 // If this is not the case, regenerate this file with moq.
-var _ Blockchain = &BlockchainMock{}
+var _ BlocksManager = &BlocksManagerMock{}
 
-// BlockchainMock is a mock implementation of Blockchain.
+// BlocksManagerMock is a mock implementation of BlocksManager.
 //
-//	func TestSomethingThatUsesBlockchain(t *testing.T) {
+//	func TestSomethingThatUsesBlocksManager(t *testing.T) {
 //
-//		// make and configure a mocked Blockchain
-//		mockedBlockchain := &BlockchainMock{
-//			AddBlockFunc: func(timestamp int64, transactions []byte, newRegisteredAddresses []string) error {
+//		// make and configure a mocked BlocksManager
+//		mockedBlocksManager := &BlocksManagerMock{
+//			AddBlockFunc: func(timestamp int64, transactionsBytes []byte, newRegisteredAddresses []string) error {
 //				panic("mock out the AddBlock method")
 //			},
 //			BlocksFunc: func(startingBlockHeight uint64) []byte {
 //				panic("mock out the Blocks method")
 //			},
-//			CopyFunc: func() Blockchain {
+//			CopyFunc: func() BlocksManager {
 //				panic("mock out the Copy method")
 //			},
 //			FirstBlockTimestampFunc: func() int64 {
@@ -32,27 +32,27 @@ var _ Blockchain = &BlockchainMock{}
 //			LastBlockTimestampFunc: func() int64 {
 //				panic("mock out the LastBlockTimestamp method")
 //			},
-//			UtxoFunc: func(input Input) (Utxo, error) {
-//				panic("mock out the Utxo method")
+//			UtxoFunc: func(input InputInfoProvider) (UtxoInfoProvider, error) {
+//				panic("mock out the UtxoInfoProvider method")
 //			},
 //			UtxosFunc: func(address string) []byte {
 //				panic("mock out the Utxos method")
 //			},
 //		}
 //
-//		// use mockedBlockchain in code that requires Blockchain
+//		// use mockedBlocksManager in code that requires BlocksManager
 //		// and then make assertions.
 //
 //	}
-type BlockchainMock struct {
+type BlocksManagerMock struct {
 	// AddBlockFunc mocks the AddBlock method.
-	AddBlockFunc func(timestamp int64, transactions []byte, newRegisteredAddresses []string) error
+	AddBlockFunc func(timestamp int64, transactionsBytes []byte, newRegisteredAddresses []string) error
 
 	// BlocksFunc mocks the Blocks method.
 	BlocksFunc func(startingBlockHeight uint64) []byte
 
 	// CopyFunc mocks the Copy method.
-	CopyFunc func() Blockchain
+	CopyFunc func() BlocksManager
 
 	// FirstBlockTimestampFunc mocks the FirstBlockTimestamp method.
 	FirstBlockTimestampFunc func() int64
@@ -61,7 +61,7 @@ type BlockchainMock struct {
 	LastBlockTimestampFunc func() int64
 
 	// UtxoFunc mocks the Utxo method.
-	UtxoFunc func(input InputInfo) (Utxo, error)
+	UtxoFunc func(input InputInfoProvider) (UtxoInfoProvider, error)
 
 	// UtxosFunc mocks the Utxos method.
 	UtxosFunc func(address string) []byte
@@ -72,8 +72,8 @@ type BlockchainMock struct {
 		AddBlock []struct {
 			// Timestamp is the timestamp argument value.
 			Timestamp int64
-			// Transactions is the transactions argument value.
-			Transactions []byte
+			// TransactionsBytes is the transactionsBytes argument value.
+			TransactionsBytes []byte
 			// NewRegisteredAddresses is the newRegisteredAddresses argument value.
 			NewRegisteredAddresses []string
 		}
@@ -94,7 +94,7 @@ type BlockchainMock struct {
 		// Utxo holds details about calls to the Utxo method.
 		Utxo []struct {
 			// Input is the input argument value.
-			Input InputInfo
+			Input InputInfoProvider
 		}
 		// Utxos holds details about calls to the Utxos method.
 		Utxos []struct {
@@ -112,37 +112,37 @@ type BlockchainMock struct {
 }
 
 // AddBlock calls AddBlockFunc.
-func (mock *BlockchainMock) AddBlock(timestamp int64, transactions []byte, newRegisteredAddresses []string) error {
+func (mock *BlocksManagerMock) AddBlock(timestamp int64, transactionsBytes []byte, newRegisteredAddresses []string) error {
 	if mock.AddBlockFunc == nil {
-		panic("BlockchainMock.AddBlockFunc: method is nil but Blockchain.AddBlock was just called")
+		panic("BlocksManagerMock.AddBlockFunc: method is nil but BlocksManager.AddBlock was just called")
 	}
 	callInfo := struct {
 		Timestamp              int64
-		Transactions           []byte
+		TransactionsBytes      []byte
 		NewRegisteredAddresses []string
 	}{
 		Timestamp:              timestamp,
-		Transactions:           transactions,
+		TransactionsBytes:      transactionsBytes,
 		NewRegisteredAddresses: newRegisteredAddresses,
 	}
 	mock.lockAddBlock.Lock()
 	mock.calls.AddBlock = append(mock.calls.AddBlock, callInfo)
 	mock.lockAddBlock.Unlock()
-	return mock.AddBlockFunc(timestamp, transactions, newRegisteredAddresses)
+	return mock.AddBlockFunc(timestamp, transactionsBytes, newRegisteredAddresses)
 }
 
 // AddBlockCalls gets all the calls that were made to AddBlock.
 // Check the length with:
 //
-//	len(mockedBlockchain.AddBlockCalls())
-func (mock *BlockchainMock) AddBlockCalls() []struct {
+//	len(mockedBlocksManager.AddBlockCalls())
+func (mock *BlocksManagerMock) AddBlockCalls() []struct {
 	Timestamp              int64
-	Transactions           []byte
+	TransactionsBytes      []byte
 	NewRegisteredAddresses []string
 } {
 	var calls []struct {
 		Timestamp              int64
-		Transactions           []byte
+		TransactionsBytes      []byte
 		NewRegisteredAddresses []string
 	}
 	mock.lockAddBlock.RLock()
@@ -152,9 +152,9 @@ func (mock *BlockchainMock) AddBlockCalls() []struct {
 }
 
 // Blocks calls BlocksFunc.
-func (mock *BlockchainMock) Blocks(startingBlockHeight uint64) []byte {
+func (mock *BlocksManagerMock) Blocks(startingBlockHeight uint64) []byte {
 	if mock.BlocksFunc == nil {
-		panic("BlockchainMock.BlocksFunc: method is nil but Blockchain.Blocks was just called")
+		panic("BlocksManagerMock.BlocksFunc: method is nil but BlocksManager.Blocks was just called")
 	}
 	callInfo := struct {
 		StartingBlockHeight uint64
@@ -170,8 +170,8 @@ func (mock *BlockchainMock) Blocks(startingBlockHeight uint64) []byte {
 // BlocksCalls gets all the calls that were made to Blocks.
 // Check the length with:
 //
-//	len(mockedBlockchain.BlocksCalls())
-func (mock *BlockchainMock) BlocksCalls() []struct {
+//	len(mockedBlocksManager.BlocksCalls())
+func (mock *BlocksManagerMock) BlocksCalls() []struct {
 	StartingBlockHeight uint64
 } {
 	var calls []struct {
@@ -184,9 +184,9 @@ func (mock *BlockchainMock) BlocksCalls() []struct {
 }
 
 // Copy calls CopyFunc.
-func (mock *BlockchainMock) Copy() Blockchain {
+func (mock *BlocksManagerMock) Copy() BlocksManager {
 	if mock.CopyFunc == nil {
-		panic("BlockchainMock.CopyFunc: method is nil but Blockchain.Copy was just called")
+		panic("BlocksManagerMock.CopyFunc: method is nil but BlocksManager.Copy was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -199,8 +199,8 @@ func (mock *BlockchainMock) Copy() Blockchain {
 // CopyCalls gets all the calls that were made to Copy.
 // Check the length with:
 //
-//	len(mockedBlockchain.CopyCalls())
-func (mock *BlockchainMock) CopyCalls() []struct {
+//	len(mockedBlocksManager.CopyCalls())
+func (mock *BlocksManagerMock) CopyCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -211,9 +211,9 @@ func (mock *BlockchainMock) CopyCalls() []struct {
 }
 
 // FirstBlockTimestamp calls FirstBlockTimestampFunc.
-func (mock *BlockchainMock) FirstBlockTimestamp() int64 {
+func (mock *BlocksManagerMock) FirstBlockTimestamp() int64 {
 	if mock.FirstBlockTimestampFunc == nil {
-		panic("BlockchainMock.FirstBlockTimestampFunc: method is nil but Blockchain.FirstBlockTimestamp was just called")
+		panic("BlocksManagerMock.FirstBlockTimestampFunc: method is nil but BlocksManager.FirstBlockTimestamp was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -226,8 +226,8 @@ func (mock *BlockchainMock) FirstBlockTimestamp() int64 {
 // FirstBlockTimestampCalls gets all the calls that were made to FirstBlockTimestamp.
 // Check the length with:
 //
-//	len(mockedBlockchain.FirstBlockTimestampCalls())
-func (mock *BlockchainMock) FirstBlockTimestampCalls() []struct {
+//	len(mockedBlocksManager.FirstBlockTimestampCalls())
+func (mock *BlocksManagerMock) FirstBlockTimestampCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -238,9 +238,9 @@ func (mock *BlockchainMock) FirstBlockTimestampCalls() []struct {
 }
 
 // LastBlockTimestamp calls LastBlockTimestampFunc.
-func (mock *BlockchainMock) LastBlockTimestamp() int64 {
+func (mock *BlocksManagerMock) LastBlockTimestamp() int64 {
 	if mock.LastBlockTimestampFunc == nil {
-		panic("BlockchainMock.LastBlockTimestampFunc: method is nil but Blockchain.LastBlockTimestamp was just called")
+		panic("BlocksManagerMock.LastBlockTimestampFunc: method is nil but BlocksManager.LastBlockTimestamp was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -253,8 +253,8 @@ func (mock *BlockchainMock) LastBlockTimestamp() int64 {
 // LastBlockTimestampCalls gets all the calls that were made to LastBlockTimestamp.
 // Check the length with:
 //
-//	len(mockedBlockchain.LastBlockTimestampCalls())
-func (mock *BlockchainMock) LastBlockTimestampCalls() []struct {
+//	len(mockedBlocksManager.LastBlockTimestampCalls())
+func (mock *BlocksManagerMock) LastBlockTimestampCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -264,13 +264,13 @@ func (mock *BlockchainMock) LastBlockTimestampCalls() []struct {
 	return calls
 }
 
-// Utxo calls UtxoFunc.
-func (mock *BlockchainMock) Utxo(input InputInfo) (Utxo, error) {
+// UtxoInfoProvider calls UtxoFunc.
+func (mock *BlocksManagerMock) Utxo(input InputInfoProvider) (UtxoInfoProvider, error) {
 	if mock.UtxoFunc == nil {
-		panic("BlockchainMock.UtxoFunc: method is nil but Blockchain.Utxo was just called")
+		panic("BlocksManagerMock.UtxoFunc: method is nil but BlocksManager.UtxoInfoProvider was just called")
 	}
 	callInfo := struct {
-		Input InputInfo
+		Input InputInfoProvider
 	}{
 		Input: input,
 	}
@@ -280,15 +280,15 @@ func (mock *BlockchainMock) Utxo(input InputInfo) (Utxo, error) {
 	return mock.UtxoFunc(input)
 }
 
-// UtxoCalls gets all the calls that were made to Utxo.
+// UtxoCalls gets all the calls that were made to UtxoInfoProvider.
 // Check the length with:
 //
-//	len(mockedBlockchain.UtxoCalls())
-func (mock *BlockchainMock) UtxoCalls() []struct {
-	Input InputInfo
+//	len(mockedBlocksManager.UtxoCalls())
+func (mock *BlocksManagerMock) UtxoCalls() []struct {
+	Input InputInfoProvider
 } {
 	var calls []struct {
-		Input InputInfo
+		Input InputInfoProvider
 	}
 	mock.lockUtxo.RLock()
 	calls = mock.calls.Utxo
@@ -297,9 +297,9 @@ func (mock *BlockchainMock) UtxoCalls() []struct {
 }
 
 // Utxos calls UtxosFunc.
-func (mock *BlockchainMock) Utxos(address string) []byte {
+func (mock *BlocksManagerMock) Utxos(address string) []byte {
 	if mock.UtxosFunc == nil {
-		panic("BlockchainMock.UtxosFunc: method is nil but Blockchain.Utxos was just called")
+		panic("BlocksManagerMock.UtxosFunc: method is nil but BlocksManager.Utxos was just called")
 	}
 	callInfo := struct {
 		Address string
@@ -315,8 +315,8 @@ func (mock *BlockchainMock) Utxos(address string) []byte {
 // UtxosCalls gets all the calls that were made to Utxos.
 // Check the length with:
 //
-//	len(mockedBlockchain.UtxosCalls())
-func (mock *BlockchainMock) UtxosCalls() []struct {
+//	len(mockedBlocksManager.UtxosCalls())
+func (mock *BlocksManagerMock) UtxosCalls() []struct {
 	Address string
 } {
 	var calls []struct {

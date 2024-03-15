@@ -20,8 +20,8 @@ type TransactionsPool struct {
 	transactions []*ledger.Transaction
 	mutex        sync.RWMutex
 
-	blockchain       domain.Blockchain
-	settings         validatornode.Settings
+	blockchain       domain.BlocksManager
+	settings         validatornode.SettingsProvider
 	synchronizer     network.Synchronizer
 	validatorAddress string
 
@@ -29,7 +29,7 @@ type TransactionsPool struct {
 	logger log.Logger
 }
 
-func NewTransactionsPool(blockchain domain.Blockchain, settings validatornode.Settings, synchronizer network.Synchronizer, validatorAddress string, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blockchain domain.BlocksManager, settings validatornode.SettingsProvider, synchronizer network.Synchronizer, validatorAddress string, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blockchain = blockchain
 	pool.settings = settings

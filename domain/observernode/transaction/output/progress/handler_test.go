@@ -25,7 +25,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
 	watchMock := new(clock.WatchMock)
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	invalidHttpMethods := []string{http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
@@ -46,7 +46,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 func Test_ServeHTTP_UndecipherableUtxo_BadRequest(t *testing.T) {
 	// Arrange
 	neighborMock := new(network.NeighborMock)
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -77,7 +77,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	neighborMock := new(network.NeighborMock)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(clock.WatchMock)
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -109,7 +109,7 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -142,7 +142,7 @@ func Test_ServeHTTP_GetBlocksError_ReturnsInternalServerError(t *testing.T) {
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -178,7 +178,7 @@ func Test_ServeHTTP_GetTransactionsError_ReturnsInternalServerError(t *testing.T
 	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -214,7 +214,7 @@ func Test_ServeHTTP_TransactionNotFound_ReturnsRejected(t *testing.T) {
 	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledEmptyArray, nil }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -257,7 +257,7 @@ func Test_ServeHTTP_UtxoFound_ReturnsConfirmed(t *testing.T) {
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -299,7 +299,7 @@ func Test_ServeHTTP_ValidatedTransactionFound_ReturnsValidated(t *testing.T) {
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -346,7 +346,7 @@ func Test_ServeHTTP_PendingTransactionFound_ReturnsSent(t *testing.T) {
 	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledTransactions, nil }
 	watchMock := new(clock.WatchMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(observernode.SettingsMock)
+	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }

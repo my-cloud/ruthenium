@@ -7,26 +7,26 @@ import (
 	"sync"
 )
 
-// Ensure, that RegistryMock does implement Registry.
+// Ensure, that RegistrationsManagerMock does implement RegistrationsManager.
 // If this is not the case, regenerate this file with moq.
-var _ Registry = &RegistryMock{}
+var _ RegistrationsManager = &RegistrationsManagerMock{}
 
-// RegistryMock is a mock implementation of Registry.
+// RegistrationsManagerMock is a mock implementation of RegistrationsManager.
 //
-//	func TestSomethingThatUsesRegistry(t *testing.T) {
+//	func TestSomethingThatUsesRegistrationsManager(t *testing.T) {
 //
-//		// make and configure a mocked Registry
-//		mockedRegistry := &RegistryMock{
+//		// make and configure a mocked RegistrationsManager
+//		mockedRegistrationsManager := &RegistrationsManagerMock{
 //			IsRegisteredFunc: func(address string) (bool, error) {
 //				panic("mock out the IsRegistered method")
 //			},
 //		}
 //
-//		// use mockedRegistry in code that requires Registry
+//		// use mockedRegistrationsManager in code that requires RegistrationsManager
 //		// and then make assertions.
 //
 //	}
-type RegistryMock struct {
+type RegistrationsManagerMock struct {
 	// IsRegisteredFunc mocks the IsRegistered method.
 	IsRegisteredFunc func(address string) (bool, error)
 
@@ -42,9 +42,9 @@ type RegistryMock struct {
 }
 
 // IsRegistered calls IsRegisteredFunc.
-func (mock *RegistryMock) IsRegistered(address string) (bool, error) {
+func (mock *RegistrationsManagerMock) IsRegistered(address string) (bool, error) {
 	if mock.IsRegisteredFunc == nil {
-		panic("RegistryMock.IsRegisteredFunc: method is nil but Registry.IsRegistered was just called")
+		panic("RegistrationsManagerMock.IsRegisteredFunc: method is nil but RegistrationsManager.IsRegistered was just called")
 	}
 	callInfo := struct {
 		Address string
@@ -60,8 +60,8 @@ func (mock *RegistryMock) IsRegistered(address string) (bool, error) {
 // IsRegisteredCalls gets all the calls that were made to IsRegistered.
 // Check the length with:
 //
-//	len(mockedRegistry.IsRegisteredCalls())
-func (mock *RegistryMock) IsRegisteredCalls() []struct {
+//	len(mockedRegistrationsManager.IsRegisteredCalls())
+func (mock *RegistrationsManagerMock) IsRegisteredCalls() []struct {
 	Address string
 } {
 	var calls []struct {

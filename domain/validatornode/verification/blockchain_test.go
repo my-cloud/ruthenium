@@ -20,10 +20,10 @@ const (
 
 func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
 	synchronizer := new(network.SynchronizerMock)
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
 
 	// Act
@@ -35,10 +35,10 @@ func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 
 func Test_Blocks_BlocksCountLimitSetToZero_ReturnsEmptyArray(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
 	synchronizer := new(network.SynchronizerMock)
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 0 }
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
 
@@ -53,11 +53,11 @@ func Test_Blocks_BlocksCountLimitSetToZero_ReturnsEmptyArray(t *testing.T) {
 
 func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
 	synchronizer := new(network.SynchronizerMock)
 	var expectedBlocksCount uint64 = 1
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return expectedBlocksCount }
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
 	var validationInterval int64 = 1
@@ -77,11 +77,11 @@ func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
 
 func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
 	synchronizer := new(network.SynchronizerMock)
 	var expectedBlocksCount uint64 = 2
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return expectedBlocksCount }
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
 	var validationInterval int64 = 1
@@ -101,11 +101,11 @@ func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
 
 func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsEmptyArray(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
 	synchronizer := new(network.SynchronizerMock)
 	var blocksCount uint64 = 1
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return blocksCount }
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
 	var genesisTimestamp int64 = 0
@@ -124,10 +124,10 @@ func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsEmptyArray(t 
 
 func Test_FirstBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
 	synchronizer := new(network.SynchronizerMock)
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
 
 	// Act
@@ -140,10 +140,10 @@ func Test_FirstBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 
 func Test_FirstBlockTimestamp_BlockchainIsNotEmpty_ReturnsFirstBlockTimestamp(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
 	synchronizer := new(network.SynchronizerMock)
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
 	var genesisTimestamp int64 = 0
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
@@ -158,10 +158,10 @@ func Test_FirstBlockTimestamp_BlockchainIsNotEmpty_ReturnsFirstBlockTimestamp(t 
 
 func Test_LastBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
 	synchronizer := new(network.SynchronizerMock)
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
 
 	// Act
@@ -174,10 +174,10 @@ func Test_LastBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 
 func Test_LastBlockTimestamp_BlockchainIsNotEmpty_ReturnsLastBlockTimestamp(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
 	synchronizer := new(network.SynchronizerMock)
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
 	var genesisTimestamp int64 = 0
 	var expectedTimestamp int64 = 1
@@ -196,7 +196,7 @@ func Test_UtxosByAddress_UnknownAddress_ReturnsEmptyArray(t *testing.T) {
 	logger := log.NewLoggerMock()
 	genesisValidatorAddress := ""
 	var genesisAmount uint64 = 0
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.GenesisAmountFunc = func() uint64 { return genesisAmount }
 	blockchain := NewBlockchain(nil, settings, nil, logger)
 
@@ -211,12 +211,12 @@ func Test_UtxosByAddress_UnknownAddress_ReturnsEmptyArray(t *testing.T) {
 
 func Test_Utxos_UtxoExists_ReturnsUtxo(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	synchronizer := new(network.SynchronizerMock)
 	var validationInterval int64 = 1
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.GenesisAmountFunc = func() uint64 { return 1 }
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
 	registeredAddress := ""
@@ -241,7 +241,7 @@ func Test_Utxos_UtxoExists_ReturnsUtxo(t *testing.T) {
 
 func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -253,7 +253,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 		return []network.Neighbor{neighborMock}
 	}
 	var validationTimestamp int64 = 11
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 2 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
@@ -290,7 +290,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 
 func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -301,7 +301,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
@@ -371,7 +371,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 
 func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -392,7 +392,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
@@ -411,7 +411,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 
 func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -451,7 +451,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -473,7 +473,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 
 func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -512,7 +512,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -535,7 +535,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 
 func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -574,7 +574,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -597,7 +597,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 
 func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -636,7 +636,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -659,7 +659,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 
 func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -699,7 +699,7 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -722,7 +722,7 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 
 func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -761,7 +761,7 @@ func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplace
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -784,7 +784,7 @@ func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplace
 
 func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	notRegisteredAddress := test.Address
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return address != notRegisteredAddress, nil }
 	logger := log.NewLoggerMock()
@@ -811,7 +811,7 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -834,7 +834,7 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 
 func Test_Update_NeighborBlockRegisteredOutputAddressHasNotBeenAdded_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -874,7 +874,7 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasNotBeenAdded_IsNotReplac
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -897,7 +897,7 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasNotBeenAdded_IsNotReplac
 
 func Test_Update_NeighborBlockRegisteredOutputAddressHasBeenRemoved_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -937,7 +937,7 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasBeenRemoved_IsNotReplace
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -960,7 +960,7 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasBeenRemoved_IsNotReplace
 
 func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -973,7 +973,7 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 1 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
@@ -1016,7 +1016,7 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 
 func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	// Arrange
-	registry := new(validatornode.RegistryMock)
+	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(address string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -1029,7 +1029,7 @@ func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	synchronizer.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
-	settings := new(validatornode.SettingsMock)
+	settings := new(validatornode.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 2 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
