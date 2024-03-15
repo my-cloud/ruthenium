@@ -18,28 +18,28 @@ type Blockchain struct {
 	mutex               sync.RWMutex
 	registeredAddresses map[string]bool
 	registry            validatornode.RegistrationsManager
-	synchronizer        network.Synchronizer
+	neighborsManager    network.NeighborsManager
 	settings            validatornode.SettingsProvider
 	utxosByAddress      map[string][]*ledger.Utxo
 	utxosById           map[string][]*ledger.Utxo
 	logger              log.Logger
 }
 
-func NewBlockchain(registry validatornode.RegistrationsManager, settings validatornode.SettingsProvider, synchronizer network.Synchronizer, logger log.Logger) *Blockchain {
+func NewBlockchain(registry validatornode.RegistrationsManager, settings validatornode.SettingsProvider, neighborsManager network.NeighborsManager, logger log.Logger) *Blockchain {
 	utxosByAddress := make(map[string][]*ledger.Utxo)
 	utxosById := make(map[string][]*ledger.Utxo)
 	registeredAddresses := make(map[string]bool)
-	blockchain := newBlockchain(nil, registeredAddresses, registry, settings, synchronizer, utxosByAddress, utxosById, logger)
+	blockchain := newBlockchain(nil, registeredAddresses, registry, settings, neighborsManager, utxosByAddress, utxosById, logger)
 	return blockchain
 }
 
-func newBlockchain(blocks []*ledger.Block, registeredAddresses map[string]bool, registry validatornode.RegistrationsManager, settings validatornode.SettingsProvider, synchronizer network.Synchronizer, utxosByAddress map[string][]*ledger.Utxo, utxosById map[string][]*ledger.Utxo, logger log.Logger) *Blockchain {
+func newBlockchain(blocks []*ledger.Block, registeredAddresses map[string]bool, registry validatornode.RegistrationsManager, settings validatornode.SettingsProvider, neighborsManager network.NeighborsManager, utxosByAddress map[string][]*ledger.Utxo, utxosById map[string][]*ledger.Utxo, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blocks = blocks
 	blockchain.registeredAddresses = registeredAddresses
 	blockchain.registry = registry
 	blockchain.settings = settings
-	blockchain.synchronizer = synchronizer
+	blockchain.neighborsManager = neighborsManager
 	blockchain.utxosByAddress = utxosByAddress
 	blockchain.utxosById = utxosById
 	blockchain.logger = logger
@@ -121,7 +121,7 @@ func (blockchain *Blockchain) Copy() domain.BlocksManager {
 	utxosByAddress := copyUtxosMap(blockchain.utxosByAddress)
 	utxosById := copyUtxosMap(blockchain.utxosById)
 	registeredAddresses := copyRegisteredAddressesMap(blockchain.registeredAddresses)
-	blockchainCopy := newBlockchain(blocks, registeredAddresses, blockchain.registry, blockchain.settings, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.logger)
+	blockchainCopy := newBlockchain(blocks, registeredAddresses, blockchain.registry, blockchain.settings, blockchain.neighborsManager, utxosByAddress, utxosById, blockchain.logger)
 	return blockchainCopy
 }
 
@@ -143,7 +143,7 @@ func (blockchain *Blockchain) LastBlockTimestamp() int64 {
 
 func (blockchain *Blockchain) Update(timestamp int64) {
 	// Verify neighbor blockchains
-	neighbors := blockchain.synchronizer.Neighbors()
+	neighbors := blockchain.neighborsManager.Neighbors()
 	blocksByTarget := make(map[string][]*ledger.Block)
 	hostBlocks := blockchain.blocks
 	var waitGroup sync.WaitGroup
@@ -466,7 +466,7 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*ledger.Block, neighborBlo
 		utxosById = copyUtxosMap(blockchain.utxosById)
 		registeredAddresses = copyRegisteredAddressesMap(blockchain.registeredAddresses)
 	}
-	neighborBlockchain := newBlockchain(oldHostBlocks, registeredAddresses, blockchain.registry, blockchain.settings, blockchain.synchronizer, utxosByAddress, utxosById, blockchain.logger)
+	neighborBlockchain := newBlockchain(oldHostBlocks, registeredAddresses, blockchain.registry, blockchain.settings, blockchain.neighborsManager, utxosByAddress, utxosById, blockchain.logger)
 	for i := 0; i < len(neighborBlocks); i++ {
 		neighborBlock := neighborBlocks[i]
 		var previousBlockTimestamp int64

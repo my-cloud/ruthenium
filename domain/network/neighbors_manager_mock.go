@@ -7,16 +7,16 @@ import (
 	"sync"
 )
 
-// Ensure, that SynchronizerMock does implement Synchronizer.
+// Ensure, that NeighborsManagerMock does implement NeighborsManager.
 // If this is not the case, regenerate this file with moq.
-var _ Synchronizer = &SynchronizerMock{}
+var _ NeighborsManager = &NeighborsManagerMock{}
 
-// SynchronizerMock is a mock implementation of Synchronizer.
+// NeighborsManagerMock is a mock implementation of NeighborsManager.
 //
-//	func TestSomethingThatUsesSynchronizer(t *testing.T) {
+//	func TestSomethingThatUsesNeighborsManager(t *testing.T) {
 //
-//		// make and configure a mocked Synchronizer
-//		mockedSynchronizer := &SynchronizerMock{
+//		// make and configure a mocked NeighborsManager
+//		mockedNeighborsManager := &NeighborsManagerMock{
 //			AddTargetsFunc: func(targets []string)  {
 //				panic("mock out the AddTargets method")
 //			},
@@ -31,11 +31,11 @@ var _ Synchronizer = &SynchronizerMock{}
 //			},
 //		}
 //
-//		// use mockedSynchronizer in code that requires Synchronizer
+//		// use mockedNeighborsManager in code that requires NeighborsManager
 //		// and then make assertions.
 //
 //	}
-type SynchronizerMock struct {
+type NeighborsManagerMock struct {
 	// AddTargetsFunc mocks the AddTargets method.
 	AddTargetsFunc func(targets []string)
 
@@ -74,9 +74,9 @@ type SynchronizerMock struct {
 }
 
 // AddTargets calls AddTargetsFunc.
-func (mock *SynchronizerMock) AddTargets(targets []string) {
+func (mock *NeighborsManagerMock) AddTargets(targets []string) {
 	if mock.AddTargetsFunc == nil {
-		panic("SynchronizerMock.AddTargetsFunc: method is nil but Synchronizer.AddTargets was just called")
+		panic("NeighborsManagerMock.AddTargetsFunc: method is nil but NeighborsManager.AddTargets was just called")
 	}
 	callInfo := struct {
 		Targets []string
@@ -92,8 +92,8 @@ func (mock *SynchronizerMock) AddTargets(targets []string) {
 // AddTargetsCalls gets all the calls that were made to AddTargets.
 // Check the length with:
 //
-//	len(mockedSynchronizer.AddTargetsCalls())
-func (mock *SynchronizerMock) AddTargetsCalls() []struct {
+//	len(mockedNeighborsManager.AddTargetsCalls())
+func (mock *NeighborsManagerMock) AddTargetsCalls() []struct {
 	Targets []string
 } {
 	var calls []struct {
@@ -106,9 +106,9 @@ func (mock *SynchronizerMock) AddTargetsCalls() []struct {
 }
 
 // HostTarget calls HostTargetFunc.
-func (mock *SynchronizerMock) HostTarget() string {
+func (mock *NeighborsManagerMock) HostTarget() string {
 	if mock.HostTargetFunc == nil {
-		panic("SynchronizerMock.HostTargetFunc: method is nil but Synchronizer.HostTarget was just called")
+		panic("NeighborsManagerMock.HostTargetFunc: method is nil but NeighborsManager.HostTarget was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -121,8 +121,8 @@ func (mock *SynchronizerMock) HostTarget() string {
 // HostTargetCalls gets all the calls that were made to HostTarget.
 // Check the length with:
 //
-//	len(mockedSynchronizer.HostTargetCalls())
-func (mock *SynchronizerMock) HostTargetCalls() []struct {
+//	len(mockedNeighborsManager.HostTargetCalls())
+func (mock *NeighborsManagerMock) HostTargetCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -133,9 +133,9 @@ func (mock *SynchronizerMock) HostTargetCalls() []struct {
 }
 
 // Incentive calls IncentiveFunc.
-func (mock *SynchronizerMock) Incentive(target string) {
+func (mock *NeighborsManagerMock) Incentive(target string) {
 	if mock.IncentiveFunc == nil {
-		panic("SynchronizerMock.IncentiveFunc: method is nil but Synchronizer.Incentive was just called")
+		panic("NeighborsManagerMock.IncentiveFunc: method is nil but NeighborsManager.Incentive was just called")
 	}
 	callInfo := struct {
 		Target string
@@ -151,8 +151,8 @@ func (mock *SynchronizerMock) Incentive(target string) {
 // IncentiveCalls gets all the calls that were made to Incentive.
 // Check the length with:
 //
-//	len(mockedSynchronizer.IncentiveCalls())
-func (mock *SynchronizerMock) IncentiveCalls() []struct {
+//	len(mockedNeighborsManager.IncentiveCalls())
+func (mock *NeighborsManagerMock) IncentiveCalls() []struct {
 	Target string
 } {
 	var calls []struct {
@@ -165,9 +165,9 @@ func (mock *SynchronizerMock) IncentiveCalls() []struct {
 }
 
 // Neighbors calls NeighborsFunc.
-func (mock *SynchronizerMock) Neighbors() []Neighbor {
+func (mock *NeighborsManagerMock) Neighbors() []Neighbor {
 	if mock.NeighborsFunc == nil {
-		panic("SynchronizerMock.NeighborsFunc: method is nil but Synchronizer.Neighbors was just called")
+		panic("NeighborsManagerMock.NeighborsFunc: method is nil but NeighborsManager.Neighbors was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -180,8 +180,8 @@ func (mock *SynchronizerMock) Neighbors() []Neighbor {
 // NeighborsCalls gets all the calls that were made to Neighbors.
 // Check the length with:
 //
-//	len(mockedSynchronizer.NeighborsCalls())
-func (mock *SynchronizerMock) NeighborsCalls() []struct {
+//	len(mockedNeighborsManager.NeighborsCalls())
+func (mock *NeighborsManagerMock) NeighborsCalls() []struct {
 } {
 	var calls []struct {
 	}

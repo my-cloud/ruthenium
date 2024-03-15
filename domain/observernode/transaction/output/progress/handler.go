@@ -3,7 +3,7 @@ package progress
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain/clock"
+	"github.com/my-cloud/ruthenium/domain"
 	"github.com/my-cloud/ruthenium/domain/ledger"
 	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/observernode"
@@ -15,11 +15,11 @@ import (
 type Handler struct {
 	host     network.Neighbor
 	settings observernode.SettingsProvider
-	watch    clock.Watch
+	watch    domain.TimeProvider
 	logger   log.Logger
 }
 
-func NewHandler(host network.Neighbor, settings observernode.SettingsProvider, watch clock.Watch, logger log.Logger) *Handler {
+func NewHandler(host network.Neighbor, settings observernode.SettingsProvider, watch domain.TimeProvider, logger log.Logger) *Handler {
 	return &Handler{host, settings, watch, logger}
 }
 

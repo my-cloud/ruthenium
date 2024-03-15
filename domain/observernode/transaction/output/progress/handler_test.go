@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain/clock"
+	"github.com/my-cloud/ruthenium/domain"
 	"github.com/my-cloud/ruthenium/domain/ledger"
 	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/observernode"
@@ -24,7 +24,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	settings := new(observernode.SettingsProviderMock)
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
@@ -52,7 +52,7 @@ func Test_ServeHTTP_UndecipherableUtxo_BadRequest(t *testing.T) {
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.SmallestUnitsPerCoinFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	logger := log.NewLoggerMock()
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	data := ""
@@ -76,7 +76,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -107,7 +107,7 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -140,7 +140,7 @@ func Test_ServeHTTP_GetBlocksError_ReturnsInternalServerError(t *testing.T) {
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return nil, errors.New("") }
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -176,7 +176,7 @@ func Test_ServeHTTP_GetTransactionsError_ReturnsInternalServerError(t *testing.T
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return nil, errors.New("") }
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -212,7 +212,7 @@ func Test_ServeHTTP_TransactionNotFound_ReturnsRejected(t *testing.T) {
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledEmptyArray, nil }
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -255,7 +255,7 @@ func Test_ServeHTTP_UtxoFound_ReturnsConfirmed(t *testing.T) {
 	marshalledUtxos, _ := json.Marshal([]*ledger.Utxo{utxo})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -297,7 +297,7 @@ func Test_ServeHTTP_ValidatedTransactionFound_ReturnsValidated(t *testing.T) {
 	blocks := []*ledger.Block{ledger.NewBlock([32]byte{}, nil, nil, 0, []*ledger.Transaction{transaction})}
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -344,7 +344,7 @@ func Test_ServeHTTP_PendingTransactionFound_ReturnsSent(t *testing.T) {
 	transactions := []*ledger.Transaction{transaction}
 	marshalledTransactions, _ := json.Marshal(transactions)
 	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledTransactions, nil }
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }

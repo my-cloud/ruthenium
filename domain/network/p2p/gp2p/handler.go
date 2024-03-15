@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/domain"
-	"github.com/my-cloud/ruthenium/domain/clock"
 	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
 )
@@ -13,21 +12,21 @@ import (
 const BadRequest = "bad request"
 
 type Handler struct {
-	blockchain       domain.BlocksManager
-	settings         []byte
-	synchronizer     network.Synchronizer
-	transactionsPool domain.TransactionsManager
-	watch            clock.Watch
-	logger           log.Logger
+	blocksManager       domain.BlocksManager
+	settings            []byte
+	neighborsManager    network.NeighborsManager
+	transactionsManager domain.TransactionsManager
+	watch               domain.TimeProvider
+	logger              log.Logger
 }
 
-func NewHandler(blockchain domain.BlocksManager,
+func NewHandler(blocksManager domain.BlocksManager,
 	settings []byte,
-	synchronizer network.Synchronizer,
-	transactionsPool domain.TransactionsManager,
-	watch clock.Watch,
+	neighborsManager network.NeighborsManager,
+	transactionsManager domain.TransactionsManager,
+	watch domain.TimeProvider,
 	logger log.Logger) *Handler {
-	return &Handler{blockchain, settings, synchronizer, transactionsPool, watch, logger}
+	return &Handler{blocksManager, settings, neighborsManager, transactionsManager, watch, logger}
 }
 
 func (handler *Handler) HandleBlocksRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
@@ -38,14 +37,14 @@ func (handler *Handler) HandleBlocksRequest(_ context.Context, req gp2p.Data) (g
 		handler.logger.Debug(BadRequest)
 		return res, err
 	}
-	blocks := handler.blockchain.Blocks(startingBlockHeight)
+	blocks := handler.blocksManager.Blocks(startingBlockHeight)
 	res.SetBytes(blocks)
 	return res, nil
 }
 
 func (handler *Handler) HandleFirstBlockTimestampRequest(_ context.Context, _ gp2p.Data) (gp2p.Data, error) {
 	res := gp2p.Data{}
-	timestamp := handler.blockchain.FirstBlockTimestamp()
+	timestamp := handler.blocksManager.FirstBlockTimestamp()
 	timestampBytes, err := json.Marshal(timestamp)
 	if err != nil {
 		return res, err
@@ -68,19 +67,19 @@ func (handler *Handler) HandleTargetsRequest(_ context.Context, req gp2p.Data) (
 		handler.logger.Debug(BadRequest)
 		return res, err
 	}
-	go handler.synchronizer.AddTargets(targets)
+	go handler.neighborsManager.AddTargets(targets)
 	return res, nil
 }
 
 func (handler *Handler) HandleTransactionRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
 	data := req.GetBytes()
-	go handler.transactionsPool.AddTransaction(data, handler.synchronizer.HostTarget())
+	go handler.transactionsManager.AddTransaction(data, handler.neighborsManager.HostTarget())
 	return gp2p.Data{}, nil
 }
 
 func (handler *Handler) HandleTransactionsRequest(_ context.Context, _ gp2p.Data) (gp2p.Data, error) {
 	res := gp2p.Data{}
-	transactions := handler.transactionsPool.Transactions()
+	transactions := handler.transactionsManager.Transactions()
 	res.SetBytes(transactions)
 	return res, nil
 }
@@ -93,7 +92,7 @@ func (handler *Handler) HandleUtxosRequest(_ context.Context, req gp2p.Data) (gp
 		handler.logger.Debug(BadRequest)
 		return res, err
 	}
-	utxosByAddress := handler.blockchain.Utxos(address)
+	utxosByAddress := handler.blocksManager.Utxos(address)
 	res.SetBytes(utxosByAddress)
 	return res, nil
 }

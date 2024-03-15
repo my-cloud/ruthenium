@@ -2,7 +2,7 @@ package p2p
 
 import (
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain/clock"
+	"github.com/my-cloud/ruthenium/domain"
 	"github.com/my-cloud/ruthenium/infrastructure/test"
 	"testing"
 	"time"
@@ -10,24 +10,24 @@ import (
 
 func Test_AddTargets_MoreThanOneTarget_IncentiveTargetsSender(t *testing.T) {
 	// Arrange
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Now() }
 	clientFactoryMock := new(ClientFactoryMock)
 	clientMock := new(ClientMock)
 	clientMock.SendFunc = func(string, []byte) ([]byte, error) { return []byte{}, nil }
 	clientFactoryMock.CreateClientFunc = func(string, string) (Client, error) { return clientMock, nil }
 	scoresBySeedTarget := map[string]int{}
-	synchronizer := NewSynchronizer(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
+	neighborhood := NewNeighborhood(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
 	target1 := "0.0.0.0:1"
 	target2 := "0.0.0.0:0"
 	targetRequests := []string{target1, target2}
 
 	// Act
-	synchronizer.AddTargets(targetRequests)
+	neighborhood.AddTargets(targetRequests)
 
 	// Assert
-	synchronizer.Synchronize(0)
-	neighbors := synchronizer.Neighbors()
+	neighborhood.Synchronize(0)
+	neighbors := neighborhood.Neighbors()
 	expectedNeighborsCount := 1
 	test.Assert(t, len(neighbors) == expectedNeighborsCount, fmt.Sprintf("Wrong neighbors count. Expected: %d - Actual: %d", expectedNeighborsCount, len(neighbors)))
 	neighborTarget := neighbors[0].Target()
@@ -36,22 +36,22 @@ func Test_AddTargets_MoreThanOneTarget_IncentiveTargetsSender(t *testing.T) {
 
 func Test_Incentive_TargetIsNotKnown_TargetIncentive(t *testing.T) {
 	// Arrange
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Now() }
 	clientFactoryMock := new(ClientFactoryMock)
 	clientMock := new(ClientMock)
 	clientMock.SendFunc = func(string, []byte) ([]byte, error) { return []byte{}, nil }
 	clientFactoryMock.CreateClientFunc = func(string, string) (Client, error) { return clientMock, nil }
 	scoresBySeedTarget := map[string]int{}
-	synchronizer := NewSynchronizer(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
+	neighborhood := NewNeighborhood(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
 	expectedTarget := "0.0.0.0:1"
 
 	// Act
-	synchronizer.Incentive(expectedTarget)
+	neighborhood.Incentive(expectedTarget)
 
 	// Assert
-	synchronizer.Synchronize(0)
-	neighbors := synchronizer.Neighbors()
+	neighborhood.Synchronize(0)
+	neighbors := neighborhood.Neighbors()
 	expectedNeighborsCount := 1
 	test.Assert(t, len(neighbors) == expectedNeighborsCount, fmt.Sprintf("Wrong neighbors count. Expected: %d - Actual: %d", expectedNeighborsCount, len(neighbors)))
 	target := neighbors[0].Target()
@@ -60,20 +60,20 @@ func Test_Incentive_TargetIsNotKnown_TargetIncentive(t *testing.T) {
 
 func Test_Synchronize_OneSeed_NeighborAdded(t *testing.T) {
 	// Arrange
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Now() }
 	clientFactoryMock := new(ClientFactoryMock)
 	clientMock := new(ClientMock)
 	clientMock.SendFunc = func(string, []byte) ([]byte, error) { return []byte{}, nil }
 	clientFactoryMock.CreateClientFunc = func(string, string) (Client, error) { return clientMock, nil }
 	scoresBySeedTarget := map[string]int{"0.0.0.0:1": 0}
-	synchronizer := NewSynchronizer(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
+	neighborhood := NewNeighborhood(clientFactoryMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
 
 	// Act
-	synchronizer.Synchronize(0)
+	neighborhood.Synchronize(0)
 
 	// Assert
-	neighbors := synchronizer.Neighbors()
+	neighbors := neighborhood.Neighbors()
 	expectedNeighborsCount := 1
 	test.Assert(t, len(neighbors) == expectedNeighborsCount, fmt.Sprintf("Wrong neighbors count. Expected: %d - Actual: %d", expectedNeighborsCount, len(neighbors)))
 }

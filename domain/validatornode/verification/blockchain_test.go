@@ -22,9 +22,9 @@ func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 	// Arrange
 	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
-	synchronizer := new(network.SynchronizerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	settings := new(validatornode.SettingsProviderMock)
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 
 	// Act
 	err := blockchain.AddBlock(0, nil, nil)
@@ -37,10 +37,10 @@ func Test_Blocks_BlocksCountLimitSetToZero_ReturnsEmptyArray(t *testing.T) {
 	// Arrange
 	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
-	synchronizer := new(network.SynchronizerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	settings := new(validatornode.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 0 }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 
 	// Act
 	blocksBytes := blockchain.Blocks(0)
@@ -55,11 +55,11 @@ func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
 	// Arrange
 	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
-	synchronizer := new(network.SynchronizerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	var expectedBlocksCount uint64 = 1
 	settings := new(validatornode.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return expectedBlocksCount }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	var validationInterval int64 = 1
 	var genesisTimestamp int64 = 0
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
@@ -79,11 +79,11 @@ func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
 	// Arrange
 	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
-	synchronizer := new(network.SynchronizerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	var expectedBlocksCount uint64 = 2
 	settings := new(validatornode.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return expectedBlocksCount }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	var validationInterval int64 = 1
 	var genesisTimestamp int64 = 0
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
@@ -103,11 +103,11 @@ func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsEmptyArray(t 
 	// Arrange
 	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
-	synchronizer := new(network.SynchronizerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	var blocksCount uint64 = 1
 	settings := new(validatornode.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return blocksCount }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	var genesisTimestamp int64 = 0
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
 
@@ -126,9 +126,9 @@ func Test_FirstBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 	// Arrange
 	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
-	synchronizer := new(network.SynchronizerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	settings := new(validatornode.SettingsProviderMock)
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 
 	// Act
 	actualTimestamp := blockchain.FirstBlockTimestamp()
@@ -142,9 +142,9 @@ func Test_FirstBlockTimestamp_BlockchainIsNotEmpty_ReturnsFirstBlockTimestamp(t 
 	// Arrange
 	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
-	synchronizer := new(network.SynchronizerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	settings := new(validatornode.SettingsProviderMock)
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	var genesisTimestamp int64 = 0
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
 
@@ -160,9 +160,9 @@ func Test_LastBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 	// Arrange
 	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
-	synchronizer := new(network.SynchronizerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	settings := new(validatornode.SettingsProviderMock)
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 
 	// Act
 	actualTimestamp := blockchain.LastBlockTimestamp()
@@ -176,9 +176,9 @@ func Test_LastBlockTimestamp_BlockchainIsNotEmpty_ReturnsLastBlockTimestamp(t *t
 	// Arrange
 	registry := new(validatornode.RegistrationsManagerMock)
 	logger := log.NewLoggerMock()
-	synchronizer := new(network.SynchronizerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	settings := new(validatornode.SettingsProviderMock)
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	var genesisTimestamp int64 = 0
 	var expectedTimestamp int64 = 1
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
@@ -214,11 +214,11 @@ func Test_Utxos_UtxoExists_ReturnsUtxo(t *testing.T) {
 	registry := new(validatornode.RegistrationsManagerMock)
 	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 	logger := log.NewLoggerMock()
-	synchronizer := new(network.SynchronizerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	var validationInterval int64 = 1
 	settings := new(validatornode.SettingsProviderMock)
 	settings.GenesisAmountFunc = func() uint64 { return 1 }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	registeredAddress := ""
 	var expectedValue uint64 = 1
 	var genesisTimestamp int64 = 0
@@ -248,8 +248,8 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	var validationTimestamp int64 = 11
@@ -258,7 +258,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	now := 5 * validationTimestamp
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	_ = blockchain.AddBlock(now-5*validationTimestamp, nil, nil)
 	_ = blockchain.AddBlock(now-4*validationTimestamp, nil, nil)
 	blocksBytes := blockchain.Blocks(0)
@@ -297,14 +297,14 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(validatornode.SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	type args struct {
@@ -388,14 +388,14 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(validatornode.SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -447,8 +447,8 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(validatornode.SettingsProviderMock)
@@ -457,7 +457,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -508,8 +508,8 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(validatornode.SettingsProviderMock)
@@ -519,7 +519,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -570,8 +570,8 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(validatornode.SettingsProviderMock)
@@ -581,7 +581,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -632,8 +632,8 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(validatornode.SettingsProviderMock)
@@ -643,7 +643,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -695,8 +695,8 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(validatornode.SettingsProviderMock)
@@ -706,7 +706,7 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -757,8 +757,8 @@ func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplace
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(validatornode.SettingsProviderMock)
@@ -768,7 +768,7 @@ func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplace
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -807,8 +807,8 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(validatornode.SettingsProviderMock)
@@ -818,7 +818,7 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -870,8 +870,8 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasNotBeenAdded_IsNotReplac
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(validatornode.SettingsProviderMock)
@@ -881,7 +881,7 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasNotBeenAdded_IsNotReplac
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -933,8 +933,8 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasBeenRemoved_IsNotReplace
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(validatornode.SettingsProviderMock)
@@ -944,7 +944,7 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasBeenRemoved_IsNotReplace
 	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -969,8 +969,8 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(validatornode.SettingsProviderMock)
@@ -981,7 +981,7 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	rewardTransaction1, _ := ledger.NewRewardTransaction(test.Address, false, now-2*validationTimestamp, 0)
 	transactionsBytes1, _ := json.Marshal([]*ledger.Transaction{rewardTransaction1})
 	_ = blockchain.AddBlock(now-2*validationTimestamp, transactionsBytes1, nil)
@@ -1025,8 +1025,8 @@ func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	synchronizer := new(network.SynchronizerMock)
-	synchronizer.NeighborsFunc = func() []network.Neighbor {
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
 		return []network.Neighbor{neighborMock}
 	}
 	settings := new(validatornode.SettingsProviderMock)
@@ -1037,7 +1037,7 @@ func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	blockchain := NewBlockchain(registry, settings, synchronizer, logger)
+	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
 	rewardTransaction1, _ := ledger.NewRewardTransaction(test.Address, false, now-2*validationTimestamp, 0)
 	transactionsBytes1, _ := json.Marshal([]*ledger.Transaction{rewardTransaction1})
 	_ = blockchain.AddBlock(now-2*validationTimestamp, transactionsBytes1, nil)

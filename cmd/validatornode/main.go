@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/my-cloud/ruthenium/domain/clock"
 	"github.com/my-cloud/ruthenium/infrastructure/config"
 	"github.com/my-cloud/ruthenium/infrastructure/file"
 	"strconv"
 
-	"github.com/my-cloud/ruthenium/domain/clock/tick"
 	"github.com/my-cloud/ruthenium/domain/encryption"
 	"github.com/my-cloud/ruthenium/domain/network/p2p"
 	"github.com/my-cloud/ruthenium/domain/network/p2p/gp2p"
@@ -65,14 +65,14 @@ func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *
 		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
 	}
 	registry := poh.NewRegistry(*infuraKey, logger)
-	watch := tick.NewWatch()
-	synchronizer := createSynchronizer(*seedsPath, *ip, *port, settings, watch, logger)
-	blockchain := verification.NewBlockchain(registry, settings, synchronizer, logger)
-	transactionsPool := validation.NewTransactionsPool(blockchain, settings, synchronizer, address, logger)
-	synchronizationEngine := tick.NewEngine(synchronizer.Synchronize, watch, settings.SynchronizationTimer(), 1, 0)
-	validationEngine := tick.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)
-	verificationEngine := tick.NewEngine(blockchain.Update, watch, settings.ValidationTimer(), settings.VerificationsCountPerValidation(), 1)
-	handler := gp2p.NewHandler(blockchain, settings.Bytes(), synchronizer, transactionsPool, watch, logger)
+	watch := clock.NewWatch()
+	neighborhood := createNeighborhood(*seedsPath, *ip, *port, settings, watch, logger)
+	blockchain := verification.NewBlockchain(registry, settings, neighborhood, logger)
+	transactionsPool := validation.NewTransactionsPool(blockchain, settings, neighborhood, address, logger)
+	synchronizationEngine := clock.NewEngine(neighborhood.Synchronize, watch, settings.SynchronizationTimer(), 1, 0)
+	validationEngine := clock.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)
+	verificationEngine := clock.NewEngine(blockchain.Update, watch, settings.ValidationTimer(), settings.VerificationsCountPerValidation(), 1)
+	handler := gp2p.NewHandler(blockchain, settings.Bytes(), neighborhood, transactionsPool, watch, logger)
 	serverFactory := gp2p.NewServerFactory(handler, settings)
 	server, err := serverFactory.CreateServer(*port)
 	if err != nil {
@@ -81,7 +81,7 @@ func createHost(settingsPath *string, infuraKey *string, seedsPath *string, ip *
 	return p2p.NewHost(server, synchronizationEngine, validationEngine, verificationEngine, logger)
 }
 
-func createSynchronizer(seedsPath string, hostIp string, port int, settings *config.Settings, watch *tick.Watch, logger *console.Logger) *p2p.Synchronizer {
+func createNeighborhood(seedsPath string, hostIp string, port int, settings *config.Settings, watch *clock.Watch, logger *console.Logger) *p2p.Neighborhood {
 	var seedsStringTargets []string
 	parser := file.NewJsonParser()
 	err := parser.Parse(seedsPath, &seedsStringTargets)
@@ -100,5 +100,5 @@ func createSynchronizer(seedsPath string, hostIp string, port int, settings *con
 		}
 	}
 	clientFactory := gp2p.NewClientFactory(ipFinder, settings.ValidationTimeout())
-	return p2p.NewSynchronizer(clientFactory, hostIp, strconv.Itoa(port), settings.MaxOutboundsCount(), scoresBySeedTarget, watch)
+	return p2p.NewNeighborhood(clientFactory, hostIp, strconv.Itoa(port), settings.MaxOutboundsCount(), scoresBySeedTarget, watch)
 }

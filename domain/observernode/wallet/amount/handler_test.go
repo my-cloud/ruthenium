@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain/clock"
+	"github.com/my-cloud/ruthenium/domain"
 	"github.com/my-cloud/ruthenium/domain/ledger"
 	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/observernode"
@@ -23,7 +23,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	settings := new(observernode.SettingsProviderMock)
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
@@ -46,7 +46,7 @@ func Test_ServeHTTP_InvalidAddress_ReturnsBadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -70,7 +70,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -97,7 +97,7 @@ func Test_ServeHTTP_ValidRequest_ReturnsAmount(t *testing.T) {
 	neighborMock := new(network.NeighborMock)
 	marshalledEmptyUtxos, _ := json.Marshal([]*ledger.Utxo{})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
-	watchMock := new(clock.WatchMock)
+	watchMock := new(domain.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(observernode.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }

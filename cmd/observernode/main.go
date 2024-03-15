@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain/clock/tick"
+	"github.com/my-cloud/ruthenium/domain/clock"
 	"github.com/my-cloud/ruthenium/domain/network/p2p"
 	"github.com/my-cloud/ruthenium/domain/network/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/domain/network/p2p/net"
@@ -48,7 +48,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to unmarshal settings: %w", err).Error())
 	}
-	watch := tick.NewWatch()
+	watch := clock.NewWatch()
 	http.Handle("/", index.NewHandler(*templatesPath, logger))
 	http.Handle("/transaction", transaction.NewHandler(host, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))

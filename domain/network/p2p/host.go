@@ -1,7 +1,7 @@
 package p2p
 
 import (
-	"github.com/my-cloud/ruthenium/domain/clock"
+	"github.com/my-cloud/ruthenium/domain"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
 )
 
@@ -17,13 +17,13 @@ const (
 
 type Host struct {
 	server                Server
-	synchronizationEngine clock.Engine
-	validationEngine      clock.Engine
-	verificationEngine    clock.Engine
+	synchronizationEngine domain.Pulser
+	validationEngine      domain.Pulser
+	verificationEngine    domain.Pulser
 	logger                log.Logger
 }
 
-func NewHost(server Server, synchronizationEngine clock.Engine, validationEngine clock.Engine, verificationEngine clock.Engine, logger log.Logger) *Host {
+func NewHost(server Server, synchronizationEngine domain.Pulser, validationEngine domain.Pulser, verificationEngine domain.Pulser, logger log.Logger) *Host {
 	return &Host{server, synchronizationEngine, validationEngine, verificationEngine, logger}
 }
 

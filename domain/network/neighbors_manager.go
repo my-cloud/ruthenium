@@ -1,6 +1,6 @@
 package network
 
-type Synchronizer interface {
+type NeighborsManager interface {
 	AddTargets(targets []string)
 	HostTarget() string
 	Incentive(target string)

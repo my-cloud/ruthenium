@@ -2,6 +2,12 @@ package clock
 
 import "time"
 
-type Watch interface {
-	Now() time.Time
+type Watch struct{}
+
+func NewWatch() *Watch {
+	return &Watch{}
+}
+
+func (watch *Watch) Now() time.Time {
+	return time.Now()
 }
