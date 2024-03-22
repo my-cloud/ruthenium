@@ -889,7 +889,7 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasNotBeenAdded_IsNotReplac
 
 	// Assert
 	expectedMessages := []string{
-		"an incomed output address is not registered",
+		"a yielding address is not registered",
 		blockchainKeptMessage,
 	}
 	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
@@ -952,7 +952,7 @@ func Test_Update_NeighborBlockRegisteredOutputAddressHasBeenRemoved_IsNotReplace
 
 	// Assert
 	expectedMessages := []string{
-		"an incomed output address is not registered",
+		"a yielding output address is not registered",
 		blockchainKeptMessage,
 	}
 	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())

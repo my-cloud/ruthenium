@@ -364,15 +364,15 @@ func (blockchain *Blockchain) isRegistered(address string, addedRegisteredAddres
 		}
 	}
 	if !isRegistered {
-		for _, addedAddress := range removedRegisteredAddresses {
-			isRegistered = addedAddress != address
+		for _, removedAddress := range removedRegisteredAddresses {
+			isRegistered = removedAddress != address
 			if !isRegistered {
 				break
 			}
 		}
 		if !isRegistered {
 			if _, ok := blockchain.registeredAddresses[address]; !ok {
-				return fmt.Errorf("an incomed output address is not registered")
+				return fmt.Errorf("a yielding output address is not registered")
 			}
 		}
 	}
