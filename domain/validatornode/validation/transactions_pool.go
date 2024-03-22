@@ -22,19 +22,21 @@ type TransactionsPool struct {
 	blocksManager    domain.BlocksManager
 	settings         validatornode.SettingsProvider
 	neighborsManager network.NeighborsManager
+	utxosManager     ledger.UtxosManager
 	validatorAddress string
 
 	watch  domain.TimeProvider
 	logger log.Logger
 }
 
-func NewTransactionsPool(blocksManager domain.BlocksManager, settings validatornode.SettingsProvider, neighborsManager network.NeighborsManager, validatorAddress string, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blocksManager domain.BlocksManager, settings validatornode.SettingsProvider, neighborsManager network.NeighborsManager, utxosManager ledger.UtxosManager, validatorAddress string, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blocksManager = blocksManager
 	pool.settings = settings
 	pool.neighborsManager = neighborsManager
+	pool.utxosManager = utxosManager
 	pool.validatorAddress = validatorAddress
-	pool.watch = clock.NewWatch()
+	pool.watch = clock.NewWatch() // TODO inject
 	pool.logger = logger
 	return pool
 }
@@ -78,8 +80,7 @@ func (pool *TransactionsPool) Transactions() []byte {
 }
 
 func (pool *TransactionsPool) Validate(timestamp int64) {
-	blocksManagerCopy := pool.blocksManager.Copy()
-	lastBlockTimestamp := blocksManagerCopy.LastBlockTimestamp()
+	lastBlockTimestamp := pool.blocksManager.LastBlockTimestamp()
 	nextBlockTimestamp := lastBlockTimestamp + pool.settings.ValidationTimestamp()
 	var reward uint64
 	var newAddresses []string
@@ -95,9 +96,21 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		pool.logger.Error("unable to create block, a block is missing in the blockchain")
 		return
 	}
-	err := blocksManagerCopy.AddBlock(timestamp, nil, nil)
-	if err != nil {
-		pool.logger.Error("failed to add temporary block")
+	firstBlockTimestamp := pool.blocksManager.FirstBlockTimestamp()
+	blockHeight := (lastBlockTimestamp - firstBlockTimestamp) / pool.settings.ValidationTimestamp()
+	// TODO add a method to get last block transactions
+	lastBlockBytes := pool.blocksManager.Blocks(uint64(blockHeight))
+	var blocks []*ledger.Block
+	if err := json.Unmarshal(lastBlockBytes, &blocks); err != nil {
+		pool.logger.Error(fmt.Errorf("failed to unmarshal last block: %w", err).Error())
+		return
+	}
+	utxosManagerCopy := pool.utxosManager.Copy()
+	if len(blocks) > 0 {
+		if err := utxosManagerCopy.UpdateUtxos(blocks[0].Transactions(), nextBlockTimestamp); err != nil {
+			pool.logger.Error(fmt.Errorf("failed to verify UTXOs: %w", err).Error())
+			return
+		}
 	}
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
@@ -119,12 +132,12 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		if err = transaction.VerifySignatures(blocksManagerCopy.Utxo); err != nil {
+		if err := transaction.VerifySignatures(pool.utxosManager); err != nil {
 			pool.logger.Warn(fmt.Errorf("failed to verify transaction: %w", err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		fee, err := transaction.Fee(pool.settings, timestamp, blocksManagerCopy.Utxo)
+		fee, err := transaction.Fee(pool.settings, timestamp, pool.utxosManager)
 		if err != nil {
 			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, transaction: %v\n %w", transaction, err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
@@ -142,6 +155,11 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 				isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId()] = make(map[uint16]bool)
 			}
 			isAlreadySpentByOutputIdByTransactionIndex[input.TransactionId()][input.OutputIndex()] = true
+		}
+		if err = utxosManagerCopy.VerifyUtxos([]*ledger.Transaction{transaction}, nextBlockTimestamp); err != nil {
+			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to verify UTXO: %w", err).Error())
+			rejectedTransactions = append(rejectedTransactions, transaction)
+			continue
 		}
 		if !isAlreadySpent {
 			reward += fee
@@ -163,20 +181,8 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		return
 	}
 	transactions = append(transactions, rewardTransaction)
-	secondBlockchainCopy := pool.blocksManager.Copy()
 	transactionsBytes, err := json.Marshal(transactions)
-	if err != nil {
-		pool.logger.Error(fmt.Errorf("failed to marshal transactions: %w", err).Error())
-	}
-	err = secondBlockchainCopy.AddBlock(timestamp, transactionsBytes, nil)
-	if err != nil {
-		pool.logger.Error(fmt.Errorf("next block creation would fail: %w", err).Error())
-	}
-	err = secondBlockchainCopy.AddBlock(nextBlockTimestamp, nil, nil)
-	if err != nil {
-		pool.logger.Error(fmt.Errorf("later block creation would fail: %w", err).Error())
-		return
-	}
+	// TODO registryManager.Verify
 	err = pool.blocksManager.AddBlock(timestamp, transactionsBytes, newAddresses)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("unable to create block: %w", err).Error())
@@ -187,16 +193,11 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 }
 
 func (pool *TransactionsPool) addTransaction(transaction *ledger.Transaction) error {
-	blocksManagerCopy := pool.blocksManager.Copy()
-	lastBlockTimestamp := blocksManagerCopy.LastBlockTimestamp()
+	lastBlockTimestamp := pool.blocksManager.LastBlockTimestamp()
 	if lastBlockTimestamp == 0 {
 		return errors.New("the blockchain is empty")
 	}
 	nextBlockTimestamp := lastBlockTimestamp + pool.settings.ValidationTimestamp()
-	err := blocksManagerCopy.AddBlock(nextBlockTimestamp, nil, nil)
-	if err != nil {
-		return errors.New("failed to add temporary block")
-	}
 	timestamp := transaction.Timestamp()
 	if nextBlockTimestamp < timestamp {
 		return fmt.Errorf("the transaction timestamp is too far in the future: %v, now: %v", time.Unix(0, timestamp), time.Unix(0, nextBlockTimestamp))
@@ -210,26 +211,26 @@ func (pool *TransactionsPool) addTransaction(transaction *ledger.Transaction) er
 			return errors.New("the transaction is already in the transactions pool")
 		}
 	}
-	if err = transaction.VerifySignatures(blocksManagerCopy.Utxo); err != nil {
+	if err := transaction.VerifySignatures(pool.utxosManager); err != nil {
 		return fmt.Errorf("failed to verify transaction: %w", err)
 	}
-	_, err = transaction.Fee(pool.settings, nextBlockTimestamp, blocksManagerCopy.Utxo)
+	_, err := transaction.Fee(pool.settings, nextBlockTimestamp, pool.utxosManager)
 	if err != nil {
 		return fmt.Errorf("failed to verify fee: %w", err)
 	}
-	transactions := []*ledger.Transaction{transaction}
-	transactionsBytes, err := json.Marshal(transactions)
-	if err != nil {
-		return fmt.Errorf("failed to marshal transactions: %w", err)
+	firstBlockTimestamp := pool.blocksManager.FirstBlockTimestamp()
+	blockHeight := (lastBlockTimestamp - firstBlockTimestamp) / pool.settings.ValidationTimestamp()
+	// TODO add a method to get last block transactions
+	lastBlockBytes := pool.blocksManager.Blocks(uint64(blockHeight))
+	var blocks []*ledger.Block
+	if err = json.Unmarshal(lastBlockBytes, &blocks); err != nil {
+		return fmt.Errorf("failed to unmarshal last block: %w", err)
 	}
-	err = blocksManagerCopy.AddBlock(nextBlockTimestamp+pool.settings.ValidationTimestamp(), transactionsBytes, nil)
-	if err != nil {
-		return fmt.Errorf("next block creation would fail: %w", err)
+	transactions := append(blocks[0].Transactions(), transaction)
+	if err = pool.utxosManager.VerifyUtxos(transactions, nextBlockTimestamp); err != nil {
+		return fmt.Errorf("failed to verify UTXOs: %w", err)
 	}
-	err = blocksManagerCopy.AddBlock(nextBlockTimestamp+2*pool.settings.ValidationTimestamp(), nil, nil)
-	if err != nil {
-		return fmt.Errorf("later block creation would fail: %w", err)
-	}
+	// TODO registryManager.Verify
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 	pool.transactions = append(pool.transactions, transaction)

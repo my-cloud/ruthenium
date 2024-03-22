@@ -375,7 +375,7 @@ func Test_Validate_ValidTransaction_TransactionsValidated(t *testing.T) {
 
 	// Assert
 	validatedPool := blocksManagerMock.AddBlockCalls()
-	expectedCallsCount := 7
+	expectedCallsCount := 5
 	isTransactionsPoolValidated := len(validatedPool) == expectedCallsCount
 	test.Assert(t, isTransactionsPoolValidated, fmt.Sprintf("AddBlock method should be called only %d times whereas it's called %d times", expectedCallsCount, len(validatedPool)))
 	transactionsBytes := validatedPool[expectedCallsCount-1].TransactionsBytes

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain"
 	"github.com/my-cloud/ruthenium/domain/validatornode"
 )
 
@@ -78,9 +77,9 @@ func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (transaction *Transaction) VerifySignatures(utxoFinder domain.UtxoFinder) error {
+func (transaction *Transaction) VerifySignatures(utxosManager UtxosManager) error {
 	for _, input := range transaction.inputs {
-		utxo, err := utxoFinder(input)
+		utxo, err := utxosManager.Utxo(input)
 		if err != nil {
 			return err
 		}
@@ -96,11 +95,11 @@ func (transaction *Transaction) VerifySignatures(utxoFinder domain.UtxoFinder) e
 	return nil
 }
 
-func (transaction *Transaction) Fee(settings validatornode.SettingsProvider, timestamp int64, utxoFinder domain.UtxoFinder) (uint64, error) {
+func (transaction *Transaction) Fee(settings validatornode.SettingsProvider, timestamp int64, utxosManager UtxosManager) (uint64, error) {
 	var inputsValue uint64
 	var outputsValue uint64
 	for _, input := range transaction.inputs {
-		utxo, err := utxoFinder(input)
+		utxo, err := utxosManager.Utxo(input)
 		if err != nil {
 			return 0, err
 		}

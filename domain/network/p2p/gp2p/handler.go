@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/domain"
+	"github.com/my-cloud/ruthenium/domain/ledger"
 	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
 )
@@ -16,6 +17,7 @@ type Handler struct {
 	settings            []byte
 	neighborsManager    network.NeighborsManager
 	transactionsManager domain.TransactionsManager
+	utxosManager        ledger.UtxosManager
 	watch               domain.TimeProvider
 	logger              log.Logger
 }
@@ -24,9 +26,10 @@ func NewHandler(blocksManager domain.BlocksManager,
 	settings []byte,
 	neighborsManager network.NeighborsManager,
 	transactionsManager domain.TransactionsManager,
+	utxosManager ledger.UtxosManager,
 	watch domain.TimeProvider,
 	logger log.Logger) *Handler {
-	return &Handler{blocksManager, settings, neighborsManager, transactionsManager, watch, logger}
+	return &Handler{blocksManager, settings, neighborsManager, transactionsManager, utxosManager, watch, logger}
 }
 
 func (handler *Handler) HandleBlocksRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
@@ -92,7 +95,7 @@ func (handler *Handler) HandleUtxosRequest(_ context.Context, req gp2p.Data) (gp
 		handler.logger.Debug(BadRequest)
 		return res, err
 	}
-	utxosByAddress := handler.blocksManager.Utxos(address)
+	utxosByAddress := handler.utxosManager.Utxos(address)
 	res.SetBytes(utxosByAddress)
 	return res, nil
 }

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain"
 	"github.com/my-cloud/ruthenium/domain/ledger"
 	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/validatornode"
+	"github.com/my-cloud/ruthenium/infrastructure/array"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
 	"sync"
 	"time"
@@ -19,29 +19,25 @@ type Blockchain struct {
 	registeredAddresses map[string]bool
 	registry            validatornode.RegistrationsManager
 	neighborsManager    network.NeighborsManager
+	utxosManager        ledger.UtxosManager
 	settings            validatornode.SettingsProvider
-	utxosByAddress      map[string][]*ledger.Utxo
-	utxosById           map[string][]*ledger.Utxo
 	logger              log.Logger
 }
 
-func NewBlockchain(registry validatornode.RegistrationsManager, settings validatornode.SettingsProvider, neighborsManager network.NeighborsManager, logger log.Logger) *Blockchain {
-	utxosByAddress := make(map[string][]*ledger.Utxo)
-	utxosById := make(map[string][]*ledger.Utxo)
+func NewBlockchain(registry validatornode.RegistrationsManager, settings validatornode.SettingsProvider, neighborsManager network.NeighborsManager, utxosManager ledger.UtxosManager, logger log.Logger) *Blockchain {
 	registeredAddresses := make(map[string]bool)
-	blockchain := newBlockchain(nil, registeredAddresses, registry, settings, neighborsManager, utxosByAddress, utxosById, logger)
+	blockchain := newBlockchain(nil, registeredAddresses, registry, settings, neighborsManager, utxosManager, logger)
 	return blockchain
 }
 
-func newBlockchain(blocks []*ledger.Block, registeredAddresses map[string]bool, registry validatornode.RegistrationsManager, settings validatornode.SettingsProvider, neighborsManager network.NeighborsManager, utxosByAddress map[string][]*ledger.Utxo, utxosById map[string][]*ledger.Utxo, logger log.Logger) *Blockchain {
+func newBlockchain(blocks []*ledger.Block, registeredAddresses map[string]bool, registry validatornode.RegistrationsManager, settings validatornode.SettingsProvider, neighborsManager network.NeighborsManager, utxosManager ledger.UtxosManager, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blocks = blocks
 	blockchain.registeredAddresses = registeredAddresses
 	blockchain.registry = registry
 	blockchain.settings = settings
 	blockchain.neighborsManager = neighborsManager
-	blockchain.utxosByAddress = utxosByAddress
-	blockchain.utxosById = utxosById
+	blockchain.utxosManager = utxosManager
 	blockchain.logger = logger
 	return blockchain
 }
@@ -98,7 +94,7 @@ func (blockchain *Blockchain) Blocks(startingBlockHeight uint64) []byte {
 	blocksCountLimit := blockchain.settings.BlocksCountLimit()
 	blocksCount := len(blockchain.blocks)
 	if blockchain.isEmpty() || startingBlockHeight > uint64(blocksCount)-1 || blocksCountLimit == 0 {
-		return marshalledEmptyArray()
+		return array.MarshalledEmptyArray
 	} else if startingBlockHeight+blocksCountLimit < uint64(blocksCount) {
 		endingBlockHeight = startingBlockHeight + blocksCountLimit
 	} else {
@@ -108,21 +104,9 @@ func (blockchain *Blockchain) Blocks(startingBlockHeight uint64) []byte {
 	blocksBytes, err := json.Marshal(blocks)
 	if err != nil {
 		blockchain.logger.Error(err.Error())
-		return marshalledEmptyArray()
+		return array.MarshalledEmptyArray
 	}
 	return blocksBytes
-}
-
-func (blockchain *Blockchain) Copy() domain.BlocksManager {
-	blockchain.mutex.RLock()
-	defer blockchain.mutex.RUnlock()
-	blocks := make([]*ledger.Block, len(blockchain.blocks))
-	copy(blocks, blockchain.blocks)
-	utxosByAddress := copyUtxosMap(blockchain.utxosByAddress)
-	utxosById := copyUtxosMap(blockchain.utxosById)
-	registeredAddresses := copyRegisteredAddressesMap(blockchain.registeredAddresses)
-	blockchainCopy := newBlockchain(blocks, registeredAddresses, blockchain.registry, blockchain.settings, blockchain.neighborsManager, utxosByAddress, utxosById, blockchain.logger)
-	return blockchainCopy
 }
 
 func (blockchain *Blockchain) FirstBlockTimestamp() int64 {
@@ -288,15 +272,14 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 		var newBlocks []*ledger.Block
 		if isFork {
 			blockchain.registeredAddresses = make(map[string]bool)
-			blockchain.utxosById = make(map[string][]*ledger.Utxo)
-			blockchain.utxosByAddress = make(map[string][]*ledger.Utxo)
+			blockchain.utxosManager.Clear()
 			newBlocks = selectedBlocks[:len(selectedBlocks)-1]
 		} else if len(hostBlocks) < len(selectedBlocks) {
 			newBlocks = selectedBlocks[len(hostBlocks)-1 : len(selectedBlocks)-1]
 		}
 		var err error
 		for _, newBlock := range newBlocks {
-			err = blockchain.updateUtxos(newBlock, newBlock.Timestamp())
+			err = blockchain.utxosManager.UpdateUtxos(newBlock.Transactions(), newBlock.Timestamp())
 			if err != nil {
 				blockchain.logger.Error(fmt.Errorf("verification failed: failed to add UTXO: %w", err).Error())
 				isReplaced = false
@@ -313,35 +296,10 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 	}
 }
 
-func (blockchain *Blockchain) Utxo(input domain.InputInfoProvider) (domain.UtxoInfoProvider, error) {
-	utxos, ok := blockchain.utxosById[input.TransactionId()]
-	if !ok || int(input.OutputIndex()) > len(utxos)-1 {
-		return nil, fmt.Errorf("failed to find UTXO, input: %v", input)
-	}
-	utxo := utxos[input.OutputIndex()]
-	if utxo == nil {
-		return nil, fmt.Errorf("failed to find UTXO, input: %v", input)
-	}
-	return utxo, nil
-}
-
-func (blockchain *Blockchain) Utxos(address string) []byte {
-	utxos, ok := blockchain.utxosByAddress[address]
-	if !ok {
-		return marshalledEmptyArray()
-	}
-	marshaledUtxos, err := json.Marshal(utxos)
-	if err != nil {
-		blockchain.logger.Error(err.Error())
-		return marshalledEmptyArray()
-	}
-	return marshaledUtxos
-}
-
 func (blockchain *Blockchain) addBlock(block *ledger.Block) error {
 	if !blockchain.isEmpty() {
 		lastBlock := blockchain.blocks[len(blockchain.blocks)-1]
-		err := blockchain.updateUtxos(lastBlock, lastBlock.Timestamp())
+		err := blockchain.utxosManager.UpdateUtxos(lastBlock.Transactions(), lastBlock.Timestamp())
 		if err != nil {
 			return fmt.Errorf("failed to add UTXO: %w", err)
 		}
@@ -388,59 +346,6 @@ func (blockchain *Blockchain) updateRegisteredAddresses(addedRegisteredAddresses
 	}
 }
 
-func (blockchain *Blockchain) updateUtxos(block *ledger.Block, timestamp int64) error {
-	utxosByAddress := copyUtxosMap(blockchain.utxosByAddress)
-	utxosById := copyUtxosMap(blockchain.utxosById)
-	for _, transaction := range block.Transactions() {
-		utxosForTransactionId, ok := utxosById[transaction.Id()]
-		if ok {
-			return fmt.Errorf("transaction ID already exists: %s", transaction.Id())
-		}
-		for j, output := range transaction.Outputs() {
-			if output.InitialValue() > 0 {
-				inputInfo := ledger.NewInputInfo(uint16(j), transaction.Id())
-				utxo := ledger.NewUtxo(inputInfo, output, timestamp)
-				utxosForTransactionId = append(utxosForTransactionId, utxo)
-				utxosById[transaction.Id()] = utxosForTransactionId
-				utxosByAddress[output.Address()] = append(utxosByAddress[output.Address()], utxo)
-			}
-		}
-		for _, input := range transaction.Inputs() {
-			utxosForInputTransactionId := utxosById[input.TransactionId()]
-			if int(input.OutputIndex()) > len(utxosForInputTransactionId)-1 {
-				return fmt.Errorf("failed to find UTXO, input: %v", input)
-			}
-			utxo := utxosForInputTransactionId[input.OutputIndex()]
-			if utxo == nil {
-				return fmt.Errorf("failed to find output index, input: %v", input)
-			}
-			utxosForUtxoAddress := utxosByAddress[utxo.Address()]
-			utxosForUtxoAddress = removeUtxo(utxosForUtxoAddress, input.TransactionId(), input.OutputIndex())
-			utxosByAddress[utxo.Address()] = utxosForUtxoAddress
-			utxosById[input.TransactionId()][input.OutputIndex()] = nil
-			isEmpty := true
-			for _, output := range utxosForInputTransactionId {
-				if output != nil {
-					isEmpty = false
-					break
-				}
-			}
-			if isEmpty {
-				delete(utxosById, input.TransactionId())
-			}
-			if len(utxosForUtxoAddress) == 0 {
-				delete(utxosByAddress, utxo.Address())
-			}
-		}
-	}
-	if err := verifyIncomes(utxosByAddress); err != nil {
-		return err
-	}
-	blockchain.utxosById = utxosById
-	blockchain.utxosByAddress = utxosByAddress
-	return nil
-}
-
 func (blockchain *Blockchain) verify(lastHostBlocks []*ledger.Block, neighborBlocks []*ledger.Block, oldHostBlocks []*ledger.Block, timestamp int64) ([]*ledger.Block, error) {
 	if len(oldHostBlocks) == 0 && len(neighborBlocks) < 2 {
 		return nil, errors.New("neighbor's blockchain is too short")
@@ -454,19 +359,16 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*ledger.Block, neighborBlo
 		}
 	}
 	var verifiedBlocks []*ledger.Block
-	var utxosByAddress map[string][]*ledger.Utxo
-	var utxosById map[string][]*ledger.Utxo
+	var neighborUtxosPool ledger.UtxosManager
 	var registeredAddresses map[string]bool
 	if len(oldHostBlocks) == 0 {
-		utxosByAddress = make(map[string][]*ledger.Utxo)
-		utxosById = make(map[string][]*ledger.Utxo)
+		neighborUtxosPool = NewUtxosPool()
 		registeredAddresses = make(map[string]bool)
 	} else {
-		utxosByAddress = copyUtxosMap(blockchain.utxosByAddress)
-		utxosById = copyUtxosMap(blockchain.utxosById)
+		neighborUtxosPool = blockchain.utxosManager.Copy()
 		registeredAddresses = copyRegisteredAddressesMap(blockchain.registeredAddresses)
 	}
-	neighborBlockchain := newBlockchain(oldHostBlocks, registeredAddresses, blockchain.registry, blockchain.settings, blockchain.neighborsManager, utxosByAddress, utxosById, blockchain.logger)
+	neighborBlockchain := newBlockchain(oldHostBlocks, registeredAddresses, blockchain.registry, blockchain.settings, blockchain.neighborsManager, neighborUtxosPool, blockchain.logger)
 	for i := 0; i < len(neighborBlocks); i++ {
 		neighborBlock := neighborBlocks[i]
 		var previousBlockTimestamp int64
@@ -598,10 +500,10 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *ledger.Block, previousB
 			rewarded = true
 			reward = transaction.RewardValue()
 		} else {
-			if err := transaction.VerifySignatures(neighborBlockchain.Utxo); err != nil {
+			if err := transaction.VerifySignatures(blockchain.utxosManager); err != nil {
 				return fmt.Errorf("neighbor transaction is invalid: %w", err)
 			}
-			fee, err := transaction.Fee(blockchain.settings, currentBlockTimestamp, neighborBlockchain.Utxo)
+			fee, err := transaction.Fee(blockchain.settings, currentBlockTimestamp, blockchain.utxosManager)
 			if err != nil {
 				return fmt.Errorf("failed to verify a neighbor block transaction fee: %w", err)
 			}
@@ -668,20 +570,6 @@ func copyRegisteredAddressesMap(registeredAddresses map[string]bool) map[string]
 		registeredAddressesCopy[address] = true
 	}
 	return registeredAddressesCopy
-}
-
-func copyUtxosMap(utxosMap map[string][]*ledger.Utxo) map[string][]*ledger.Utxo {
-	utxosMapCopy := make(map[string][]*ledger.Utxo, len(utxosMap))
-	for address, utxos := range utxosMap {
-		utxosCopy := make([]*ledger.Utxo, len(utxos))
-		copy(utxosCopy, utxos)
-		utxosMapCopy[address] = utxosCopy
-	}
-	return utxosMapCopy
-}
-
-func marshalledEmptyArray() []byte {
-	return []byte{91, 93}
 }
 
 func removeUtxo(utxos []*ledger.Utxo, transactionId string, outputIndex uint16) []*ledger.Utxo {
