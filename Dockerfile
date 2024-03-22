@@ -11,6 +11,7 @@ RUN CGO_ENABLED=0 go build -o validatornode cmd/validatornode/main.go
 RUN CGO_ENABLED=0 go build -o observernode cmd/observernode/main.go
 
 FROM gcr.io/distroless/static-debian11
+USER nonroot
 WORKDIR /app
 COPY --from=builder /app/config /app/config
 COPY --from=builder /app/validatornode /app
