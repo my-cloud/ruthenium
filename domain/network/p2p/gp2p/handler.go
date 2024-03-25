@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	gp2p "github.com/leprosus/golang-p2p"
 	"github.com/my-cloud/ruthenium/domain"
-	"github.com/my-cloud/ruthenium/domain/ledger"
 	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
 )
@@ -17,7 +16,7 @@ type Handler struct {
 	settings            []byte
 	neighborsManager    network.NeighborsManager
 	transactionsManager domain.TransactionsManager
-	utxosManager        ledger.UtxosManager
+	utxosManager        domain.UtxosManager
 	watch               domain.TimeProvider
 	logger              log.Logger
 }
@@ -26,7 +25,7 @@ func NewHandler(blocksManager domain.BlocksManager,
 	settings []byte,
 	neighborsManager network.NeighborsManager,
 	transactionsManager domain.TransactionsManager,
-	utxosManager ledger.UtxosManager,
+	utxosManager domain.UtxosManager,
 	watch domain.TimeProvider,
 	logger log.Logger) *Handler {
 	return &Handler{blocksManager, settings, neighborsManager, transactionsManager, utxosManager, watch, logger}

@@ -5,4 +5,5 @@ type BlocksManager interface {
 	Blocks(startingBlockHeight uint64) []byte
 	FirstBlockTimestamp() int64
 	LastBlockTimestamp() int64
+	LastBlockTransactions() []byte
 }

@@ -23,20 +23,14 @@ var _ BlocksManager = &BlocksManagerMock{}
 //			BlocksFunc: func(startingBlockHeight uint64) []byte {
 //				panic("mock out the Blocks method")
 //			},
-//			CopyFunc: func() BlocksManager {
-//				panic("mock out the Copy method")
-//			},
 //			FirstBlockTimestampFunc: func() int64 {
 //				panic("mock out the FirstBlockTimestamp method")
 //			},
 //			LastBlockTimestampFunc: func() int64 {
 //				panic("mock out the LastBlockTimestamp method")
 //			},
-//			UtxoFunc: func(input InputInfoProvider) (UtxoInfoProvider, error) {
-//				panic("mock out the UtxoInfoProvider method")
-//			},
-//			UtxosFunc: func(address string) []byte {
-//				panic("mock out the Utxos method")
+//			LastBlockTransactionsFunc: func() []byte {
+//				panic("mock out the LastBlockTransactions method")
 //			},
 //		}
 //
@@ -51,20 +45,14 @@ type BlocksManagerMock struct {
 	// BlocksFunc mocks the Blocks method.
 	BlocksFunc func(startingBlockHeight uint64) []byte
 
-	// CopyFunc mocks the Copy method.
-	CopyFunc func() BlocksManager
-
 	// FirstBlockTimestampFunc mocks the FirstBlockTimestamp method.
 	FirstBlockTimestampFunc func() int64
 
 	// LastBlockTimestampFunc mocks the LastBlockTimestamp method.
 	LastBlockTimestampFunc func() int64
 
-	// UtxoFunc mocks the Utxo method.
-	UtxoFunc func(input InputInfoProvider) (UtxoInfoProvider, error)
-
-	// UtxosFunc mocks the Utxos method.
-	UtxosFunc func(address string) []byte
+	// LastBlockTransactionsFunc mocks the LastBlockTransactions method.
+	LastBlockTransactionsFunc func() []byte
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -82,33 +70,21 @@ type BlocksManagerMock struct {
 			// StartingBlockHeight is the startingBlockHeight argument value.
 			StartingBlockHeight uint64
 		}
-		// Copy holds details about calls to the Copy method.
-		Copy []struct {
-		}
 		// FirstBlockTimestamp holds details about calls to the FirstBlockTimestamp method.
 		FirstBlockTimestamp []struct {
 		}
 		// LastBlockTimestamp holds details about calls to the LastBlockTimestamp method.
 		LastBlockTimestamp []struct {
 		}
-		// Utxo holds details about calls to the Utxo method.
-		Utxo []struct {
-			// Input is the input argument value.
-			Input InputInfoProvider
-		}
-		// Utxos holds details about calls to the Utxos method.
-		Utxos []struct {
-			// Address is the address argument value.
-			Address string
+		// LastBlockTransactions holds details about calls to the LastBlockTransactions method.
+		LastBlockTransactions []struct {
 		}
 	}
-	lockAddBlock            sync.RWMutex
-	lockBlocks              sync.RWMutex
-	lockCopy                sync.RWMutex
-	lockFirstBlockTimestamp sync.RWMutex
-	lockLastBlockTimestamp  sync.RWMutex
-	lockUtxo                sync.RWMutex
-	lockUtxos               sync.RWMutex
+	lockAddBlock              sync.RWMutex
+	lockBlocks                sync.RWMutex
+	lockFirstBlockTimestamp   sync.RWMutex
+	lockLastBlockTimestamp    sync.RWMutex
+	lockLastBlockTransactions sync.RWMutex
 }
 
 // AddBlock calls AddBlockFunc.
@@ -183,33 +159,6 @@ func (mock *BlocksManagerMock) BlocksCalls() []struct {
 	return calls
 }
 
-// Copy calls CopyFunc.
-func (mock *BlocksManagerMock) Copy() BlocksManager {
-	if mock.CopyFunc == nil {
-		panic("BlocksManagerMock.CopyFunc: method is nil but BlocksManager.Copy was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockCopy.Lock()
-	mock.calls.Copy = append(mock.calls.Copy, callInfo)
-	mock.lockCopy.Unlock()
-	return mock.CopyFunc()
-}
-
-// CopyCalls gets all the calls that were made to Copy.
-// Check the length with:
-//
-//	len(mockedBlocksManager.CopyCalls())
-func (mock *BlocksManagerMock) CopyCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockCopy.RLock()
-	calls = mock.calls.Copy
-	mock.lockCopy.RUnlock()
-	return calls
-}
-
 // FirstBlockTimestamp calls FirstBlockTimestampFunc.
 func (mock *BlocksManagerMock) FirstBlockTimestamp() int64 {
 	if mock.FirstBlockTimestampFunc == nil {
@@ -264,66 +213,29 @@ func (mock *BlocksManagerMock) LastBlockTimestampCalls() []struct {
 	return calls
 }
 
-// UtxoInfoProvider calls UtxoFunc.
-func (mock *BlocksManagerMock) Utxo(input InputInfoProvider) (UtxoInfoProvider, error) {
-	if mock.UtxoFunc == nil {
-		panic("BlocksManagerMock.UtxoFunc: method is nil but BlocksManager.UtxoInfoProvider was just called")
+// LastBlockTransactions calls LastBlockTransactionsFunc.
+func (mock *BlocksManagerMock) LastBlockTransactions() []byte {
+	if mock.LastBlockTransactionsFunc == nil {
+		panic("BlocksManagerMock.LastBlockTransactionsFunc: method is nil but BlocksManager.LastBlockTransactions was just called")
 	}
 	callInfo := struct {
-		Input InputInfoProvider
-	}{
-		Input: input,
-	}
-	mock.lockUtxo.Lock()
-	mock.calls.Utxo = append(mock.calls.Utxo, callInfo)
-	mock.lockUtxo.Unlock()
-	return mock.UtxoFunc(input)
+	}{}
+	mock.lockLastBlockTransactions.Lock()
+	mock.calls.LastBlockTransactions = append(mock.calls.LastBlockTransactions, callInfo)
+	mock.lockLastBlockTransactions.Unlock()
+	return mock.LastBlockTransactionsFunc()
 }
 
-// UtxoCalls gets all the calls that were made to UtxoInfoProvider.
+// LastBlockTransactionsCalls gets all the calls that were made to LastBlockTransactions.
 // Check the length with:
 //
-//	len(mockedBlocksManager.UtxoCalls())
-func (mock *BlocksManagerMock) UtxoCalls() []struct {
-	Input InputInfoProvider
+//	len(mockedBlocksManager.LastBlockTransactionsCalls())
+func (mock *BlocksManagerMock) LastBlockTransactionsCalls() []struct {
 } {
 	var calls []struct {
-		Input InputInfoProvider
 	}
-	mock.lockUtxo.RLock()
-	calls = mock.calls.Utxo
-	mock.lockUtxo.RUnlock()
-	return calls
-}
-
-// Utxos calls UtxosFunc.
-func (mock *BlocksManagerMock) Utxos(address string) []byte {
-	if mock.UtxosFunc == nil {
-		panic("BlocksManagerMock.UtxosFunc: method is nil but BlocksManager.Utxos was just called")
-	}
-	callInfo := struct {
-		Address string
-	}{
-		Address: address,
-	}
-	mock.lockUtxos.Lock()
-	mock.calls.Utxos = append(mock.calls.Utxos, callInfo)
-	mock.lockUtxos.Unlock()
-	return mock.UtxosFunc(address)
-}
-
-// UtxosCalls gets all the calls that were made to Utxos.
-// Check the length with:
-//
-//	len(mockedBlocksManager.UtxosCalls())
-func (mock *BlocksManagerMock) UtxosCalls() []struct {
-	Address string
-} {
-	var calls []struct {
-		Address string
-	}
-	mock.lockUtxos.RLock()
-	calls = mock.calls.Utxos
-	mock.lockUtxos.RUnlock()
+	mock.lockLastBlockTransactions.RLock()
+	calls = mock.calls.LastBlockTransactions
+	mock.lockLastBlockTransactions.RUnlock()
 	return calls
 }
