@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/domain"
-	"github.com/my-cloud/ruthenium/domain/clock"
 	"github.com/my-cloud/ruthenium/domain/ledger"
 	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/validatornode"
@@ -25,7 +24,6 @@ type TransactionsPool struct {
 	utxosManager     domain.UtxosManager
 	validatorAddress string
 
-	watch  domain.TimeProvider
 	logger log.Logger
 }
 
@@ -36,7 +34,6 @@ func NewTransactionsPool(blocksManager domain.BlocksManager, settings validatorn
 	pool.neighborsManager = neighborsManager
 	pool.utxosManager = utxosManager
 	pool.validatorAddress = validatorAddress
-	pool.watch = clock.NewWatch() // TODO inject
 	pool.logger = logger
 	return pool
 }
@@ -105,7 +102,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 	transactions := pool.transactions
-	rand.Seed(pool.watch.Now().UnixNano())
+	rand.Seed(timestamp)
 	rand.Shuffle(len(transactions), func(i, j int) {
 		transactions[i], transactions[j] = transactions[j], transactions[i]
 	})
