@@ -119,3 +119,28 @@ func copyUtxosMap(utxosMap map[string][]*ledger.Utxo) map[string][]*ledger.Utxo 
 	}
 	return utxosMapCopy
 }
+
+func removeUtxo(utxos []*ledger.Utxo, transactionId string, outputIndex uint16) []*ledger.Utxo {
+	for i := 0; i < len(utxos); i++ {
+		if utxos[i].TransactionId() == transactionId && utxos[i].OutputIndex() == outputIndex {
+			utxos = append(utxos[:i], utxos[i+1:]...)
+			return utxos
+		}
+	}
+	return utxos
+}
+
+func verifyIncomes(utxosByAddress map[string][]*ledger.Utxo) error {
+	for address, utxos := range utxosByAddress {
+		var isYielding bool
+		for _, utxo := range utxos {
+			if utxo.IsYielding() {
+				if isYielding {
+					return fmt.Errorf("income requested for several UTXOs for address: %s", address)
+				}
+				isYielding = true
+			}
+		}
+	}
+	return nil
+}

@@ -62,13 +62,14 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactionsBytes []byte
 		if err != nil {
 			return fmt.Errorf("failed to get proof of humanity: %w", err)
 		}
-		if isPohValid {
-			addedRegisteredAddresses = append(addedRegisteredAddresses, address)
-		} else {
+		if !isPohValid {
 			removedRegisteredAddresses = append(removedRegisteredAddresses, address)
 		}
 	}
 	for _, address := range newAddresses {
+		if blockchain.registeredAddresses[address] {
+			continue
+		}
 		isPohValid, err := blockchain.registry.IsRegistered(address)
 		if err != nil {
 			return fmt.Errorf("failed to get proof of humanity: %w", err)
@@ -593,29 +594,4 @@ func copyRegisteredAddressesMap(registeredAddresses map[string]bool) map[string]
 		registeredAddressesCopy[address] = true
 	}
 	return registeredAddressesCopy
-}
-
-func removeUtxo(utxos []*ledger.Utxo, transactionId string, outputIndex uint16) []*ledger.Utxo {
-	for i := 0; i < len(utxos); i++ {
-		if utxos[i].TransactionId() == transactionId && utxos[i].OutputIndex() == outputIndex {
-			utxos = append(utxos[:i], utxos[i+1:]...)
-			return utxos
-		}
-	}
-	return utxos
-}
-
-func verifyIncomes(utxosByAddress map[string][]*ledger.Utxo) error {
-	for address, utxos := range utxosByAddress {
-		var isYielding bool
-		for _, utxo := range utxos {
-			if utxo.IsYielding() {
-				if isYielding {
-					return fmt.Errorf("income requested for several UTXOs for address: %s", address)
-				}
-				isYielding = true
-			}
-		}
-	}
-	return nil
 }
