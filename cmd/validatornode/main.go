@@ -3,11 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/my-cloud/ruthenium/domain/clock"
-	"github.com/my-cloud/ruthenium/infrastructure/config"
-	"github.com/my-cloud/ruthenium/infrastructure/file"
 	"strconv"
 
+	"github.com/my-cloud/ruthenium/domain/clock"
 	"github.com/my-cloud/ruthenium/domain/encryption"
 	"github.com/my-cloud/ruthenium/domain/network/p2p"
 	"github.com/my-cloud/ruthenium/domain/network/p2p/gp2p"
@@ -15,7 +13,9 @@ import (
 	"github.com/my-cloud/ruthenium/domain/validatornode/poh"
 	"github.com/my-cloud/ruthenium/domain/validatornode/validation"
 	"github.com/my-cloud/ruthenium/domain/validatornode/verification"
+	"github.com/my-cloud/ruthenium/infrastructure/config"
 	"github.com/my-cloud/ruthenium/infrastructure/environment"
+	"github.com/my-cloud/ruthenium/infrastructure/file"
 	"github.com/my-cloud/ruthenium/infrastructure/log/console"
 )
 
@@ -33,40 +33,48 @@ func main() {
 
 	flag.Parse()
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
-	address := decodeAddress(mnemonic, derivationPath, password, privateKeyString, logger)
-	host := createNode(settingsPath, infuraKey, seedsPath, ip, port, address, logger)
-	logger.Info(fmt.Sprintf("validator node running for address: %s", address))
-	err := host.Run()
+	address, err := decodeAddress(*mnemonic, *derivationPath, *password, *privateKeyString)
 	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to run host: %w", err).Error())
+		logger.Fatal(err.Error())
+	}
+	node, err := createNode(*settingsPath, *infuraKey, *seedsPath, *ip, *port, address, logger)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	logger.Info(fmt.Sprintf("validator node running for address: %s", address))
+	if err = node.Run(); err != nil {
+		logger.Fatal(fmt.Errorf("failed to run node: %w", err).Error())
 	}
 }
 
-func decodeAddress(mnemonic *string, derivationPath *string, password *string, privateKeyString *string, logger *console.Logger) string {
+func decodeAddress(mnemonic string, derivationPath string, password string, privateKeyString string) (string, error) {
 	var privateKey *encryption.PrivateKey
 	var err error
-	if *mnemonic != "" {
-		privateKey, err = encryption.NewPrivateKeyFromMnemonic(*mnemonic, *derivationPath, *password)
-	} else if *privateKeyString != "" {
-		privateKey, err = encryption.NewPrivateKeyFromHex(*privateKeyString)
+	if mnemonic != "" {
+		privateKey, err = encryption.NewPrivateKeyFromMnemonic(mnemonic, derivationPath, password)
+	} else if privateKeyString != "" {
+		privateKey, err = encryption.NewPrivateKeyFromHex(privateKeyString)
 	} else {
-		logger.Fatal(fmt.Errorf("nor the mnemonic neither the private key have been provided").Error())
+		return "", fmt.Errorf("nor the mnemonic neither the private key have been provided")
 	}
 	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to create private key: %w", err).Error())
+		return "", fmt.Errorf("failed to create private key: %w", err)
 	}
 	publicKey := encryption.NewPublicKey(privateKey)
-	return publicKey.Address()
+	return publicKey.Address(), nil
 }
 
-func createNode(settingsPath *string, infuraKey *string, seedsPath *string, ip *string, port *int, address string, logger *console.Logger) *p2p.Node {
-	settings, err := config.NewSettings(*settingsPath)
+func createNode(settingsPath string, infuraKey string, seedsPath string, ip string, port int, address string, logger *console.Logger) (*p2p.Node, error) {
+	settings, err := config.NewSettings(settingsPath)
 	if err != nil {
-		logger.Fatal(fmt.Errorf("unable to parse settings: %w", err).Error())
+		return nil, err
 	}
-	registry := poh.NewRegistry(*infuraKey, logger)
+	registry := poh.NewRegistry(infuraKey, logger)
 	watch := clock.NewWatch()
-	neighborhood := createNeighborhood(*seedsPath, *ip, *port, settings, watch, logger)
+	neighborhood, err := createNeighborhood(seedsPath, ip, port, settings, watch, logger)
+	if err != nil {
+		return nil, err
+	}
 	utxosPool := verification.NewUtxosPool()
 	blockchain := verification.NewBlockchain(registry, settings, neighborhood, utxosPool, logger)
 	transactionsPool := validation.NewTransactionsPool(blockchain, settings, neighborhood, utxosPool, address, logger)
@@ -74,31 +82,31 @@ func createNode(settingsPath *string, infuraKey *string, seedsPath *string, ip *
 	validationEngine := clock.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)
 	verificationEngine := clock.NewEngine(blockchain.Update, watch, settings.ValidationTimer(), settings.VerificationsCountPerValidation(), 1)
 	handler := gp2p.NewHandler(blockchain, settings.Bytes(), neighborhood, transactionsPool, utxosPool, watch, logger)
-	host, err := gp2p.NewHost(*port, handler, settings.ValidationTimeout())
+	host, err := gp2p.NewHost(port, handler, settings.ValidationTimeout())
 	if err != nil {
-		logger.Fatal(fmt.Errorf("failed to instantiate host: %w", err).Error())
+		return nil, err
 	}
-	return p2p.NewNode(host, synchronizationEngine, validationEngine, verificationEngine, logger)
+	return p2p.NewNode(host, synchronizationEngine, validationEngine, verificationEngine, logger), nil
 }
 
-func createNeighborhood(seedsPath string, hostIp string, port int, settings *config.Settings, watch *clock.Watch, logger *console.Logger) *p2p.Neighborhood {
+func createNeighborhood(seedsPath string, hostIp string, port int, settings *config.Settings, watch *clock.Watch, logger *console.Logger) (*p2p.Neighborhood, error) {
 	var seedsStringTargets []string
 	parser := file.NewJsonParser()
 	err := parser.Parse(seedsPath, &seedsStringTargets)
 	if err != nil {
-		logger.Fatal(fmt.Errorf("unable to parse seeds: %w", err).Error())
+		return nil, fmt.Errorf("unable to parse seeds: %w", err)
 	}
-	scoresBySeedTarget := map[string]int{}
-	for _, seedStringTarget := range seedsStringTargets {
-		scoresBySeedTarget[seedStringTarget] = 0
+	scoresBySeedTargetValue := map[string]int{}
+	for _, seedStringTargetValue := range seedsStringTargets {
+		scoresBySeedTargetValue[seedStringTargetValue] = 0
 	}
 	ipFinder := net.NewIpFinder(logger)
 	if hostIp == "" {
 		hostIp, err = ipFinder.FindHostPublicIp()
 		if err != nil {
-			logger.Fatal(fmt.Errorf("failed to find the public IP: %w", err).Error())
+			return nil, fmt.Errorf("failed to find the public IP: %w", err)
 		}
 	}
 	clientFactory := gp2p.NewSenderFactory(ipFinder, settings.ValidationTimeout())
-	return p2p.NewNeighborhood(clientFactory, hostIp, strconv.Itoa(port), settings.MaxOutboundsCount(), scoresBySeedTarget, watch)
+	return p2p.NewNeighborhood(clientFactory, hostIp, strconv.Itoa(port), settings.MaxOutboundsCount(), scoresBySeedTargetValue, watch), nil
 }
