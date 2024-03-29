@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"net/http"
+	"strconv"
+
 	"github.com/my-cloud/ruthenium/domain"
 	"github.com/my-cloud/ruthenium/domain/ledger"
 	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/observernode"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
-	"math"
-	"net/http"
-	"strconv"
 )
 
 type Handler struct {
@@ -83,6 +84,9 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 		var values []uint64
 		for _, utxo := range utxos {
 			utxoValue := utxo.Value(nextBlockTimestamp, handler.settings.HalfLifeInNanoseconds(), handler.settings.IncomeBase(), handler.settings.IncomeLimit())
+			if utxoValue == 0 {
+				continue
+			}
 			walletBalance += utxoValue
 			if isConsolidationRequired {
 				selectedInputs = append(selectedInputs, utxo.InputInfo)
@@ -110,7 +114,12 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			for inputsValue < targetValue {
 				closestValueIndex := findClosestValueIndex(targetValue, values)
 				closestValue := values[closestValueIndex]
-				values[closestValueIndex] = 0
+				if closestValue > targetValue {
+					inputsValue = closestValue
+					selectedInputs = []*ledger.InputInfo{utxosByValue[closestValue][0]}
+					break
+				}
+				values = removeValue(values, closestValueIndex)
 				closestUtxos := utxosByValue[closestValue]
 				for i := 0; i < len(closestUtxos) && inputsValue < targetValue; i++ {
 					inputsValue += closestValue
@@ -142,16 +151,19 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 func findClosestValueIndex(target uint64, values []uint64) int {
 	closestValueIndex := 0
 	closestDifference := uint64(math.MaxUint64)
-	var isTargetSmaller bool
+	var isAValueGreaterThanTarget bool
 	for i, value := range values {
-		if value < target && isTargetSmaller {
+		if isAValueGreaterThanTarget && value < target {
 			continue
 		}
 		var difference uint64
 		if value < target {
 			difference = target - value
 		} else {
-			isTargetSmaller = true
+			if !isAValueGreaterThanTarget {
+				closestDifference = uint64(math.MaxUint64)
+			}
+			isAValueGreaterThanTarget = true
 			difference = value - target
 		}
 		if difference < closestDifference {
@@ -160,4 +172,14 @@ func findClosestValueIndex(target uint64, values []uint64) int {
 		}
 	}
 	return closestValueIndex
+}
+
+func removeValue(values []uint64, index int) []uint64 {
+	for i := 0; i < len(values); i++ {
+		if i == index {
+			values = append(values[:i], values[i+1:]...)
+			return values
+		}
+	}
+	return values
 }

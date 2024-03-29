@@ -4,15 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
 	"github.com/my-cloud/ruthenium/domain"
 	"github.com/my-cloud/ruthenium/domain/ledger"
 	"github.com/my-cloud/ruthenium/domain/network"
 	"github.com/my-cloud/ruthenium/domain/observernode"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"time"
 
 	"github.com/my-cloud/ruthenium/infrastructure/test"
 )
@@ -195,7 +196,7 @@ func Test_ServeHTTP_InsufficientWalletBalance_ReturnsMethodNotAllowed(t *testing
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 }
 
-func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
+func Test_ServeHTTP_ConsolidationNotRequiredAndOneUtxoIsGreater_ReturnsOneUtxo(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
 	neighborMock := new(network.NeighborMock)
@@ -204,8 +205,8 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 	inputInfo2 := ledger.NewInputInfo(1, "")
 	inputInfo3 := ledger.NewInputInfo(2, "")
 	output1 := ledger.NewOutput("", false, 1)
-	output2 := ledger.NewOutput("", false, 2)
-	output3 := ledger.NewOutput("", false, 0)
+	output2 := ledger.NewOutput("", false, 3)
+	output3 := ledger.NewOutput("", false, 7)
 	utxos := []*ledger.Utxo{
 		ledger.NewUtxo(inputInfo1, output1, 1),
 		ledger.NewUtxo(inputInfo2, output2, 1),
@@ -225,7 +226,7 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=1&consolidation=false", urlTarget), nil)
+	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=3&consolidation=false", urlTarget), nil)
 
 	// Act
 	handler.ServeHTTP(recorder, request)
@@ -238,6 +239,53 @@ func Test_ServeHTTP_ConsolidationNotRequired_ReturnsSomeUtxos(t *testing.T) {
 	var transactionInfo *TransactionInfo
 	_ = json.Unmarshal(recorder.Body.Bytes(), &transactionInfo)
 	expectedInputsCount := 1
+	actualInputsCount := len(transactionInfo.Inputs)
+	test.Assert(t, actualInputsCount == expectedInputsCount, fmt.Sprintf("Wrong inputs count. expected: %d actual: %d", expectedInputsCount, actualInputsCount))
+}
+
+func Test_ServeHTTP_ConsolidationNotRequiredAndNoUtxoIsGreater_ReturnsSomeUtxos(t *testing.T) {
+	// Arrange
+	logger := log.NewLoggerMock()
+	neighborMock := new(network.NeighborMock)
+
+	inputInfo1 := ledger.NewInputInfo(0, "")
+	inputInfo2 := ledger.NewInputInfo(1, "")
+	inputInfo3 := ledger.NewInputInfo(2, "")
+	output1 := ledger.NewOutput("", false, 1)
+	output2 := ledger.NewOutput("", false, 2)
+	output3 := ledger.NewOutput("", false, 2)
+	utxos := []*ledger.Utxo{
+		ledger.NewUtxo(inputInfo1, output1, 1),
+		ledger.NewUtxo(inputInfo2, output2, 1),
+		ledger.NewUtxo(inputInfo3, output3, 1),
+	}
+	marshalledUtxos, _ := json.Marshal(utxos)
+	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
+	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
+	watchMock := new(domain.TimeProviderMock)
+	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
+	settings := new(observernode.SettingsProviderMock)
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return 1 }
+	settings.SmallestUnitsPerCoinFunc = func() uint64 { return 1 }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=3&consolidation=false", urlTarget), nil)
+
+	// Act
+	handler.ServeHTTP(recorder, request)
+
+	// Assert
+	areNeighborMethodsCalled := len(neighborMock.GetUtxosCalls()) == 1 && len(neighborMock.GetFirstBlockTimestampCalls()) == 1
+	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
+	expectedStatusCode := 200
+	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
+	var transactionInfo *TransactionInfo
+	_ = json.Unmarshal(recorder.Body.Bytes(), &transactionInfo)
+	expectedInputsCount := 2
 	actualInputsCount := len(transactionInfo.Inputs)
 	test.Assert(t, actualInputsCount == expectedInputsCount, fmt.Sprintf("Wrong inputs count. expected: %d actual: %d", expectedInputsCount, actualInputsCount))
 }
