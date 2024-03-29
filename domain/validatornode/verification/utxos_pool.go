@@ -3,27 +3,40 @@ package verification
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
+
 	"github.com/my-cloud/ruthenium/domain"
 	"github.com/my-cloud/ruthenium/domain/ledger"
 	"github.com/my-cloud/ruthenium/infrastructure/array"
 )
 
 type UtxosPool struct {
+	mutex          sync.RWMutex
 	utxosByAddress map[string][]*ledger.Utxo
 	utxosById      map[string][]*ledger.Utxo
 }
 
 func NewUtxosPool() *UtxosPool {
-	return &UtxosPool{make(map[string][]*ledger.Utxo), make(map[string][]*ledger.Utxo)}
+	utxosPool := &UtxosPool{}
+	utxosPool.utxosByAddress = make(map[string][]*ledger.Utxo)
+	utxosPool.utxosById = make(map[string][]*ledger.Utxo)
+	return utxosPool
 }
 
 func (pool *UtxosPool) Clear() {
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
 	pool.utxosByAddress = make(map[string][]*ledger.Utxo)
 	pool.utxosById = make(map[string][]*ledger.Utxo)
 }
 
 func (pool *UtxosPool) Copy() domain.UtxosManager {
-	return &UtxosPool{copyUtxosMap(pool.utxosByAddress), copyUtxosMap(pool.utxosById)}
+	poolCopy := &UtxosPool{}
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
+	poolCopy.utxosByAddress = copyUtxosMap(pool.utxosByAddress)
+	poolCopy.utxosById = copyUtxosMap(pool.utxosById)
+	return poolCopy
 }
 
 func (pool *UtxosPool) UpdateUtxos(transactionsBytes []byte, timestamp int64) error {
@@ -81,6 +94,8 @@ func (pool *UtxosPool) UpdateUtxos(transactionsBytes []byte, timestamp int64) er
 	if err := verifyIncomes(utxosByAddress); err != nil {
 		return err
 	}
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
 	pool.utxosById = utxosById
 	pool.utxosByAddress = utxosByAddress
 	return nil

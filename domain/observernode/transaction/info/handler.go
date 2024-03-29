@@ -119,7 +119,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 					selectedInputs = []*ledger.InputInfo{utxosByValue[closestValue][0]}
 					break
 				}
-				values = removeValue(values, closestValueIndex)
+				values = append(values[:closestValueIndex], values[closestValueIndex+1:]...)
 				closestUtxos := utxosByValue[closestValue]
 				for i := 0; i < len(closestUtxos) && inputsValue < targetValue; i++ {
 					inputsValue += closestValue
@@ -172,14 +172,4 @@ func findClosestValueIndex(target uint64, values []uint64) int {
 		}
 	}
 	return closestValueIndex
-}
-
-func removeValue(values []uint64, index int) []uint64 {
-	for i := 0; i < len(values); i++ {
-		if i == index {
-			values = append(values[:i], values[i+1:]...)
-			return values
-		}
-	}
-	return values
 }

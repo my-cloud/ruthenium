@@ -17,8 +17,26 @@ var _ RegistrationsManager = &RegistrationsManagerMock{}
 //
 //		// make and configure a mocked RegistrationsManager
 //		mockedRegistrationsManager := &RegistrationsManagerMock{
-//			IsRegisteredFunc: func(address string) (bool, error) {
+//			ClearFunc: func()  {
+//				panic("mock out the Clear method")
+//			},
+//			CopyFunc: func() RegistrationsManager {
+//				panic("mock out the Copy method")
+//			},
+//			FilterFunc: func(addresses []string) []string {
+//				panic("mock out the Filter method")
+//			},
+//			IsRegisteredFunc: func(address string) bool {
 //				panic("mock out the IsRegistered method")
+//			},
+//			RemovedAddressesFunc: func() []string {
+//				panic("mock out the RemovedAddresses method")
+//			},
+//			UpdateFunc: func(addedAddresses []string, removedAddresses []string)  {
+//				panic("mock out the Update method")
+//			},
+//			VerifyFunc: func(addedAddresses []string, removedAddresses []string) error {
+//				panic("mock out the Verify method")
 //			},
 //		}
 //
@@ -27,22 +45,160 @@ var _ RegistrationsManager = &RegistrationsManagerMock{}
 //
 //	}
 type RegistrationsManagerMock struct {
+	// ClearFunc mocks the Clear method.
+	ClearFunc func()
+
+	// CopyFunc mocks the Copy method.
+	CopyFunc func() RegistrationsManager
+
+	// FilterFunc mocks the Filter method.
+	FilterFunc func(addresses []string) []string
+
 	// IsRegisteredFunc mocks the IsRegistered method.
-	IsRegisteredFunc func(address string) (bool, error)
+	IsRegisteredFunc func(address string) bool
+
+	// RemovedAddressesFunc mocks the RemovedAddresses method.
+	RemovedAddressesFunc func() []string
+
+	// UpdateFunc mocks the Update method.
+	UpdateFunc func(addedAddresses []string, removedAddresses []string)
+
+	// VerifyFunc mocks the Verify method.
+	VerifyFunc func(addedAddresses []string, removedAddresses []string) error
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// Clear holds details about calls to the Clear method.
+		Clear []struct {
+		}
+		// Copy holds details about calls to the Copy method.
+		Copy []struct {
+		}
+		// Filter holds details about calls to the Filter method.
+		Filter []struct {
+			// Addresses is the addresses argument value.
+			Addresses []string
+		}
 		// IsRegistered holds details about calls to the IsRegistered method.
 		IsRegistered []struct {
 			// Address is the address argument value.
 			Address string
 		}
+		// RemovedAddresses holds details about calls to the RemovedAddresses method.
+		RemovedAddresses []struct {
+		}
+		// Update holds details about calls to the Update method.
+		Update []struct {
+			// AddedAddresses is the addedAddresses argument value.
+			AddedAddresses []string
+			// RemovedAddresses is the removedAddresses argument value.
+			RemovedAddresses []string
+		}
+		// Verify holds details about calls to the Verify method.
+		Verify []struct {
+			// AddedAddresses is the addedAddresses argument value.
+			AddedAddresses []string
+			// RemovedAddresses is the removedAddresses argument value.
+			RemovedAddresses []string
+		}
 	}
-	lockIsRegistered sync.RWMutex
+	lockClear            sync.RWMutex
+	lockCopy             sync.RWMutex
+	lockFilter           sync.RWMutex
+	lockIsRegistered     sync.RWMutex
+	lockRemovedAddresses sync.RWMutex
+	lockUpdate           sync.RWMutex
+	lockVerify           sync.RWMutex
+}
+
+// Clear calls ClearFunc.
+func (mock *RegistrationsManagerMock) Clear() {
+	if mock.ClearFunc == nil {
+		panic("RegistrationsManagerMock.ClearFunc: method is nil but RegistrationsManager.Clear was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockClear.Lock()
+	mock.calls.Clear = append(mock.calls.Clear, callInfo)
+	mock.lockClear.Unlock()
+	mock.ClearFunc()
+}
+
+// ClearCalls gets all the calls that were made to Clear.
+// Check the length with:
+//
+//	len(mockedRegistrationsManager.ClearCalls())
+func (mock *RegistrationsManagerMock) ClearCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockClear.RLock()
+	calls = mock.calls.Clear
+	mock.lockClear.RUnlock()
+	return calls
+}
+
+// Copy calls CopyFunc.
+func (mock *RegistrationsManagerMock) Copy() RegistrationsManager {
+	if mock.CopyFunc == nil {
+		panic("RegistrationsManagerMock.CopyFunc: method is nil but RegistrationsManager.Copy was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockCopy.Lock()
+	mock.calls.Copy = append(mock.calls.Copy, callInfo)
+	mock.lockCopy.Unlock()
+	return mock.CopyFunc()
+}
+
+// CopyCalls gets all the calls that were made to Copy.
+// Check the length with:
+//
+//	len(mockedRegistrationsManager.CopyCalls())
+func (mock *RegistrationsManagerMock) CopyCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockCopy.RLock()
+	calls = mock.calls.Copy
+	mock.lockCopy.RUnlock()
+	return calls
+}
+
+// Filter calls FilterFunc.
+func (mock *RegistrationsManagerMock) Filter(addresses []string) []string {
+	if mock.FilterFunc == nil {
+		panic("RegistrationsManagerMock.FilterFunc: method is nil but RegistrationsManager.Filter was just called")
+	}
+	callInfo := struct {
+		Addresses []string
+	}{
+		Addresses: addresses,
+	}
+	mock.lockFilter.Lock()
+	mock.calls.Filter = append(mock.calls.Filter, callInfo)
+	mock.lockFilter.Unlock()
+	return mock.FilterFunc(addresses)
+}
+
+// FilterCalls gets all the calls that were made to Filter.
+// Check the length with:
+//
+//	len(mockedRegistrationsManager.FilterCalls())
+func (mock *RegistrationsManagerMock) FilterCalls() []struct {
+	Addresses []string
+} {
+	var calls []struct {
+		Addresses []string
+	}
+	mock.lockFilter.RLock()
+	calls = mock.calls.Filter
+	mock.lockFilter.RUnlock()
+	return calls
 }
 
 // IsRegistered calls IsRegisteredFunc.
-func (mock *RegistrationsManagerMock) IsRegistered(address string) (bool, error) {
+func (mock *RegistrationsManagerMock) IsRegistered(address string) bool {
 	if mock.IsRegisteredFunc == nil {
 		panic("RegistrationsManagerMock.IsRegisteredFunc: method is nil but RegistrationsManager.IsRegistered was just called")
 	}
@@ -70,5 +226,104 @@ func (mock *RegistrationsManagerMock) IsRegisteredCalls() []struct {
 	mock.lockIsRegistered.RLock()
 	calls = mock.calls.IsRegistered
 	mock.lockIsRegistered.RUnlock()
+	return calls
+}
+
+// RemovedAddresses calls RemovedAddressesFunc.
+func (mock *RegistrationsManagerMock) RemovedAddresses() []string {
+	if mock.RemovedAddressesFunc == nil {
+		panic("RegistrationsManagerMock.RemovedAddressesFunc: method is nil but RegistrationsManager.RemovedAddresses was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockRemovedAddresses.Lock()
+	mock.calls.RemovedAddresses = append(mock.calls.RemovedAddresses, callInfo)
+	mock.lockRemovedAddresses.Unlock()
+	return mock.RemovedAddressesFunc()
+}
+
+// RemovedAddressesCalls gets all the calls that were made to RemovedAddresses.
+// Check the length with:
+//
+//	len(mockedRegistrationsManager.RemovedAddressesCalls())
+func (mock *RegistrationsManagerMock) RemovedAddressesCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockRemovedAddresses.RLock()
+	calls = mock.calls.RemovedAddresses
+	mock.lockRemovedAddresses.RUnlock()
+	return calls
+}
+
+// Update calls UpdateFunc.
+func (mock *RegistrationsManagerMock) Update(addedAddresses []string, removedAddresses []string) {
+	if mock.UpdateFunc == nil {
+		panic("RegistrationsManagerMock.UpdateFunc: method is nil but RegistrationsManager.Update was just called")
+	}
+	callInfo := struct {
+		AddedAddresses   []string
+		RemovedAddresses []string
+	}{
+		AddedAddresses:   addedAddresses,
+		RemovedAddresses: removedAddresses,
+	}
+	mock.lockUpdate.Lock()
+	mock.calls.Update = append(mock.calls.Update, callInfo)
+	mock.lockUpdate.Unlock()
+	mock.UpdateFunc(addedAddresses, removedAddresses)
+}
+
+// UpdateCalls gets all the calls that were made to Update.
+// Check the length with:
+//
+//	len(mockedRegistrationsManager.UpdateCalls())
+func (mock *RegistrationsManagerMock) UpdateCalls() []struct {
+	AddedAddresses   []string
+	RemovedAddresses []string
+} {
+	var calls []struct {
+		AddedAddresses   []string
+		RemovedAddresses []string
+	}
+	mock.lockUpdate.RLock()
+	calls = mock.calls.Update
+	mock.lockUpdate.RUnlock()
+	return calls
+}
+
+// Verify calls VerifyFunc.
+func (mock *RegistrationsManagerMock) Verify(addedAddresses []string, removedAddresses []string) error {
+	if mock.VerifyFunc == nil {
+		panic("RegistrationsManagerMock.VerifyFunc: method is nil but RegistrationsManager.Verify was just called")
+	}
+	callInfo := struct {
+		AddedAddresses   []string
+		RemovedAddresses []string
+	}{
+		AddedAddresses:   addedAddresses,
+		RemovedAddresses: removedAddresses,
+	}
+	mock.lockVerify.Lock()
+	mock.calls.Verify = append(mock.calls.Verify, callInfo)
+	mock.lockVerify.Unlock()
+	return mock.VerifyFunc(addedAddresses, removedAddresses)
+}
+
+// VerifyCalls gets all the calls that were made to Verify.
+// Check the length with:
+//
+//	len(mockedRegistrationsManager.VerifyCalls())
+func (mock *RegistrationsManagerMock) VerifyCalls() []struct {
+	AddedAddresses   []string
+	RemovedAddresses []string
+} {
+	var calls []struct {
+		AddedAddresses   []string
+		RemovedAddresses []string
+	}
+	mock.lockVerify.RLock()
+	calls = mock.calls.Verify
+	mock.lockVerify.RUnlock()
 	return calls
 }
