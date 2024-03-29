@@ -8,6 +8,3 @@
 
 ##Build
 *.exe
-
-benchmark/**
-configtest/**
