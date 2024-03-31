@@ -16,21 +16,19 @@ const (
 )
 
 type Node struct {
-	server                Server
-	synchronizationEngine domain.Pulser
-	validationEngine      domain.Pulser
-	verificationEngine    domain.Pulser
-	logger                log.Logger
+	server  Server
+	logger  log.Logger
+	engines []domain.Pulser
 }
 
-func NewNode(server Server, synchronizationEngine domain.Pulser, validationEngine domain.Pulser, verificationEngine domain.Pulser, logger log.Logger) *Node {
-	return &Node{server, synchronizationEngine, validationEngine, verificationEngine, logger}
+func NewNode(server Server, logger log.Logger, engines ...domain.Pulser) *Node {
+	return &Node{server, logger, engines}
 }
 
 func (node *Node) Run() error {
-	go node.synchronizationEngine.Start()
-	go node.validationEngine.Start()
-	go node.verificationEngine.Start()
+	for _, engine := range node.engines {
+		go engine.Start()
+	}
 	node.setServerHandles()
 	return node.server.Serve()
 }

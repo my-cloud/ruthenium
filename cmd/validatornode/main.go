@@ -78,15 +78,16 @@ func createNode(settingsPath string, infuraKey string, seedsPath string, ip stri
 	utxosPool := verification.NewUtxosPool()
 	blockchain := verification.NewBlockchain(registry, settings, neighborhood, utxosPool, logger)
 	transactionsPool := validation.NewTransactionsPool(blockchain, settings, neighborhood, utxosPool, address, logger)
-	synchronizationEngine := clock.NewEngine(neighborhood.Synchronize, watch, settings.SynchronizationTimer(), 1, 0)
+	neighborhoodSynchronizationEngine := clock.NewEngine(neighborhood.Synchronize, watch, settings.SynchronizationTimer(), 1, 0)
 	validationEngine := clock.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)
 	verificationEngine := clock.NewEngine(blockchain.Update, watch, settings.ValidationTimer(), settings.VerificationsCountPerValidation(), 1)
+	registrySynchronizationEngine := clock.NewEngine(registry.Synchronize, watch, 600*settings.ValidationTimer() /* TODO extract*/, 1, 0)
 	handler := gp2p.NewHandler(blockchain, settings.Bytes(), neighborhood, transactionsPool, utxosPool, watch, logger)
 	host, err := gp2p.NewHost(port, handler, settings.ValidationTimeout())
 	if err != nil {
 		return nil, err
 	}
-	return p2p.NewNode(host, synchronizationEngine, validationEngine, verificationEngine, logger), nil
+	return p2p.NewNode(host, logger, neighborhoodSynchronizationEngine, validationEngine, verificationEngine, registrySynchronizationEngine), nil
 }
 
 func createNeighborhood(seedsPath string, hostIp string, port int, settings *config.Settings, watch *clock.Watch, logger *console.Logger) (*p2p.Neighborhood, error) {

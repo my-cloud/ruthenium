@@ -1,10 +1,11 @@
 package p2p
 
 import (
+	"testing"
+
 	"github.com/my-cloud/ruthenium/domain"
 	"github.com/my-cloud/ruthenium/infrastructure/log"
 	"github.com/my-cloud/ruthenium/infrastructure/test"
-	"testing"
 )
 
 func Test_Run_NoError_ServerStarted(t *testing.T) {
@@ -22,7 +23,7 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	engineMock.StartFunc = func() {}
 	engineMock.PulseFunc = func() {}
 	logger := log.NewLoggerMock()
-	node := NewNode(serverMock, engineMock, engineMock, engineMock, logger)
+	node := NewNode(serverMock, logger, engineMock)
 
 	// Act
 	_ = node.Run()

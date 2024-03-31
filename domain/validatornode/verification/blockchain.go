@@ -327,11 +327,14 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*ledger.Block, neighborBlo
 			return nil, fmt.Errorf("failed to verify registered addresses: %w", err)
 		}
 	}
-	var verifiedBlocks []*ledger.Block
-	var neighborUtxosPool domain.UtxosManager
-	neighborUtxosPool = blockchain.utxosManager.Copy()
+	neighborUtxosPool := blockchain.utxosManager.Copy()
 	neighborRegistry := blockchain.registry.Copy()
+	if len(oldHostBlocks) == 0 {
+		neighborUtxosPool.Clear()
+		neighborRegistry.Clear()
+	}
 	neighborBlockchain := newBlockchain(oldHostBlocks, neighborRegistry, blockchain.settings, blockchain.neighborsManager, neighborUtxosPool, blockchain.logger)
+	var verifiedBlocks []*ledger.Block
 	for i := 0; i < len(neighborBlocks); i++ {
 		neighborBlock := neighborBlocks[i]
 		var previousBlockTimestamp int64
@@ -482,7 +485,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *ledger.Block, previousB
 							break
 						}
 					}
-					if !isNewlyRegistered || blockchain.registry.IsRegistered(output.Address()) {
+					if !isNewlyRegistered && !blockchain.registry.IsRegistered(output.Address()) {
 						return fmt.Errorf("a neighbor block transaction yielding output is not registered")
 					}
 				}

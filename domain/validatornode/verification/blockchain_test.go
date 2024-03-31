@@ -283,6 +283,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registryMock := new(validatornode.RegistrationsManagerMock)
+	registryMock.ClearFunc = func() {}
 	registryMock.CopyFunc = func() validatornode.RegistrationsManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
@@ -301,6 +302,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(domain.UtxosManagerMock)
+	utxosManagerMock.ClearFunc = func() {}
 	utxosManagerMock.CopyFunc = func() domain.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]byte, int64) error { return nil }
 	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
@@ -371,6 +373,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registryMock := new(validatornode.RegistrationsManagerMock)
+	registryMock.ClearFunc = func() {}
 	registryMock.CopyFunc = func() validatornode.RegistrationsManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
@@ -399,6 +402,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(domain.UtxosManagerMock)
+	utxosManagerMock.ClearFunc = func() {}
 	utxosManagerMock.CopyFunc = func() domain.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]byte, int64) error { return nil }
 	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
@@ -418,6 +422,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registryMock := new(validatornode.RegistrationsManagerMock)
+	registryMock.ClearFunc = func() {}
 	registryMock.CopyFunc = func() validatornode.RegistrationsManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
@@ -469,6 +474,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(domain.UtxosManagerMock)
+	utxosManagerMock.ClearFunc = func() {}
 	utxosManagerMock.CopyFunc = func() domain.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]byte, int64) error { return nil }
 	utxosManagerMock.UtxoFunc = func(input domain.InputInfoProvider) (domain.UtxoInfoProvider, error) {
@@ -495,6 +501,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registryMock := new(validatornode.RegistrationsManagerMock)
+	registryMock.ClearFunc = func() {}
 	registryMock.CopyFunc = func() validatornode.RegistrationsManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
@@ -546,6 +553,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(domain.UtxosManagerMock)
+	utxosManagerMock.ClearFunc = func() {}
 	utxosManagerMock.CopyFunc = func() domain.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]byte, int64) error { return nil }
 	utxosManagerMock.UtxoFunc = func(input domain.InputInfoProvider) (domain.UtxoInfoProvider, error) {
@@ -572,6 +580,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registryMock := new(validatornode.RegistrationsManagerMock)
+	registryMock.ClearFunc = func() {}
 	registryMock.CopyFunc = func() validatornode.RegistrationsManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
@@ -623,6 +632,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(domain.UtxosManagerMock)
+	utxosManagerMock.ClearFunc = func() {}
 	utxosManagerMock.CopyFunc = func() domain.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]byte, int64) error { return nil }
 	utxosManagerMock.UtxoFunc = func(input domain.InputInfoProvider) (domain.UtxoInfoProvider, error) {
@@ -649,6 +659,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registryMock := new(validatornode.RegistrationsManagerMock)
+	registryMock.ClearFunc = func() {}
 	registryMock.CopyFunc = func() validatornode.RegistrationsManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
@@ -700,6 +711,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(domain.UtxosManagerMock)
+	utxosManagerMock.ClearFunc = func() {}
 	utxosManagerMock.CopyFunc = func() domain.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]byte, int64) error { return nil }
 	utxosManagerMock.UtxoFunc = func(input domain.InputInfoProvider) (domain.UtxoInfoProvider, error) {
@@ -726,6 +738,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registryMock := new(validatornode.RegistrationsManagerMock)
+	registryMock.ClearFunc = func() {}
 	registryMock.CopyFunc = func() validatornode.RegistrationsManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
@@ -778,6 +791,7 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(domain.UtxosManagerMock)
+	utxosManagerMock.ClearFunc = func() {}
 	utxosManagerMock.CopyFunc = func() domain.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]byte, int64) error { return nil }
 	utxosManagerMock.UtxoFunc = func(input domain.InputInfoProvider) (domain.UtxoInfoProvider, error) {
@@ -804,6 +818,7 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplaced(t *testing.T) {
 	// Arrange
 	registryMock := new(validatornode.RegistrationsManagerMock)
+	registryMock.ClearFunc = func() {}
 	registryMock.CopyFunc = func() validatornode.RegistrationsManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
@@ -855,6 +870,7 @@ func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplace
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(domain.UtxosManagerMock)
+	utxosManagerMock.ClearFunc = func() {}
 	utxosManagerMock.CopyFunc = func() domain.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]byte, int64) error { return nil }
 	utxosManagerMock.UtxoFunc = func(input domain.InputInfoProvider) (domain.UtxoInfoProvider, error) {

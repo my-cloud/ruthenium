@@ -44,17 +44,27 @@ func (registry *Registry) Clear() {
 	defer registry.registeredMutex.Unlock()
 	registry.temporaryMutex.Lock()
 	defer registry.temporaryMutex.Unlock()
-
+	registry.removedMutex.Lock()
+	defer registry.removedMutex.Unlock()
+	registry.registeredAddresses = make(map[string]bool)
+	registry.temporaryAddresses = make(map[string]bool)
+	registry.removedAddresses = nil
 }
 
 func (registry *Registry) Copy() validatornode.RegistrationsManager {
+	registry.registeredMutex.RLock()
+	defer registry.registeredMutex.RUnlock()
+	registry.temporaryMutex.RLock()
+	defer registry.temporaryMutex.RUnlock()
+	registry.removedMutex.RLock()
+	defer registry.removedMutex.RUnlock()
 	registryCopy := &Registry{}
 	registryCopy.infuraKey = registry.infuraKey
 	registryCopy.registeredAddresses = copyAddressesMap(registry.registeredAddresses)
 	registryCopy.temporaryAddresses = copyAddressesMap(registry.temporaryAddresses)
+	registryCopy.removedAddresses = registry.removedAddresses
 	registryCopy.logger = registry.logger
 	return registryCopy
-
 }
 
 func (registry *Registry) Filter(addresses []string) []string {
@@ -75,7 +85,7 @@ func (registry *Registry) RemovedAddresses() []string {
 	return registry.removedAddresses
 }
 
-func (registry *Registry) UpdateFromProofOfHumanity() {
+func (registry *Registry) Synchronize(int64) {
 	registry.registeredMutex.RLock()
 	defer registry.registeredMutex.RUnlock()
 	registry.removedMutex.Lock()
@@ -88,7 +98,6 @@ func (registry *Registry) UpdateFromProofOfHumanity() {
 			registry.removedAddresses = append(registry.removedAddresses, address)
 		}
 	}
-
 	registry.temporaryMutex.Lock()
 	defer registry.temporaryMutex.Unlock()
 	registry.temporaryAddresses = make(map[string]bool)

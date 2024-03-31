@@ -54,8 +54,8 @@ func (pool *UtxosPool) UpdateUtxos(transactionsBytes []byte, timestamp int64) er
 		if ok {
 			return fmt.Errorf("transaction ID already exists: %s", transaction.Id())
 		}
-		for j, output := range transaction.Outputs() {
-			if output.InitialValue() > 0 {
+		if len(transaction.Outputs()) > 1 || transaction.Outputs()[0].InitialValue() > 0 || transaction.Outputs()[0].IsYielding() {
+			for j, output := range transaction.Outputs() {
 				inputInfo := ledger.NewInputInfo(uint16(j), transaction.Id())
 				utxo := ledger.NewUtxo(inputInfo, output, timestamp)
 				utxosForTransactionId = append(utxosForTransactionId, utxo)
@@ -78,7 +78,7 @@ func (pool *UtxosPool) UpdateUtxos(transactionsBytes []byte, timestamp int64) er
 			utxosById[input.TransactionId()][input.OutputIndex()] = nil
 			isEmpty := true
 			for _, output := range utxosForInputTransactionId {
-				if output != nil {
+				if output != nil && (output.InitialValue() > 0 || output.IsYielding()) {
 					isEmpty = false
 					break
 				}
