@@ -486,7 +486,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *ledger.Block, previousB
 						}
 					}
 					if !isNewlyRegistered && !blockchain.registry.IsRegistered(output.Address()) {
-						return fmt.Errorf("a neighbor block transaction yielding output is not registered")
+						return fmt.Errorf("a neighbor block transaction yielding output address is not registered")
 					}
 				}
 			}
