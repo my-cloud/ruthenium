@@ -958,7 +958,7 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
 }
 
-func Test_Update_NeighborBlockYieldingOutputAddressHasNotBeenRecentlyAdded_IsReplaced(t *testing.T) {
+func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *testing.T) {
 	// Arrange
 	registryMock := new(validatornode.RegistrationsManagerMock)
 	registryMock.ClearFunc = func() {}
@@ -978,10 +978,9 @@ func Test_Update_NeighborBlockYieldingOutputAddressHasNotBeenRecentlyAdded_IsRep
 	var genesisAmount uint64 = 1
 	address := test.Address
 	block1 := ledger.NewGenesisBlock(address, genesisAmount)
-	removedAddress := test.Address2
 	var genesisOutputIndex uint16 = 0
 	genesisTransaction := block1.Transactions()[0]
-	invalidTransactionRequestBytes := ledger.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, removedAddress, privateKey, publicKey, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, true)
+	invalidTransactionRequestBytes := ledger.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, address, privateKey, publicKey, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, true)
 	var invalidTransactionRequest *ledger.TransactionRequest
 	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
 	invalidTransaction := invalidTransactionRequest.Transaction()
@@ -993,7 +992,86 @@ func Test_Update_NeighborBlockYieldingOutputAddressHasNotBeenRecentlyAdded_IsRep
 		invalidTransaction,
 		rewardTransaction,
 	}
-	block3 := ledger.NewBlock(hash2, nil, []string{removedAddress}, now, transactions)
+	block3 := ledger.NewBlock(hash2, nil, nil, now, transactions)
+	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+		blocks := []*ledger.Block{block1, block2, block3}
+		blocksBytes, _ := json.Marshal(blocks)
+		return blocksBytes, nil
+	}
+	neighborMock.TargetFunc = func() string {
+		return "neighbor"
+	}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []network.Neighbor {
+		return []network.Neighbor{neighborMock}
+	}
+	settings := new(validatornode.SettingsProviderMock)
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 1 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
+	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
+	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
+	utxosManagerMock := new(domain.UtxosManagerMock)
+	utxosManagerMock.ClearFunc = func() {}
+	utxosManagerMock.CopyFunc = func() domain.UtxosManager { return utxosManagerMock }
+	utxosManagerMock.UpdateUtxosFunc = func([]byte, int64) error { return nil }
+	utxosManagerMock.UtxoFunc = func(input domain.InputInfoProvider) (domain.UtxoInfoProvider, error) {
+		if input.TransactionId() == genesisTransaction.Id() {
+			return ledger.NewUtxo(nil, genesisTransaction.Outputs()[0], now), nil
+		} else {
+			return ledger.NewUtxo(nil, rewardTransaction.Outputs()[0], now), nil
+		}
+	}
+	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	_ = blockchain.AddBlock(0, nil, nil)
+
+	// Act
+	blockchain.Update(now)
+
+	// Assert
+	expectedMessages := []string{
+		blockchainReplacedMessage,
+	}
+	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+}
+
+func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplaced(t *testing.T) {
+	// Arrange
+	registryMock := new(validatornode.RegistrationsManagerMock)
+	registryMock.ClearFunc = func() {}
+	registryMock.CopyFunc = func() validatornode.RegistrationsManager { return registryMock }
+	registryMock.FilterFunc = func([]string) []string { return nil }
+	registryMock.IsRegisteredFunc = func(string) bool { return false }
+	registryMock.RemovedAddressesFunc = func() []string { return nil }
+	registryMock.VerifyFunc = func([]string, []string) error { return nil }
+	registryMock.UpdateFunc = func([]string, []string) {}
+	logger := log.NewLoggerMock()
+	neighborMock := new(network.NeighborMock)
+	var transactionFee uint64 = 0
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
+	publicKey := encryption.NewPublicKey(privateKey)
+	var validationTimestamp int64 = 1
+	now := 2 * validationTimestamp
+	var genesisAmount uint64 = 1
+	address := test.Address
+	block1 := ledger.NewGenesisBlock(address, genesisAmount)
+	addedAddress := test.Address2
+	var genesisOutputIndex uint16 = 0
+	genesisTransaction := block1.Transactions()[0]
+	invalidTransactionRequestBytes := ledger.NewSignedTransactionRequest(genesisAmount, transactionFee, genesisOutputIndex, addedAddress, privateKey, publicKey, now-validationTimestamp, genesisTransaction.Id(), genesisAmount, true)
+	var invalidTransactionRequest *ledger.TransactionRequest
+	_ = json.Unmarshal(invalidTransactionRequestBytes, &invalidTransactionRequest)
+	invalidTransaction := invalidTransactionRequest.Transaction()
+	hash1, _ := block1.Hash()
+	block2 := ledger.NewRewardedBlock(hash1, now-validationTimestamp)
+	hash2, _ := block2.Hash()
+	rewardTransaction, _ := ledger.NewRewardTransaction(address, false, now, 0)
+	transactions := []*ledger.Transaction{
+		invalidTransaction,
+		rewardTransaction,
+	}
+	block3 := ledger.NewBlock(hash2, []string{addedAddress}, nil, now, transactions)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*ledger.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
