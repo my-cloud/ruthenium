@@ -1,14 +1,13 @@
 FROM golang:1.19 as builder
 WORKDIR /app
-COPY ./cmd ./cmd
+COPY ./validatornode ./validatornode
+COPY ./observernode ./observernode
 COPY ./config ./config
-COPY ./domain ./domain
-COPY ./infrastructure ./infrastructure
 ADD go.mod .
 ADD go.sum .
 
-RUN CGO_ENABLED=0 go build -o validatornode cmd/validatornode/main.go
-RUN CGO_ENABLED=0 go build -o observernode cmd/observernode/main.go
+RUN CGO_ENABLED=0 go build -o validatornode validatornode/main.go
+RUN CGO_ENABLED=0 go build -o observernode observernode/main.go
 
 FROM gcr.io/distroless/static-debian11
 USER nonroot

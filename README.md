@@ -21,7 +21,7 @@ There are two ways to run a Ruthenium node. You can either use your own build fr
   * If you are using Windows, you need to have [tdm-gcc](https://jmeubank.github.io/tdm-gcc/) installed.
 * Option B (using docker image):
   * You need to have [![Docker](https://img.shields.io/badge/docker-grey?logo=docker)](https://www.docker.com/) installed.
-* Your firewall port 10600 must be open (please read "Program arguments" section of the [validator node](cmd/validatornode/README.md#program-arguments) and [observer node](cmd/observernode/README.md#program-arguments) documentation if you want to use another port than 10600).
+* Your firewall port 10600 must be open (please read "Program arguments" section of the [validator node](validatornode/README.md#program-arguments) and [observer node](observernode/README.md#program-arguments) documentation if you want to use another port than 10600).
 * To get an income or validate blocks ou need to be registered in the [Proof of Humanity](https://github.com/my-cloud/ruthenium/wiki/Whitepaper#proof-of-humanity) registry.
 
 ### Installation
@@ -39,20 +39,20 @@ There are two ways to run a Ruthenium node. You can either use your own build fr
 ### Launch
 * Option A (using sources):
   * Extract files from the sources archive
-  * At root level (ruthenium folder), run the [validator node](cmd/validatornode/README.md):
+  * At root level (ruthenium folder), run the [validator node](validatornode/README.md):
     ```
-    go run cmd/validatornode/main.go -private-key=<private key>
+    go run validatornode/main.go -private-key=<private key>
     ```
-  * At root level (ruthenium folder), run the [observer node](cmd/observernode/README.md):
+  * At root level (ruthenium folder), run the [observer node](observernode/README.md):
     ```
-    go run cmd/observernode/main.go -host-ip=<your external IP address>
+    go run observernode/main.go -host-ip=<your external IP address>
     ```
 * Option B (using docker image):
-  * Run the [validator node](cmd/validatornode/README.md):
+  * Run the [validator node](validatornode/README.md):
     ```
     sudo docker run -p 10600:10600 -ti ghcr.io/my-cloud/ruthenium:latest \app\validatornode -private-key=<private key>
     ```
-  * Run the [observer node](cmd/observernode/README.md):
+  * Run the [observer node](observernode/README.md):
     ```
     sudo docker run -p 8080:8080 -ti ghcr.io/my-cloud/ruthenium:latest \app\observernode -host-ip=<your external IP address>
     ```
@@ -60,8 +60,8 @@ There are two ways to run a Ruthenium node. You can either use your own build fr
   * http://localhost:8080
 
 ## APIs
-* [validator node API](cmd/validatornode/README.md#api)
-* [observer node API](cmd/observernode/README.md#api)
+* [validator node API](validatornode/README.md#api)
+* [observer node API](observernode/README.md#api)
 
 ## Contributing
 [![Forks](https://img.shields.io/github/forks/my-cloud/ruthenium?logo=github)](https://github.com/my-cloud/ruthenium/fork)
