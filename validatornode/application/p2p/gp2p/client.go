@@ -5,7 +5,7 @@ import (
 
 	gp2p "github.com/leprosus/golang-p2p"
 
-	"github.com/my-cloud/ruthenium/common/infrastructure/log"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 )
 
 type Client struct {

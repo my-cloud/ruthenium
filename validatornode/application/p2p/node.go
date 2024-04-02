@@ -1,8 +1,8 @@
 package p2p
 
 import (
-	"github.com/my-cloud/ruthenium/common/application"
-	"github.com/my-cloud/ruthenium/common/infrastructure/log"
+	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 )
 
 const (
@@ -18,10 +18,10 @@ const (
 type Node struct {
 	server  Server
 	logger  log.Logger
-	engines []application.Pulser
+	engines []protocol.Pulser
 }
 
-func NewNode(server Server, logger log.Logger, engines ...application.Pulser) *Node {
+func NewNode(server Server, logger log.Logger, engines ...protocol.Pulser) *Node {
 	return &Node{server, logger, engines}
 }
 

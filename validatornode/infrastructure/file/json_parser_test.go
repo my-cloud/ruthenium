@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/my-cloud/ruthenium/common/infrastructure/test"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
 func Test_Parse_UnableToOpenFile_ReturnsError(t *testing.T) {

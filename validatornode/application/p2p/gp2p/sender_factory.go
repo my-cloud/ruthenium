@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/my-cloud/ruthenium/common/infrastructure/log/console"
-	"github.com/my-cloud/ruthenium/common/infrastructure/net"
 	"github.com/my-cloud/ruthenium/validatornode/application/p2p"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
 )
 
 type SenderFactory struct {

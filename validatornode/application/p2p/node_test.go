@@ -3,9 +3,9 @@ package p2p
 import (
 	"testing"
 
-	"github.com/my-cloud/ruthenium/common/application"
-	"github.com/my-cloud/ruthenium/common/infrastructure/log"
-	"github.com/my-cloud/ruthenium/common/infrastructure/test"
+	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
 func Test_Run_NoError_ServerStarted(t *testing.T) {
@@ -19,7 +19,7 @@ func Test_Run_NoError_ServerStarted(t *testing.T) {
 	serverMock.SetHandleTransactionRequestFunc = func(string) {}
 	serverMock.SetHandleTransactionsRequestFunc = func(string) {}
 	serverMock.SetHandleUtxosRequestFunc = func(string) {}
-	engineMock := new(application.PulserMock)
+	engineMock := new(protocol.PulserMock)
 	engineMock.StartFunc = func() {}
 	engineMock.PulseFunc = func() {}
 	logger := log.NewLoggerMock()

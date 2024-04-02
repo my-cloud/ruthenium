@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/my-cloud/ruthenium/common/application"
+	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/presentation/network"
 )
 
@@ -19,10 +19,10 @@ type Neighborhood struct {
 	scoresBySeedTargetValue  map[string]int
 	scoresByTargetValue      map[string]int
 	scoresByTargetValueMutex sync.RWMutex
-	watch                    application.TimeProvider
+	watch                    protocol.TimeProvider
 }
 
-func NewNeighborhood(clientFactory SenderCreator, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTargetValue map[string]int, watch application.TimeProvider) *Neighborhood {
+func NewNeighborhood(clientFactory SenderCreator, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTargetValue map[string]int, watch protocol.TimeProvider) *Neighborhood {
 	neighborhood := new(Neighborhood)
 	neighborhood.clientFactory = clientFactory
 	neighborhood.hostTarget = NewTarget(hostIp, hostPort)

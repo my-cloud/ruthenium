@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/my-cloud/ruthenium/common/infrastructure/test"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
 func Test_Target_NoError_ReturnTarget(t *testing.T) {

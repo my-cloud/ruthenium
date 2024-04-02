@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/my-cloud/ruthenium/common/domain/clock"
-	"github.com/my-cloud/ruthenium/common/domain/encryption"
-	"github.com/my-cloud/ruthenium/common/infrastructure/config"
-	"github.com/my-cloud/ruthenium/common/infrastructure/environment"
-	"github.com/my-cloud/ruthenium/common/infrastructure/log/console"
-	"github.com/my-cloud/ruthenium/common/infrastructure/net"
 	"github.com/my-cloud/ruthenium/validatornode/application/p2p"
 	"github.com/my-cloud/ruthenium/validatornode/application/p2p/gp2p"
-	"github.com/my-cloud/ruthenium/validatornode/domain/validation"
-	"github.com/my-cloud/ruthenium/validatornode/domain/verification"
-	"github.com/my-cloud/ruthenium/validatornode/domain/verification/poh"
+	"github.com/my-cloud/ruthenium/validatornode/application/protocol/validation"
+	"github.com/my-cloud/ruthenium/validatornode/application/protocol/verification"
+	"github.com/my-cloud/ruthenium/validatornode/application/protocol/verification/poh"
+	"github.com/my-cloud/ruthenium/validatornode/domain/clock"
+	"github.com/my-cloud/ruthenium/validatornode/domain/encryption"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/config"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/environment"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/file"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
 )
 
 func main() {

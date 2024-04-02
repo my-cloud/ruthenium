@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/my-cloud/ruthenium/common/infrastructure/net"
-	"github.com/my-cloud/ruthenium/common/infrastructure/test"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
 func Test_CreateSender_IpFinderError_ReturnsNil(t *testing.T) {

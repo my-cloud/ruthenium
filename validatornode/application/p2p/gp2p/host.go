@@ -7,8 +7,8 @@ import (
 
 	gp2p "github.com/leprosus/golang-p2p"
 
-	"github.com/my-cloud/ruthenium/common/infrastructure/log/console"
 	"github.com/my-cloud/ruthenium/validatornode/application/p2p"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
 )
 
 type Host struct {

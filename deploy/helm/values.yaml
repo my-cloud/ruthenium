@@ -54,13 +54,13 @@ app:
         PRIVATE_KEY: privateKey
     env:
 
-  - name: observernode
+  - name: accessnode
     image:
       name: ghcr.io/my-cloud/ruthenium
       tagOverride: latest
       #pullPolicy: "IfNotPresent"
     #autoReload: "true"
-    command: [/app/observernode]
+    command: [/app/accessnode]
     service:
     - protocol: TCP
       port: "80"
