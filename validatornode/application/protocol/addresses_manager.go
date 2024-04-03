@@ -1,8 +1,8 @@
-package verification
+package protocol
 
-type RegistrationsManager interface {
+type AddressesManager interface {
 	Clear()
-	Copy() RegistrationsManager
+	Copy() AddressesManager
 	Filter(addresses []string) (newAddresses []string)
 	IsRegistered(address string) bool
 	RemovedAddresses() (removedAddresses []string)

@@ -10,36 +10,36 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/array"
 )
 
-type UtxosPool struct {
+type UtxosRegistry struct {
 	mutex          sync.RWMutex
 	utxosByAddress map[string][]*ledger.Utxo
 	utxosById      map[string][]*ledger.Utxo
 }
 
-func NewUtxosPool() *UtxosPool {
-	utxosPool := &UtxosPool{}
+func NewUtxosRegistry() *UtxosRegistry {
+	utxosPool := &UtxosRegistry{}
 	utxosPool.utxosByAddress = make(map[string][]*ledger.Utxo)
 	utxosPool.utxosById = make(map[string][]*ledger.Utxo)
 	return utxosPool
 }
 
-func (pool *UtxosPool) Clear() {
-	pool.mutex.Lock()
-	defer pool.mutex.Unlock()
-	pool.utxosByAddress = make(map[string][]*ledger.Utxo)
-	pool.utxosById = make(map[string][]*ledger.Utxo)
+func (registry *UtxosRegistry) Clear() {
+	registry.mutex.Lock()
+	defer registry.mutex.Unlock()
+	registry.utxosByAddress = make(map[string][]*ledger.Utxo)
+	registry.utxosById = make(map[string][]*ledger.Utxo)
 }
 
-func (pool *UtxosPool) Copy() protocol.UtxosManager {
-	poolCopy := &UtxosPool{}
-	pool.mutex.Lock()
-	defer pool.mutex.Unlock()
-	poolCopy.utxosByAddress = copyUtxosMap(pool.utxosByAddress)
-	poolCopy.utxosById = copyUtxosMap(pool.utxosById)
+func (registry *UtxosRegistry) Copy() protocol.UtxosManager {
+	poolCopy := &UtxosRegistry{}
+	registry.mutex.Lock()
+	defer registry.mutex.Unlock()
+	poolCopy.utxosByAddress = copyUtxosMap(registry.utxosByAddress)
+	poolCopy.utxosById = copyUtxosMap(registry.utxosById)
 	return poolCopy
 }
 
-func (pool *UtxosPool) UpdateUtxos(transactionsBytes []byte, timestamp int64) error {
+func (registry *UtxosRegistry) UpdateUtxos(transactionsBytes []byte, timestamp int64) error {
 	if transactionsBytes == nil {
 		return nil
 	}
@@ -47,8 +47,8 @@ func (pool *UtxosPool) UpdateUtxos(transactionsBytes []byte, timestamp int64) er
 	if err := json.Unmarshal(transactionsBytes, &transactions); err != nil {
 		return fmt.Errorf("failed to unmarshal transactions: %w", err)
 	}
-	utxosByAddress := copyUtxosMap(pool.utxosByAddress)
-	utxosById := copyUtxosMap(pool.utxosById)
+	utxosByAddress := copyUtxosMap(registry.utxosByAddress)
+	utxosById := copyUtxosMap(registry.utxosById)
 	for _, transaction := range transactions {
 		utxosForTransactionId, ok := utxosById[transaction.Id()]
 		if ok {
@@ -94,15 +94,15 @@ func (pool *UtxosPool) UpdateUtxos(transactionsBytes []byte, timestamp int64) er
 	if err := verifyIncomes(utxosByAddress); err != nil {
 		return err
 	}
-	pool.mutex.Lock()
-	defer pool.mutex.Unlock()
-	pool.utxosById = utxosById
-	pool.utxosByAddress = utxosByAddress
+	registry.mutex.Lock()
+	defer registry.mutex.Unlock()
+	registry.utxosById = utxosById
+	registry.utxosByAddress = utxosByAddress
 	return nil
 }
 
-func (pool *UtxosPool) Utxo(input protocol.InputInfoProvider) (protocol.UtxoInfoProvider, error) {
-	utxos, ok := pool.utxosById[input.TransactionId()]
+func (registry *UtxosRegistry) Utxo(input protocol.InputInfoProvider) (protocol.UtxoInfoProvider, error) {
+	utxos, ok := registry.utxosById[input.TransactionId()]
 	if !ok || int(input.OutputIndex()) > len(utxos)-1 {
 		return nil, fmt.Errorf("failed to find UTXO, input: %v", input)
 	}
@@ -113,8 +113,8 @@ func (pool *UtxosPool) Utxo(input protocol.InputInfoProvider) (protocol.UtxoInfo
 	return utxo, nil
 }
 
-func (pool *UtxosPool) Utxos(address string) []byte {
-	utxos, ok := pool.utxosByAddress[address]
+func (registry *UtxosRegistry) Utxos(address string) []byte {
+	utxos, ok := registry.utxosByAddress[address]
 	if !ok {
 		return array.MarshalledEmptyArray
 	}

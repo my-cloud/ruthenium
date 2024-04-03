@@ -16,10 +16,10 @@ import (
 	"github.com/my-cloud/ruthenium/accessnode/application/wallet/address"
 	"github.com/my-cloud/ruthenium/accessnode/application/wallet/amount"
 	"github.com/my-cloud/ruthenium/validatornode/application/p2p"
-	"github.com/my-cloud/ruthenium/validatornode/application/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/validatornode/domain/clock"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/config"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/environment"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/gp2p"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
 )

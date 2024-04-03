@@ -23,7 +23,7 @@ const (
 
 func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	logger := log.NewLoggerMock()
@@ -41,7 +41,7 @@ func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 
 func Test_Blocks_BlocksCountLimitSetToZero_ReturnsEmptyArray(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	logger := log.NewLoggerMock()
 	neighborsManagerMock := new(p2p.NeighborsManagerMock)
 	settings := new(protocol.SettingsProviderMock)
@@ -60,7 +60,7 @@ func Test_Blocks_BlocksCountLimitSetToZero_ReturnsEmptyArray(t *testing.T) {
 
 func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
@@ -89,7 +89,7 @@ func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
 
 func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
@@ -118,7 +118,7 @@ func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
 
 func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsEmptyArray(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	logger := log.NewLoggerMock()
@@ -145,7 +145,7 @@ func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsEmptyArray(t 
 
 func Test_FirstBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	logger := log.NewLoggerMock()
 	neighborsManagerMock := new(p2p.NeighborsManagerMock)
 	settings := new(protocol.SettingsProviderMock)
@@ -162,7 +162,7 @@ func Test_FirstBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 
 func Test_FirstBlockTimestamp_BlockchainIsNotEmpty_ReturnsFirstBlockTimestamp(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	logger := log.NewLoggerMock()
@@ -184,7 +184,7 @@ func Test_FirstBlockTimestamp_BlockchainIsNotEmpty_ReturnsFirstBlockTimestamp(t 
 
 func Test_LastBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	logger := log.NewLoggerMock()
 	neighborsManagerMock := new(p2p.NeighborsManagerMock)
 	settings := new(protocol.SettingsProviderMock)
@@ -201,7 +201,7 @@ func Test_LastBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 
 func Test_LastBlockTimestamp_BlockchainIsNotEmpty_ReturnsLastBlockTimestamp(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
@@ -225,9 +225,9 @@ func Test_LastBlockTimestamp_BlockchainIsNotEmpty_ReturnsLastBlockTimestamp(t *t
 
 func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -283,9 +283,9 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 
 func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -373,9 +373,9 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 
 func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -422,9 +422,9 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 
 func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -501,9 +501,9 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 
 func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -580,9 +580,9 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 
 func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -659,9 +659,9 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 
 func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -738,9 +738,9 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 
 func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -818,9 +818,9 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 
 func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -897,10 +897,10 @@ func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplace
 
 func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	notRegisteredAddress := test.Address
 	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -960,9 +960,9 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 
 func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -1038,9 +1038,9 @@ func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *te
 
 func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return false }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -1117,9 +1117,9 @@ func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplac
 
 func Test_Update_NeighborBlockYieldingOutputIsNotRegistered_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
+	registryMock := new(protocol.AddressesManagerMock)
 	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return false }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -1197,8 +1197,8 @@ func Test_Update_NeighborBlockYieldingOutputIsNotRegistered_IsNotReplaced(t *tes
 
 func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock := new(protocol.AddressesManagerMock)
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
@@ -1264,8 +1264,8 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 
 func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	// Arrange
-	registryMock := new(RegistrationsManagerMock)
-	registryMock.CopyFunc = func() RegistrationsManager { return registryMock }
+	registryMock := new(protocol.AddressesManagerMock)
+	registryMock.CopyFunc = func() protocol.AddressesManager { return registryMock }
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }

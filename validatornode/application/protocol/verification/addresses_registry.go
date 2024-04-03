@@ -1,13 +1,10 @@
-package poh
+package verification
 
 import (
 	"fmt"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-
-	"github.com/my-cloud/ruthenium/validatornode/application/protocol/verification"
+	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 )
 
@@ -16,8 +13,8 @@ const (
 	clientUrl                  = "https://mainnet.infura.io/v3/"
 )
 
-type Registry struct {
-	infuraKey           string
+type AddressesRegistry struct {
+	humansManager       HumansManager
 	registeredMutex     sync.RWMutex
 	temporaryMutex      sync.RWMutex
 	removedMutex        sync.RWMutex
@@ -27,19 +24,16 @@ type Registry struct {
 	logger              log.Logger
 }
 
-func NewRegistry(infuraKey string, logger log.Logger) *Registry {
-	if infuraKey == "" {
-		logger.Warn("infura key not provided")
-	}
-	registry := &Registry{}
-	registry.infuraKey = infuraKey
+func NewAddressesRegistry(humansManager HumansManager, logger log.Logger) *AddressesRegistry {
+	registry := &AddressesRegistry{}
+	registry.humansManager = humansManager
 	registry.registeredAddresses = make(map[string]bool)
 	registry.temporaryAddresses = make(map[string]bool)
 	registry.logger = logger
 	return registry
 }
 
-func (registry *Registry) Clear() {
+func (registry *AddressesRegistry) Clear() {
 	registry.registeredMutex.Lock()
 	defer registry.registeredMutex.Unlock()
 	registry.temporaryMutex.Lock()
@@ -51,15 +45,15 @@ func (registry *Registry) Clear() {
 	registry.removedAddresses = nil
 }
 
-func (registry *Registry) Copy() verification.RegistrationsManager {
+func (registry *AddressesRegistry) Copy() protocol.AddressesManager {
 	registry.registeredMutex.RLock()
 	defer registry.registeredMutex.RUnlock()
 	registry.temporaryMutex.RLock()
 	defer registry.temporaryMutex.RUnlock()
 	registry.removedMutex.RLock()
 	defer registry.removedMutex.RUnlock()
-	registryCopy := &Registry{}
-	registryCopy.infuraKey = registry.infuraKey
+	registryCopy := &AddressesRegistry{}
+	registryCopy.humansManager = registry.humansManager
 	registryCopy.registeredAddresses = copyAddressesMap(registry.registeredAddresses)
 	registryCopy.temporaryAddresses = copyAddressesMap(registry.temporaryAddresses)
 	registryCopy.removedAddresses = registry.removedAddresses
@@ -67,7 +61,7 @@ func (registry *Registry) Copy() verification.RegistrationsManager {
 	return registryCopy
 }
 
-func (registry *Registry) Filter(addresses []string) []string {
+func (registry *AddressesRegistry) Filter(addresses []string) []string {
 	var newAddresses []string
 	for _, address := range addresses {
 		if !registry.registeredAddresses[address] {
@@ -77,21 +71,21 @@ func (registry *Registry) Filter(addresses []string) []string {
 	return newAddresses
 }
 
-func (registry *Registry) IsRegistered(address string) bool {
+func (registry *AddressesRegistry) IsRegistered(address string) bool {
 	return registry.registeredAddresses[address]
 }
 
-func (registry *Registry) RemovedAddresses() []string {
+func (registry *AddressesRegistry) RemovedAddresses() []string {
 	return registry.removedAddresses
 }
 
-func (registry *Registry) Synchronize(int64) {
+func (registry *AddressesRegistry) Synchronize(int64) {
 	registry.registeredMutex.RLock()
 	defer registry.registeredMutex.RUnlock()
 	registry.removedMutex.Lock()
 	defer registry.removedMutex.Unlock()
 	for address := range registry.registeredAddresses {
-		isPohValid, err := registry.isRegistered(address)
+		isPohValid, err := registry.humansManager.IsRegistered(address)
 		if err != nil {
 			registry.logger.Debug(err.Error())
 		} else if !isPohValid {
@@ -103,7 +97,7 @@ func (registry *Registry) Synchronize(int64) {
 	registry.temporaryAddresses = make(map[string]bool)
 }
 
-func (registry *Registry) Update(addedAddresses []string, removedAddresses []string) {
+func (registry *AddressesRegistry) Update(addedAddresses []string, removedAddresses []string) {
 	registry.registeredMutex.Lock()
 	defer registry.registeredMutex.Unlock()
 	registry.removedMutex.Lock()
@@ -117,14 +111,14 @@ func (registry *Registry) Update(addedAddresses []string, removedAddresses []str
 	}
 }
 
-func (registry *Registry) Verify(addedAddresses []string, removedAddresses []string) error {
+func (registry *AddressesRegistry) Verify(addedAddresses []string, removedAddresses []string) error {
 	registry.registeredMutex.RLock()
 	defer registry.registeredMutex.RUnlock()
 	registry.temporaryMutex.Lock()
 	defer registry.temporaryMutex.Unlock()
 	for _, address := range removedAddresses {
 		if registry.registeredAddresses[address] && registry.temporaryAddresses[address] {
-			isPohValid, err := registry.isRegistered(address)
+			isPohValid, err := registry.humansManager.IsRegistered(address)
 			if err != nil {
 				registry.logger.Debug(err.Error())
 			} else if isPohValid {
@@ -136,7 +130,7 @@ func (registry *Registry) Verify(addedAddresses []string, removedAddresses []str
 	}
 	for _, address := range addedAddresses {
 		if !registry.registeredAddresses[address] && registry.temporaryAddresses[address] {
-			isPohValid, err := registry.isRegistered(address)
+			isPohValid, err := registry.humansManager.IsRegistered(address)
 			if err != nil {
 				registry.logger.Debug(err.Error())
 			} else if !isPohValid {
@@ -155,26 +149,6 @@ func copyAddressesMap(addresses map[string]bool) map[string]bool {
 		addressesCopy[address] = true
 	}
 	return addressesCopy
-}
-
-func (registry *Registry) isRegistered(address string) (isRegistered bool, err error) {
-	if registry.infuraKey == "" {
-		return true, nil
-	}
-	client, err := ethclient.Dial(fmt.Sprint(clientUrl, registry.infuraKey))
-	if err != nil {
-		return
-	}
-	pohSmartContractAddress := common.HexToAddress(pohSmartContractAddressHex)
-	proofOfHumanity, err := NewPoh(pohSmartContractAddress, client)
-	if err != nil {
-		return false, fmt.Errorf("failed to get proof of humanity for address %s: %w", address, err)
-	}
-	isRegistered, err = proofOfHumanity.PohCaller.IsRegistered(nil, common.HexToAddress(address))
-	if err != nil {
-		return false, fmt.Errorf("failed to get proof of humanity for address %s: %w", address, err)
-	}
-	return isRegistered, nil
 }
 
 func removeAddress(addresses []string, address string) []string {

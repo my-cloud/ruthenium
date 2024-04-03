@@ -18,19 +18,19 @@ import (
 type Blockchain struct {
 	blocks           []*ledger.Block
 	mutex            sync.RWMutex
-	registry         RegistrationsManager
+	registry         protocol.AddressesManager
 	neighborsManager p2p.NeighborsManager
 	utxosManager     protocol.UtxosManager
 	settings         protocol.SettingsProvider
 	logger           log.Logger
 }
 
-func NewBlockchain(registry RegistrationsManager, settings protocol.SettingsProvider, neighborsManager p2p.NeighborsManager, utxosManager protocol.UtxosManager, logger log.Logger) *Blockchain {
+func NewBlockchain(registry protocol.AddressesManager, settings protocol.SettingsProvider, neighborsManager p2p.NeighborsManager, utxosManager protocol.UtxosManager, logger log.Logger) *Blockchain {
 	blockchain := newBlockchain(nil, registry, settings, neighborsManager, utxosManager, logger)
 	return blockchain
 }
 
-func newBlockchain(blocks []*ledger.Block, registry RegistrationsManager, settings protocol.SettingsProvider, neighborsManager p2p.NeighborsManager, utxosManager protocol.UtxosManager, logger log.Logger) *Blockchain {
+func newBlockchain(blocks []*ledger.Block, registry protocol.AddressesManager, settings protocol.SettingsProvider, neighborsManager p2p.NeighborsManager, utxosManager protocol.UtxosManager, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blocks = blocks
 	blockchain.registry = registry

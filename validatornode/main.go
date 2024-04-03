@@ -4,19 +4,20 @@ import (
 	"flag"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/my-cloud/ruthenium/validatornode/application/p2p"
-	"github.com/my-cloud/ruthenium/validatornode/application/p2p/gp2p"
 	"github.com/my-cloud/ruthenium/validatornode/application/protocol/validation"
 	"github.com/my-cloud/ruthenium/validatornode/application/protocol/verification"
-	"github.com/my-cloud/ruthenium/validatornode/application/protocol/verification/poh"
 	"github.com/my-cloud/ruthenium/validatornode/domain/clock"
 	"github.com/my-cloud/ruthenium/validatornode/domain/encryption"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/config"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/environment"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/file"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/gp2p"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/poh"
 )
 
 func main() {
@@ -69,20 +70,21 @@ func createNode(settingsPath string, infuraKey string, seedsPath string, ip stri
 	if err != nil {
 		return nil, err
 	}
-	registry := poh.NewRegistry(infuraKey, logger)
+	humanityRegistry := poh.NewHumanityRegistry(infuraKey, logger)
+	addressesRegistry := verification.NewAddressesRegistry(humanityRegistry, logger)
 	watch := clock.NewWatch()
 	neighborhood, err := createNeighborhood(seedsPath, ip, port, settings, watch, logger)
 	if err != nil {
 		return nil, err
 	}
-	utxosPool := verification.NewUtxosPool()
-	blockchain := verification.NewBlockchain(registry, settings, neighborhood, utxosPool, logger)
-	transactionsPool := validation.NewTransactionsPool(blockchain, settings, neighborhood, utxosPool, address, logger)
+	utxosRegistry := verification.NewUtxosRegistry()
+	blockchain := verification.NewBlockchain(addressesRegistry, settings, neighborhood, utxosRegistry, logger)
+	transactionsPool := validation.NewTransactionsPool(blockchain, settings, neighborhood, utxosRegistry, address, logger)
 	neighborhoodSynchronizationEngine := clock.NewEngine(neighborhood.Synchronize, watch, settings.SynchronizationTimer(), 1, 0)
 	validationEngine := clock.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)
 	verificationEngine := clock.NewEngine(blockchain.Update, watch, settings.ValidationTimer(), settings.VerificationsCountPerValidation(), 1)
-	registrySynchronizationEngine := clock.NewEngine(registry.Synchronize, watch, 600*settings.ValidationTimer() /* TODO extract*/, 1, 0)
-	handler := gp2p.NewHandler(blockchain, settings.Bytes(), neighborhood, transactionsPool, utxosPool, watch, logger)
+	registrySynchronizationEngine := clock.NewEngine(addressesRegistry.Synchronize, watch, time.Hour /* TODO extract */, 1, 0)
+	handler := gp2p.NewHandler(blockchain, settings.Bytes(), neighborhood, transactionsPool, utxosRegistry, watch, logger)
 	host, err := gp2p.NewHost(port, handler, settings.ValidationTimeout())
 	if err != nil {
 		return nil, err

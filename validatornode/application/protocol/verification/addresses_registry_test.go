@@ -1,4 +1,4 @@
-package poh
+package verification
 
 import (
 	"testing"
@@ -7,11 +7,12 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
+// TODO
 // func Test_IsRegistered_InfuraKey_ReturnsTrue(t *testing.T) {
 // 	// Arrange
 // 	address := "0x0000000000000000000000000000000000000001"
 // 	logger := log.NewLoggerMock()
-// 	registry := NewRegistry("", logger)
+// 	registry := NewAddressesRegistry("", logger)
 //
 // 	// Act
 // 	isRegistered, err := registry.IsRegistered(address)
@@ -24,7 +25,9 @@ import (
 func Test_TakeAddedAddresses(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	registry := NewRegistry("", logger)
+	humansManagerMock := new(HumansManagerMock)
+	humansManagerMock.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
+	registry := NewAddressesRegistry(humansManagerMock, logger)
 
 	// Act
 	addedAddresses := registry.Filter([]string{"qesf"})
