@@ -28,7 +28,7 @@ func main() {
 	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(8080), "The TCP port number of the access node")
 	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue("127.0.0.1"), "The validator node IP or DNS address")
 	hostPort := flag.Int("host-port", environment.NewVariable("HOST_PORT").GetIntValue(10600), "The TCP port number of the validator node")
-	templatesPath := flag.String("templates-path", environment.NewVariable("TEMPLATES_PATH").GetStringValue("accessnode/application/index"), "The UI templates path")
+	templatePath := flag.String("template-path", environment.NewVariable("TEMPLATE_PATH").GetStringValue("accessnode/template.html"), "The UI template path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level (possible values: 'debug', 'info', 'warn', 'error', 'fatal')")
 
 	flag.Parse()
@@ -50,7 +50,7 @@ func main() {
 		logger.Fatal(fmt.Errorf("unable to unmarshal settings: %w", err).Error())
 	}
 	watch := clock.NewWatch()
-	http.Handle("/", index.NewHandler(*templatesPath, logger))
+	http.Handle("/", index.NewHandler(*templatePath, logger))
 	http.Handle("/transaction", transaction.NewHandler(host, logger))
 	http.Handle("/transactions", transactions.NewHandler(host, logger))
 	http.Handle("/transaction/info", info.NewHandler(host, settings, watch, logger))

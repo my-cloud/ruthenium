@@ -1,4 +1,4 @@
-# Observer Node
+# Access Node
 The access node interacts with the [validator node](../validatornode/README.md) through a P2P connection, and exposes a HTTP REST [API](#api)
 Any other implementation of this access node can communicate with a validator node using its [API](../validatornode/README.md#api).
 In this repository, a simple user interface is defined in a `template.html`.
@@ -17,7 +17,7 @@ go run accessnode/main.go -host-ip=0.0.0.0
 -port: The TCP port number for the access node (default: "8080")
 -host-ip: The validator node IP or DNS address (default: "127.0.0.1")
 -host-port: The TCP port number of the validator node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
--templates-path: The UI templates path (default: "templates")
+-template-path: The UI template path (default: "accessnode/template.html")
 -log-level: The log level (accepted values: "debug", "info", "warn", "error", "fatal", default: "info")
 ```
 

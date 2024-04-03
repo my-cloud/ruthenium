@@ -4,24 +4,23 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"path"
 
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 )
 
 type Handler struct {
-	templatesPath string
-	logger        log.Logger
+	templatePath string
+	logger       log.Logger
 }
 
-func NewHandler(templatesPath string, logger log.Logger) *Handler {
-	return &Handler{templatesPath, logger}
+func NewHandler(templatePath string, logger log.Logger) *Handler {
+	return &Handler{templatePath, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		t, err := template.ParseFiles(path.Join(handler.templatesPath, "template.html"))
+		t, err := template.ParseFiles(handler.templatePath)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to parse the template: %w", err).Error())
 			return

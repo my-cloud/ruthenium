@@ -90,7 +90,7 @@ func (registry *Registry) Synchronize(int64) {
 	defer registry.registeredMutex.RUnlock()
 	registry.removedMutex.Lock()
 	defer registry.removedMutex.Unlock()
-	for address, _ := range registry.registeredAddresses {
+	for address := range registry.registeredAddresses {
 		isPohValid, err := registry.isRegistered(address)
 		if err != nil {
 			registry.logger.Debug(err.Error())
