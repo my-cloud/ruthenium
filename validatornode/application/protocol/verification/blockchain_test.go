@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/my-cloud/ruthenium/validatornode/application/p2p"
+	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/domain/encryption"
 	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
-	"github.com/my-cloud/ruthenium/validatornode/presentation/network"
+	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
 
 const (
@@ -27,7 +27,7 @@ func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	settings := new(protocol.SettingsProviderMock)
 	utxosManagerMock := new(protocol.UtxosManagerMock)
 	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
@@ -43,7 +43,7 @@ func Test_Blocks_BlocksCountLimitSetToZero_ReturnsEmptyArray(t *testing.T) {
 	// Arrange
 	registryMock := new(protocol.AddressesManagerMock)
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	settings := new(protocol.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 0 }
 	utxosManagerMock := new(protocol.UtxosManagerMock)
@@ -65,7 +65,7 @@ func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	var expectedBlocksCount uint64 = 1
 	settings := new(protocol.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return expectedBlocksCount }
@@ -94,7 +94,7 @@ func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	var expectedBlocksCount uint64 = 2
 	settings := new(protocol.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return expectedBlocksCount }
@@ -122,7 +122,7 @@ func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsEmptyArray(t 
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	var blocksCount uint64 = 1
 	settings := new(protocol.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return blocksCount }
@@ -147,7 +147,7 @@ func Test_FirstBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 	// Arrange
 	registryMock := new(protocol.AddressesManagerMock)
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	settings := new(protocol.SettingsProviderMock)
 	utxosManagerMock := new(protocol.UtxosManagerMock)
 	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
@@ -166,7 +166,7 @@ func Test_FirstBlockTimestamp_BlockchainIsNotEmpty_ReturnsFirstBlockTimestamp(t 
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	settings := new(protocol.SettingsProviderMock)
 	utxosManagerMock := new(protocol.UtxosManagerMock)
 	utxosManagerMock.UpdateUtxosFunc = func([]byte, int64) error { return nil }
@@ -186,7 +186,7 @@ func Test_LastBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 	// Arrange
 	registryMock := new(protocol.AddressesManagerMock)
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	settings := new(protocol.SettingsProviderMock)
 	utxosManagerMock := new(protocol.UtxosManagerMock)
 	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
@@ -206,7 +206,7 @@ func Test_LastBlockTimestamp_BlockchainIsNotEmpty_ReturnsLastBlockTimestamp(t *t
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	settings := new(protocol.SettingsProviderMock)
 	utxosManagerMock := new(protocol.UtxosManagerMock)
 	utxosManagerMock.UpdateUtxosFunc = func([]byte, int64) error { return nil }
@@ -233,13 +233,13 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	var validationTimestamp int64 = 11
 	settings := new(protocol.SettingsProviderMock)
@@ -291,13 +291,13 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
@@ -381,7 +381,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	var validationTimestamp int64 = 1
 	now := validationTimestamp
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
@@ -395,9 +395,9 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
@@ -431,7 +431,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	address := test.Address
 	var invalidTransactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
@@ -464,9 +464,9 @@ func Test_Update_NeighborNewBlockTransactionFeeIsNegative_IsNotReplaced(t *testi
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -510,7 +510,7 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	address := test.Address
 	var invalidTransactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
@@ -542,9 +542,9 @@ func Test_Update_NeighborNewBlockTransactionFeeIsTooLow_IsNotReplaced(t *testing
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -589,7 +589,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	address := test.Address
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
@@ -621,9 +621,9 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -668,7 +668,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	address := test.Address
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
@@ -700,9 +700,9 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -747,7 +747,7 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	address := test.Address
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
@@ -780,9 +780,9 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -827,7 +827,7 @@ func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplace
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	address := test.Address
 	var transactionFee uint64 = 0
 	privateKey2, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey2)
@@ -859,9 +859,9 @@ func Test_Update_NeighborNewBlockTransactionInputPublicKeyIsInvalid_IsNotReplace
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -907,7 +907,7 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	registryMock.VerifyFunc = func([]string, []string) error { return errors.New("") }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
@@ -926,9 +926,9 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -969,7 +969,7 @@ func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *te
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -1001,9 +1001,9 @@ func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *te
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -1047,7 +1047,7 @@ func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplac
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -1080,9 +1080,9 @@ func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplac
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -1126,7 +1126,7 @@ func Test_Update_NeighborBlockYieldingOutputIsNotRegistered_IsNotReplaced(t *tes
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -1159,9 +1159,9 @@ func Test_Update_NeighborBlockYieldingOutputIsNotRegistered_IsNotReplaced(t *tes
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -1205,15 +1205,15 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 1 }
@@ -1272,15 +1272,15 @@ func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	neighborMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController {
-		return []network.NeighborController{neighborMock}
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller {
+		return []presentation.NeighborCaller{neighborMock}
 	}
 	settings := new(protocol.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 2 }

@@ -6,21 +6,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/my-cloud/ruthenium/validatornode/application/p2p"
+	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/domain/encryption"
 	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/array"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
-	"github.com/my-cloud/ruthenium/validatornode/presentation/network"
+	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
 
 func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController { return nil }
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller { return nil }
 	neighborsManagerMock.IncentiveFunc = func(string) {}
 	watchMock := new(protocol.TimeProviderMock)
 	var now int64 = 2
@@ -56,8 +56,8 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController { return nil }
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller { return nil }
 	neighborsManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
 	logger := log.NewLoggerMock()
@@ -90,8 +90,8 @@ func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *tes
 
 func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	// Arrange
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController { return nil }
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller { return nil }
 	neighborsManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
 	var transactionFee uint64 = 0
@@ -135,10 +135,10 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 func Test_AddTransaction_InvalidPublicKey_TransactionNotAdded(t *testing.T) {
 	// Arrange
 	walletAddress2 := test.Address2
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	neighborMock.AddTransactionFunc = func([]byte) error { return nil }
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController { return []network.NeighborController{neighborMock} }
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller { return []presentation.NeighborCaller{neighborMock} }
 	neighborsManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
 	var transactionFee uint64 = 0
@@ -185,10 +185,10 @@ func Test_AddTransaction_InvalidPublicKey_TransactionNotAdded(t *testing.T) {
 func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	// Arrange
 	walletAAddress := test.Address2
-	neighborMock := new(network.NeighborControllerMock)
+	neighborMock := new(presentation.NeighborCallerMock)
 	neighborMock.AddTransactionFunc = func([]byte) error { return nil }
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController { return []network.NeighborController{neighborMock} }
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller { return []presentation.NeighborCaller{neighborMock} }
 	neighborsManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
 	var transactionFee uint64 = 0
@@ -234,7 +234,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 func Test_Validate_BlockAlreadyExist_TransactionsNotValidated(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	var now int64 = 2
 	logger := log.NewLoggerMock()
 	blocksManagerMock := new(protocol.BlocksManagerMock)
@@ -254,7 +254,7 @@ func Test_Validate_BlockAlreadyExist_TransactionsNotValidated(t *testing.T) {
 func Test_Validate_BlockIsMissing_TransactionsNotValidated(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
 	var now int64 = 3
 	logger := log.NewLoggerMock()
 	blocksManagerMock := new(protocol.BlocksManagerMock)
@@ -273,8 +273,8 @@ func Test_Validate_BlockIsMissing_TransactionsNotValidated(t *testing.T) {
 
 func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t *testing.T) {
 	// Arrange
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController { return nil }
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller { return nil }
 	neighborsManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
 	var transactionFee uint64 = 0
@@ -316,8 +316,8 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t 
 
 func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *testing.T) {
 	// Arrange
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController { return nil }
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller { return nil }
 	neighborsManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 3
 	var transactionFee uint64 = 0
@@ -359,8 +359,8 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *test
 
 func Test_Validate_ValidTransaction_TransactionsValidated(t *testing.T) {
 	// Arrange
-	neighborsManagerMock := new(p2p.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborController { return nil }
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.NeighborsFunc = func() []presentation.NeighborCaller { return nil }
 	neighborsManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
 	var transactionFee uint64 = 0

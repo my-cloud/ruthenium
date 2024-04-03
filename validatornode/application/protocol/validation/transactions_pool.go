@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/my-cloud/ruthenium/validatornode/application/p2p"
+	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
-	"github.com/my-cloud/ruthenium/validatornode/presentation/network"
+	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
 
 type TransactionsPool struct {
@@ -21,14 +21,14 @@ type TransactionsPool struct {
 
 	blocksManager    protocol.BlocksManager
 	settings         protocol.SettingsProvider
-	neighborsManager p2p.NeighborsManager
+	neighborsManager network.NeighborsManager
 	utxosManager     protocol.UtxosManager
 	validatorAddress string
 
 	logger log.Logger
 }
 
-func NewTransactionsPool(blocksManager protocol.BlocksManager, settings protocol.SettingsProvider, neighborsManager p2p.NeighborsManager, utxosManager protocol.UtxosManager, validatorAddress string, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blocksManager protocol.BlocksManager, settings protocol.SettingsProvider, neighborsManager network.NeighborsManager, utxosManager protocol.UtxosManager, validatorAddress string, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blocksManager = blocksManager
 	pool.settings = settings
@@ -60,7 +60,7 @@ func (pool *TransactionsPool) AddTransaction(transactionRequestBytes []byte, hos
 	}
 	neighbors := pool.neighborsManager.Neighbors()
 	for _, neighbor := range neighbors {
-		go func(neighbor network.NeighborController) {
+		go func(neighbor presentation.NeighborCaller) {
 			_ = neighbor.AddTransaction(marshaledTransactionRequest)
 		}(neighbor)
 	}

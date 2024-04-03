@@ -7,30 +7,30 @@ import (
 	"sync"
 	"time"
 
-	"github.com/my-cloud/ruthenium/validatornode/application/p2p"
+	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/array"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
-	"github.com/my-cloud/ruthenium/validatornode/presentation/network"
+	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
 
 type Blockchain struct {
 	blocks           []*ledger.Block
 	mutex            sync.RWMutex
 	registry         protocol.AddressesManager
-	neighborsManager p2p.NeighborsManager
+	neighborsManager network.NeighborsManager
 	utxosManager     protocol.UtxosManager
 	settings         protocol.SettingsProvider
 	logger           log.Logger
 }
 
-func NewBlockchain(registry protocol.AddressesManager, settings protocol.SettingsProvider, neighborsManager p2p.NeighborsManager, utxosManager protocol.UtxosManager, logger log.Logger) *Blockchain {
+func NewBlockchain(registry protocol.AddressesManager, settings protocol.SettingsProvider, neighborsManager network.NeighborsManager, utxosManager protocol.UtxosManager, logger log.Logger) *Blockchain {
 	blockchain := newBlockchain(nil, registry, settings, neighborsManager, utxosManager, logger)
 	return blockchain
 }
 
-func newBlockchain(blocks []*ledger.Block, registry protocol.AddressesManager, settings protocol.SettingsProvider, neighborsManager p2p.NeighborsManager, utxosManager protocol.UtxosManager, logger log.Logger) *Blockchain {
+func newBlockchain(blocks []*ledger.Block, registry protocol.AddressesManager, settings protocol.SettingsProvider, neighborsManager network.NeighborsManager, utxosManager protocol.UtxosManager, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blocks = blocks
 	blockchain.registry = registry
@@ -404,13 +404,13 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*ledger.Block, neighborBlo
 	return verifiedBlocks, nil
 }
 
-func (blockchain *Blockchain) verifyNeighborBlockchain(timestamp int64, neighbor network.NeighborController, startingBlockHeight uint64, lastHostBlocks []*ledger.Block, oldHostBlocks []*ledger.Block) ([]*ledger.Block, error) {
+func (blockchain *Blockchain) verifyNeighborBlockchain(timestamp int64, neighbor presentation.NeighborCaller, startingBlockHeight uint64, lastHostBlocks []*ledger.Block, oldHostBlocks []*ledger.Block) ([]*ledger.Block, error) {
 	type ChanResult struct {
 		Blocks []*ledger.Block
 		Err    error
 	}
 	blocksChannel := make(chan *ChanResult)
-	go func(neighbor network.NeighborController) {
+	go func(neighbor presentation.NeighborCaller) {
 		defer close(blocksChannel)
 		neighborBlocksBytes, err := neighbor.GetBlocks(startingBlockHeight)
 		if err != nil {
