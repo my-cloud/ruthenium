@@ -16,21 +16,21 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
 )
 
-type Server struct {
+type Node struct {
 	port string
 }
 
-func NewServer(port string, host *network.Neighbor, settings *config.Settings, templatePath string, watch *clock.Watch, logger *console.Logger) *Server {
+func NewNode(port string, neighbor *network.Neighbor, settings *config.Settings, templatePath string, watch *clock.Watch, logger *console.Logger) *Node {
 	http.Handle("/", index.NewHandler(templatePath, logger))
-	http.Handle("/transaction", transaction.NewHandler(host, logger))
-	http.Handle("/transactions", transactions.NewHandler(host, logger))
-	http.Handle("/transaction/info", info.NewHandler(host, settings, watch, logger))
-	http.Handle("/transaction/output/progress", progress.NewHandler(host, settings, watch, logger))
+	http.Handle("/transaction", transaction.NewHandler(neighbor, logger))
+	http.Handle("/transactions", transactions.NewHandler(neighbor, logger))
+	http.Handle("/transaction/info", info.NewHandler(neighbor, settings, watch, logger))
+	http.Handle("/transaction/output/progress", progress.NewHandler(neighbor, settings, watch, logger))
 	http.Handle("/wallet/address", address.NewHandler(logger))
-	http.Handle("/wallet/amount", amount.NewHandler(host, settings, watch, logger))
-	return &Server{port}
+	http.Handle("/wallet/amount", amount.NewHandler(neighbor, settings, watch, logger))
+	return &Node{port}
 }
 
-func (server *Server) Serve() error {
-	return http.ListenAndServe("0.0.0.0:"+server.port, nil)
+func (node *Node) Run() error {
+	return http.ListenAndServe("0.0.0.0:"+node.port, nil)
 }

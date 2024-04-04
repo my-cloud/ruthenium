@@ -18,7 +18,7 @@ var _ Server = &ServerMock{}
 //		// make and configure a mocked Server
 //		mockedServer := &ServerMock{
 //			ServeFunc: func() error {
-//				panic("mock out the Serve method")
+//				panic("mock out the Run method")
 //			},
 //			SetHandleBlocksRequestFunc: func(endpoint string)  {
 //				panic("mock out the SetHandleBlocksRequest method")
@@ -126,7 +126,7 @@ type ServerMock struct {
 // Serve calls ServeFunc.
 func (mock *ServerMock) Serve() error {
 	if mock.ServeFunc == nil {
-		panic("ServerMock.ServeFunc: method is nil but Server.Serve was just called")
+		panic("ServerMock.ServeFunc: method is nil but Server.Run was just called")
 	}
 	callInfo := struct {
 	}{}

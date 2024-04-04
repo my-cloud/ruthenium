@@ -10,18 +10,18 @@ import (
 )
 
 type Handler struct {
-	host   presentation.NeighborCaller
-	logger log.Logger
+	neighbor presentation.NeighborCaller
+	logger   log.Logger
 }
 
-func NewHandler(host presentation.NeighborCaller, logger log.Logger) *Handler {
-	return &Handler{host, logger}
+func NewHandler(neighbor presentation.NeighborCaller, logger log.Logger) *Handler {
+	return &Handler{neighbor, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		transactions, err := handler.host.GetTransactions()
+		transactions, err := handler.neighbor.GetTransactions()
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)

@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/my-cloud/ruthenium/accessnode/infrastructure/io"
-	"github.com/my-cloud/ruthenium/accessnode/presentation/transaction"
 	"github.com/my-cloud/ruthenium/accessnode/presentation/transaction/output"
 	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
@@ -15,14 +14,14 @@ import (
 )
 
 type Handler struct {
-	host     presentation.NeighborCaller
-	settings transaction.SettingsProvider
+	neighbor presentation.NeighborCaller
+	settings SettingsProvider
 	watch    protocol.TimeProvider
 	logger   log.Logger
 }
 
-func NewHandler(host presentation.NeighborCaller, settings transaction.SettingsProvider, watch protocol.TimeProvider, logger log.Logger) *Handler {
-	return &Handler{host, settings, watch, logger}
+func NewHandler(neighbor presentation.NeighborCaller, settings SettingsProvider, watch protocol.TimeProvider, logger log.Logger) *Handler {
+	return &Handler{neighbor, settings, watch, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -38,7 +37,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write("invalid utxo")
 			return
 		}
-		utxosBytes, err := handler.host.GetUtxos(searchedUtxo.Address())
+		utxosBytes, err := handler.neighbor.GetUtxos(searchedUtxo.Address())
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -51,7 +50,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		genesisTimestamp, err := handler.host.GetFirstBlockTimestamp()
+		genesisTimestamp, err := handler.neighbor.GetFirstBlockTimestamp()
 		now := handler.watch.Now().UnixNano()
 		currentBlockHeight := (now - genesisTimestamp) / handler.settings.ValidationTimestamp()
 		currentBlockTimestamp := genesisTimestamp + currentBlockHeight*handler.settings.ValidationTimestamp()
@@ -71,7 +70,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		blocksBytes, err := handler.host.GetBlocks(uint64(currentBlockHeight))
+		blocksBytes, err := handler.neighbor.GetBlocks(uint64(currentBlockHeight))
 		if err != nil {
 			handler.logger.Error("failed to get blocks")
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -96,7 +95,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 				return
 			}
 		}
-		transactionsBytes, err := handler.host.GetTransactions()
+		transactionsBytes, err := handler.neighbor.GetTransactions()
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)

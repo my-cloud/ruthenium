@@ -12,12 +12,12 @@ import (
 )
 
 type Handler struct {
-	host   presentation.NeighborCaller
-	logger log.Logger
+	neighbor presentation.NeighborCaller
+	logger   log.Logger
 }
 
-func NewHandler(host presentation.NeighborCaller, logger log.Logger) *Handler {
-	return &Handler{host, logger}
+func NewHandler(neighbor presentation.NeighborCaller, logger log.Logger) *Handler {
+	return &Handler{neighbor, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -33,14 +33,14 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write("invalid transaction")
 			return
 		}
-		transactionRequest := ledger.NewTransactionRequest(transaction, handler.host.Target())
+		transactionRequest := ledger.NewTransactionRequest(transaction, handler.neighbor.Target())
 		marshaledTransaction, err := json.Marshal(transactionRequest)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to marshal transaction request: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		err = handler.host.AddTransaction(marshaledTransaction)
+		err = handler.neighbor.AddTransaction(marshaledTransaction)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to add transaction: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)

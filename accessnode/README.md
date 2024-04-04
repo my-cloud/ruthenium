@@ -9,14 +9,14 @@ A Ruthenium node must be running.
 ## Launch
 At root level (ruthenium folder), run the access node using the command `go run accessnode/main.go` with the add of some [program arguments](#program-arguments). For example:
 ```
-go run accessnode/main.go -host-ip=0.0.0.0
+go run accessnode/main.go -validator-ip=0.0.0.0
 ```
 
 ## Program arguments:
 ```
 -port: The TCP port number for the access node (default: "8080")
--host-ip: The validator node IP or DNS address (default: "127.0.0.1")
--host-port: The TCP port number of the validator node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
+-validator-ip: The validator node IP or DNS address (default: "127.0.0.1")
+-validator-port: The TCP port number of the validator node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
 -template-path: The UI template path (default: "accessnode/template.html")
 -log-level: The log level (accepted values: "debug", "info", "warn", "error", "fatal", default: "info")
 ```

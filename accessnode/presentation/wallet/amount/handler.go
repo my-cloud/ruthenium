@@ -14,14 +14,14 @@ import (
 )
 
 type Handler struct {
-	host     presentation.NeighborCaller
+	neighbor presentation.NeighborCaller
 	settings wallet.SettingsProvider
 	watch    protocol.TimeProvider
 	logger   log.Logger
 }
 
-func NewHandler(host presentation.NeighborCaller, settings wallet.SettingsProvider, watch protocol.TimeProvider, logger log.Logger) *Handler {
-	return &Handler{host, settings, watch, logger}
+func NewHandler(neighbor presentation.NeighborCaller, settings wallet.SettingsProvider, watch protocol.TimeProvider, logger log.Logger) *Handler {
+	return &Handler{neighbor, settings, watch, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -33,7 +33,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		utxosBytes, err := handler.host.GetUtxos(address)
+		utxosBytes, err := handler.neighbor.GetUtxos(address)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)

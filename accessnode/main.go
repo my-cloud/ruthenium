@@ -19,21 +19,21 @@ import (
 
 func main() {
 	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(8080), "The TCP port number of the access node")
-	hostIp := flag.String("host-ip", environment.NewVariable("HOST_IP").GetStringValue("127.0.0.1"), "The validator node IP or DNS address")
-	hostPort := flag.Int("host-port", environment.NewVariable("HOST_PORT").GetIntValue(10600), "The TCP port number of the validator node")
+	validatorIp := flag.String("validator-ip", environment.NewVariable("VALIDATOR_IP").GetStringValue("127.0.0.1"), "The validator node IP or DNS address")
+	validatorPort := flag.Int("validator-port", environment.NewVariable("VALIDATOR_PORT").GetIntValue(10600), "The TCP port number of the validator node")
 	templatePath := flag.String("template-path", environment.NewVariable("TEMPLATE_PATH").GetStringValue("accessnode/template.html"), "The UI template path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level (possible values: 'debug', 'info', 'warn', 'error', 'fatal')")
 
 	flag.Parse()
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
-	target := network.NewTarget(*hostIp, strconv.Itoa(*hostPort))
+	target := network.NewTarget(*validatorIp, strconv.Itoa(*validatorPort))
 	ipFinder := net.NewIpFinderImplementation(logger)
 	clientFactory := p2p.NewSenderFactory(ipFinder, time.Minute)
-	host, err := network.NewNeighbor(target, clientFactory)
+	validatorNode, err := network.NewNeighbor(target, clientFactory)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
 	}
-	settingsBytes, err := host.GetSettings()
+	settingsBytes, err := validatorNode.GetSettings()
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to get settings: %w", err).Error())
 	}
@@ -43,7 +43,7 @@ func main() {
 		logger.Fatal(fmt.Errorf("unable to unmarshal settings: %w", err).Error())
 	}
 	watch := clock.NewWatch()
-	server := presentation.NewServer(strconv.Itoa(*port), host, settings, *templatePath, watch, logger)
-	logger.Info("server is running...")
-	logger.Fatal(server.Serve().Error())
+	node := presentation.NewNode(strconv.Itoa(*port), validatorNode, settings, *templatePath, watch, logger)
+	logger.Info("host access node is running...")
+	logger.Fatal(node.Run().Error())
 }

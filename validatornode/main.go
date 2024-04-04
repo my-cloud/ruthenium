@@ -39,13 +39,13 @@ func main() {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	node, err := createNode(*settingsPath, *infuraKey, *seedsPath, *ip, *port, address, logger)
+	node, err := createHostNode(*settingsPath, *infuraKey, *seedsPath, *ip, *port, address, logger)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	logger.Info(fmt.Sprintf("validator node running for address: %s", address))
+	logger.Info(fmt.Sprintf("host validator node running for address: %s", address))
 	if err = node.Run(); err != nil {
-		logger.Fatal(fmt.Errorf("failed to run node: %w", err).Error())
+		logger.Fatal(fmt.Errorf("failed to run host validator node: %w", err).Error())
 	}
 }
 
@@ -66,7 +66,7 @@ func decodeAddress(mnemonic string, derivationPath string, password string, priv
 	return publicKey.Address(), nil
 }
 
-func createNode(settingsPath string, infuraKey string, seedsPath string, ip string, port int, address string, logger *console.Logger) (*presentation.Node, error) {
+func createHostNode(settingsPath string, infuraKey string, seedsPath string, ip string, port int, address string, logger *console.Logger) (*presentation.Node, error) {
 	settings, err := config.NewSettings(settingsPath)
 	if err != nil {
 		return nil, err
