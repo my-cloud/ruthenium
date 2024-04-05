@@ -6,8 +6,8 @@ import (
 
 	gp2p "github.com/leprosus/golang-p2p"
 
+	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/application/network"
-	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/config"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
 )
@@ -19,11 +19,11 @@ type Host struct {
 
 func NewHost(port int,
 	settings *config.Settings,
-	blocksManager protocol.BlocksManager,
+	blocksManager ledger.BlocksManager,
 	neighborsManager network.NeighborsManager,
-	transactionsManager protocol.TransactionsManager,
-	utxosManager protocol.UtxosManager,
-	watch protocol.TimeProvider) (*Host, error) {
+	transactionsManager ledger.TransactionsManager,
+	utxosManager ledger.UtxosManager,
+	watch ledger.TimeProvider) (*Host, error) {
 	tcp := gp2p.NewTCP("0.0.0.0", strconv.Itoa(port))
 	server, err := gp2p.NewServer(tcp)
 	if err != nil {

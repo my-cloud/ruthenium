@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/my-cloud/ruthenium/accessnode/presentation/wallet"
-	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
-	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
+	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
+	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 	"github.com/my-cloud/ruthenium/validatornode/presentation"
@@ -23,7 +23,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
 	neighborMock := new(presentation.NeighborCallerMock)
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	settings := new(wallet.SettingsProviderMock)
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
@@ -46,7 +46,7 @@ func Test_ServeHTTP_InvalidAddress_ReturnsBadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
 	neighborMock := new(presentation.NeighborCallerMock)
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	settings := new(wallet.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -69,7 +69,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	logger := log.NewLoggerMock()
 	neighborMock := new(presentation.NeighborCallerMock)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	settings := new(wallet.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -93,9 +93,9 @@ func Test_ServeHTTP_ValidRequest_ReturnsAmount(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
 	neighborMock := new(presentation.NeighborCallerMock)
-	marshalledEmptyUtxos, _ := json.Marshal([]*ledger.Utxo{})
+	marshalledEmptyUtxos, _ := json.Marshal([]*protocol.Utxo{})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(wallet.SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }

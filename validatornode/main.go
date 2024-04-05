@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/my-cloud/ruthenium/validatornode/application/ledger/validation"
+	"github.com/my-cloud/ruthenium/validatornode/application/ledger/verification"
 	"github.com/my-cloud/ruthenium/validatornode/application/network"
-	"github.com/my-cloud/ruthenium/validatornode/application/protocol/validation"
-	"github.com/my-cloud/ruthenium/validatornode/application/protocol/verification"
 	"github.com/my-cloud/ruthenium/validatornode/domain/clock"
 	"github.com/my-cloud/ruthenium/validatornode/domain/encryption"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/config"

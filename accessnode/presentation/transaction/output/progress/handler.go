@@ -7,8 +7,8 @@ import (
 
 	"github.com/my-cloud/ruthenium/accessnode/infrastructure/io"
 	"github.com/my-cloud/ruthenium/accessnode/presentation/transaction/output"
-	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
-	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
+	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
+	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
@@ -16,11 +16,11 @@ import (
 type Handler struct {
 	neighbor presentation.NeighborCaller
 	settings SettingsProvider
-	watch    protocol.TimeProvider
+	watch    ledger.TimeProvider
 	logger   log.Logger
 }
 
-func NewHandler(neighbor presentation.NeighborCaller, settings SettingsProvider, watch protocol.TimeProvider, logger log.Logger) *Handler {
+func NewHandler(neighbor presentation.NeighborCaller, settings SettingsProvider, watch ledger.TimeProvider, logger log.Logger) *Handler {
 	return &Handler{neighbor, settings, watch, logger}
 }
 
@@ -29,7 +29,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 	case http.MethodPut:
 		jsonWriter := io.NewIoWriter(writer, handler.logger)
 		decoder := json.NewDecoder(req.Body)
-		var searchedUtxo *ledger.Utxo
+		var searchedUtxo *protocol.Utxo
 		err := decoder.Decode(&searchedUtxo)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to decode utxo: %w", err).Error())
@@ -43,7 +43,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var utxos []*ledger.Utxo
+		var utxos []*protocol.Utxo
 		err = json.Unmarshal(utxosBytes, &utxos)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to unmarshal UTXOs: %w", err).Error())
@@ -76,7 +76,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var blocks []*ledger.Block
+		var blocks []*protocol.Block
 		err = json.Unmarshal(blocksBytes, &blocks)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to unmarshal blocks: %w", err).Error())
@@ -101,7 +101,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var transactions []*ledger.Transaction
+		var transactions []*protocol.Transaction
 		err = json.Unmarshal(transactionsBytes, &transactions)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to unmarshal transactions: %w", err).Error())

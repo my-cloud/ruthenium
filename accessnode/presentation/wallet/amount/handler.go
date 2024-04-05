@@ -7,8 +7,8 @@ import (
 
 	"github.com/my-cloud/ruthenium/accessnode/infrastructure/io"
 	"github.com/my-cloud/ruthenium/accessnode/presentation/wallet"
-	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
-	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
+	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
+	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
@@ -16,11 +16,11 @@ import (
 type Handler struct {
 	neighbor presentation.NeighborCaller
 	settings wallet.SettingsProvider
-	watch    protocol.TimeProvider
+	watch    ledger.TimeProvider
 	logger   log.Logger
 }
 
-func NewHandler(neighbor presentation.NeighborCaller, settings wallet.SettingsProvider, watch protocol.TimeProvider, logger log.Logger) *Handler {
+func NewHandler(neighbor presentation.NeighborCaller, settings wallet.SettingsProvider, watch ledger.TimeProvider, logger log.Logger) *Handler {
 	return &Handler{neighbor, settings, watch, logger}
 }
 
@@ -39,7 +39,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var utxos []*ledger.Utxo
+		var utxos []*protocol.Utxo
 		err = json.Unmarshal(utxosBytes, &utxos)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to unmarshal UTXOs: %w", err).Error())

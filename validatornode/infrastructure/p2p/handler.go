@@ -6,25 +6,25 @@ import (
 
 	gp2p "github.com/leprosus/golang-p2p"
 
+	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/application/network"
-	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
 )
 
 type Handler struct {
-	blocksManager       protocol.BlocksManager
+	blocksManager       ledger.BlocksManager
 	settings            []byte
 	neighborsManager    network.NeighborsManager
-	transactionsManager protocol.TransactionsManager
-	utxosManager        protocol.UtxosManager
-	watch               protocol.TimeProvider
+	transactionsManager ledger.TransactionsManager
+	utxosManager        ledger.UtxosManager
+	watch               ledger.TimeProvider
 }
 
-func NewHandler(blocksManager protocol.BlocksManager,
+func NewHandler(blocksManager ledger.BlocksManager,
 	settings []byte,
 	neighborsManager network.NeighborsManager,
-	transactionsManager protocol.TransactionsManager,
-	utxosManager protocol.UtxosManager,
-	watch protocol.TimeProvider) *Handler {
+	transactionsManager ledger.TransactionsManager,
+	utxosManager ledger.UtxosManager,
+	watch ledger.TimeProvider) *Handler {
 	return &Handler{blocksManager, settings, neighborsManager, transactionsManager, utxosManager, watch}
 }
 

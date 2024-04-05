@@ -9,8 +9,8 @@ import (
 	"strconv"
 
 	"github.com/my-cloud/ruthenium/accessnode/infrastructure/io"
-	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
-	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
+	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
+	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
@@ -18,11 +18,11 @@ import (
 type Handler struct {
 	neighbor presentation.NeighborCaller
 	settings SettingsProvider
-	watch    protocol.TimeProvider
+	watch    ledger.TimeProvider
 	logger   log.Logger
 }
 
-func NewHandler(neighbor presentation.NeighborCaller, settings SettingsProvider, watch protocol.TimeProvider, logger log.Logger) *Handler {
+func NewHandler(neighbor presentation.NeighborCaller, settings SettingsProvider, watch ledger.TimeProvider, logger log.Logger) *Handler {
 	return &Handler{neighbor, settings, watch, logger}
 }
 
@@ -62,7 +62,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var utxos []*ledger.Utxo
+		var utxos []*protocol.Utxo
 		err = json.Unmarshal(utxosBytes, &utxos)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to unmarshal UTXOs: %w", err).Error())
@@ -75,11 +75,11 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		var selectedInputs []*ledger.InputInfo
+		var selectedInputs []*protocol.InputInfo
 		now := handler.watch.Now().UnixNano()
 		nextBlockHeight := (now-genesisTimestamp)/handler.settings.ValidationTimestamp() + 1
 		nextBlockTimestamp := genesisTimestamp + nextBlockHeight*handler.settings.ValidationTimestamp()
-		utxosByValue := make(map[uint64][]*ledger.InputInfo)
+		utxosByValue := make(map[uint64][]*protocol.InputInfo)
 		var walletBalance uint64
 		var values []uint64
 		for _, utxo := range utxos {
@@ -116,7 +116,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 				closestValue := values[closestValueIndex]
 				if closestValue > targetValue {
 					inputsValue = closestValue
-					selectedInputs = []*ledger.InputInfo{utxosByValue[closestValue][0]}
+					selectedInputs = []*protocol.InputInfo{utxosByValue[closestValue][0]}
 					break
 				}
 				values = append(values[:closestValueIndex], values[closestValueIndex+1:]...)

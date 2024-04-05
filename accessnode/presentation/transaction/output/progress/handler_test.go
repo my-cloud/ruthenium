@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/my-cloud/ruthenium/accessnode/presentation/transaction/output"
-	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
-	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
+	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
+	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 	"github.com/my-cloud/ruthenium/validatornode/presentation"
@@ -24,7 +24,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
 	neighborMock := new(presentation.NeighborCallerMock)
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
@@ -48,7 +48,7 @@ func Test_ServeHTTP_UndecipherableUtxo_BadRequest(t *testing.T) {
 	neighborMock := new(presentation.NeighborCallerMock)
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	logger := log.NewLoggerMock()
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	data := ""
@@ -72,12 +72,12 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	logger := log.NewLoggerMock()
 	neighborMock := new(presentation.NeighborCallerMock)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	utxo := ledger.NewUtxo(&ledger.InputInfo{}, &ledger.Output{}, 0)
+	utxo := protocol.NewUtxo(&protocol.InputInfo{}, &protocol.Output{}, 0)
 	marshalledUtxo, _ := json.Marshal(utxo)
 	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
@@ -99,13 +99,13 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	utxo := ledger.NewUtxo(&ledger.InputInfo{}, &ledger.Output{}, 0)
+	utxo := protocol.NewUtxo(&protocol.InputInfo{}, &protocol.Output{}, 0)
 	marshalledUtxo, _ := json.Marshal(utxo)
 	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
@@ -128,13 +128,13 @@ func Test_ServeHTTP_GetBlocksError_ReturnsInternalServerError(t *testing.T) {
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return nil, errors.New("") }
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	utxo := ledger.NewUtxo(&ledger.InputInfo{}, &ledger.Output{}, 0)
+	utxo := protocol.NewUtxo(&protocol.InputInfo{}, &protocol.Output{}, 0)
 	marshalledUtxo, _ := json.Marshal(utxo)
 	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
@@ -156,17 +156,17 @@ func Test_ServeHTTP_GetTransactionsError_ReturnsInternalServerError(t *testing.T
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
-	blocks := []*ledger.Block{ledger.NewBlock([32]byte{}, nil, nil, 0, nil)}
+	blocks := []*protocol.Block{protocol.NewBlock([32]byte{}, nil, nil, 0, nil)}
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return nil, errors.New("") }
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	utxo := ledger.NewUtxo(&ledger.InputInfo{}, &ledger.Output{}, 0)
+	utxo := protocol.NewUtxo(&protocol.InputInfo{}, &protocol.Output{}, 0)
 	marshalledUtxo, _ := json.Marshal(utxo)
 	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
@@ -188,17 +188,17 @@ func Test_ServeHTTP_TransactionNotFound_ReturnsRejected(t *testing.T) {
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
-	blocks := []*ledger.Block{ledger.NewBlock([32]byte{}, nil, nil, 0, nil)}
+	blocks := []*protocol.Block{protocol.NewBlock([32]byte{}, nil, nil, 0, nil)}
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledEmptyArray, nil }
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	utxo := ledger.NewUtxo(&ledger.InputInfo{}, &ledger.Output{}, 0)
+	utxo := protocol.NewUtxo(&protocol.InputInfo{}, &protocol.Output{}, 0)
 	marshalledUtxo, _ := json.Marshal(utxo)
 	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
@@ -224,14 +224,14 @@ func Test_ServeHTTP_UtxoFound_ReturnsConfirmed(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
 	neighborMock := new(presentation.NeighborCallerMock)
-	transaction, _ := ledger.NewRewardTransaction("", false, 0, 0)
+	transaction, _ := protocol.NewRewardTransaction("", false, 0, 0)
 	transactionId := transaction.Id()
-	inputInfo := ledger.NewInputInfo(0, transactionId)
-	utxo := ledger.NewUtxo(inputInfo, &ledger.Output{}, 0)
-	marshalledUtxos, _ := json.Marshal([]*ledger.Utxo{utxo})
+	inputInfo := protocol.NewInputInfo(0, transactionId)
+	utxo := protocol.NewUtxo(inputInfo, &protocol.Output{}, 0)
+	marshalledUtxos, _ := json.Marshal([]*protocol.Utxo{utxo})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
@@ -265,18 +265,18 @@ func Test_ServeHTTP_ValidatedTransactionFound_ReturnsValidated(t *testing.T) {
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
-	transaction, _ := ledger.NewRewardTransaction("", false, 0, 0)
-	blocks := []*ledger.Block{ledger.NewBlock([32]byte{}, nil, nil, 0, []*ledger.Transaction{transaction})}
+	transaction, _ := protocol.NewRewardTransaction("", false, 0, 0)
+	blocks := []*protocol.Block{protocol.NewBlock([32]byte{}, nil, nil, 0, []*protocol.Transaction{transaction})}
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	outputIndex := 0
-	utxo := ledger.NewUtxo(ledger.NewInputInfo(uint16(outputIndex), transaction.Id()), transaction.Outputs()[outputIndex], transaction.Timestamp())
+	utxo := protocol.NewUtxo(protocol.NewInputInfo(uint16(outputIndex), transaction.Id()), transaction.Outputs()[outputIndex], transaction.Timestamp())
 	marshalledUtxo, _ := json.Marshal(utxo)
 	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)
@@ -305,21 +305,21 @@ func Test_ServeHTTP_PendingTransactionFound_ReturnsSent(t *testing.T) {
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
-	blocks := []*ledger.Block{ledger.NewBlock([32]byte{}, nil, nil, 0, nil)}
+	blocks := []*protocol.Block{protocol.NewBlock([32]byte{}, nil, nil, 0, nil)}
 	marshalledBlocks, _ := json.Marshal(blocks)
 	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
-	transaction, _ := ledger.NewRewardTransaction("", false, 0, 0)
-	transactions := []*ledger.Transaction{transaction}
+	transaction, _ := protocol.NewRewardTransaction("", false, 0, 0)
+	transactions := []*protocol.Transaction{transaction}
 	marshalledTransactions, _ := json.Marshal(transactions)
 	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledTransactions, nil }
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	outputIndex := 0
-	utxo := ledger.NewUtxo(ledger.NewInputInfo(uint16(outputIndex), transaction.Id()), transaction.Outputs()[outputIndex], transaction.Timestamp())
+	utxo := protocol.NewUtxo(protocol.NewInputInfo(uint16(outputIndex), transaction.Id()), transaction.Outputs()[outputIndex], transaction.Timestamp())
 	marshalledUtxo, _ := json.Marshal(utxo)
 	body := bytes.NewReader(marshalledUtxo)
 	request := httptest.NewRequest(http.MethodPut, urlTarget, body)

@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
 func Test_AddTargets_MoreThanOneTarget_IncentiveTargetsSender(t *testing.T) {
 	// Arrange
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Now() }
 	senderCreatorMock := new(SenderCreatorMock)
 	senderMock := new(SenderMock)
@@ -37,7 +37,7 @@ func Test_AddTargets_MoreThanOneTarget_IncentiveTargetsSender(t *testing.T) {
 
 func Test_Incentive_TargetIsNotKnown_TargetIncentive(t *testing.T) {
 	// Arrange
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Now() }
 	senderCreatorMock := new(SenderCreatorMock)
 	senderMock := new(SenderMock)
@@ -61,7 +61,7 @@ func Test_Incentive_TargetIsNotKnown_TargetIncentive(t *testing.T) {
 
 func Test_Synchronize_OneSeed_NeighborAdded(t *testing.T) {
 	// Arrange
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Now() }
 	senderCreatorMock := new(SenderCreatorMock)
 	senderMock := new(SenderMock)

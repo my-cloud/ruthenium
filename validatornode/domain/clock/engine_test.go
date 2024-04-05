@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/my-cloud/ruthenium/validatornode/application/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
 func Test_Do_NoError_FunctionCalled(t *testing.T) {
 	// Arrange
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	var calls int
 	engine := NewEngine(func(int64) { calls++ }, watchMock, 1, 0, 0)
@@ -25,7 +25,7 @@ func Test_Do_NoError_FunctionCalled(t *testing.T) {
 
 func Test_Start_NotStarted_Started(t *testing.T) {
 	// Arrange
-	watchMock := new(protocol.TimeProviderMock)
+	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	var engine = &Engine{}
 	var calls int
