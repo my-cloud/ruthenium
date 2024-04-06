@@ -2,6 +2,7 @@ package verification
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -12,15 +13,51 @@ import (
 
 type UtxosRegistry struct {
 	mutex          sync.RWMutex
+	settings       ledger.SettingsProvider
 	utxosByAddress map[string][]*protocol.Utxo
 	utxosById      map[string][]*protocol.Utxo
 }
 
-func NewUtxosRegistry() *UtxosRegistry {
-	utxosPool := &UtxosRegistry{}
-	utxosPool.utxosByAddress = make(map[string][]*protocol.Utxo)
-	utxosPool.utxosById = make(map[string][]*protocol.Utxo)
-	return utxosPool
+func NewUtxosRegistry(settings ledger.SettingsProvider) *UtxosRegistry {
+	registry := &UtxosRegistry{}
+	registry.settings = settings
+	registry.utxosByAddress = make(map[string][]*protocol.Utxo)
+	registry.utxosById = make(map[string][]*protocol.Utxo)
+	return registry
+}
+
+func (registry *UtxosRegistry) CalculateFee(inputs []ledger.InputInfoProvider, outputs []ledger.OutputInfoProvider, timestamp int64) (uint64, error) {
+	var inputsValue uint64
+	var outputsValue uint64
+	for _, input := range inputs {
+		utxos, ok := registry.utxosById[input.TransactionId()]
+		if !ok || int(input.OutputIndex()) > len(utxos)-1 {
+			return 0, fmt.Errorf("failed to find UTXO, input: %v", input)
+		}
+		utxo := utxos[input.OutputIndex()]
+		if utxo == nil {
+			return 0, fmt.Errorf("failed to find UTXO, input: %v", input)
+		}
+		utxoAddress := utxo.Address()
+		inputAddress := input.Address()
+		if utxoAddress != inputAddress {
+			return 0, fmt.Errorf("failed to verify input recipient address, input: %v", input)
+		}
+		value := utxo.Value(timestamp, registry.settings.HalfLifeInNanoseconds(), registry.settings.IncomeBase(), registry.settings.IncomeLimit())
+		inputsValue += value
+	}
+	for _, output := range outputs {
+		outputsValue += output.InitialValue()
+	}
+	if inputsValue < outputsValue {
+		return 0, errors.New("fee is negative")
+	}
+	fee := inputsValue - outputsValue
+	minimalTransactionFee := registry.settings.MinimalTransactionFee()
+	if fee < minimalTransactionFee {
+		return 0, fmt.Errorf("fee is too low, fee: %d, minimal fee: %d", fee, minimalTransactionFee)
+	}
+	return fee, nil
 }
 
 func (registry *UtxosRegistry) Clear() {
@@ -31,12 +68,13 @@ func (registry *UtxosRegistry) Clear() {
 }
 
 func (registry *UtxosRegistry) Copy() ledger.UtxosManager {
-	poolCopy := &UtxosRegistry{}
+	registryCopy := &UtxosRegistry{}
+	registryCopy.settings = registry.settings
 	registry.mutex.Lock()
 	defer registry.mutex.Unlock()
-	poolCopy.utxosByAddress = copyUtxosMap(registry.utxosByAddress)
-	poolCopy.utxosById = copyUtxosMap(registry.utxosById)
-	return poolCopy
+	registryCopy.utxosByAddress = copyUtxosMap(registry.utxosByAddress)
+	registryCopy.utxosById = copyUtxosMap(registry.utxosById)
+	return registryCopy
 }
 
 func (registry *UtxosRegistry) UpdateUtxos(transactionsBytes []byte, timestamp int64) error {
@@ -99,18 +137,6 @@ func (registry *UtxosRegistry) UpdateUtxos(transactionsBytes []byte, timestamp i
 	registry.utxosById = utxosById
 	registry.utxosByAddress = utxosByAddress
 	return nil
-}
-
-func (registry *UtxosRegistry) Utxo(input ledger.InputInfoProvider) (ledger.UtxoInfoProvider, error) {
-	utxos, ok := registry.utxosById[input.TransactionId()]
-	if !ok || int(input.OutputIndex()) > len(utxos)-1 {
-		return nil, fmt.Errorf("failed to find UTXO, input: %v", input)
-	}
-	utxo := utxos[input.OutputIndex()]
-	if utxo == nil {
-		return nil, fmt.Errorf("failed to find UTXO, input: %v", input)
-	}
-	return utxo, nil
 }
 
 func (registry *UtxosRegistry) Utxos(address string) []byte {

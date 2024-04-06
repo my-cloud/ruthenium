@@ -80,3 +80,7 @@ func (input *Input) VerifySignature() error {
 	}
 	return nil
 }
+
+func (input *Input) Address() string {
+	return input.publicKey.Address()
+}

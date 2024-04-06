@@ -468,15 +468,12 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *protocol.Block, previou
 			if transaction.Timestamp() < previousBlockTimestamp {
 				return fmt.Errorf("a neighbor block transaction timestamp is too old: transaction timestamp: %d, id: %s", transaction.Timestamp(), transaction.Id())
 			}
-			if err := transaction.VerifySignatures(blockchain.utxosManager); err != nil {
+			if err := transaction.VerifySignatures(); err != nil {
 				return fmt.Errorf("neighbor transaction is invalid: %w", err)
 			}
-			fee, err := transaction.Fee(blockchain.settings, currentBlockTimestamp, blockchain.utxosManager)
-			if err != nil {
-				return fmt.Errorf("failed to verify a neighbor block transaction fee: %w", err)
-			}
-			totalTransactionsFees += fee
+			var outputs []ledger.OutputInfoProvider
 			for _, output := range transaction.Outputs() {
+				outputs = append(outputs, output)
 				if output.IsYielding() {
 					var isNewlyRegistered bool
 					for _, addedAddress := range addedRegisteredAddresses {
@@ -490,6 +487,15 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *protocol.Block, previou
 					}
 				}
 			}
+			var inputs []ledger.InputInfoProvider
+			for _, input := range transaction.Inputs() {
+				inputs = append(inputs, input)
+			}
+			fee, err := blockchain.utxosManager.CalculateFee(inputs, outputs, currentBlockTimestamp)
+			if err != nil {
+				return fmt.Errorf("failed to verify a neighbor block transaction fee: %w", err)
+			}
+			totalTransactionsFees += fee
 		}
 	}
 	if !rewarded {

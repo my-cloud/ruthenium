@@ -78,7 +78,7 @@ func createHostNode(settingsPath string, infuraKey string, seedsPath string, ip 
 	if err != nil {
 		return nil, err
 	}
-	utxosRegistry := verification.NewUtxosRegistry()
+	utxosRegistry := verification.NewUtxosRegistry(settings)
 	blockchain := verification.NewBlockchain(addressesRegistry, settings, neighborhood, utxosRegistry, logger)
 	transactionsPool := validation.NewTransactionsPool(blockchain, settings, neighborhood, utxosRegistry, address, logger)
 	neighborhoodSynchronizationEngine := clock.NewEngine(neighborhood.Synchronize, watch, settings.SynchronizationTimer(), 1, 0)

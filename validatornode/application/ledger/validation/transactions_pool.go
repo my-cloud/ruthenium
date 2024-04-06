@@ -119,25 +119,34 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		if err := transaction.VerifySignatures(utxosManagerCopy); err != nil {
-			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to verify signature: %w", err).Error())
+		if err := transaction.VerifySignatures(); err != nil {
+			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to verify signature, transaction: %v\n %w", transaction, err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		fee, err := transaction.Fee(pool.settings, timestamp, utxosManagerCopy)
+		// TODO choose transactions bytes or interfaces
+		var inputs []ledger.InputInfoProvider
+		for _, input := range transaction.Inputs() {
+			inputs = append(inputs, input)
+		}
+		var outputs []ledger.OutputInfoProvider
+		for _, output := range transaction.Outputs() {
+			outputs = append(outputs, output)
+		}
+		fee, err := utxosManagerCopy.CalculateFee(inputs, outputs, timestamp)
 		if err != nil {
-			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, transaction: %v\n %w", transaction, err).Error())
+			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to calculate fee, transaction: %v\n %w", transaction, err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
 		transactionBytes, err := json.Marshal([]*protocol.Transaction{transaction})
 		if err != nil {
-			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to marshal transaction: %w", err).Error())
+			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to marshal transaction, transaction: %v\n %w", transaction, err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
 		if err = utxosManagerCopy.UpdateUtxos(transactionBytes, nextBlockTimestamp); err != nil {
-			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to update UTXOs: %w", err).Error())
+			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to update UTXOs, transaction: %v\n %w", transaction, err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
@@ -164,7 +173,6 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		pool.logger.Error(fmt.Errorf("failed to marshal transactions: %w", err).Error())
 		return
 	}
-	// TODO registryManager.Verify
 	err = pool.blocksManager.AddBlock(timestamp, transactionsBytes, newAddresses)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("unable to create block: %w", err).Error())
@@ -193,26 +201,34 @@ func (pool *TransactionsPool) addTransaction(transaction *protocol.Transaction) 
 			return errors.New("the transaction is already in the transactions pool")
 		}
 	}
-	utxoManagerCopy := pool.utxosManager.Copy()
-	lastBlockTransactions := pool.blocksManager.LastBlockTransactions()
-	if err := utxoManagerCopy.UpdateUtxos(lastBlockTransactions, nextBlockTimestamp); err != nil {
-		return fmt.Errorf("failed to update UTXOs: %w", err)
-	}
 	transactionsBytes, err := json.Marshal(pool.transactions)
 	if err != nil {
 		return fmt.Errorf("failed to marshal transactions: %w", err)
 	}
+	if err = transaction.VerifySignatures(); err != nil {
+		return fmt.Errorf("failed to verify signature: %w", err)
+	}
+	utxoManagerCopy := pool.utxosManager.Copy()
+	lastBlockTransactions := pool.blocksManager.LastBlockTransactions()
+	if err = utxoManagerCopy.UpdateUtxos(lastBlockTransactions, nextBlockTimestamp); err != nil {
+		return fmt.Errorf("failed to update UTXOs: %w", err)
+	}
 	if err = utxoManagerCopy.UpdateUtxos(transactionsBytes, nextBlockTimestamp); err != nil {
 		return fmt.Errorf("failed to update UTXOs: %w", err)
 	}
-	if err = transaction.VerifySignatures(utxoManagerCopy); err != nil {
-		return fmt.Errorf("failed to verify signature: %w", err)
+	// TODO choose transactions bytes or interfaces
+	var inputs []ledger.InputInfoProvider
+	for _, input := range transaction.Inputs() {
+		inputs = append(inputs, input)
 	}
-	_, err = transaction.Fee(pool.settings, nextBlockTimestamp, utxoManagerCopy)
+	var outputs []ledger.OutputInfoProvider
+	for _, output := range transaction.Outputs() {
+		outputs = append(outputs, output)
+	}
+	_, err = utxoManagerCopy.CalculateFee(inputs, outputs, nextBlockTimestamp)
 	if err != nil {
 		return fmt.Errorf("failed to verify fee: %w", err)
 	}
-	// TODO registryManager.Verify
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 	pool.transactions = append(pool.transactions, transaction)

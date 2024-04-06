@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
-	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
 )
 
 type transactionDto struct {
@@ -78,47 +76,13 @@ func (transaction *Transaction) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (transaction *Transaction) VerifySignatures(utxosManager ledger.UtxosManager) error {
+func (transaction *Transaction) VerifySignatures() error {
 	for _, input := range transaction.inputs {
-		utxo, err := utxosManager.Utxo(input)
-		if err != nil {
-			return err
-		}
-		utxoAddress := utxo.Address()
-		inputAddress := input.publicKey.Address()
-		if utxoAddress != inputAddress {
-			return errors.New("output address does not derive from input public key")
-		}
-		if err = input.VerifySignature(); err != nil {
+		if err := input.VerifySignature(); err != nil {
 			return fmt.Errorf("failed to verify signature of an input: %w", err)
 		}
 	}
 	return nil
-}
-
-func (transaction *Transaction) Fee(settings ledger.SettingsProvider, timestamp int64, utxosManager ledger.UtxosManager) (uint64, error) {
-	var inputsValue uint64
-	var outputsValue uint64
-	for _, input := range transaction.inputs {
-		utxo, err := utxosManager.Utxo(input)
-		if err != nil {
-			return 0, err
-		}
-		value := utxo.Value(timestamp, settings.HalfLifeInNanoseconds(), settings.IncomeBase(), settings.IncomeLimit())
-		inputsValue += value
-	}
-	for _, output := range transaction.outputs {
-		outputsValue += output.InitialValue()
-	}
-	if inputsValue < outputsValue {
-		return 0, errors.New("transaction fee is negative")
-	}
-	fee := inputsValue - outputsValue
-	minimalTransactionFee := settings.MinimalTransactionFee()
-	if fee < minimalTransactionFee {
-		return 0, fmt.Errorf("transaction fee is too low, fee: %d, minimal fee: %d", fee, minimalTransactionFee)
-	}
-	return fee, nil
 }
 
 func (transaction *Transaction) Id() string {

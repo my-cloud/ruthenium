@@ -44,10 +44,10 @@ func (output *Output) Address() string {
 	return output.address
 }
 
-func (output *Output) IsYielding() bool {
-	return output.isYielding
-}
-
 func (output *Output) InitialValue() uint64 {
 	return output.value
+}
+
+func (output *Output) IsYielding() bool {
+	return output.isYielding
 }
