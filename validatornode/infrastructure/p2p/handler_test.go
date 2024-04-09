@@ -12,6 +12,7 @@ import (
 
 	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/application/network"
+	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
@@ -85,11 +86,14 @@ func Test_HandleTransactionRequest_AddValidTransaction_AddTransactionCalled(t *t
 	// Arrange
 	waitGroup := sync.WaitGroup{}
 	transactionsManagerMock := new(ledger.TransactionsManagerMock)
-	transactionsManagerMock.AddTransactionFunc = func([]byte, string) { waitGroup.Done() }
+	transactionsManagerMock.AddTransactionFunc = func(*protocol.Transaction, string, string) { waitGroup.Done() }
 	neighborsManagerMock := new(network.NeighborsManagerMock)
 	neighborsManagerMock.HostTargetFunc = func() string { return "" }
 	handler := NewHandler(new(ledger.BlocksManagerMock), nil, neighborsManagerMock, transactionsManagerMock, new(ledger.UtxosManagerMock), new(ledger.TimeProviderMock))
 	req := gp2p.Data{}
+	transaction, _ := protocol.NewRewardTransaction("", false, 0, 0)
+	transactionBytes, _ := json.Marshal(transaction)
+	req.SetBytes(transactionBytes)
 	waitGroup.Add(1)
 
 	// Act
@@ -101,10 +105,27 @@ func Test_HandleTransactionRequest_AddValidTransaction_AddTransactionCalled(t *t
 	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
 }
 
+func Test_HandleTransactionRequest_AddInvalidValidTransaction_AddTransactionNotCalled(t *testing.T) {
+	// Arrange
+	transactionsManagerMock := new(ledger.TransactionsManagerMock)
+	neighborsManagerMock := new(network.NeighborsManagerMock)
+	neighborsManagerMock.HostTargetFunc = func() string { return "" }
+	handler := NewHandler(new(ledger.BlocksManagerMock), nil, neighborsManagerMock, transactionsManagerMock, new(ledger.UtxosManagerMock), new(ledger.TimeProviderMock))
+	req := gp2p.Data{}
+
+	// Act
+	_, err := handler.HandleTransactionRequest(context.TODO(), req)
+
+	// Assert
+	isMethodCalled := len(transactionsManagerMock.AddTransactionCalls()) == 0
+	test.Assert(t, err != nil, "Error is nil whereas it should not.")
+	test.Assert(t, isMethodCalled, "Method is called whereas it should not.")
+}
+
 func Test_HandleUtxosRequest_ValidUtxosRequest_UtxosByAddressCalled(t *testing.T) {
 	// Arrange
 	utxosManagerMock := new(ledger.UtxosManagerMock)
-	utxosManagerMock.UtxosFunc = func(string) []byte { return nil }
+	utxosManagerMock.UtxosFunc = func(string) []*protocol.Utxo { return nil }
 	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	handler := NewHandler(new(ledger.BlocksManagerMock), nil, new(network.NeighborsManagerMock), new(ledger.TransactionsManagerMock), utxosManagerMock, watchMock)
@@ -123,7 +144,7 @@ func Test_HandleUtxosRequest_ValidUtxosRequest_UtxosByAddressCalled(t *testing.T
 func Test_HandleBlocksRequest_ValidBlocksRequest_LastBlocksCalled(t *testing.T) {
 	// Arrange
 	blocksManagerMock := new(ledger.BlocksManagerMock)
-	blocksManagerMock.BlocksFunc = func(uint64) []byte { return nil }
+	blocksManagerMock.BlocksFunc = func(uint64) []*protocol.Block { return nil }
 	handler := NewHandler(blocksManagerMock, nil, new(network.NeighborsManagerMock), new(ledger.TransactionsManagerMock), new(ledger.UtxosManagerMock), new(ledger.TimeProviderMock))
 	var height uint64 = 0
 	marshalledHeight, _ := json.Marshal(&height)
@@ -140,7 +161,7 @@ func Test_HandleBlocksRequest_ValidBlocksRequest_LastBlocksCalled(t *testing.T) 
 func Test_HandleTransactionsRequest_ValidTransactionsRequest_TransactionsCalled(t *testing.T) {
 	// Arrange
 	transactionsManagerMock := new(ledger.TransactionsManagerMock)
-	transactionsManagerMock.TransactionsFunc = func() []byte { return nil }
+	transactionsManagerMock.TransactionsFunc = func() []*protocol.Transaction { return nil }
 	handler := NewHandler(new(ledger.BlocksManagerMock), nil, new(network.NeighborsManagerMock), transactionsManagerMock, new(ledger.UtxosManagerMock), new(ledger.TimeProviderMock))
 	req := gp2p.Data{}
 

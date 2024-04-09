@@ -4,6 +4,7 @@
 package ledger
 
 import (
+	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"sync"
 )
 
@@ -17,10 +18,10 @@ var _ TransactionsManager = &TransactionsManagerMock{}
 //
 //		// make and configure a mocked TransactionsManager
 //		mockedTransactionsManager := &TransactionsManagerMock{
-//			AddTransactionFunc: func(transactionRequestBytes []byte, hostTarget string)  {
+//			AddTransactionFunc: func(transaction *protocol.Transaction, broadcasterTarget string, hostTarget string)  {
 //				panic("mock out the AddTransaction method")
 //			},
-//			TransactionsFunc: func() []byte {
+//			TransactionsFunc: func() []*protocol.Transaction {
 //				panic("mock out the Transactions method")
 //			},
 //		}
@@ -31,17 +32,19 @@ var _ TransactionsManager = &TransactionsManagerMock{}
 //	}
 type TransactionsManagerMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
-	AddTransactionFunc func(transactionRequestBytes []byte, hostTarget string)
+	AddTransactionFunc func(transaction *protocol.Transaction, broadcasterTarget string, hostTarget string)
 
 	// TransactionsFunc mocks the Transactions method.
-	TransactionsFunc func() []byte
+	TransactionsFunc func() []*protocol.Transaction
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// AddTransaction holds details about calls to the AddTransaction method.
 		AddTransaction []struct {
-			// TransactionRequestBytes is the transactionRequestBytes argument value.
-			TransactionRequestBytes []byte
+			// Transaction is the transaction argument value.
+			Transaction *protocol.Transaction
+			// BroadcasterTarget is the broadcasterTarget argument value.
+			BroadcasterTarget string
 			// HostTarget is the hostTarget argument value.
 			HostTarget string
 		}
@@ -54,21 +57,23 @@ type TransactionsManagerMock struct {
 }
 
 // AddTransaction calls AddTransactionFunc.
-func (mock *TransactionsManagerMock) AddTransaction(transactionRequestBytes []byte, hostTarget string) {
+func (mock *TransactionsManagerMock) AddTransaction(transaction *protocol.Transaction, broadcasterTarget string, hostTarget string) {
 	if mock.AddTransactionFunc == nil {
 		panic("TransactionsManagerMock.AddTransactionFunc: method is nil but TransactionsManager.AddTransaction was just called")
 	}
 	callInfo := struct {
-		TransactionRequestBytes []byte
-		HostTarget              string
+		Transaction       *protocol.Transaction
+		BroadcasterTarget string
+		HostTarget        string
 	}{
-		TransactionRequestBytes: transactionRequestBytes,
-		HostTarget:              hostTarget,
+		Transaction:       transaction,
+		BroadcasterTarget: broadcasterTarget,
+		HostTarget:        hostTarget,
 	}
 	mock.lockAddTransaction.Lock()
 	mock.calls.AddTransaction = append(mock.calls.AddTransaction, callInfo)
 	mock.lockAddTransaction.Unlock()
-	mock.AddTransactionFunc(transactionRequestBytes, hostTarget)
+	mock.AddTransactionFunc(transaction, broadcasterTarget, hostTarget)
 }
 
 // AddTransactionCalls gets all the calls that were made to AddTransaction.
@@ -76,12 +81,14 @@ func (mock *TransactionsManagerMock) AddTransaction(transactionRequestBytes []by
 //
 //	len(mockedTransactionsManager.AddTransactionCalls())
 func (mock *TransactionsManagerMock) AddTransactionCalls() []struct {
-	TransactionRequestBytes []byte
-	HostTarget              string
+	Transaction       *protocol.Transaction
+	BroadcasterTarget string
+	HostTarget        string
 } {
 	var calls []struct {
-		TransactionRequestBytes []byte
-		HostTarget              string
+		Transaction       *protocol.Transaction
+		BroadcasterTarget string
+		HostTarget        string
 	}
 	mock.lockAddTransaction.RLock()
 	calls = mock.calls.AddTransaction
@@ -90,7 +97,7 @@ func (mock *TransactionsManagerMock) AddTransactionCalls() []struct {
 }
 
 // Transactions calls TransactionsFunc.
-func (mock *TransactionsManagerMock) Transactions() []byte {
+func (mock *TransactionsManagerMock) Transactions() []*protocol.Transaction {
 	if mock.TransactionsFunc == nil {
 		panic("TransactionsManagerMock.TransactionsFunc: method is nil but TransactionsManager.Transactions was just called")
 	}

@@ -10,7 +10,6 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/array"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
@@ -41,7 +40,7 @@ func newBlockchain(blocks []*protocol.Block, registry ledger.AddressesManager, s
 	return blockchain
 }
 
-func (blockchain *Blockchain) AddBlock(timestamp int64, transactionsBytes []byte, newAddresses []string) error {
+func (blockchain *Blockchain) AddBlock(timestamp int64, transactions []*protocol.Transaction, newAddresses []string) error {
 	blockchain.mutex.Lock()
 	defer blockchain.mutex.Unlock()
 	var previousHash [32]byte
@@ -55,37 +54,24 @@ func (blockchain *Blockchain) AddBlock(timestamp int64, transactionsBytes []byte
 	}
 	addedAddresses := blockchain.registry.Filter(newAddresses)
 	removedAddresses := blockchain.registry.RemovedAddresses()
-	var transactions []*protocol.Transaction
-	if transactionsBytes != nil {
-		err := json.Unmarshal(transactionsBytes, &transactions)
-		if err != nil {
-			return fmt.Errorf("failed to unmarshal transactions: %w", err)
-		}
-	}
 	block := protocol.NewBlock(previousHash, addedAddresses, removedAddresses, timestamp, transactions)
 	return blockchain.addBlock(block)
 }
 
-func (blockchain *Blockchain) Blocks(startingBlockHeight uint64) []byte {
+func (blockchain *Blockchain) Blocks(startingBlockHeight uint64) []*protocol.Block {
 	blockchain.mutex.RLock()
 	defer blockchain.mutex.RUnlock()
 	var endingBlockHeight uint64
 	blocksCountLimit := blockchain.settings.BlocksCountLimit()
 	blocksCount := len(blockchain.blocks)
 	if blockchain.isEmpty() || startingBlockHeight > uint64(blocksCount)-1 || blocksCountLimit == 0 {
-		return array.MarshalledEmptyArray
+		return []*protocol.Block{}
 	} else if startingBlockHeight+blocksCountLimit < uint64(blocksCount) {
 		endingBlockHeight = startingBlockHeight + blocksCountLimit
 	} else {
 		endingBlockHeight = uint64(blocksCount)
 	}
-	blocks := blockchain.blocks[startingBlockHeight:endingBlockHeight]
-	blocksBytes, err := json.Marshal(blocks)
-	if err != nil {
-		blockchain.logger.Error(err.Error())
-		return array.MarshalledEmptyArray
-	}
-	return blocksBytes
+	return blockchain.blocks[startingBlockHeight:endingBlockHeight]
 }
 
 func (blockchain *Blockchain) FirstBlockTimestamp() int64 {
@@ -104,17 +90,11 @@ func (blockchain *Blockchain) LastBlockTimestamp() int64 {
 	}
 }
 
-func (blockchain *Blockchain) LastBlockTransactions() []byte {
+func (blockchain *Blockchain) LastBlockTransactions() []*protocol.Transaction {
 	if blockchain.isEmpty() {
-		return array.MarshalledEmptyArray
+		return []*protocol.Transaction{}
 	} else {
-		transactions := blockchain.blocks[len(blockchain.blocks)-1].Transactions()
-		transactionsBytes, err := json.Marshal(transactions)
-		if err != nil {
-			blockchain.logger.Error(err.Error())
-			return array.MarshalledEmptyArray
-		}
-		return transactionsBytes
+		return blockchain.blocks[len(blockchain.blocks)-1].Transactions()
 	}
 }
 
@@ -271,13 +251,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			newBlocks = selectedBlocks[len(hostBlocks)-1 : len(selectedBlocks)-1]
 		}
 		for _, newBlock := range newBlocks {
-			newBlockTransactionsBytes, err := json.Marshal(newBlock.Transactions())
-			if err != nil {
-				blockchain.logger.Error(fmt.Errorf("verification failed: failed to marshal new block transactions: %w", err).Error())
-				isReplaced = false
-			}
-			err = blockchain.utxosManager.UpdateUtxos(newBlockTransactionsBytes, newBlock.Timestamp())
-			if err != nil {
+			if err := blockchain.utxosManager.UpdateUtxos(newBlock.Transactions(), newBlock.Timestamp()); err != nil {
 				blockchain.logger.Error(fmt.Errorf("verification failed: failed to add UTXO: %w", err).Error())
 				isReplaced = false
 			} else {
@@ -296,12 +270,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 func (blockchain *Blockchain) addBlock(block *protocol.Block) error {
 	if !blockchain.isEmpty() {
 		lastBlock := blockchain.blocks[len(blockchain.blocks)-1]
-		lastBlockTransactionsBytes, err := json.Marshal(lastBlock.Transactions())
-		if err != nil {
-			return fmt.Errorf("failed to marshal last block transactions: %w", err)
-		}
-		err = blockchain.utxosManager.UpdateUtxos(lastBlockTransactionsBytes, lastBlock.Timestamp())
-		if err != nil {
+		if err := blockchain.utxosManager.UpdateUtxos(lastBlock.Transactions(), lastBlock.Timestamp()); err != nil {
 			return fmt.Errorf("failed to add UTXO: %w", err)
 		}
 		blockchain.registry.Update(lastBlock.AddedRegisteredAddresses(), lastBlock.RemovedRegisteredAddresses())
@@ -471,9 +440,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *protocol.Block, previou
 			if err := transaction.VerifySignatures(); err != nil {
 				return fmt.Errorf("neighbor transaction is invalid: %w", err)
 			}
-			var outputs []ledger.OutputInfoProvider
 			for _, output := range transaction.Outputs() {
-				outputs = append(outputs, output)
 				if output.IsYielding() {
 					var isNewlyRegistered bool
 					for _, addedAddress := range addedRegisteredAddresses {
@@ -487,11 +454,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *protocol.Block, previou
 					}
 				}
 			}
-			var inputs []ledger.InputInfoProvider
-			for _, input := range transaction.Inputs() {
-				inputs = append(inputs, input)
-			}
-			fee, err := blockchain.utxosManager.CalculateFee(inputs, outputs, currentBlockTimestamp)
+			fee, err := blockchain.utxosManager.CalculateFee(transaction, currentBlockTimestamp)
 			if err != nil {
 				return fmt.Errorf("failed to verify a neighbor block transaction fee: %w", err)
 			}

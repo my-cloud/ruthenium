@@ -1,14 +1,12 @@
 package verification
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/array"
 )
 
 type UtxosRegistry struct {
@@ -26,10 +24,10 @@ func NewUtxosRegistry(settings ledger.SettingsProvider) *UtxosRegistry {
 	return registry
 }
 
-func (registry *UtxosRegistry) CalculateFee(inputs []ledger.InputInfoProvider, outputs []ledger.OutputInfoProvider, timestamp int64) (uint64, error) {
+func (registry *UtxosRegistry) CalculateFee(transaction *protocol.Transaction, timestamp int64) (uint64, error) {
 	var inputsValue uint64
 	var outputsValue uint64
-	for _, input := range inputs {
+	for _, input := range transaction.Inputs() {
 		utxos, ok := registry.utxosById[input.TransactionId()]
 		if !ok || int(input.OutputIndex()) > len(utxos)-1 {
 			return 0, fmt.Errorf("failed to find UTXO, input: %v", input)
@@ -46,7 +44,7 @@ func (registry *UtxosRegistry) CalculateFee(inputs []ledger.InputInfoProvider, o
 		value := utxo.Value(timestamp, registry.settings.HalfLifeInNanoseconds(), registry.settings.IncomeBase(), registry.settings.IncomeLimit())
 		inputsValue += value
 	}
-	for _, output := range outputs {
+	for _, output := range transaction.Outputs() {
 		outputsValue += output.InitialValue()
 	}
 	if inputsValue < outputsValue {
@@ -77,14 +75,7 @@ func (registry *UtxosRegistry) Copy() ledger.UtxosManager {
 	return registryCopy
 }
 
-func (registry *UtxosRegistry) UpdateUtxos(transactionsBytes []byte, timestamp int64) error {
-	if transactionsBytes == nil {
-		return nil
-	}
-	var transactions []*protocol.Transaction
-	if err := json.Unmarshal(transactionsBytes, &transactions); err != nil {
-		return fmt.Errorf("failed to unmarshal transactions: %w", err)
-	}
+func (registry *UtxosRegistry) UpdateUtxos(transactions []*protocol.Transaction, timestamp int64) error {
 	utxosByAddress := copyUtxosMap(registry.utxosByAddress)
 	utxosById := copyUtxosMap(registry.utxosById)
 	for _, transaction := range transactions {
@@ -139,16 +130,13 @@ func (registry *UtxosRegistry) UpdateUtxos(transactionsBytes []byte, timestamp i
 	return nil
 }
 
-func (registry *UtxosRegistry) Utxos(address string) []byte {
+func (registry *UtxosRegistry) Utxos(address string) []*protocol.Utxo {
 	utxos, ok := registry.utxosByAddress[address]
-	if !ok {
-		return array.MarshalledEmptyArray
+	if ok {
+		return utxos
+	} else {
+		return []*protocol.Utxo{}
 	}
-	marshaledUtxos, err := json.Marshal(utxos)
-	if err != nil {
-		return array.MarshalledEmptyArray
-	}
-	return marshaledUtxos
 }
 
 func copyUtxosMap(utxosMap map[string][]*protocol.Utxo) map[string][]*protocol.Utxo {

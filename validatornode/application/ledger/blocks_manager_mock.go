@@ -4,6 +4,7 @@
 package ledger
 
 import (
+	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"sync"
 )
 
@@ -17,10 +18,10 @@ var _ BlocksManager = &BlocksManagerMock{}
 //
 //		// make and configure a mocked BlocksManager
 //		mockedBlocksManager := &BlocksManagerMock{
-//			AddBlockFunc: func(timestamp int64, transactionsBytes []byte, newRegisteredAddresses []string) error {
+//			AddBlockFunc: func(timestamp int64, transactions []*protocol.Transaction, newRegisteredAddresses []string) error {
 //				panic("mock out the AddBlock method")
 //			},
-//			BlocksFunc: func(startingBlockHeight uint64) []byte {
+//			BlocksFunc: func(startingBlockHeight uint64) []*protocol.Block {
 //				panic("mock out the Blocks method")
 //			},
 //			FirstBlockTimestampFunc: func() int64 {
@@ -29,7 +30,7 @@ var _ BlocksManager = &BlocksManagerMock{}
 //			LastBlockTimestampFunc: func() int64 {
 //				panic("mock out the LastBlockTimestamp method")
 //			},
-//			LastBlockTransactionsFunc: func() []byte {
+//			LastBlockTransactionsFunc: func() []*protocol.Transaction {
 //				panic("mock out the LastBlockTransactions method")
 //			},
 //		}
@@ -40,10 +41,10 @@ var _ BlocksManager = &BlocksManagerMock{}
 //	}
 type BlocksManagerMock struct {
 	// AddBlockFunc mocks the AddBlock method.
-	AddBlockFunc func(timestamp int64, transactionsBytes []byte, newRegisteredAddresses []string) error
+	AddBlockFunc func(timestamp int64, transactions []*protocol.Transaction, newRegisteredAddresses []string) error
 
 	// BlocksFunc mocks the Blocks method.
-	BlocksFunc func(startingBlockHeight uint64) []byte
+	BlocksFunc func(startingBlockHeight uint64) []*protocol.Block
 
 	// FirstBlockTimestampFunc mocks the FirstBlockTimestamp method.
 	FirstBlockTimestampFunc func() int64
@@ -52,7 +53,7 @@ type BlocksManagerMock struct {
 	LastBlockTimestampFunc func() int64
 
 	// LastBlockTransactionsFunc mocks the LastBlockTransactions method.
-	LastBlockTransactionsFunc func() []byte
+	LastBlockTransactionsFunc func() []*protocol.Transaction
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -60,8 +61,8 @@ type BlocksManagerMock struct {
 		AddBlock []struct {
 			// Timestamp is the timestamp argument value.
 			Timestamp int64
-			// TransactionsBytes is the transactionsBytes argument value.
-			TransactionsBytes []byte
+			// Transactions is the transactions argument value.
+			Transactions []*protocol.Transaction
 			// NewRegisteredAddresses is the newRegisteredAddresses argument value.
 			NewRegisteredAddresses []string
 		}
@@ -88,23 +89,23 @@ type BlocksManagerMock struct {
 }
 
 // AddBlock calls AddBlockFunc.
-func (mock *BlocksManagerMock) AddBlock(timestamp int64, transactionsBytes []byte, newRegisteredAddresses []string) error {
+func (mock *BlocksManagerMock) AddBlock(timestamp int64, transactions []*protocol.Transaction, newRegisteredAddresses []string) error {
 	if mock.AddBlockFunc == nil {
 		panic("BlocksManagerMock.AddBlockFunc: method is nil but BlocksManager.AddBlock was just called")
 	}
 	callInfo := struct {
 		Timestamp              int64
-		TransactionsBytes      []byte
+		Transactions           []*protocol.Transaction
 		NewRegisteredAddresses []string
 	}{
 		Timestamp:              timestamp,
-		TransactionsBytes:      transactionsBytes,
+		Transactions:           transactions,
 		NewRegisteredAddresses: newRegisteredAddresses,
 	}
 	mock.lockAddBlock.Lock()
 	mock.calls.AddBlock = append(mock.calls.AddBlock, callInfo)
 	mock.lockAddBlock.Unlock()
-	return mock.AddBlockFunc(timestamp, transactionsBytes, newRegisteredAddresses)
+	return mock.AddBlockFunc(timestamp, transactions, newRegisteredAddresses)
 }
 
 // AddBlockCalls gets all the calls that were made to AddBlock.
@@ -113,12 +114,12 @@ func (mock *BlocksManagerMock) AddBlock(timestamp int64, transactionsBytes []byt
 //	len(mockedBlocksManager.AddBlockCalls())
 func (mock *BlocksManagerMock) AddBlockCalls() []struct {
 	Timestamp              int64
-	TransactionsBytes      []byte
+	Transactions           []*protocol.Transaction
 	NewRegisteredAddresses []string
 } {
 	var calls []struct {
 		Timestamp              int64
-		TransactionsBytes      []byte
+		Transactions           []*protocol.Transaction
 		NewRegisteredAddresses []string
 	}
 	mock.lockAddBlock.RLock()
@@ -128,7 +129,7 @@ func (mock *BlocksManagerMock) AddBlockCalls() []struct {
 }
 
 // Blocks calls BlocksFunc.
-func (mock *BlocksManagerMock) Blocks(startingBlockHeight uint64) []byte {
+func (mock *BlocksManagerMock) Blocks(startingBlockHeight uint64) []*protocol.Block {
 	if mock.BlocksFunc == nil {
 		panic("BlocksManagerMock.BlocksFunc: method is nil but BlocksManager.Blocks was just called")
 	}
@@ -214,7 +215,7 @@ func (mock *BlocksManagerMock) LastBlockTimestampCalls() []struct {
 }
 
 // LastBlockTransactions calls LastBlockTransactionsFunc.
-func (mock *BlocksManagerMock) LastBlockTransactions() []byte {
+func (mock *BlocksManagerMock) LastBlockTransactions() []*protocol.Transaction {
 	if mock.LastBlockTransactionsFunc == nil {
 		panic("BlocksManagerMock.LastBlockTransactionsFunc: method is nil but BlocksManager.LastBlockTransactions was just called")
 	}

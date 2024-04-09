@@ -8,6 +8,7 @@ import (
 
 	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/application/network"
+	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 )
 
 type Handler struct {
@@ -36,7 +37,11 @@ func (handler *Handler) HandleBlocksRequest(_ context.Context, req gp2p.Data) (g
 		return res, err
 	}
 	blocks := handler.blocksManager.Blocks(startingBlockHeight)
-	res.SetBytes(blocks)
+	blocksBytes, err := json.Marshal(blocks)
+	if err != nil {
+		return res, err
+	}
+	res.SetBytes(blocksBytes)
 	return res, nil
 }
 
@@ -69,15 +74,24 @@ func (handler *Handler) HandleTargetsRequest(_ context.Context, req gp2p.Data) (
 }
 
 func (handler *Handler) HandleTransactionRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
+	var transactionRequest *protocol.TransactionRequest
 	data := req.GetBytes()
-	go handler.transactionsManager.AddTransaction(data, handler.neighborsManager.HostTarget())
-	return gp2p.Data{}, nil
+	res := gp2p.Data{}
+	if err := json.Unmarshal(data, &transactionRequest); err != nil {
+		return res, err
+	}
+	go handler.transactionsManager.AddTransaction(transactionRequest.Transaction(), transactionRequest.TransactionBroadcasterTarget(), handler.neighborsManager.HostTarget())
+	return res, nil
 }
 
 func (handler *Handler) HandleTransactionsRequest(_ context.Context, _ gp2p.Data) (gp2p.Data, error) {
 	res := gp2p.Data{}
 	transactions := handler.transactionsManager.Transactions()
-	res.SetBytes(transactions)
+	transactionsBytes, err := json.Marshal(transactions)
+	if err != nil {
+		return res, err
+	}
+	res.SetBytes(transactionsBytes)
 	return res, nil
 }
 
@@ -89,6 +103,10 @@ func (handler *Handler) HandleUtxosRequest(_ context.Context, req gp2p.Data) (gp
 		return res, err
 	}
 	utxosByAddress := handler.utxosManager.Utxos(address)
-	res.SetBytes(utxosByAddress)
+	utxosByAddressBytes, err := json.Marshal(utxosByAddress)
+	if err != nil {
+		return res, err
+	}
+	res.SetBytes(utxosByAddressBytes)
 	return res, nil
 }

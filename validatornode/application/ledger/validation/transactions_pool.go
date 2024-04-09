@@ -39,19 +39,13 @@ func NewTransactionsPool(blocksManager ledger.BlocksManager, settings ledger.Set
 	return pool
 }
 
-func (pool *TransactionsPool) AddTransaction(transactionRequestBytes []byte, hostTarget string) {
-	var transactionRequest protocol.TransactionRequest
-	if err := json.Unmarshal(transactionRequestBytes, &transactionRequest); err != nil {
-		pool.logger.Debug(fmt.Errorf("failed to unmarshal transaction: %w", err).Error())
-		return
-	}
-	transaction := transactionRequest.Transaction()
+func (pool *TransactionsPool) AddTransaction(transaction *protocol.Transaction, broadcasterTarget string, hostTarget string) {
 	err := pool.addTransaction(transaction)
 	if err != nil {
 		pool.logger.Debug(fmt.Errorf("failed to add transaction: %w", err).Error())
 		return
 	}
-	pool.neighborsManager.Incentive(transactionRequest.TransactionBroadcasterTarget())
+	pool.neighborsManager.Incentive(broadcasterTarget)
 	newTransactionRequest := protocol.NewTransactionRequest(transaction, hostTarget)
 	marshaledTransactionRequest, err := json.Marshal(newTransactionRequest)
 	if err != nil {
@@ -66,15 +60,8 @@ func (pool *TransactionsPool) AddTransaction(transactionRequestBytes []byte, hos
 	}
 }
 
-func (pool *TransactionsPool) Transactions() []byte {
-	pool.mutex.RLock()
-	defer pool.mutex.RUnlock()
-	transactionsBytes, err := json.Marshal(pool.transactions)
-	if err != nil {
-		pool.logger.Error(err.Error())
-		return nil
-	}
-	return transactionsBytes
+func (pool *TransactionsPool) Transactions() []*protocol.Transaction {
+	return pool.transactions
 }
 
 func (pool *TransactionsPool) Validate(timestamp int64) {
@@ -124,28 +111,13 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		// TODO choose transactions bytes or interfaces
-		var inputs []ledger.InputInfoProvider
-		for _, input := range transaction.Inputs() {
-			inputs = append(inputs, input)
-		}
-		var outputs []ledger.OutputInfoProvider
-		for _, output := range transaction.Outputs() {
-			outputs = append(outputs, output)
-		}
-		fee, err := utxosManagerCopy.CalculateFee(inputs, outputs, timestamp)
+		fee, err := utxosManagerCopy.CalculateFee(transaction, timestamp)
 		if err != nil {
 			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to calculate fee, transaction: %v\n %w", transaction, err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		transactionBytes, err := json.Marshal([]*protocol.Transaction{transaction})
-		if err != nil {
-			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to marshal transaction, transaction: %v\n %w", transaction, err).Error())
-			rejectedTransactions = append(rejectedTransactions, transaction)
-			continue
-		}
-		if err = utxosManagerCopy.UpdateUtxos(transactionBytes, nextBlockTimestamp); err != nil {
+		if err = utxosManagerCopy.UpdateUtxos([]*protocol.Transaction{transaction}, nextBlockTimestamp); err != nil {
 			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to update UTXOs, transaction: %v\n %w", transaction, err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
@@ -168,12 +140,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 		return
 	}
 	transactions = append(transactions, rewardTransaction)
-	transactionsBytes, err := json.Marshal(transactions)
-	if err != nil {
-		pool.logger.Error(fmt.Errorf("failed to marshal transactions: %w", err).Error())
-		return
-	}
-	err = pool.blocksManager.AddBlock(timestamp, transactionsBytes, newAddresses)
+	err = pool.blocksManager.AddBlock(timestamp, transactions, newAddresses)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("unable to create block: %w", err).Error())
 		return
@@ -201,31 +168,18 @@ func (pool *TransactionsPool) addTransaction(transaction *protocol.Transaction) 
 			return errors.New("the transaction is already in the transactions pool")
 		}
 	}
-	transactionsBytes, err := json.Marshal(pool.transactions)
-	if err != nil {
-		return fmt.Errorf("failed to marshal transactions: %w", err)
-	}
-	if err = transaction.VerifySignatures(); err != nil {
+	if err := transaction.VerifySignatures(); err != nil {
 		return fmt.Errorf("failed to verify signature: %w", err)
 	}
 	utxoManagerCopy := pool.utxosManager.Copy()
 	lastBlockTransactions := pool.blocksManager.LastBlockTransactions()
-	if err = utxoManagerCopy.UpdateUtxos(lastBlockTransactions, nextBlockTimestamp); err != nil {
+	if err := utxoManagerCopy.UpdateUtxos(lastBlockTransactions, nextBlockTimestamp); err != nil {
 		return fmt.Errorf("failed to update UTXOs: %w", err)
 	}
-	if err = utxoManagerCopy.UpdateUtxos(transactionsBytes, nextBlockTimestamp); err != nil {
+	if err := utxoManagerCopy.UpdateUtxos(pool.transactions, nextBlockTimestamp); err != nil {
 		return fmt.Errorf("failed to update UTXOs: %w", err)
 	}
-	// TODO choose transactions bytes or interfaces
-	var inputs []ledger.InputInfoProvider
-	for _, input := range transaction.Inputs() {
-		inputs = append(inputs, input)
-	}
-	var outputs []ledger.OutputInfoProvider
-	for _, output := range transaction.Outputs() {
-		outputs = append(outputs, output)
-	}
-	_, err = utxoManagerCopy.CalculateFee(inputs, outputs, nextBlockTimestamp)
+	_, err := utxoManagerCopy.CalculateFee(transaction, nextBlockTimestamp)
 	if err != nil {
 		return fmt.Errorf("failed to verify fee: %w", err)
 	}

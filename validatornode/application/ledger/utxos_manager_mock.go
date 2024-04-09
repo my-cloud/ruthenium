@@ -4,6 +4,7 @@
 package ledger
 
 import (
+	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"sync"
 )
 
@@ -17,7 +18,7 @@ var _ UtxosManager = &UtxosManagerMock{}
 //
 //		// make and configure a mocked UtxosManager
 //		mockedUtxosManager := &UtxosManagerMock{
-//			CalculateFeeFunc: func(inputs []InputInfoProvider, outputs []OutputInfoProvider, timestamp int64) (uint64, error) {
+//			CalculateFeeFunc: func(transaction *protocol.Transaction, timestamp int64) (uint64, error) {
 //				panic("mock out the CalculateFee method")
 //			},
 //			ClearFunc: func()  {
@@ -26,10 +27,10 @@ var _ UtxosManager = &UtxosManagerMock{}
 //			CopyFunc: func() UtxosManager {
 //				panic("mock out the Copy method")
 //			},
-//			UpdateUtxosFunc: func(transactionsBytes []byte, timestamp int64) error {
+//			UpdateUtxosFunc: func(transactions []*protocol.Transaction, timestamp int64) error {
 //				panic("mock out the UpdateUtxos method")
 //			},
-//			UtxosFunc: func(address string) []byte {
+//			UtxosFunc: func(address string) []*protocol.Utxo {
 //				panic("mock out the Utxos method")
 //			},
 //		}
@@ -40,7 +41,7 @@ var _ UtxosManager = &UtxosManagerMock{}
 //	}
 type UtxosManagerMock struct {
 	// CalculateFeeFunc mocks the CalculateFee method.
-	CalculateFeeFunc func(inputs []InputInfoProvider, outputs []OutputInfoProvider, timestamp int64) (uint64, error)
+	CalculateFeeFunc func(transaction *protocol.Transaction, timestamp int64) (uint64, error)
 
 	// ClearFunc mocks the Clear method.
 	ClearFunc func()
@@ -49,19 +50,17 @@ type UtxosManagerMock struct {
 	CopyFunc func() UtxosManager
 
 	// UpdateUtxosFunc mocks the UpdateUtxos method.
-	UpdateUtxosFunc func(transactionsBytes []byte, timestamp int64) error
+	UpdateUtxosFunc func(transactions []*protocol.Transaction, timestamp int64) error
 
 	// UtxosFunc mocks the Utxos method.
-	UtxosFunc func(address string) []byte
+	UtxosFunc func(address string) []*protocol.Utxo
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// CalculateFee holds details about calls to the CalculateFee method.
 		CalculateFee []struct {
-			// Inputs is the inputs argument value.
-			Inputs []InputInfoProvider
-			// Outputs is the outputs argument value.
-			Outputs []OutputInfoProvider
+			// Transaction is the transaction argument value.
+			Transaction *protocol.Transaction
 			// Timestamp is the timestamp argument value.
 			Timestamp int64
 		}
@@ -73,8 +72,8 @@ type UtxosManagerMock struct {
 		}
 		// UpdateUtxos holds details about calls to the UpdateUtxos method.
 		UpdateUtxos []struct {
-			// TransactionsBytes is the transactionsBytes argument value.
-			TransactionsBytes []byte
+			// Transactions is the transactions argument value.
+			Transactions []*protocol.Transaction
 			// Timestamp is the timestamp argument value.
 			Timestamp int64
 		}
@@ -92,23 +91,21 @@ type UtxosManagerMock struct {
 }
 
 // CalculateFee calls CalculateFeeFunc.
-func (mock *UtxosManagerMock) CalculateFee(inputs []InputInfoProvider, outputs []OutputInfoProvider, timestamp int64) (uint64, error) {
+func (mock *UtxosManagerMock) CalculateFee(transaction *protocol.Transaction, timestamp int64) (uint64, error) {
 	if mock.CalculateFeeFunc == nil {
 		panic("UtxosManagerMock.CalculateFeeFunc: method is nil but UtxosManager.CalculateFee was just called")
 	}
 	callInfo := struct {
-		Inputs    []InputInfoProvider
-		Outputs   []OutputInfoProvider
-		Timestamp int64
+		Transaction *protocol.Transaction
+		Timestamp   int64
 	}{
-		Inputs:    inputs,
-		Outputs:   outputs,
-		Timestamp: timestamp,
+		Transaction: transaction,
+		Timestamp:   timestamp,
 	}
 	mock.lockCalculateFee.Lock()
 	mock.calls.CalculateFee = append(mock.calls.CalculateFee, callInfo)
 	mock.lockCalculateFee.Unlock()
-	return mock.CalculateFeeFunc(inputs, outputs, timestamp)
+	return mock.CalculateFeeFunc(transaction, timestamp)
 }
 
 // CalculateFeeCalls gets all the calls that were made to CalculateFee.
@@ -116,14 +113,12 @@ func (mock *UtxosManagerMock) CalculateFee(inputs []InputInfoProvider, outputs [
 //
 //	len(mockedUtxosManager.CalculateFeeCalls())
 func (mock *UtxosManagerMock) CalculateFeeCalls() []struct {
-	Inputs    []InputInfoProvider
-	Outputs   []OutputInfoProvider
-	Timestamp int64
+	Transaction *protocol.Transaction
+	Timestamp   int64
 } {
 	var calls []struct {
-		Inputs    []InputInfoProvider
-		Outputs   []OutputInfoProvider
-		Timestamp int64
+		Transaction *protocol.Transaction
+		Timestamp   int64
 	}
 	mock.lockCalculateFee.RLock()
 	calls = mock.calls.CalculateFee
@@ -186,21 +181,21 @@ func (mock *UtxosManagerMock) CopyCalls() []struct {
 }
 
 // UpdateUtxos calls UpdateUtxosFunc.
-func (mock *UtxosManagerMock) UpdateUtxos(transactionsBytes []byte, timestamp int64) error {
+func (mock *UtxosManagerMock) UpdateUtxos(transactions []*protocol.Transaction, timestamp int64) error {
 	if mock.UpdateUtxosFunc == nil {
 		panic("UtxosManagerMock.UpdateUtxosFunc: method is nil but UtxosManager.UpdateUtxos was just called")
 	}
 	callInfo := struct {
-		TransactionsBytes []byte
-		Timestamp         int64
+		Transactions []*protocol.Transaction
+		Timestamp    int64
 	}{
-		TransactionsBytes: transactionsBytes,
-		Timestamp:         timestamp,
+		Transactions: transactions,
+		Timestamp:    timestamp,
 	}
 	mock.lockUpdateUtxos.Lock()
 	mock.calls.UpdateUtxos = append(mock.calls.UpdateUtxos, callInfo)
 	mock.lockUpdateUtxos.Unlock()
-	return mock.UpdateUtxosFunc(transactionsBytes, timestamp)
+	return mock.UpdateUtxosFunc(transactions, timestamp)
 }
 
 // UpdateUtxosCalls gets all the calls that were made to UpdateUtxos.
@@ -208,12 +203,12 @@ func (mock *UtxosManagerMock) UpdateUtxos(transactionsBytes []byte, timestamp in
 //
 //	len(mockedUtxosManager.UpdateUtxosCalls())
 func (mock *UtxosManagerMock) UpdateUtxosCalls() []struct {
-	TransactionsBytes []byte
-	Timestamp         int64
+	Transactions []*protocol.Transaction
+	Timestamp    int64
 } {
 	var calls []struct {
-		TransactionsBytes []byte
-		Timestamp         int64
+		Transactions []*protocol.Transaction
+		Timestamp    int64
 	}
 	mock.lockUpdateUtxos.RLock()
 	calls = mock.calls.UpdateUtxos
@@ -222,7 +217,7 @@ func (mock *UtxosManagerMock) UpdateUtxosCalls() []struct {
 }
 
 // Utxos calls UtxosFunc.
-func (mock *UtxosManagerMock) Utxos(address string) []byte {
+func (mock *UtxosManagerMock) Utxos(address string) []*protocol.Utxo {
 	if mock.UtxosFunc == nil {
 		panic("UtxosManagerMock.UtxosFunc: method is nil but UtxosManager.Utxos was just called")
 	}
