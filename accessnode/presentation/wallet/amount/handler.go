@@ -8,19 +8,19 @@ import (
 	"github.com/my-cloud/ruthenium/accessnode/infrastructure/io"
 	"github.com/my-cloud/ruthenium/accessnode/presentation/wallet"
 	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
+	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
-	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
 
 type Handler struct {
-	neighbor presentation.NeighborCaller
+	neighbor network.NeighborCaller
 	settings wallet.SettingsProvider
 	watch    ledger.TimeProvider
 	logger   log.Logger
 }
 
-func NewHandler(neighbor presentation.NeighborCaller, settings wallet.SettingsProvider, watch ledger.TimeProvider, logger log.Logger) *Handler {
+func NewHandler(neighbor network.NeighborCaller, settings wallet.SettingsProvider, watch ledger.TimeProvider, logger log.Logger) *Handler {
 	return &Handler{neighbor, settings, watch, logger}
 }
 

@@ -12,7 +12,6 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
-	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
 
 type TransactionsPool struct {
@@ -54,7 +53,7 @@ func (pool *TransactionsPool) AddTransaction(transaction *protocol.Transaction, 
 	}
 	neighbors := pool.neighborsManager.Neighbors()
 	for _, neighbor := range neighbors {
-		go func(neighbor presentation.NeighborCaller) {
+		go func(neighbor network.NeighborCaller) {
 			_ = neighbor.AddTransaction(marshaledTransactionRequest)
 		}(neighbor)
 	}

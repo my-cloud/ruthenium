@@ -5,8 +5,6 @@ package network
 
 import (
 	"sync"
-
-	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
 
 // Ensure, that NeighborsManagerMock does implement NeighborsManager.
@@ -48,7 +46,7 @@ type NeighborsManagerMock struct {
 	IncentiveFunc func(target string)
 
 	// NeighborsFunc mocks the Neighbors method.
-	NeighborsFunc func() []presentation.NeighborCaller
+	NeighborsFunc func() []NeighborCaller
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -167,7 +165,7 @@ func (mock *NeighborsManagerMock) IncentiveCalls() []struct {
 }
 
 // Neighbors calls NeighborsFunc.
-func (mock *NeighborsManagerMock) Neighbors() []presentation.NeighborCaller {
+func (mock *NeighborsManagerMock) Neighbors() []NeighborCaller {
 	if mock.NeighborsFunc == nil {
 		panic("NeighborsManagerMock.NeighborsFunc: method is nil but NeighborsManager.Neighbors was just called")
 	}

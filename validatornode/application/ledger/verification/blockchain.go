@@ -11,7 +11,6 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
-	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
 
 type Blockchain struct {
@@ -373,13 +372,13 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*protocol.Block, neighborB
 	return verifiedBlocks, nil
 }
 
-func (blockchain *Blockchain) verifyNeighborBlockchain(timestamp int64, neighbor presentation.NeighborCaller, startingBlockHeight uint64, lastHostBlocks []*protocol.Block, oldHostBlocks []*protocol.Block) ([]*protocol.Block, error) {
+func (blockchain *Blockchain) verifyNeighborBlockchain(timestamp int64, neighbor network.NeighborCaller, startingBlockHeight uint64, lastHostBlocks []*protocol.Block, oldHostBlocks []*protocol.Block) ([]*protocol.Block, error) {
 	type ChanResult struct {
 		Blocks []*protocol.Block
 		Err    error
 	}
 	blocksChannel := make(chan *ChanResult)
-	go func(neighbor presentation.NeighborCaller) {
+	go func(neighbor network.NeighborCaller) {
 		defer close(blocksChannel)
 		neighborBlocksBytes, err := neighbor.GetBlocks(startingBlockHeight)
 		if err != nil {

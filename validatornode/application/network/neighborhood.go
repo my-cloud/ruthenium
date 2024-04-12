@@ -7,14 +7,13 @@ import (
 	"time"
 
 	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
-	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
 
 type Neighborhood struct {
 	clientFactory            SenderCreator
 	hostTarget               *Target
 	maxOutboundsCount        int
-	neighbors                []presentation.NeighborCaller
+	neighbors                []NeighborCaller
 	neighborsMutex           sync.RWMutex
 	scoresBySeedTargetValue  map[string]int
 	scoresByTargetValue      map[string]int
@@ -59,7 +58,7 @@ func (neighborhood *Neighborhood) Incentive(targetValue string) {
 	neighborhood.scoresByTargetValue[targetValue] += 1
 }
 
-func (neighborhood *Neighborhood) Neighbors() []presentation.NeighborCaller {
+func (neighborhood *Neighborhood) Neighbors() []NeighborCaller {
 	return neighborhood.neighbors
 }
 
@@ -73,7 +72,7 @@ func (neighborhood *Neighborhood) Synchronize(int64) {
 	}
 	neighborhood.scoresByTargetValue = map[string]int{}
 	neighborhood.scoresByTargetValueMutex.Unlock()
-	neighborsByScore := map[int][]presentation.NeighborCaller{}
+	neighborsByScore := map[int][]NeighborCaller{}
 	var targetValues []string
 	hostTargetValue := neighborhood.hostTarget.Value()
 	targetValues = append(targetValues, hostTargetValue)
@@ -103,20 +102,20 @@ func (neighborhood *Neighborhood) Synchronize(int64) {
 				neighborTargetValues = append(neighborTargetValues, targetValue)
 			}
 		}
-		go func(neighbor presentation.NeighborCaller) {
+		go func(neighbor NeighborCaller) {
 			_ = neighbor.SendTargets(neighborTargetValues)
 		}(neighbor)
 	}
 }
 
-func (neighborhood *Neighborhood) selectOutbounds(neighborsByScore map[int][]presentation.NeighborCaller, targetsCount int) []presentation.NeighborCaller {
+func (neighborhood *Neighborhood) selectOutbounds(neighborsByScore map[int][]NeighborCaller, targetsCount int) []NeighborCaller {
 	var keys []int
 	for k := range neighborsByScore {
 		keys = append(keys, k)
 	}
 	sort.Ints(keys)
 	outboundsCount := min(targetsCount, neighborhood.maxOutboundsCount)
-	var outbounds []presentation.NeighborCaller
+	var outbounds []NeighborCaller
 	for i := len(keys) - 1; i >= 0; i-- {
 		if len(outbounds)+len(neighborsByScore[keys[i]]) >= outboundsCount {
 			temp := neighborsByScore[keys[i]]

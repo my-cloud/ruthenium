@@ -16,9 +16,9 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/file"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/p2p"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/poh"
 	"github.com/my-cloud/ruthenium/validatornode/presentation"
+	p2p2 "github.com/my-cloud/ruthenium/validatornode/presentation/p2p"
 )
 
 func main() {
@@ -85,7 +85,7 @@ func createHostNode(settingsPath string, infuraKey string, seedsPath string, ip 
 	validationEngine := clock.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)
 	verificationEngine := clock.NewEngine(blockchain.Update, watch, settings.ValidationTimer(), settings.VerificationsCountPerValidation(), 1)
 	registrySynchronizationEngine := clock.NewEngine(addressesRegistry.Synchronize, watch, time.Hour /* TODO extract */, 1, 0)
-	host, err := p2p.NewHost(port, settings, blockchain, neighborhood, transactionsPool, utxosRegistry, watch)
+	host, err := p2p2.NewHost(port, settings, blockchain, neighborhood, transactionsPool, utxosRegistry, watch)
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +110,6 @@ func createNeighborhood(seedsPath string, hostIp string, port int, settings *con
 			return nil, fmt.Errorf("failed to find the public IP: %w", err)
 		}
 	}
-	clientFactory := p2p.NewSenderFactory(ipFinder, settings.ValidationTimeout())
+	clientFactory := p2p2.NewSenderFactory(ipFinder, settings.ValidationTimeout())
 	return network.NewNeighborhood(clientFactory, hostIp, strconv.Itoa(port), settings.MaxOutboundsCount(), scoresBySeedTargetValue, watch), nil
 }

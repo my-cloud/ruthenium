@@ -14,7 +14,7 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/environment"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/p2p"
+	"github.com/my-cloud/ruthenium/validatornode/presentation/p2p"
 )
 
 func main() {

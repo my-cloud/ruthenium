@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
+	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
-	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
 
 const urlTarget = "/url-target"
@@ -21,7 +21,7 @@ const urlTarget = "/url-target"
 func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
@@ -44,7 +44,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 func Test_ServeHTTP_InvalidAddress_ReturnsBadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -67,7 +67,7 @@ func Test_ServeHTTP_InvalidAddress_ReturnsBadRequest(t *testing.T) {
 func Test_ServeHTTP_InvalidValue_ReturnsBadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -90,7 +90,7 @@ func Test_ServeHTTP_InvalidValue_ReturnsBadRequest(t *testing.T) {
 func Test_ServeHTTP_IsRegisteredNotProvided_ReturnsBadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -113,7 +113,7 @@ func Test_ServeHTTP_IsRegisteredNotProvided_ReturnsBadRequest(t *testing.T) {
 func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
@@ -139,7 +139,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	marshalledEmptyUtxos, _ := json.Marshal([]*protocol.Utxo{})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
@@ -167,7 +167,7 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 func Test_ServeHTTP_InsufficientWalletBalance_ReturnsMethodNotAllowed(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	marshalledEmptyUtxos, _ := json.Marshal([]*protocol.Utxo{})
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
@@ -197,7 +197,7 @@ func Test_ServeHTTP_InsufficientWalletBalance_ReturnsMethodNotAllowed(t *testing
 func Test_ServeHTTP_ConsolidationNotRequiredAndOneUtxoIsGreater_ReturnsOneUtxo(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 
 	inputInfo1 := protocol.NewInputInfo(0, "")
 	inputInfo2 := protocol.NewInputInfo(1, "")
@@ -244,7 +244,7 @@ func Test_ServeHTTP_ConsolidationNotRequiredAndOneUtxoIsGreater_ReturnsOneUtxo(t
 func Test_ServeHTTP_ConsolidationNotRequiredAndNoUtxoIsGreater_ReturnsSomeUtxos(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 
 	inputInfo1 := protocol.NewInputInfo(0, "")
 	inputInfo2 := protocol.NewInputInfo(1, "")
@@ -291,7 +291,7 @@ func Test_ServeHTTP_ConsolidationNotRequiredAndNoUtxoIsGreater_ReturnsSomeUtxos(
 func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	inputInfo1 := protocol.NewInputInfo(0, "")
 	inputInfo2 := protocol.NewInputInfo(2, "")
 	output1 := protocol.NewOutput("", false, 1)

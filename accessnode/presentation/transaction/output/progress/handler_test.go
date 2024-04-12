@@ -12,10 +12,10 @@ import (
 
 	"github.com/my-cloud/ruthenium/accessnode/presentation/transaction/output"
 	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
+	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
-	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
 
 const urlTarget = "/url-target"
@@ -23,7 +23,7 @@ const urlTarget = "/url-target"
 func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
 	handler := NewHandler(neighborMock, settings, watchMock, logger)
@@ -45,7 +45,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 
 func Test_ServeHTTP_UndecipherableUtxo_BadRequest(t *testing.T) {
 	// Arrange
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	watchMock := new(ledger.TimeProviderMock)
@@ -70,7 +70,7 @@ func Test_ServeHTTP_UndecipherableUtxo_BadRequest(t *testing.T) {
 func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
@@ -95,7 +95,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
@@ -123,7 +123,7 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 func Test_ServeHTTP_GetBlocksError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
@@ -152,7 +152,7 @@ func Test_ServeHTTP_GetBlocksError_ReturnsInternalServerError(t *testing.T) {
 func Test_ServeHTTP_GetTransactionsError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
@@ -184,7 +184,7 @@ func Test_ServeHTTP_GetTransactionsError_ReturnsInternalServerError(t *testing.T
 func Test_ServeHTTP_TransactionNotFound_ReturnsRejected(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
@@ -223,7 +223,7 @@ func Test_ServeHTTP_TransactionNotFound_ReturnsRejected(t *testing.T) {
 func Test_ServeHTTP_UtxoFound_ReturnsConfirmed(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	transaction, _ := protocol.NewRewardTransaction("", false, 0, 0)
 	transactionId := transaction.Id()
 	inputInfo := protocol.NewInputInfo(0, transactionId)
@@ -261,7 +261,7 @@ func Test_ServeHTTP_UtxoFound_ReturnsConfirmed(t *testing.T) {
 func Test_ServeHTTP_ValidatedTransactionFound_ReturnsValidated(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
@@ -301,7 +301,7 @@ func Test_ServeHTTP_ValidatedTransactionFound_ReturnsValidated(t *testing.T) {
 func Test_ServeHTTP_PendingTransactionFound_ReturnsSent(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	marshalledEmptyArray := []byte{91, 93}
 	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
 	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }

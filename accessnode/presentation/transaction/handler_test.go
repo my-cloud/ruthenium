@@ -9,17 +9,17 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
-	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
 
 const urlTarget = "/url-target"
 
 func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	neighborMock.TargetFunc = func() string { return "" }
 	logger := log.NewLoggerMock()
 	handler := NewHandler(neighborMock, logger)
@@ -43,7 +43,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 
 func Test_ServeHTTP_UndecipherableTransaction_BadRequest(t *testing.T) {
 	// Arrange
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	logger := log.NewLoggerMock()
 	handler := NewHandler(neighborMock, logger)
 	marshalledData, _ := json.Marshal("")
@@ -63,7 +63,7 @@ func Test_ServeHTTP_UndecipherableTransaction_BadRequest(t *testing.T) {
 
 func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 	// Arrange
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	target := "0.0.0.0:0"
 	neighborMock.TargetFunc = func() string { return target }
 	neighborMock.AddTransactionFunc = func([]byte) error { return errors.New("") }
@@ -87,7 +87,7 @@ func Test_ServeHTTP_NodeError_InternalServerError(t *testing.T) {
 
 func Test_ServeHTTP_ValidTransaction_NeighborMethodCalled(t *testing.T) {
 	// Arrange
-	neighborMock := new(presentation.NeighborCallerMock)
+	neighborMock := new(network.NeighborCallerMock)
 	target := "0.0.0.0:0"
 	neighborMock.TargetFunc = func() string { return target }
 	neighborMock.AddTransactionFunc = func([]byte) error { return nil }

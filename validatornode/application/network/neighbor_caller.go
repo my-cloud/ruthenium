@@ -1,4 +1,4 @@
-package presentation
+package network
 
 type NeighborCaller interface {
 	Target() string
