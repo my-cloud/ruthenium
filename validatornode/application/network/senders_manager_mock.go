@@ -7,16 +7,16 @@ import (
 	"sync"
 )
 
-// Ensure, that NeighborsManagerMock does implement NeighborsManager.
+// Ensure, that SendersManagerMock does implement SendersManager.
 // If this is not the case, regenerate this file with moq.
-var _ NeighborsManager = &NeighborsManagerMock{}
+var _ SendersManager = &SendersManagerMock{}
 
-// NeighborsManagerMock is a mock implementation of NeighborsManager.
+// SendersManagerMock is a mock implementation of SendersManager.
 //
-//	func TestSomethingThatUsesNeighborsManager(t *testing.T) {
+//	func TestSomethingThatUsesSendersManager(t *testing.T) {
 //
-//		// make and configure a mocked NeighborsManager
-//		mockedNeighborsManager := &NeighborsManagerMock{
+//		// make and configure a mocked SendersManager
+//		mockedSendersManager := &SendersManagerMock{
 //			AddTargetsFunc: func(targets []string)  {
 //				panic("mock out the AddTargets method")
 //			},
@@ -26,16 +26,16 @@ var _ NeighborsManager = &NeighborsManagerMock{}
 //			IncentiveFunc: func(target string)  {
 //				panic("mock out the Incentive method")
 //			},
-//			NeighborsFunc: func() []NeighborCaller {
-//				panic("mock out the Neighbors method")
+//			SendersFunc: func() []Sender {
+//				panic("mock out the Senders method")
 //			},
 //		}
 //
-//		// use mockedNeighborsManager in code that requires NeighborsManager
+//		// use mockedSendersManager in code that requires SendersManager
 //		// and then make assertions.
 //
 //	}
-type NeighborsManagerMock struct {
+type SendersManagerMock struct {
 	// AddTargetsFunc mocks the AddTargets method.
 	AddTargetsFunc func(targets []string)
 
@@ -45,8 +45,8 @@ type NeighborsManagerMock struct {
 	// IncentiveFunc mocks the Incentive method.
 	IncentiveFunc func(target string)
 
-	// NeighborsFunc mocks the Neighbors method.
-	NeighborsFunc func() []NeighborCaller
+	// SendersFunc mocks the Senders method.
+	SendersFunc func() []Sender
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -63,20 +63,20 @@ type NeighborsManagerMock struct {
 			// Target is the target argument value.
 			Target string
 		}
-		// Neighbors holds details about calls to the Neighbors method.
-		Neighbors []struct {
+		// Senders holds details about calls to the Senders method.
+		Senders []struct {
 		}
 	}
 	lockAddTargets sync.RWMutex
 	lockHostTarget sync.RWMutex
 	lockIncentive  sync.RWMutex
-	lockNeighbors  sync.RWMutex
+	lockSenders    sync.RWMutex
 }
 
 // AddTargets calls AddTargetsFunc.
-func (mock *NeighborsManagerMock) AddTargets(targets []string) {
+func (mock *SendersManagerMock) AddTargets(targets []string) {
 	if mock.AddTargetsFunc == nil {
-		panic("NeighborsManagerMock.AddTargetsFunc: method is nil but NeighborsManager.AddTargets was just called")
+		panic("SendersManagerMock.AddTargetsFunc: method is nil but SendersManager.AddTargets was just called")
 	}
 	callInfo := struct {
 		Targets []string
@@ -92,8 +92,8 @@ func (mock *NeighborsManagerMock) AddTargets(targets []string) {
 // AddTargetsCalls gets all the calls that were made to AddTargets.
 // Check the length with:
 //
-//	len(mockedNeighborsManager.AddTargetsCalls())
-func (mock *NeighborsManagerMock) AddTargetsCalls() []struct {
+//	len(mockedSendersManager.AddTargetsCalls())
+func (mock *SendersManagerMock) AddTargetsCalls() []struct {
 	Targets []string
 } {
 	var calls []struct {
@@ -106,9 +106,9 @@ func (mock *NeighborsManagerMock) AddTargetsCalls() []struct {
 }
 
 // HostTarget calls HostTargetFunc.
-func (mock *NeighborsManagerMock) HostTarget() string {
+func (mock *SendersManagerMock) HostTarget() string {
 	if mock.HostTargetFunc == nil {
-		panic("NeighborsManagerMock.HostTargetFunc: method is nil but NeighborsManager.HostTarget was just called")
+		panic("SendersManagerMock.HostTargetFunc: method is nil but SendersManager.HostTarget was just called")
 	}
 	callInfo := struct {
 	}{}
@@ -121,8 +121,8 @@ func (mock *NeighborsManagerMock) HostTarget() string {
 // HostTargetCalls gets all the calls that were made to HostTarget.
 // Check the length with:
 //
-//	len(mockedNeighborsManager.HostTargetCalls())
-func (mock *NeighborsManagerMock) HostTargetCalls() []struct {
+//	len(mockedSendersManager.HostTargetCalls())
+func (mock *SendersManagerMock) HostTargetCalls() []struct {
 } {
 	var calls []struct {
 	}
@@ -133,9 +133,9 @@ func (mock *NeighborsManagerMock) HostTargetCalls() []struct {
 }
 
 // Incentive calls IncentiveFunc.
-func (mock *NeighborsManagerMock) Incentive(target string) {
+func (mock *SendersManagerMock) Incentive(target string) {
 	if mock.IncentiveFunc == nil {
-		panic("NeighborsManagerMock.IncentiveFunc: method is nil but NeighborsManager.Incentive was just called")
+		panic("SendersManagerMock.IncentiveFunc: method is nil but SendersManager.Incentive was just called")
 	}
 	callInfo := struct {
 		Target string
@@ -151,8 +151,8 @@ func (mock *NeighborsManagerMock) Incentive(target string) {
 // IncentiveCalls gets all the calls that were made to Incentive.
 // Check the length with:
 //
-//	len(mockedNeighborsManager.IncentiveCalls())
-func (mock *NeighborsManagerMock) IncentiveCalls() []struct {
+//	len(mockedSendersManager.IncentiveCalls())
+func (mock *SendersManagerMock) IncentiveCalls() []struct {
 	Target string
 } {
 	var calls []struct {
@@ -164,29 +164,29 @@ func (mock *NeighborsManagerMock) IncentiveCalls() []struct {
 	return calls
 }
 
-// Neighbors calls NeighborsFunc.
-func (mock *NeighborsManagerMock) Neighbors() []NeighborCaller {
-	if mock.NeighborsFunc == nil {
-		panic("NeighborsManagerMock.NeighborsFunc: method is nil but NeighborsManager.Neighbors was just called")
+// Senders calls SendersFunc.
+func (mock *SendersManagerMock) Senders() []Sender {
+	if mock.SendersFunc == nil {
+		panic("SendersManagerMock.SendersFunc: method is nil but SendersManager.Senders was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockNeighbors.Lock()
-	mock.calls.Neighbors = append(mock.calls.Neighbors, callInfo)
-	mock.lockNeighbors.Unlock()
-	return mock.NeighborsFunc()
+	mock.lockSenders.Lock()
+	mock.calls.Senders = append(mock.calls.Senders, callInfo)
+	mock.lockSenders.Unlock()
+	return mock.SendersFunc()
 }
 
-// NeighborsCalls gets all the calls that were made to Neighbors.
+// SendersCalls gets all the calls that were made to Senders.
 // Check the length with:
 //
-//	len(mockedNeighborsManager.NeighborsCalls())
-func (mock *NeighborsManagerMock) NeighborsCalls() []struct {
+//	len(mockedSendersManager.SendersCalls())
+func (mock *SendersManagerMock) SendersCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockNeighbors.RLock()
-	calls = mock.calls.Neighbors
-	mock.lockNeighbors.RUnlock()
+	mock.lockSenders.RLock()
+	calls = mock.calls.Senders
+	mock.lockSenders.RUnlock()
 	return calls
 }

@@ -16,14 +16,14 @@ import (
 )
 
 type Handler struct {
-	neighbor network.NeighborCaller
+	sender   network.Sender
 	settings SettingsProvider
 	watch    ledger.TimeProvider
 	logger   log.Logger
 }
 
-func NewHandler(neighbor network.NeighborCaller, settings SettingsProvider, watch ledger.TimeProvider, logger log.Logger) *Handler {
-	return &Handler{neighbor, settings, watch, logger}
+func NewHandler(sender network.Sender, settings SettingsProvider, watch ledger.TimeProvider, logger log.Logger) *Handler {
+	return &Handler{sender, settings, watch, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -56,7 +56,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write(errorMessage)
 			return
 		}
-		utxosBytes, err := handler.neighbor.GetUtxos(address)
+		utxosBytes, err := handler.sender.GetUtxos(address)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -69,7 +69,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		genesisTimestamp, err := handler.neighbor.GetFirstBlockTimestamp()
+		genesisTimestamp, err := handler.sender.GetFirstBlockTimestamp()
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get genesis timestamp: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)

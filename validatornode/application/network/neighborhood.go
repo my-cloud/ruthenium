@@ -10,20 +10,20 @@ import (
 )
 
 type Neighborhood struct {
-	clientFactory            SenderCreator
+	senderCreator            SenderCreator
 	hostTarget               *Target
 	maxOutboundsCount        int
-	neighbors                []NeighborCaller
-	neighborsMutex           sync.RWMutex
+	senders                  []Sender
+	sendersMutex             sync.RWMutex
 	scoresBySeedTargetValue  map[string]int
 	scoresByTargetValue      map[string]int
 	scoresByTargetValueMutex sync.RWMutex
 	watch                    ledger.TimeProvider
 }
 
-func NewNeighborhood(clientFactory SenderCreator, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTargetValue map[string]int, watch ledger.TimeProvider) *Neighborhood {
+func NewNeighborhood(senderCreator SenderCreator, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTargetValue map[string]int, watch ledger.TimeProvider) *Neighborhood {
 	neighborhood := new(Neighborhood)
-	neighborhood.clientFactory = clientFactory
+	neighborhood.senderCreator = senderCreator
 	neighborhood.hostTarget = NewTarget(hostIp, hostPort)
 	neighborhood.maxOutboundsCount = maxOutboundsCount
 	neighborhood.scoresBySeedTargetValue = scoresBySeedTargetValue
@@ -58,8 +58,8 @@ func (neighborhood *Neighborhood) Incentive(targetValue string) {
 	neighborhood.scoresByTargetValue[targetValue] += 1
 }
 
-func (neighborhood *Neighborhood) Neighbors() []NeighborCaller {
-	return neighborhood.neighbors
+func (neighborhood *Neighborhood) Senders() []Sender {
+	return neighborhood.senders
 }
 
 func (neighborhood *Neighborhood) Synchronize(int64) {
@@ -72,7 +72,7 @@ func (neighborhood *Neighborhood) Synchronize(int64) {
 	}
 	neighborhood.scoresByTargetValue = map[string]int{}
 	neighborhood.scoresByTargetValueMutex.Unlock()
-	neighborsByScore := map[int][]NeighborCaller{}
+	neighborsByScore := map[int][]Sender{}
 	var targetValues []string
 	hostTargetValue := neighborhood.hostTarget.Value()
 	targetValues = append(targetValues, hostTargetValue)
@@ -82,7 +82,7 @@ func (neighborhood *Neighborhood) Synchronize(int64) {
 			if err != nil {
 				continue
 			}
-			neighbor, err := NewNeighbor(neighborTarget, neighborhood.clientFactory)
+			neighbor, err := neighborhood.senderCreator.CreateSender(neighborTarget.Ip(), neighborTarget.Port())
 			if err != nil {
 				continue
 			}
@@ -91,9 +91,9 @@ func (neighborhood *Neighborhood) Synchronize(int64) {
 		}
 	}
 	outbounds := neighborhood.selectOutbounds(neighborsByScore, len(scoresByTargetValue))
-	neighborhood.neighborsMutex.Lock()
-	neighborhood.neighbors = outbounds
-	neighborhood.neighborsMutex.Unlock()
+	neighborhood.sendersMutex.Lock()
+	neighborhood.senders = outbounds
+	neighborhood.sendersMutex.Unlock()
 	for _, neighbor := range outbounds {
 		var neighborTargetValues []string
 		for _, targetValue := range targetValues {
@@ -102,20 +102,20 @@ func (neighborhood *Neighborhood) Synchronize(int64) {
 				neighborTargetValues = append(neighborTargetValues, targetValue)
 			}
 		}
-		go func(neighbor NeighborCaller) {
+		go func(neighbor Sender) {
 			_ = neighbor.SendTargets(neighborTargetValues)
 		}(neighbor)
 	}
 }
 
-func (neighborhood *Neighborhood) selectOutbounds(neighborsByScore map[int][]NeighborCaller, targetsCount int) []NeighborCaller {
+func (neighborhood *Neighborhood) selectOutbounds(neighborsByScore map[int][]Sender, targetsCount int) []Sender {
 	var keys []int
 	for k := range neighborsByScore {
 		keys = append(keys, k)
 	}
 	sort.Ints(keys)
 	outboundsCount := min(targetsCount, neighborhood.maxOutboundsCount)
-	var outbounds []NeighborCaller
+	var outbounds []Sender
 	for i := len(keys) - 1; i >= 0; i-- {
 		if len(outbounds)+len(neighborsByScore[keys[i]]) >= outboundsCount {
 			temp := neighborsByScore[keys[i]]

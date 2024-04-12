@@ -20,14 +20,14 @@ type Node struct {
 	port string
 }
 
-func NewNode(port string, neighbor *network.Neighbor, settings *config.Settings, templatePath string, watch *clock.Watch, logger *console.Logger) *Node {
+func NewNode(port string, sender network.Sender, settings *config.Settings, templatePath string, watch *clock.Watch, logger *console.Logger) *Node {
 	http.Handle("/", index.NewHandler(templatePath, logger))
-	http.Handle("/transaction", transaction.NewHandler(neighbor, logger))
-	http.Handle("/transactions", transactions.NewHandler(neighbor, logger))
-	http.Handle("/transaction/info", info.NewHandler(neighbor, settings, watch, logger))
-	http.Handle("/transaction/output/progress", progress.NewHandler(neighbor, settings, watch, logger))
+	http.Handle("/transaction", transaction.NewHandler(sender, logger))
+	http.Handle("/transactions", transactions.NewHandler(sender, logger))
+	http.Handle("/transaction/info", info.NewHandler(sender, settings, watch, logger))
+	http.Handle("/transaction/output/progress", progress.NewHandler(sender, settings, watch, logger))
 	http.Handle("/wallet/address", address.NewHandler(logger))
-	http.Handle("/wallet/amount", amount.NewHandler(neighbor, settings, watch, logger))
+	http.Handle("/wallet/amount", amount.NewHandler(sender, settings, watch, logger))
 	return &Node{port}
 }
 

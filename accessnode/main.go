@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/my-cloud/ruthenium/accessnode/presentation"
-	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/domain/clock"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/config"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/environment"
@@ -26,14 +25,13 @@ func main() {
 
 	flag.Parse()
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
-	target := network.NewTarget(*validatorIp, strconv.Itoa(*validatorPort))
 	ipFinder := net.NewIpFinderImplementation(logger)
-	clientFactory := p2p.NewSenderFactory(ipFinder, time.Minute)
-	validatorNode, err := network.NewNeighbor(target, clientFactory)
+	neighborFactory := p2p.NewNeighborFactory(ipFinder, time.Minute)
+	validatorNeighbor, err := neighborFactory.CreateSender(*validatorIp, strconv.Itoa(*validatorPort))
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
 	}
-	settingsBytes, err := validatorNode.GetSettings()
+	settingsBytes, err := validatorNeighbor.GetSettings()
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to get settings: %w", err).Error())
 	}
@@ -43,7 +41,7 @@ func main() {
 		logger.Fatal(fmt.Errorf("unable to unmarshal settings: %w", err).Error())
 	}
 	watch := clock.NewWatch()
-	node := presentation.NewNode(strconv.Itoa(*port), validatorNode, settings, *templatePath, watch, logger)
+	node := presentation.NewNode(strconv.Itoa(*port), validatorNeighbor, settings, *templatePath, watch, logger)
 	logger.Info("host access node is running...")
 	logger.Fatal(node.Run().Error())
 }

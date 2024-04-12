@@ -26,10 +26,10 @@ func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(network.NeighborsManagerMock)
+	sendersManagerMock := new(network.SendersManagerMock)
 	settings := new(ledger.SettingsProviderMock)
 	utxosManagerMock := new(ledger.UtxosManagerMock)
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 
 	// Act
 	err := blockchain.AddBlock(0, nil, nil)
@@ -42,11 +42,11 @@ func Test_Blocks_BlocksCountLimitSetToZero_ReturnsEmptyArray(t *testing.T) {
 	// Arrange
 	registryMock := new(ledger.AddressesManagerMock)
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(network.NeighborsManagerMock)
+	sendersManagerMock := new(network.SendersManagerMock)
 	settings := new(ledger.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 0 }
 	utxosManagerMock := new(ledger.UtxosManagerMock)
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 
 	// Act
 	blocks := blockchain.Blocks(0)
@@ -62,13 +62,13 @@ func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(network.NeighborsManagerMock)
+	sendersManagerMock := new(network.SendersManagerMock)
 	var expectedBlocksCount uint64 = 1
 	settings := new(ledger.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return expectedBlocksCount }
 	utxosManagerMock := new(ledger.UtxosManagerMock)
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	var validationInterval int64 = 1
 	var genesisTimestamp int64 = 0
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
@@ -89,13 +89,13 @@ func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(network.NeighborsManagerMock)
+	sendersManagerMock := new(network.SendersManagerMock)
 	var expectedBlocksCount uint64 = 2
 	settings := new(ledger.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return expectedBlocksCount }
 	utxosManagerMock := new(ledger.UtxosManagerMock)
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	var validationInterval int64 = 1
 	var genesisTimestamp int64 = 0
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
@@ -115,13 +115,13 @@ func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsEmptyArray(t 
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(network.NeighborsManagerMock)
+	sendersManagerMock := new(network.SendersManagerMock)
 	var blocksCount uint64 = 1
 	settings := new(ledger.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return blocksCount }
 	utxosManagerMock := new(ledger.UtxosManagerMock)
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	var genesisTimestamp int64 = 0
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
 
@@ -138,10 +138,10 @@ func Test_FirstBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 	// Arrange
 	registryMock := new(ledger.AddressesManagerMock)
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(network.NeighborsManagerMock)
+	sendersManagerMock := new(network.SendersManagerMock)
 	settings := new(ledger.SettingsProviderMock)
 	utxosManagerMock := new(ledger.UtxosManagerMock)
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 
 	// Act
 	actualTimestamp := blockchain.FirstBlockTimestamp()
@@ -157,11 +157,11 @@ func Test_FirstBlockTimestamp_BlockchainIsNotEmpty_ReturnsFirstBlockTimestamp(t 
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(network.NeighborsManagerMock)
+	sendersManagerMock := new(network.SendersManagerMock)
 	settings := new(ledger.SettingsProviderMock)
 	utxosManagerMock := new(ledger.UtxosManagerMock)
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	var genesisTimestamp int64 = 0
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
 
@@ -177,10 +177,10 @@ func Test_LastBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 	// Arrange
 	registryMock := new(ledger.AddressesManagerMock)
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(network.NeighborsManagerMock)
+	sendersManagerMock := new(network.SendersManagerMock)
 	settings := new(ledger.SettingsProviderMock)
 	utxosManagerMock := new(ledger.UtxosManagerMock)
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 
 	// Act
 	actualTimestamp := blockchain.LastBlockTimestamp()
@@ -197,11 +197,11 @@ func Test_LastBlockTimestamp_BlockchainIsNotEmpty_ReturnsLastBlockTimestamp(t *t
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborsManagerMock := new(network.NeighborsManagerMock)
+	sendersManagerMock := new(network.SendersManagerMock)
 	settings := new(ledger.SettingsProviderMock)
 	utxosManagerMock := new(ledger.UtxosManagerMock)
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	var genesisTimestamp int64 = 0
 	var expectedTimestamp int64 = 1
 	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
@@ -224,13 +224,13 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
-	neighborMock.TargetFunc = func() string {
+	senderMock := new(network.SenderMock)
+	senderMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller {
-		return []network.NeighborCaller{neighborMock}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender {
+		return []network.Sender{senderMock}
 	}
 	var validationTimestamp int64 = 11
 	settings := new(ledger.SettingsProviderMock)
@@ -242,7 +242,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	utxosManagerMock.CopyFunc = func() ledger.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
 	utxosManagerMock.ClearFunc = func() {}
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	_ = blockchain.AddBlock(now-5*validationTimestamp, nil, nil)
 	_ = blockchain.AddBlock(now-4*validationTimestamp, nil, nil)
 	blocks := blockchain.Blocks(0)
@@ -256,7 +256,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	block4 := protocol.NewRewardedBlock(hash3, now-validationTimestamp)
 	neighborBlocks := []*protocol.Block{blocks[0], block1, block2, block3, block4}
 	neighborBlocksBytes, _ := json.Marshal(neighborBlocks)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		return neighborBlocksBytes, nil
 	}
 
@@ -280,13 +280,13 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
-	neighborMock.TargetFunc = func() string {
+	senderMock := new(network.SenderMock)
+	senderMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller {
-		return []network.NeighborCaller{neighborMock}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender {
+		return []network.Sender{senderMock}
 	}
 	settings := new(ledger.SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
@@ -295,7 +295,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	utxosManagerMock.ClearFunc = func() {}
 	utxosManagerMock.CopyFunc = func() ledger.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	type args struct {
@@ -338,7 +338,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+			senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 				block1 := protocol.NewRewardedBlock([32]byte{}, tt.args.firstBlockTimestamp)
 				hash, _ := block1.Hash()
 				block2 := protocol.NewRewardedBlock(hash, tt.args.secondBlockTimestamp)
@@ -370,10 +370,10 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	var validationTimestamp int64 = 1
 	now := validationTimestamp
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		block1 := protocol.NewRewardedBlock([32]byte{}, now)
 		hash, _ := block1.Hash()
 		block2 := protocol.NewRewardedBlock(hash, now+validationTimestamp)
@@ -381,12 +381,12 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 		blockBytes, _ := json.Marshal(blocks)
 		return blockBytes, nil
 	}
-	neighborMock.TargetFunc = func() string {
+	senderMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller {
-		return []network.NeighborCaller{neighborMock}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender {
+		return []network.Sender{senderMock}
 	}
 	settings := new(ledger.SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
@@ -395,7 +395,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	utxosManagerMock.ClearFunc = func() {}
 	utxosManagerMock.CopyFunc = func() ledger.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -420,7 +420,7 @@ func Test_Update_NeighborNewBlockTransactionFeeCalculationFails_IsNotReplaced(t 
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	address := test.Address
 	var invalidTransactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
@@ -442,17 +442,17 @@ func Test_Update_NeighborNewBlockTransactionFeeCalculationFails_IsNotReplaced(t 
 		rewardTransaction,
 	}
 	block3 := protocol.NewBlock(hash2, []string{address}, nil, now, transactions)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*protocol.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
-	neighborMock.TargetFunc = func() string {
+	senderMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller {
-		return []network.NeighborCaller{neighborMock}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender {
+		return []network.Sender{senderMock}
 	}
 	settings := new(ledger.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -471,7 +471,7 @@ func Test_Update_NeighborNewBlockTransactionFeeCalculationFails_IsNotReplaced(t 
 			return 0, nil
 		}
 	}
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -496,7 +496,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	address := test.Address
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
@@ -517,17 +517,17 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 		rewardTransaction,
 	}
 	block3 := protocol.NewBlock(hash2, []string{address}, nil, now, transactions)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*protocol.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
-	neighborMock.TargetFunc = func() string {
+	senderMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller {
-		return []network.NeighborCaller{neighborMock}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender {
+		return []network.Sender{senderMock}
 	}
 	settings := new(ledger.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -541,7 +541,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	utxosManagerMock.CopyFunc = func() ledger.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
 	utxosManagerMock.CalculateFeeFunc = func(transaction *protocol.Transaction, timestamp int64) (uint64, error) { return 0, nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -566,7 +566,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	address := test.Address
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
@@ -587,17 +587,17 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 		rewardTransaction,
 	}
 	block3 := protocol.NewBlock(hash2, []string{address}, nil, now, transactions)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*protocol.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
-	neighborMock.TargetFunc = func() string {
+	senderMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller {
-		return []network.NeighborCaller{neighborMock}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender {
+		return []network.Sender{senderMock}
 	}
 	settings := new(ledger.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -611,7 +611,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	utxosManagerMock.CopyFunc = func() ledger.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
 	utxosManagerMock.CalculateFeeFunc = func(transaction *protocol.Transaction, timestamp int64) (uint64, error) { return 0, nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -636,7 +636,7 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	address := test.Address
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
@@ -658,17 +658,17 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 		rewardTransaction,
 	}
 	block3 := protocol.NewBlock(hash2, []string{address}, nil, now, transactions)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*protocol.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
-	neighborMock.TargetFunc = func() string {
+	senderMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller {
-		return []network.NeighborCaller{neighborMock}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender {
+		return []network.Sender{senderMock}
 	}
 	settings := new(ledger.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -682,7 +682,7 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 	utxosManagerMock.CopyFunc = func() ledger.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
 	utxosManagerMock.CalculateFeeFunc = func(transaction *protocol.Transaction, timestamp int64) (uint64, error) { return 0, nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -708,7 +708,7 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	registryMock.VerifyFunc = func([]string, []string) error { return errors.New("") }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
 	var genesisAmount uint64 = 1
@@ -719,17 +719,17 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	rewardTransaction, _ := protocol.NewRewardTransaction(notRegisteredAddress, false, now, 0)
 	transactions := []*protocol.Transaction{rewardTransaction}
 	block3 := protocol.NewBlock(hash2, []string{notRegisteredAddress}, nil, now, transactions)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*protocol.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
-	neighborMock.TargetFunc = func() string {
+	senderMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller {
-		return []network.NeighborCaller{neighborMock}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender {
+		return []network.Sender{senderMock}
 	}
 	settings := new(ledger.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -743,7 +743,7 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	utxosManagerMock.CopyFunc = func() ledger.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
 	utxosManagerMock.CalculateFeeFunc = func(transaction *protocol.Transaction, timestamp int64) (uint64, error) { return 0, nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -768,7 +768,7 @@ func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *te
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -789,17 +789,17 @@ func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *te
 		rewardTransaction,
 	}
 	block3 := protocol.NewBlock(hash2, nil, nil, now, transactions)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*protocol.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
-	neighborMock.TargetFunc = func() string {
+	senderMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller {
-		return []network.NeighborCaller{neighborMock}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender {
+		return []network.Sender{senderMock}
 	}
 	settings := new(ledger.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -813,7 +813,7 @@ func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *te
 	utxosManagerMock.CopyFunc = func() ledger.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
 	utxosManagerMock.CalculateFeeFunc = func(transaction *protocol.Transaction, timestamp int64) (uint64, error) { return 0, nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -837,7 +837,7 @@ func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplac
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -859,17 +859,17 @@ func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplac
 		rewardTransaction,
 	}
 	block3 := protocol.NewBlock(hash2, []string{addedAddress}, nil, now, transactions)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*protocol.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
-	neighborMock.TargetFunc = func() string {
+	senderMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller {
-		return []network.NeighborCaller{neighborMock}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender {
+		return []network.Sender{senderMock}
 	}
 	settings := new(ledger.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -883,7 +883,7 @@ func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplac
 	utxosManagerMock.CopyFunc = func() ledger.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
 	utxosManagerMock.CalculateFeeFunc = func(transaction *protocol.Transaction, timestamp int64) (uint64, error) { return 0, nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -907,7 +907,7 @@ func Test_Update_NeighborBlockYieldingOutputIsNotRegistered_IsNotReplaced(t *tes
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	var transactionFee uint64 = 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -929,17 +929,17 @@ func Test_Update_NeighborBlockYieldingOutputIsNotRegistered_IsNotReplaced(t *tes
 		rewardTransaction,
 	}
 	block3 := protocol.NewBlock(hash2, nil, []string{removedAddress}, now, transactions)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		blocks := []*protocol.Block{block1, block2, block3}
 		blocksBytes, _ := json.Marshal(blocks)
 		return blocksBytes, nil
 	}
-	neighborMock.TargetFunc = func() string {
+	senderMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller {
-		return []network.NeighborCaller{neighborMock}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender {
+		return []network.Sender{senderMock}
 	}
 	settings := new(ledger.SettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
@@ -953,7 +953,7 @@ func Test_Update_NeighborBlockYieldingOutputIsNotRegistered_IsNotReplaced(t *tes
 	utxosManagerMock.CopyFunc = func() ledger.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
 	utxosManagerMock.CalculateFeeFunc = func(transaction *protocol.Transaction, timestamp int64) (uint64, error) { return 0, nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	_ = blockchain.AddBlock(0, nil, nil)
 
 	// Act
@@ -977,15 +977,15 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
-	neighborMock.TargetFunc = func() string {
+	senderMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller {
-		return []network.NeighborCaller{neighborMock}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender {
+		return []network.Sender{senderMock}
 	}
 	settings := new(ledger.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 1 }
@@ -996,7 +996,7 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(ledger.UtxosManagerMock)
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	rewardTransaction1, _ := protocol.NewRewardTransaction(test.Address, false, now-2*validationTimestamp, 0)
 	utxosManagerMock.CopyFunc = func() ledger.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
@@ -1011,7 +1011,7 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	block2 := protocol.NewRewardedBlock(hash1, now-validationTimestamp)
 	hash2, _ := block2.Hash()
 	block3 := protocol.NewRewardedBlock(hash2, now)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		neighborBlocks := []*protocol.Block{block3}
 		neighborBlocksBytes, _ := json.Marshal(neighborBlocks)
 		return neighborBlocksBytes, nil
@@ -1037,15 +1037,15 @@ func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	var validationTimestamp int64 = 1
 	now := 2 * validationTimestamp
-	neighborMock.TargetFunc = func() string {
+	senderMock.TargetFunc = func() string {
 		return "neighbor"
 	}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller {
-		return []network.NeighborCaller{neighborMock}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender {
+		return []network.Sender{senderMock}
 	}
 	settings := new(ledger.SettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 2 }
@@ -1058,7 +1058,7 @@ func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	utxosManagerMock := new(ledger.UtxosManagerMock)
 	utxosManagerMock.CopyFunc = func() ledger.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*protocol.Transaction, int64) error { return nil }
-	blockchain := NewBlockchain(registryMock, settings, neighborsManagerMock, utxosManagerMock, logger)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 	rewardTransaction1, _ := protocol.NewRewardTransaction(test.Address, false, now-2*validationTimestamp, 0)
 	utxosManagerMock.CalculateFeeFunc = func(transaction *protocol.Transaction, timestamp int64) (uint64, error) { return 0, nil }
 	_ = blockchain.AddBlock(now-2*validationTimestamp, []*protocol.Transaction{rewardTransaction1}, nil)
@@ -1069,7 +1069,7 @@ func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	_ = blockchain.AddBlock(now, []*protocol.Transaction{rewardTransaction3}, nil)
 	hash2, _ := blocks[1].Hash()
 	block3 := protocol.NewRewardedBlock(hash2, now)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) {
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
 		neighborBlocks := []*protocol.Block{block3}
 		neighborBlocksBytes, _ := json.Marshal(neighborBlocks)
 		return neighborBlocksBytes, nil

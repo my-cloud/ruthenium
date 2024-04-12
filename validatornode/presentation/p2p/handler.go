@@ -14,19 +14,17 @@ import (
 type Handler struct {
 	blocksManager       ledger.BlocksManager
 	settings            []byte
-	neighborsManager    network.NeighborsManager
+	sendersManager      network.SendersManager
 	transactionsManager ledger.TransactionsManager
 	utxosManager        ledger.UtxosManager
-	watch               ledger.TimeProvider
 }
 
 func NewHandler(blocksManager ledger.BlocksManager,
 	settings []byte,
-	neighborsManager network.NeighborsManager,
+	sendersManager network.SendersManager,
 	transactionsManager ledger.TransactionsManager,
-	utxosManager ledger.UtxosManager,
-	watch ledger.TimeProvider) *Handler {
-	return &Handler{blocksManager, settings, neighborsManager, transactionsManager, utxosManager, watch}
+	utxosManager ledger.UtxosManager) *Handler {
+	return &Handler{blocksManager, settings, sendersManager, transactionsManager, utxosManager}
 }
 
 func (handler *Handler) HandleBlocksRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
@@ -69,7 +67,7 @@ func (handler *Handler) HandleTargetsRequest(_ context.Context, req gp2p.Data) (
 	if err := json.Unmarshal(data, &targets); err != nil {
 		return res, err
 	}
-	go handler.neighborsManager.AddTargets(targets)
+	go handler.sendersManager.AddTargets(targets)
 	return res, nil
 }
 
@@ -80,7 +78,7 @@ func (handler *Handler) HandleTransactionRequest(_ context.Context, req gp2p.Dat
 	if err := json.Unmarshal(data, &transactionRequest); err != nil {
 		return res, err
 	}
-	go handler.transactionsManager.AddTransaction(transactionRequest.Transaction(), transactionRequest.TransactionBroadcasterTarget(), handler.neighborsManager.HostTarget())
+	go handler.transactionsManager.AddTransaction(transactionRequest.Transaction(), transactionRequest.TransactionBroadcasterTarget(), handler.sendersManager.HostTarget())
 	return res, nil
 }
 

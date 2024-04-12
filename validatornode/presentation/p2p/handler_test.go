@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"sync"
 	"testing"
-	"time"
 
 	gp2p "github.com/leprosus/golang-p2p"
 
@@ -18,9 +17,9 @@ import (
 
 func Test_HandleTargetsRequest_AddInvalidTargets_AddTargetsNotCalled(t *testing.T) {
 	// Arrange
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.AddTargetsFunc = func([]string) {}
-	handler := NewHandler(new(ledger.BlocksManagerMock), nil, neighborsManagerMock, new(ledger.TransactionsManagerMock), new(ledger.UtxosManagerMock), new(ledger.TimeProviderMock))
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.AddTargetsFunc = func([]string) {}
+	handler := NewHandler(new(ledger.BlocksManagerMock), nil, sendersManagerMock, new(ledger.TransactionsManagerMock), new(ledger.UtxosManagerMock))
 	targets := []string{"target"}
 	marshalledTargets, _ := json.Marshal(targets)
 	req := gp2p.Data{Bytes: marshalledTargets}
@@ -29,16 +28,16 @@ func Test_HandleTargetsRequest_AddInvalidTargets_AddTargetsNotCalled(t *testing.
 	_, _ = handler.HandleTargetsRequest(context.TODO(), req)
 
 	// Assert
-	isMethodCalled := len(neighborsManagerMock.AddTargetsCalls()) != 0
+	isMethodCalled := len(sendersManagerMock.AddTargetsCalls()) != 0
 	test.Assert(t, !isMethodCalled, "Method is called whereas it should not.")
 }
 
 func Test_HandleTargetsRequest_AddValidTargets_AddTargetsCalled(t *testing.T) {
 	// Arrange
 	waitGroup := sync.WaitGroup{}
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.AddTargetsFunc = func([]string) { waitGroup.Done() }
-	handler := NewHandler(new(ledger.BlocksManagerMock), nil, neighborsManagerMock, new(ledger.TransactionsManagerMock), new(ledger.UtxosManagerMock), new(ledger.TimeProviderMock))
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.AddTargetsFunc = func([]string) { waitGroup.Done() }
+	handler := NewHandler(new(ledger.BlocksManagerMock), nil, sendersManagerMock, new(ledger.TransactionsManagerMock), new(ledger.UtxosManagerMock))
 	targets := []string{"target"}
 	marshalledTargets, _ := json.Marshal(targets)
 	req := gp2p.Data{Bytes: marshalledTargets}
@@ -49,14 +48,14 @@ func Test_HandleTargetsRequest_AddValidTargets_AddTargetsCalled(t *testing.T) {
 
 	// Assert
 	waitGroup.Wait()
-	isMethodCalled := len(neighborsManagerMock.AddTargetsCalls()) == 1
+	isMethodCalled := len(sendersManagerMock.AddTargetsCalls()) == 1
 	test.Assert(t, isMethodCalled, "Method is not called whereas it should be.")
 }
 
 func Test_HandleSettingsRequest_ValidRequest_SettingsCalled(t *testing.T) {
 	// Arrange
 	expectedSettings := []byte{0}
-	handler := NewHandler(new(ledger.BlocksManagerMock), expectedSettings, new(network.NeighborsManagerMock), new(ledger.TransactionsManagerMock), new(ledger.UtxosManagerMock), new(ledger.TimeProviderMock))
+	handler := NewHandler(new(ledger.BlocksManagerMock), expectedSettings, new(network.SendersManagerMock), new(ledger.TransactionsManagerMock), new(ledger.UtxosManagerMock))
 	req := gp2p.Data{}
 
 	// Act
@@ -71,7 +70,7 @@ func Test_HandleFirstBlockTimestampRequest_ValidRequest_FirstBlockTimestampCalle
 	// Arrange
 	blocksManagerMock := new(ledger.BlocksManagerMock)
 	blocksManagerMock.FirstBlockTimestampFunc = func() int64 { return 0 }
-	handler := NewHandler(blocksManagerMock, nil, new(network.NeighborsManagerMock), new(ledger.TransactionsManagerMock), new(ledger.UtxosManagerMock), new(ledger.TimeProviderMock))
+	handler := NewHandler(blocksManagerMock, nil, new(network.SendersManagerMock), new(ledger.TransactionsManagerMock), new(ledger.UtxosManagerMock))
 	req := gp2p.Data{}
 
 	// Act
@@ -87,9 +86,9 @@ func Test_HandleTransactionRequest_AddValidTransaction_AddTransactionCalled(t *t
 	waitGroup := sync.WaitGroup{}
 	transactionsManagerMock := new(ledger.TransactionsManagerMock)
 	transactionsManagerMock.AddTransactionFunc = func(*protocol.Transaction, string, string) { waitGroup.Done() }
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.HostTargetFunc = func() string { return "" }
-	handler := NewHandler(new(ledger.BlocksManagerMock), nil, neighborsManagerMock, transactionsManagerMock, new(ledger.UtxosManagerMock), new(ledger.TimeProviderMock))
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.HostTargetFunc = func() string { return "" }
+	handler := NewHandler(new(ledger.BlocksManagerMock), nil, sendersManagerMock, transactionsManagerMock, new(ledger.UtxosManagerMock))
 	req := gp2p.Data{}
 	transaction, _ := protocol.NewRewardTransaction("", false, 0, 0)
 	transactionBytes, _ := json.Marshal(transaction)
@@ -108,9 +107,9 @@ func Test_HandleTransactionRequest_AddValidTransaction_AddTransactionCalled(t *t
 func Test_HandleTransactionRequest_AddInvalidValidTransaction_AddTransactionNotCalled(t *testing.T) {
 	// Arrange
 	transactionsManagerMock := new(ledger.TransactionsManagerMock)
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.HostTargetFunc = func() string { return "" }
-	handler := NewHandler(new(ledger.BlocksManagerMock), nil, neighborsManagerMock, transactionsManagerMock, new(ledger.UtxosManagerMock), new(ledger.TimeProviderMock))
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.HostTargetFunc = func() string { return "" }
+	handler := NewHandler(new(ledger.BlocksManagerMock), nil, sendersManagerMock, transactionsManagerMock, new(ledger.UtxosManagerMock))
 	req := gp2p.Data{}
 
 	// Act
@@ -126,9 +125,7 @@ func Test_HandleUtxosRequest_ValidUtxosRequest_UtxosByAddressCalled(t *testing.T
 	// Arrange
 	utxosManagerMock := new(ledger.UtxosManagerMock)
 	utxosManagerMock.UtxosFunc = func(string) []*protocol.Utxo { return nil }
-	watchMock := new(ledger.TimeProviderMock)
-	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	handler := NewHandler(new(ledger.BlocksManagerMock), nil, new(network.NeighborsManagerMock), new(ledger.TransactionsManagerMock), utxosManagerMock, watchMock)
+	handler := NewHandler(new(ledger.BlocksManagerMock), nil, new(network.SendersManagerMock), new(ledger.TransactionsManagerMock), utxosManagerMock)
 	address := "address"
 	marshalledAddress, _ := json.Marshal(&address)
 	req := gp2p.Data{Bytes: marshalledAddress}
@@ -145,7 +142,7 @@ func Test_HandleBlocksRequest_ValidBlocksRequest_LastBlocksCalled(t *testing.T) 
 	// Arrange
 	blocksManagerMock := new(ledger.BlocksManagerMock)
 	blocksManagerMock.BlocksFunc = func(uint64) []*protocol.Block { return nil }
-	handler := NewHandler(blocksManagerMock, nil, new(network.NeighborsManagerMock), new(ledger.TransactionsManagerMock), new(ledger.UtxosManagerMock), new(ledger.TimeProviderMock))
+	handler := NewHandler(blocksManagerMock, nil, new(network.SendersManagerMock), new(ledger.TransactionsManagerMock), new(ledger.UtxosManagerMock))
 	var height uint64 = 0
 	marshalledHeight, _ := json.Marshal(&height)
 	req := gp2p.Data{Bytes: marshalledHeight}
@@ -162,7 +159,7 @@ func Test_HandleTransactionsRequest_ValidTransactionsRequest_TransactionsCalled(
 	// Arrange
 	transactionsManagerMock := new(ledger.TransactionsManagerMock)
 	transactionsManagerMock.TransactionsFunc = func() []*protocol.Transaction { return nil }
-	handler := NewHandler(new(ledger.BlocksManagerMock), nil, new(network.NeighborsManagerMock), transactionsManagerMock, new(ledger.UtxosManagerMock), new(ledger.TimeProviderMock))
+	handler := NewHandler(new(ledger.BlocksManagerMock), nil, new(network.SendersManagerMock), transactionsManagerMock, new(ledger.UtxosManagerMock))
 	req := gp2p.Data{}
 
 	// Act

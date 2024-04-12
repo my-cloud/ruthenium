@@ -23,10 +23,10 @@ const urlTarget = "/url-target"
 func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	invalidHttpMethods := []string{http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
 	for _, method := range invalidHttpMethods {
@@ -45,12 +45,12 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 
 func Test_ServeHTTP_UndecipherableUtxo_BadRequest(t *testing.T) {
 	// Arrange
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	watchMock := new(ledger.TimeProviderMock)
 	logger := log.NewLoggerMock()
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	data := ""
 	marshalledData, _ := json.Marshal(data)
 	body := bytes.NewReader(marshalledData)
@@ -61,7 +61,7 @@ func Test_ServeHTTP_UndecipherableUtxo_BadRequest(t *testing.T) {
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	isNeighborMethodCalled := len(neighborMock.GetUtxosCalls()) != 0
+	isNeighborMethodCalled := len(senderMock.GetUtxosCalls()) != 0
 	test.Assert(t, !isNeighborMethodCalled, "Neighbor method is called whereas it should not.")
 	expectedStatusCode := 400
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -70,12 +70,12 @@ func Test_ServeHTTP_UndecipherableUtxo_BadRequest(t *testing.T) {
 func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
+	senderMock := new(network.SenderMock)
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	utxo := protocol.NewUtxo(&protocol.InputInfo{}, &protocol.Output{}, 0)
 	marshalledUtxo, _ := json.Marshal(utxo)
@@ -86,7 +86,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	isNeighborMethodCalled := len(neighborMock.GetUtxosCalls()) == 1
+	isNeighborMethodCalled := len(senderMock.GetUtxosCalls()) == 1
 	test.Assert(t, isNeighborMethodCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 500
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -95,15 +95,15 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	marshalledEmptyArray := []byte{91, 93}
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
-	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
+	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
 	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	utxo := protocol.NewUtxo(&protocol.InputInfo{}, &protocol.Output{}, 0)
 	marshalledUtxo, _ := json.Marshal(utxo)
@@ -114,7 +114,7 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	areNeighborMethodsCalled := len(neighborMock.GetUtxosCalls()) == 1 && len(neighborMock.GetFirstBlockTimestampCalls()) == 1
+	areNeighborMethodsCalled := len(senderMock.GetUtxosCalls()) == 1 && len(senderMock.GetFirstBlockTimestampCalls()) == 1
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 500
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -123,16 +123,16 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 func Test_ServeHTTP_GetBlocksError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	marshalledEmptyArray := []byte{91, 93}
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
-	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return nil, errors.New("") }
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
+	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	utxo := protocol.NewUtxo(&protocol.InputInfo{}, &protocol.Output{}, 0)
 	marshalledUtxo, _ := json.Marshal(utxo)
@@ -143,7 +143,7 @@ func Test_ServeHTTP_GetBlocksError_ReturnsInternalServerError(t *testing.T) {
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	areNeighborMethodsCalled := len(neighborMock.GetUtxosCalls()) == 1 && len(neighborMock.GetFirstBlockTimestampCalls()) == 1 && len(neighborMock.GetBlocksCalls()) == 1
+	areNeighborMethodsCalled := len(senderMock.GetUtxosCalls()) == 1 && len(senderMock.GetFirstBlockTimestampCalls()) == 1 && len(senderMock.GetBlocksCalls()) == 1
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 500
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -152,19 +152,19 @@ func Test_ServeHTTP_GetBlocksError_ReturnsInternalServerError(t *testing.T) {
 func Test_ServeHTTP_GetTransactionsError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	marshalledEmptyArray := []byte{91, 93}
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
-	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
+	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	blocks := []*protocol.Block{protocol.NewBlock([32]byte{}, nil, nil, 0, nil)}
 	marshalledBlocks, _ := json.Marshal(blocks)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
-	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return nil, errors.New("") }
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
+	senderMock.GetTransactionsFunc = func() ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	utxo := protocol.NewUtxo(&protocol.InputInfo{}, &protocol.Output{}, 0)
 	marshalledUtxo, _ := json.Marshal(utxo)
@@ -175,7 +175,7 @@ func Test_ServeHTTP_GetTransactionsError_ReturnsInternalServerError(t *testing.T
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	areNeighborMethodsCalled := len(neighborMock.GetUtxosCalls()) == 1 && len(neighborMock.GetFirstBlockTimestampCalls()) == 1 && len(neighborMock.GetBlocksCalls()) == 1 && len(neighborMock.GetTransactionsCalls()) == 1
+	areNeighborMethodsCalled := len(senderMock.GetUtxosCalls()) == 1 && len(senderMock.GetFirstBlockTimestampCalls()) == 1 && len(senderMock.GetBlocksCalls()) == 1 && len(senderMock.GetTransactionsCalls()) == 1
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 500
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -184,19 +184,19 @@ func Test_ServeHTTP_GetTransactionsError_ReturnsInternalServerError(t *testing.T
 func Test_ServeHTTP_TransactionNotFound_ReturnsRejected(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	marshalledEmptyArray := []byte{91, 93}
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
-	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
+	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	blocks := []*protocol.Block{protocol.NewBlock([32]byte{}, nil, nil, 0, nil)}
 	marshalledBlocks, _ := json.Marshal(blocks)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
-	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledEmptyArray, nil }
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
+	senderMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledEmptyArray, nil }
 	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	utxo := protocol.NewUtxo(&protocol.InputInfo{}, &protocol.Output{}, 0)
 	marshalledUtxo, _ := json.Marshal(utxo)
@@ -207,7 +207,7 @@ func Test_ServeHTTP_TransactionNotFound_ReturnsRejected(t *testing.T) {
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	areNeighborMethodsCalled := len(neighborMock.GetUtxosCalls()) == 1 && len(neighborMock.GetFirstBlockTimestampCalls()) == 1 && len(neighborMock.GetBlocksCalls()) == 1 && len(neighborMock.GetTransactionsCalls()) == 1
+	areNeighborMethodsCalled := len(senderMock.GetUtxosCalls()) == 1 && len(senderMock.GetFirstBlockTimestampCalls()) == 1 && len(senderMock.GetBlocksCalls()) == 1 && len(senderMock.GetTransactionsCalls()) == 1
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -223,19 +223,19 @@ func Test_ServeHTTP_TransactionNotFound_ReturnsRejected(t *testing.T) {
 func Test_ServeHTTP_UtxoFound_ReturnsConfirmed(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	transaction, _ := protocol.NewRewardTransaction("", false, 0, 0)
 	transactionId := transaction.Id()
 	inputInfo := protocol.NewInputInfo(0, transactionId)
 	utxo := protocol.NewUtxo(inputInfo, &protocol.Output{}, 0)
 	marshalledUtxos, _ := json.Marshal([]*protocol.Utxo{utxo})
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
-	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
+	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	marshalledUtxo, _ := json.Marshal(utxo)
 	body := bytes.NewReader(marshalledUtxo)
@@ -245,7 +245,7 @@ func Test_ServeHTTP_UtxoFound_ReturnsConfirmed(t *testing.T) {
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	areNeighborMethodsCalled := len(neighborMock.GetUtxosCalls()) == 1 && len(neighborMock.GetFirstBlockTimestampCalls()) == 1
+	areNeighborMethodsCalled := len(senderMock.GetUtxosCalls()) == 1 && len(senderMock.GetFirstBlockTimestampCalls()) == 1
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -261,19 +261,19 @@ func Test_ServeHTTP_UtxoFound_ReturnsConfirmed(t *testing.T) {
 func Test_ServeHTTP_ValidatedTransactionFound_ReturnsValidated(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	marshalledEmptyArray := []byte{91, 93}
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
-	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
+	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	transaction, _ := protocol.NewRewardTransaction("", false, 0, 0)
 	blocks := []*protocol.Block{protocol.NewBlock([32]byte{}, nil, nil, 0, []*protocol.Transaction{transaction})}
 	marshalledBlocks, _ := json.Marshal(blocks)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	outputIndex := 0
 	utxo := protocol.NewUtxo(protocol.NewInputInfo(uint16(outputIndex), transaction.Id()), transaction.Outputs()[outputIndex], transaction.Timestamp())
@@ -285,7 +285,7 @@ func Test_ServeHTTP_ValidatedTransactionFound_ReturnsValidated(t *testing.T) {
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	areNeighborMethodsCalled := len(neighborMock.GetUtxosCalls()) == 1 && len(neighborMock.GetFirstBlockTimestampCalls()) == 1 && len(neighborMock.GetBlocksCalls()) == 1
+	areNeighborMethodsCalled := len(senderMock.GetUtxosCalls()) == 1 && len(senderMock.GetFirstBlockTimestampCalls()) == 1 && len(senderMock.GetBlocksCalls()) == 1
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -301,22 +301,22 @@ func Test_ServeHTTP_ValidatedTransactionFound_ReturnsValidated(t *testing.T) {
 func Test_ServeHTTP_PendingTransactionFound_ReturnsSent(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	marshalledEmptyArray := []byte{91, 93}
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
-	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyArray, nil }
+	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	blocks := []*protocol.Block{protocol.NewBlock([32]byte{}, nil, nil, 0, nil)}
 	marshalledBlocks, _ := json.Marshal(blocks)
-	neighborMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
+	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	transaction, _ := protocol.NewRewardTransaction("", false, 0, 0)
 	transactions := []*protocol.Transaction{transaction}
 	marshalledTransactions, _ := json.Marshal(transactions)
-	neighborMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledTransactions, nil }
+	senderMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledTransactions, nil }
 	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	outputIndex := 0
 	utxo := protocol.NewUtxo(protocol.NewInputInfo(uint16(outputIndex), transaction.Id()), transaction.Outputs()[outputIndex], transaction.Timestamp())
@@ -328,7 +328,7 @@ func Test_ServeHTTP_PendingTransactionFound_ReturnsSent(t *testing.T) {
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	areNeighborMethodsCalled := len(neighborMock.GetUtxosCalls()) == 1 && len(neighborMock.GetFirstBlockTimestampCalls()) == 1 && len(neighborMock.GetBlocksCalls()) == 1 && len(neighborMock.GetTransactionsCalls()) == 1
+	areNeighborMethodsCalled := len(senderMock.GetUtxosCalls()) == 1 && len(senderMock.GetFirstBlockTimestampCalls()) == 1 && len(senderMock.GetBlocksCalls()) == 1 && len(senderMock.GetTransactionsCalls()) == 1
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))

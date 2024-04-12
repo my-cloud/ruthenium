@@ -1,23 +1,34 @@
-package network
+package p2p
 
 import (
 	"encoding/json"
-	"fmt"
+	"time"
 
+	gp2p "github.com/leprosus/golang-p2p"
+
+	"github.com/my-cloud/ruthenium/validatornode/application/network"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/presentation"
 )
 
 type Neighbor struct {
-	target *Target
-	sender Sender
+	*gp2p.Client
+	target *network.Target
 }
 
-func NewNeighbor(target *Target, clientFactory SenderCreator) (*Neighbor, error) {
-	sender, err := clientFactory.CreateSender(target.Ip(), target.Port())
+func NewNeighbor(ip string, port string, connectionTimeout time.Duration, logger log.Logger) (*Neighbor, error) {
+	tcp := gp2p.NewTCP(ip, port)
+	client, err := gp2p.NewClient(tcp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create sender reaching %s: %w", target.Value(), err)
+		return nil, err
 	}
-	return &Neighbor{target, sender}, nil
+	settings := gp2p.NewClientSettings()
+	settings.SetRetry(1, time.Nanosecond)
+	settings.SetConnTimeout(connectionTimeout)
+	client.SetSettings(settings)
+	client.SetLogger(logger)
+	target := network.NewTarget(ip, port)
+	return &Neighbor{client, target}, err
 }
 
 func (neighbor *Neighbor) Target() string {
@@ -29,7 +40,7 @@ func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) ([]byte, error) 
 }
 
 func (neighbor *Neighbor) GetFirstBlockTimestamp() (int64, error) {
-	res, err := neighbor.sender.Send(presentation.FirstBlockTimestampEndpoint, []byte{})
+	res, err := neighbor.sendRequestBytes(presentation.FirstBlockTimestampEndpoint, []byte{})
 	var timestamp int64
 	if err != nil {
 		return timestamp, err
@@ -51,12 +62,12 @@ func (neighbor *Neighbor) SendTargets(targets []string) error {
 }
 
 func (neighbor *Neighbor) AddTransaction(transaction []byte) error {
-	_, err := neighbor.sender.Send(presentation.TransactionEndpoint, transaction)
+	_, err := neighbor.sendRequestBytes(presentation.TransactionEndpoint, transaction)
 	return err
 }
 
 func (neighbor *Neighbor) GetTransactions() ([]byte, error) {
-	return neighbor.sender.Send(presentation.TransactionsEndpoint, []byte{})
+	return neighbor.sendRequestBytes(presentation.TransactionsEndpoint, []byte{})
 }
 
 func (neighbor *Neighbor) GetUtxos(address string) ([]byte, error) {
@@ -68,5 +79,13 @@ func (neighbor *Neighbor) sendRequest(topic string, request interface{}) ([]byte
 	if err != nil {
 		return nil, err
 	}
-	return neighbor.sender.Send(topic, bytes)
+	return neighbor.sendRequestBytes(topic, bytes)
+}
+
+func (neighbor *Neighbor) sendRequestBytes(topic string, request []byte) ([]byte, error) {
+	data, err := neighbor.Client.Send(topic, gp2p.Data{Bytes: request})
+	if err != nil {
+		return []byte{}, err
+	}
+	return data.Bytes, err
 }

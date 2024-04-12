@@ -20,18 +20,18 @@ type TransactionsPool struct {
 
 	blocksManager    ledger.BlocksManager
 	settings         ledger.SettingsProvider
-	neighborsManager network.NeighborsManager
+	sendersManager   network.SendersManager
 	utxosManager     ledger.UtxosManager
 	validatorAddress string
 
 	logger log.Logger
 }
 
-func NewTransactionsPool(blocksManager ledger.BlocksManager, settings ledger.SettingsProvider, neighborsManager network.NeighborsManager, utxosManager ledger.UtxosManager, validatorAddress string, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blocksManager ledger.BlocksManager, settings ledger.SettingsProvider, sendersManager network.SendersManager, utxosManager ledger.UtxosManager, validatorAddress string, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blocksManager = blocksManager
 	pool.settings = settings
-	pool.neighborsManager = neighborsManager
+	pool.sendersManager = sendersManager
 	pool.utxosManager = utxosManager
 	pool.validatorAddress = validatorAddress
 	pool.logger = logger
@@ -44,18 +44,18 @@ func (pool *TransactionsPool) AddTransaction(transaction *protocol.Transaction, 
 		pool.logger.Debug(fmt.Errorf("failed to add transaction: %w", err).Error())
 		return
 	}
-	pool.neighborsManager.Incentive(broadcasterTarget)
+	pool.sendersManager.Incentive(broadcasterTarget)
 	newTransactionRequest := protocol.NewTransactionRequest(transaction, hostTarget)
 	marshaledTransactionRequest, err := json.Marshal(newTransactionRequest)
 	if err != nil {
 		pool.logger.Debug(fmt.Errorf("failed to marshal transaction request: %w", err).Error())
 		return
 	}
-	neighbors := pool.neighborsManager.Neighbors()
-	for _, neighbor := range neighbors {
-		go func(neighbor network.NeighborCaller) {
-			_ = neighbor.AddTransaction(marshaledTransactionRequest)
-		}(neighbor)
+	senders := pool.sendersManager.Senders()
+	for _, sender := range senders {
+		go func(sender network.Sender) {
+			_ = sender.AddTransaction(marshaledTransactionRequest)
+		}(sender)
 	}
 }
 

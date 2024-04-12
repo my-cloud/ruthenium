@@ -12,7 +12,7 @@ func Test_CreateSender_IpFinderError_ReturnsNil(t *testing.T) {
 	// Arrange
 	ipFinder := new(net.IpFinderMock)
 	ipFinder.LookupIPFunc = func(string) (string, error) { return "", errors.New("") }
-	senderFactory := NewSenderFactory(ipFinder, 0)
+	senderFactory := NewNeighborFactory(ipFinder, 0)
 
 	// Act
 	client, _ := senderFactory.CreateSender("", "0")
@@ -25,7 +25,7 @@ func Test_CreateSender_ValidIp_ReturnsClient(t *testing.T) {
 	// Arrange
 	ipFinder := new(net.IpFinderMock)
 	ipFinder.LookupIPFunc = func(string) (string, error) { return "", nil }
-	senderFactory := NewSenderFactory(ipFinder, 0)
+	senderFactory := NewNeighborFactory(ipFinder, 0)
 
 	// Act
 	client, _ := senderFactory.CreateSender("", "0")

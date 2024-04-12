@@ -20,10 +20,9 @@ type Host struct {
 func NewHost(port int,
 	settings *config.Settings,
 	blocksManager ledger.BlocksManager,
-	neighborsManager network.NeighborsManager,
+	sendersManager network.SendersManager,
 	transactionsManager ledger.TransactionsManager,
-	utxosManager ledger.UtxosManager,
-	watch ledger.TimeProvider) (*Host, error) {
+	utxosManager ledger.UtxosManager) (*Host, error) {
 	tcp := gp2p.NewTCP("0.0.0.0", strconv.Itoa(port))
 	server, err := gp2p.NewServer(tcp)
 	if err != nil {
@@ -33,7 +32,7 @@ func NewHost(port int,
 	serverSettings := gp2p.NewServerSettings()
 	serverSettings.SetConnTimeout(settings.ValidationTimeout())
 	server.SetSettings(serverSettings)
-	handler := NewHandler(blocksManager, settings.Bytes(), neighborsManager, transactionsManager, utxosManager, watch)
+	handler := NewHandler(blocksManager, settings.Bytes(), sendersManager, transactionsManager, utxosManager)
 	return &Host{server, handler}, err
 }
 

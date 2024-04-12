@@ -14,14 +14,14 @@ import (
 )
 
 type Handler struct {
-	neighbor network.NeighborCaller
+	sender   network.Sender
 	settings SettingsProvider
 	watch    ledger.TimeProvider
 	logger   log.Logger
 }
 
-func NewHandler(neighbor network.NeighborCaller, settings SettingsProvider, watch ledger.TimeProvider, logger log.Logger) *Handler {
-	return &Handler{neighbor, settings, watch, logger}
+func NewHandler(sender network.Sender, settings SettingsProvider, watch ledger.TimeProvider, logger log.Logger) *Handler {
+	return &Handler{sender, settings, watch, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -37,7 +37,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write("invalid utxo")
 			return
 		}
-		utxosBytes, err := handler.neighbor.GetUtxos(searchedUtxo.Address())
+		utxosBytes, err := handler.sender.GetUtxos(searchedUtxo.Address())
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -50,7 +50,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		genesisTimestamp, err := handler.neighbor.GetFirstBlockTimestamp()
+		genesisTimestamp, err := handler.sender.GetFirstBlockTimestamp()
 		now := handler.watch.Now().UnixNano()
 		currentBlockHeight := (now - genesisTimestamp) / handler.settings.ValidationTimestamp()
 		currentBlockTimestamp := genesisTimestamp + currentBlockHeight*handler.settings.ValidationTimestamp()
@@ -70,7 +70,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		blocksBytes, err := handler.neighbor.GetBlocks(uint64(currentBlockHeight))
+		blocksBytes, err := handler.sender.GetBlocks(uint64(currentBlockHeight))
 		if err != nil {
 			handler.logger.Error("failed to get blocks")
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -95,7 +95,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 				return
 			}
 		}
-		transactionsBytes, err := handler.neighbor.GetTransactions()
+		transactionsBytes, err := handler.sender.GetTransactions()
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)

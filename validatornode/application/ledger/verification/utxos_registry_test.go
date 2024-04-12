@@ -24,11 +24,11 @@ package verification
 //	registry := new(validatornode.AddressesManagerMock)
 //	registry.IsRegisteredFunc = func(string) (bool, error) { return true, nil }
 //	logger := log.NewLoggerMock()
-//	neighborsManagerMock := new(network.NeighborsManagerMock)
+//	sendersManagerMock := new(network.SendersManagerMock)
 //	var validationInterval int64 = 1
 //	settings := new(validatornode.SettingsProviderMock)
 //	settings.GenesisAmountFunc = func() uint64 { return 1 }
-//	blockchain := NewBlockchain(registry, settings, neighborsManagerMock, logger)
+//	blockchain := NewBlockchain(registry, settings, sendersManagerMock, logger)
 //	registeredAddress := ""
 //	var expectedValue uint64 = 1
 //	var genesisTimestamp int64 = 0

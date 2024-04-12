@@ -85,7 +85,7 @@ func createHostNode(settingsPath string, infuraKey string, seedsPath string, ip 
 	validationEngine := clock.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)
 	verificationEngine := clock.NewEngine(blockchain.Update, watch, settings.ValidationTimer(), settings.VerificationsCountPerValidation(), 1)
 	registrySynchronizationEngine := clock.NewEngine(addressesRegistry.Synchronize, watch, time.Hour /* TODO extract */, 1, 0)
-	host, err := p2p2.NewHost(port, settings, blockchain, neighborhood, transactionsPool, utxosRegistry, watch)
+	host, err := p2p2.NewHost(port, settings, blockchain, neighborhood, transactionsPool, utxosRegistry)
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +110,6 @@ func createNeighborhood(seedsPath string, hostIp string, port int, settings *con
 			return nil, fmt.Errorf("failed to find the public IP: %w", err)
 		}
 	}
-	clientFactory := p2p2.NewSenderFactory(ipFinder, settings.ValidationTimeout())
-	return network.NewNeighborhood(clientFactory, hostIp, strconv.Itoa(port), settings.MaxOutboundsCount(), scoresBySeedTargetValue, watch), nil
+	neighborFactory := p2p2.NewNeighborFactory(ipFinder, settings.ValidationTimeout())
+	return network.NewNeighborhood(neighborFactory, hostIp, strconv.Itoa(port), settings.MaxOutboundsCount(), scoresBySeedTargetValue, watch), nil
 }

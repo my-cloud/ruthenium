@@ -14,26 +14,26 @@ import (
 )
 
 type Blockchain struct {
-	blocks           []*protocol.Block
-	mutex            sync.RWMutex
-	registry         ledger.AddressesManager
-	neighborsManager network.NeighborsManager
-	utxosManager     ledger.UtxosManager
-	settings         ledger.SettingsProvider
-	logger           log.Logger
+	blocks         []*protocol.Block
+	mutex          sync.RWMutex
+	registry       ledger.AddressesManager
+	sendersManager network.SendersManager
+	utxosManager   ledger.UtxosManager
+	settings       ledger.SettingsProvider
+	logger         log.Logger
 }
 
-func NewBlockchain(registry ledger.AddressesManager, settings ledger.SettingsProvider, neighborsManager network.NeighborsManager, utxosManager ledger.UtxosManager, logger log.Logger) *Blockchain {
-	blockchain := newBlockchain(nil, registry, settings, neighborsManager, utxosManager, logger)
+func NewBlockchain(registry ledger.AddressesManager, settings ledger.SettingsProvider, sendersManager network.SendersManager, utxosManager ledger.UtxosManager, logger log.Logger) *Blockchain {
+	blockchain := newBlockchain(nil, registry, settings, sendersManager, utxosManager, logger)
 	return blockchain
 }
 
-func newBlockchain(blocks []*protocol.Block, registry ledger.AddressesManager, settings ledger.SettingsProvider, neighborsManager network.NeighborsManager, utxosManager ledger.UtxosManager, logger log.Logger) *Blockchain {
+func newBlockchain(blocks []*protocol.Block, registry ledger.AddressesManager, settings ledger.SettingsProvider, sendersManager network.SendersManager, utxosManager ledger.UtxosManager, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blocks = blocks
 	blockchain.registry = registry
 	blockchain.settings = settings
-	blockchain.neighborsManager = neighborsManager
+	blockchain.sendersManager = sendersManager
 	blockchain.utxosManager = utxosManager
 	blockchain.logger = logger
 	return blockchain
@@ -99,7 +99,7 @@ func (blockchain *Blockchain) LastBlockTransactions() []*protocol.Transaction {
 
 func (blockchain *Blockchain) Update(timestamp int64) {
 	// Verify neighbor blockchains
-	neighbors := blockchain.neighborsManager.Neighbors()
+	neighbors := blockchain.sendersManager.Senders()
 	blocksByTarget := make(map[string][]*protocol.Block)
 	hostBlocks := blockchain.blocks
 	var waitGroup sync.WaitGroup
@@ -301,7 +301,7 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*protocol.Block, neighborB
 		neighborUtxosPool.Clear()
 		neighborRegistry.Clear()
 	}
-	neighborBlockchain := newBlockchain(oldHostBlocks, neighborRegistry, blockchain.settings, blockchain.neighborsManager, neighborUtxosPool, blockchain.logger)
+	neighborBlockchain := newBlockchain(oldHostBlocks, neighborRegistry, blockchain.settings, blockchain.sendersManager, neighborUtxosPool, blockchain.logger)
 	var verifiedBlocks []*protocol.Block
 	for i := 0; i < len(neighborBlocks); i++ {
 		neighborBlock := neighborBlocks[i]
@@ -372,13 +372,13 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*protocol.Block, neighborB
 	return verifiedBlocks, nil
 }
 
-func (blockchain *Blockchain) verifyNeighborBlockchain(timestamp int64, neighbor network.NeighborCaller, startingBlockHeight uint64, lastHostBlocks []*protocol.Block, oldHostBlocks []*protocol.Block) ([]*protocol.Block, error) {
+func (blockchain *Blockchain) verifyNeighborBlockchain(timestamp int64, neighbor network.Sender, startingBlockHeight uint64, lastHostBlocks []*protocol.Block, oldHostBlocks []*protocol.Block) ([]*protocol.Block, error) {
 	type ChanResult struct {
 		Blocks []*protocol.Block
 		Err    error
 	}
 	blocksChannel := make(chan *ChanResult)
-	go func(neighbor network.NeighborCaller) {
+	go func(neighbor network.Sender) {
 		defer close(blocksChannel)
 		neighborBlocksBytes, err := neighbor.GetBlocks(startingBlockHeight)
 		if err != nil {

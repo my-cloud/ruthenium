@@ -12,12 +12,12 @@ import (
 )
 
 type Handler struct {
-	neighbor network.NeighborCaller
-	logger   log.Logger
+	sender network.Sender
+	logger log.Logger
 }
 
-func NewHandler(neighbor network.NeighborCaller, logger log.Logger) *Handler {
-	return &Handler{neighbor, logger}
+func NewHandler(sender network.Sender, logger log.Logger) *Handler {
+	return &Handler{sender, logger}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -33,14 +33,14 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 			jsonWriter.Write("invalid transaction")
 			return
 		}
-		transactionRequest := protocol.NewTransactionRequest(transaction, handler.neighbor.Target())
+		transactionRequest := protocol.NewTransactionRequest(transaction, handler.sender.Target())
 		marshaledTransaction, err := json.Marshal(transactionRequest)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to marshal transaction request: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		err = handler.neighbor.AddTransaction(marshaledTransaction)
+		err = handler.sender.AddTransaction(marshaledTransaction)
 		if err != nil {
 			handler.logger.Error(fmt.Errorf("failed to add transaction: %w", err).Error())
 			writer.WriteHeader(http.StatusInternalServerError)

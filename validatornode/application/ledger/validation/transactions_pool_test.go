@@ -16,9 +16,9 @@ import (
 func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller { return nil }
-	neighborsManagerMock.IncentiveFunc = func(string) {}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender { return nil }
+	sendersManagerMock.IncentiveFunc = func(string) {}
 	watchMock := new(ledger.TimeProviderMock)
 	var now int64 = 2
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, now) }
@@ -33,7 +33,7 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	settings := new(ledger.SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(ledger.UtxosManagerMock)
-	pool := NewTransactionsPool(blocksManagerMock, settings, neighborsManagerMock, utxosManagerMock, validatorWalletAddress, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, validatorWalletAddress, logger)
 	var genesisValue uint64 = 0
 	transaction := protocol.NewSignedTransaction(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+2, "0", genesisValue, false)
 
@@ -50,9 +50,9 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller { return nil }
-	neighborsManagerMock.IncentiveFunc = func(string) {}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender { return nil }
+	sendersManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
 	logger := log.NewLoggerMock()
 	var transactionFee uint64 = 0
@@ -65,7 +65,7 @@ func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *tes
 	settings := new(ledger.SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(ledger.UtxosManagerMock)
-	pool := NewTransactionsPool(blocksManagerMock, settings, neighborsManagerMock, utxosManagerMock, validatorWalletAddress, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, validatorWalletAddress, logger)
 	var genesisValue uint64 = 0
 	transaction := protocol.NewSignedTransaction(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue, false)
 
@@ -81,9 +81,9 @@ func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *tes
 
 func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	// Arrange
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller { return nil }
-	neighborsManagerMock.IncentiveFunc = func(string) {}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender { return nil }
+	sendersManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
 	var transactionFee uint64 = 0
 	logger := log.NewLoggerMock()
@@ -100,7 +100,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	settings := new(ledger.SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(ledger.UtxosManagerMock)
-	pool := NewTransactionsPool(blocksManagerMock, settings, neighborsManagerMock, utxosManagerMock, walletAddress, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, walletAddress, logger)
 	var genesisValue uint64 = 0
 	transaction := protocol.NewSignedTransaction(genesisValue, transactionFee, outputIndex, "A", privateKey2, publicKey, now, transactionId, genesisValue, false)
 
@@ -116,11 +116,11 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 
 func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	// Arrange
-	neighborMock := new(network.NeighborCallerMock)
-	neighborMock.AddTransactionFunc = func([]byte) error { return nil }
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller { return []network.NeighborCaller{neighborMock} }
-	neighborsManagerMock.IncentiveFunc = func(string) {}
+	senderMock := new(network.SenderMock)
+	senderMock.AddTransactionFunc = func([]byte) error { return nil }
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender { return []network.Sender{senderMock} }
+	sendersManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
 	var transactionFee uint64 = 0
 	logger := log.NewLoggerMock()
@@ -143,7 +143,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	walletAddress := publicKey.Address()
 	var outputIndex uint16 = 0
 	transactionId := ""
-	pool := NewTransactionsPool(blocksManagerMock, settings, neighborsManagerMock, utxosManagerMock, test.Address, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, test.Address, logger)
 	var genesisValue uint64 = 0
 	transaction := protocol.NewSignedTransaction(genesisValue, transactionFee, outputIndex, walletAddress, privateKey, publicKey, now, transactionId, genesisValue, false)
 
@@ -159,7 +159,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 func Test_Validate_BlockAlreadyExist_TransactionsNotValidated(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
-	neighborsManagerMock := new(network.NeighborsManagerMock)
+	sendersManagerMock := new(network.SendersManagerMock)
 	var now int64 = 2
 	logger := log.NewLoggerMock()
 	blocksManagerMock := new(ledger.BlocksManagerMock)
@@ -167,7 +167,7 @@ func Test_Validate_BlockAlreadyExist_TransactionsNotValidated(t *testing.T) {
 	settings := new(ledger.SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(ledger.UtxosManagerMock)
-	pool := NewTransactionsPool(blocksManagerMock, settings, neighborsManagerMock, utxosManagerMock, validatorWalletAddress, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, validatorWalletAddress, logger)
 
 	// Act
 	pool.Validate(now)
@@ -179,7 +179,7 @@ func Test_Validate_BlockAlreadyExist_TransactionsNotValidated(t *testing.T) {
 func Test_Validate_BlockIsMissing_TransactionsNotValidated(t *testing.T) {
 	// Arrange
 	validatorWalletAddress := test.Address
-	neighborsManagerMock := new(network.NeighborsManagerMock)
+	sendersManagerMock := new(network.SendersManagerMock)
 	var now int64 = 3
 	logger := log.NewLoggerMock()
 	blocksManagerMock := new(ledger.BlocksManagerMock)
@@ -187,7 +187,7 @@ func Test_Validate_BlockIsMissing_TransactionsNotValidated(t *testing.T) {
 	settings := new(ledger.SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(ledger.UtxosManagerMock)
-	pool := NewTransactionsPool(blocksManagerMock, settings, neighborsManagerMock, utxosManagerMock, validatorWalletAddress, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, validatorWalletAddress, logger)
 
 	// Act
 	pool.Validate(now)
@@ -198,9 +198,9 @@ func Test_Validate_BlockIsMissing_TransactionsNotValidated(t *testing.T) {
 
 func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t *testing.T) {
 	// Arrange
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller { return nil }
-	neighborsManagerMock.IncentiveFunc = func(string) {}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender { return nil }
+	sendersManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
 	var transactionFee uint64 = 0
 	logger := log.NewLoggerMock()
@@ -221,7 +221,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t 
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	walletAddress := publicKey.Address()
-	pool := NewTransactionsPool(blocksManagerMock, settings, neighborsManagerMock, utxosManagerMock, walletAddress, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, walletAddress, logger)
 	var genesisValue uint64 = 0
 	transaction := protocol.NewSignedTransaction(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+1, "0", genesisValue, false)
 	pool.AddTransaction(transaction, "0", "0")
@@ -236,9 +236,9 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t 
 
 func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *testing.T) {
 	// Arrange
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller { return nil }
-	neighborsManagerMock.IncentiveFunc = func(string) {}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender { return nil }
+	sendersManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 3
 	var transactionFee uint64 = 0
 	logger := log.NewLoggerMock()
@@ -259,7 +259,7 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *test
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	walletAddress := publicKey.Address()
-	pool := NewTransactionsPool(blocksManagerMock, settings, neighborsManagerMock, utxosManagerMock, walletAddress, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, walletAddress, logger)
 	var genesisValue uint64 = 0
 	transaction := protocol.NewSignedTransaction(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue, false)
 	pool.AddTransaction(transaction, "0", "0")
@@ -274,9 +274,9 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *test
 
 func Test_Validate_ValidTransaction_TransactionsValidated(t *testing.T) {
 	// Arrange
-	neighborsManagerMock := new(network.NeighborsManagerMock)
-	neighborsManagerMock.NeighborsFunc = func() []network.NeighborCaller { return nil }
-	neighborsManagerMock.IncentiveFunc = func(string) {}
+	sendersManagerMock := new(network.SendersManagerMock)
+	sendersManagerMock.SendersFunc = func() []network.Sender { return nil }
+	sendersManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
 	var transactionFee uint64 = 0
 	logger := log.NewLoggerMock()
@@ -297,7 +297,7 @@ func Test_Validate_ValidTransaction_TransactionsValidated(t *testing.T) {
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	walletAddress := publicKey.Address()
-	pool := NewTransactionsPool(blocksManagerMock, settings, neighborsManagerMock, utxosManagerMock, walletAddress, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, walletAddress, logger)
 	var genesisValue uint64 = 0
 	transaction := protocol.NewSignedTransaction(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now, "0", genesisValue, false)
 	pool.AddTransaction(transaction, "0", "0")

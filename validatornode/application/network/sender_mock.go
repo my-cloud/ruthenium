@@ -17,8 +17,29 @@ var _ Sender = &SenderMock{}
 //
 //		// make and configure a mocked Sender
 //		mockedSender := &SenderMock{
-//			SendFunc: func(topic string, req []byte) ([]byte, error) {
-//				panic("mock out the Send method")
+//			AddTransactionFunc: func(transaction []byte) error {
+//				panic("mock out the AddTransaction method")
+//			},
+//			GetBlocksFunc: func(startingBlockHeight uint64) ([]byte, error) {
+//				panic("mock out the GetBlocks method")
+//			},
+//			GetFirstBlockTimestampFunc: func() (int64, error) {
+//				panic("mock out the GetFirstBlockTimestamp method")
+//			},
+//			GetSettingsFunc: func() ([]byte, error) {
+//				panic("mock out the GetSettings method")
+//			},
+//			GetTransactionsFunc: func() ([]byte, error) {
+//				panic("mock out the GetTransactions method")
+//			},
+//			GetUtxosFunc: func(address string) ([]byte, error) {
+//				panic("mock out the GetUtxos method")
+//			},
+//			SendTargetsFunc: func(targets []string) error {
+//				panic("mock out the SendTargets method")
+//			},
+//			TargetFunc: func() string {
+//				panic("mock out the Target method")
 //			},
 //		}
 //
@@ -27,54 +48,307 @@ var _ Sender = &SenderMock{}
 //
 //	}
 type SenderMock struct {
-	// SendFunc mocks the Send method.
-	SendFunc func(topic string, req []byte) ([]byte, error)
+	// AddTransactionFunc mocks the AddTransaction method.
+	AddTransactionFunc func(transaction []byte) error
+
+	// GetBlocksFunc mocks the GetBlocks method.
+	GetBlocksFunc func(startingBlockHeight uint64) ([]byte, error)
+
+	// GetFirstBlockTimestampFunc mocks the GetFirstBlockTimestamp method.
+	GetFirstBlockTimestampFunc func() (int64, error)
+
+	// GetSettingsFunc mocks the GetSettings method.
+	GetSettingsFunc func() ([]byte, error)
+
+	// GetTransactionsFunc mocks the GetTransactions method.
+	GetTransactionsFunc func() ([]byte, error)
+
+	// GetUtxosFunc mocks the GetUtxos method.
+	GetUtxosFunc func(address string) ([]byte, error)
+
+	// SendTargetsFunc mocks the SendTargets method.
+	SendTargetsFunc func(targets []string) error
+
+	// TargetFunc mocks the Target method.
+	TargetFunc func() string
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// Send holds details about calls to the Send method.
-		Send []struct {
-			// Topic is the topic argument value.
-			Topic string
-			// Req is the req argument value.
-			Req []byte
+		// AddTransaction holds details about calls to the AddTransaction method.
+		AddTransaction []struct {
+			// Transaction is the transaction argument value.
+			Transaction []byte
+		}
+		// GetBlocks holds details about calls to the GetBlocks method.
+		GetBlocks []struct {
+			// StartingBlockHeight is the startingBlockHeight argument value.
+			StartingBlockHeight uint64
+		}
+		// GetFirstBlockTimestamp holds details about calls to the GetFirstBlockTimestamp method.
+		GetFirstBlockTimestamp []struct {
+		}
+		// GetSettings holds details about calls to the GetSettings method.
+		GetSettings []struct {
+		}
+		// GetTransactions holds details about calls to the GetTransactions method.
+		GetTransactions []struct {
+		}
+		// GetUtxos holds details about calls to the GetUtxos method.
+		GetUtxos []struct {
+			// Address is the address argument value.
+			Address string
+		}
+		// SendTargets holds details about calls to the SendTargets method.
+		SendTargets []struct {
+			// Targets is the targets argument value.
+			Targets []string
+		}
+		// Target holds details about calls to the Target method.
+		Target []struct {
 		}
 	}
-	lockSend sync.RWMutex
+	lockAddTransaction         sync.RWMutex
+	lockGetBlocks              sync.RWMutex
+	lockGetFirstBlockTimestamp sync.RWMutex
+	lockGetSettings            sync.RWMutex
+	lockGetTransactions        sync.RWMutex
+	lockGetUtxos               sync.RWMutex
+	lockSendTargets            sync.RWMutex
+	lockTarget                 sync.RWMutex
 }
 
-// Send calls SendFunc.
-func (mock *SenderMock) Send(topic string, req []byte) ([]byte, error) {
-	if mock.SendFunc == nil {
-		panic("SenderMock.SendFunc: method is nil but Sender.Send was just called")
+// AddTransaction calls AddTransactionFunc.
+func (mock *SenderMock) AddTransaction(transaction []byte) error {
+	if mock.AddTransactionFunc == nil {
+		panic("SenderMock.AddTransactionFunc: method is nil but Sender.AddTransaction was just called")
 	}
 	callInfo := struct {
-		Topic string
-		Req   []byte
+		Transaction []byte
 	}{
-		Topic: topic,
-		Req:   req,
+		Transaction: transaction,
 	}
-	mock.lockSend.Lock()
-	mock.calls.Send = append(mock.calls.Send, callInfo)
-	mock.lockSend.Unlock()
-	return mock.SendFunc(topic, req)
+	mock.lockAddTransaction.Lock()
+	mock.calls.AddTransaction = append(mock.calls.AddTransaction, callInfo)
+	mock.lockAddTransaction.Unlock()
+	return mock.AddTransactionFunc(transaction)
 }
 
-// SendCalls gets all the calls that were made to Send.
+// AddTransactionCalls gets all the calls that were made to AddTransaction.
 // Check the length with:
 //
-//	len(mockedSender.SendCalls())
-func (mock *SenderMock) SendCalls() []struct {
-	Topic string
-	Req   []byte
+//	len(mockedSender.AddTransactionCalls())
+func (mock *SenderMock) AddTransactionCalls() []struct {
+	Transaction []byte
 } {
 	var calls []struct {
-		Topic string
-		Req   []byte
+		Transaction []byte
 	}
-	mock.lockSend.RLock()
-	calls = mock.calls.Send
-	mock.lockSend.RUnlock()
+	mock.lockAddTransaction.RLock()
+	calls = mock.calls.AddTransaction
+	mock.lockAddTransaction.RUnlock()
+	return calls
+}
+
+// GetBlocks calls GetBlocksFunc.
+func (mock *SenderMock) GetBlocks(startingBlockHeight uint64) ([]byte, error) {
+	if mock.GetBlocksFunc == nil {
+		panic("SenderMock.GetBlocksFunc: method is nil but Sender.GetBlocks was just called")
+	}
+	callInfo := struct {
+		StartingBlockHeight uint64
+	}{
+		StartingBlockHeight: startingBlockHeight,
+	}
+	mock.lockGetBlocks.Lock()
+	mock.calls.GetBlocks = append(mock.calls.GetBlocks, callInfo)
+	mock.lockGetBlocks.Unlock()
+	return mock.GetBlocksFunc(startingBlockHeight)
+}
+
+// GetBlocksCalls gets all the calls that were made to GetBlocks.
+// Check the length with:
+//
+//	len(mockedSender.GetBlocksCalls())
+func (mock *SenderMock) GetBlocksCalls() []struct {
+	StartingBlockHeight uint64
+} {
+	var calls []struct {
+		StartingBlockHeight uint64
+	}
+	mock.lockGetBlocks.RLock()
+	calls = mock.calls.GetBlocks
+	mock.lockGetBlocks.RUnlock()
+	return calls
+}
+
+// GetFirstBlockTimestamp calls GetFirstBlockTimestampFunc.
+func (mock *SenderMock) GetFirstBlockTimestamp() (int64, error) {
+	if mock.GetFirstBlockTimestampFunc == nil {
+		panic("SenderMock.GetFirstBlockTimestampFunc: method is nil but Sender.GetFirstBlockTimestamp was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetFirstBlockTimestamp.Lock()
+	mock.calls.GetFirstBlockTimestamp = append(mock.calls.GetFirstBlockTimestamp, callInfo)
+	mock.lockGetFirstBlockTimestamp.Unlock()
+	return mock.GetFirstBlockTimestampFunc()
+}
+
+// GetFirstBlockTimestampCalls gets all the calls that were made to GetFirstBlockTimestamp.
+// Check the length with:
+//
+//	len(mockedSender.GetFirstBlockTimestampCalls())
+func (mock *SenderMock) GetFirstBlockTimestampCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetFirstBlockTimestamp.RLock()
+	calls = mock.calls.GetFirstBlockTimestamp
+	mock.lockGetFirstBlockTimestamp.RUnlock()
+	return calls
+}
+
+// GetSettings calls GetSettingsFunc.
+func (mock *SenderMock) GetSettings() ([]byte, error) {
+	if mock.GetSettingsFunc == nil {
+		panic("SenderMock.GetSettingsFunc: method is nil but Sender.GetSettings was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetSettings.Lock()
+	mock.calls.GetSettings = append(mock.calls.GetSettings, callInfo)
+	mock.lockGetSettings.Unlock()
+	return mock.GetSettingsFunc()
+}
+
+// GetSettingsCalls gets all the calls that were made to GetSettings.
+// Check the length with:
+//
+//	len(mockedSender.GetSettingsCalls())
+func (mock *SenderMock) GetSettingsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetSettings.RLock()
+	calls = mock.calls.GetSettings
+	mock.lockGetSettings.RUnlock()
+	return calls
+}
+
+// GetTransactions calls GetTransactionsFunc.
+func (mock *SenderMock) GetTransactions() ([]byte, error) {
+	if mock.GetTransactionsFunc == nil {
+		panic("SenderMock.GetTransactionsFunc: method is nil but Sender.GetTransactions was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockGetTransactions.Lock()
+	mock.calls.GetTransactions = append(mock.calls.GetTransactions, callInfo)
+	mock.lockGetTransactions.Unlock()
+	return mock.GetTransactionsFunc()
+}
+
+// GetTransactionsCalls gets all the calls that were made to GetTransactions.
+// Check the length with:
+//
+//	len(mockedSender.GetTransactionsCalls())
+func (mock *SenderMock) GetTransactionsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockGetTransactions.RLock()
+	calls = mock.calls.GetTransactions
+	mock.lockGetTransactions.RUnlock()
+	return calls
+}
+
+// GetUtxos calls GetUtxosFunc.
+func (mock *SenderMock) GetUtxos(address string) ([]byte, error) {
+	if mock.GetUtxosFunc == nil {
+		panic("SenderMock.GetUtxosFunc: method is nil but Sender.GetUtxos was just called")
+	}
+	callInfo := struct {
+		Address string
+	}{
+		Address: address,
+	}
+	mock.lockGetUtxos.Lock()
+	mock.calls.GetUtxos = append(mock.calls.GetUtxos, callInfo)
+	mock.lockGetUtxos.Unlock()
+	return mock.GetUtxosFunc(address)
+}
+
+// GetUtxosCalls gets all the calls that were made to GetUtxos.
+// Check the length with:
+//
+//	len(mockedSender.GetUtxosCalls())
+func (mock *SenderMock) GetUtxosCalls() []struct {
+	Address string
+} {
+	var calls []struct {
+		Address string
+	}
+	mock.lockGetUtxos.RLock()
+	calls = mock.calls.GetUtxos
+	mock.lockGetUtxos.RUnlock()
+	return calls
+}
+
+// SendTargets calls SendTargetsFunc.
+func (mock *SenderMock) SendTargets(targets []string) error {
+	if mock.SendTargetsFunc == nil {
+		panic("SenderMock.SendTargetsFunc: method is nil but Sender.SendTargets was just called")
+	}
+	callInfo := struct {
+		Targets []string
+	}{
+		Targets: targets,
+	}
+	mock.lockSendTargets.Lock()
+	mock.calls.SendTargets = append(mock.calls.SendTargets, callInfo)
+	mock.lockSendTargets.Unlock()
+	return mock.SendTargetsFunc(targets)
+}
+
+// SendTargetsCalls gets all the calls that were made to SendTargets.
+// Check the length with:
+//
+//	len(mockedSender.SendTargetsCalls())
+func (mock *SenderMock) SendTargetsCalls() []struct {
+	Targets []string
+} {
+	var calls []struct {
+		Targets []string
+	}
+	mock.lockSendTargets.RLock()
+	calls = mock.calls.SendTargets
+	mock.lockSendTargets.RUnlock()
+	return calls
+}
+
+// Target calls TargetFunc.
+func (mock *SenderMock) Target() string {
+	if mock.TargetFunc == nil {
+		panic("SenderMock.TargetFunc: method is nil but Sender.Target was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockTarget.Lock()
+	mock.calls.Target = append(mock.calls.Target, callInfo)
+	mock.lockTarget.Unlock()
+	return mock.TargetFunc()
+}
+
+// TargetCalls gets all the calls that were made to Target.
+// Check the length with:
+//
+//	len(mockedSender.TargetCalls())
+func (mock *SenderMock) TargetCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockTarget.RLock()
+	calls = mock.calls.Target
+	mock.lockTarget.RUnlock()
 	return calls
 }

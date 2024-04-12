@@ -21,10 +21,10 @@ const urlTarget = "/url-target"
 func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	invalidHttpMethods := []string{http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace}
 	for _, method := range invalidHttpMethods {
@@ -44,7 +44,7 @@ func Test_ServeHTTP_InvalidHttpMethod_BadRequest(t *testing.T) {
 func Test_ServeHTTP_InvalidAddress_ReturnsBadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -52,7 +52,7 @@ func Test_ServeHTTP_InvalidAddress_ReturnsBadRequest(t *testing.T) {
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.SmallestUnitsPerCoinFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, urlTarget, nil)
 
@@ -67,7 +67,7 @@ func Test_ServeHTTP_InvalidAddress_ReturnsBadRequest(t *testing.T) {
 func Test_ServeHTTP_InvalidValue_ReturnsBadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -75,7 +75,7 @@ func Test_ServeHTTP_InvalidValue_ReturnsBadRequest(t *testing.T) {
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.SmallestUnitsPerCoinFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address", urlTarget), nil)
 
@@ -90,7 +90,7 @@ func Test_ServeHTTP_InvalidValue_ReturnsBadRequest(t *testing.T) {
 func Test_ServeHTTP_IsRegisteredNotProvided_ReturnsBadRequest(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -98,7 +98,7 @@ func Test_ServeHTTP_IsRegisteredNotProvided_ReturnsBadRequest(t *testing.T) {
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.SmallestUnitsPerCoinFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=0", urlTarget), nil)
 
@@ -113,8 +113,8 @@ func Test_ServeHTTP_IsRegisteredNotProvided_ReturnsBadRequest(t *testing.T) {
 func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
+	senderMock := new(network.SenderMock)
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -122,7 +122,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.SmallestUnitsPerCoinFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=0&consolidation=false", urlTarget), nil)
 
@@ -130,7 +130,7 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	isNeighborMethodCalled := len(neighborMock.GetUtxosCalls()) == 1
+	isNeighborMethodCalled := len(senderMock.GetUtxosCalls()) == 1
 	test.Assert(t, isNeighborMethodCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 500
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -139,10 +139,10 @@ func Test_ServeHTTP_GetUtxosError_ReturnsInternalServerError(t *testing.T) {
 func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	marshalledEmptyUtxos, _ := json.Marshal([]*protocol.Utxo{})
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
-	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
+	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
 	watchMock := new(ledger.TimeProviderMock)
 	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -150,7 +150,7 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.SmallestUnitsPerCoinFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=0&consolidation=false", urlTarget), nil)
 
@@ -158,7 +158,7 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	areNeighborMethodsCalled := len(neighborMock.GetUtxosCalls()) == 1 && len(neighborMock.GetFirstBlockTimestampCalls()) == 1
+	areNeighborMethodsCalled := len(senderMock.GetUtxosCalls()) == 1 && len(senderMock.GetFirstBlockTimestampCalls()) == 1
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 500
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -167,10 +167,10 @@ func Test_ServeHTTP_GetFirstBlockTimestampError_ReturnsInternalServerError(t *te
 func Test_ServeHTTP_InsufficientWalletBalance_ReturnsMethodNotAllowed(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	marshalledEmptyUtxos, _ := json.Marshal([]*protocol.Utxo{})
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
-	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
+	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
@@ -180,7 +180,7 @@ func Test_ServeHTTP_InsufficientWalletBalance_ReturnsMethodNotAllowed(t *testing
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 1 }
 	settings.SmallestUnitsPerCoinFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=0&consolidation=false", urlTarget), nil)
 
@@ -188,7 +188,7 @@ func Test_ServeHTTP_InsufficientWalletBalance_ReturnsMethodNotAllowed(t *testing
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	areNeighborMethodsCalled := len(neighborMock.GetUtxosCalls()) == 1 && len(neighborMock.GetFirstBlockTimestampCalls()) == 1
+	areNeighborMethodsCalled := len(senderMock.GetUtxosCalls()) == 1 && len(senderMock.GetFirstBlockTimestampCalls()) == 1
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 405
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -197,7 +197,7 @@ func Test_ServeHTTP_InsufficientWalletBalance_ReturnsMethodNotAllowed(t *testing
 func Test_ServeHTTP_ConsolidationNotRequiredAndOneUtxoIsGreater_ReturnsOneUtxo(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 
 	inputInfo1 := protocol.NewInputInfo(0, "")
 	inputInfo2 := protocol.NewInputInfo(1, "")
@@ -211,8 +211,8 @@ func Test_ServeHTTP_ConsolidationNotRequiredAndOneUtxoIsGreater_ReturnsOneUtxo(t
 		protocol.NewUtxo(inputInfo3, output3, 1),
 	}
 	marshalledUtxos, _ := json.Marshal(utxos)
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
-	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
+	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
@@ -222,7 +222,7 @@ func Test_ServeHTTP_ConsolidationNotRequiredAndOneUtxoIsGreater_ReturnsOneUtxo(t
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 1 }
 	settings.SmallestUnitsPerCoinFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=3&consolidation=false", urlTarget), nil)
 
@@ -230,7 +230,7 @@ func Test_ServeHTTP_ConsolidationNotRequiredAndOneUtxoIsGreater_ReturnsOneUtxo(t
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	areNeighborMethodsCalled := len(neighborMock.GetUtxosCalls()) == 1 && len(neighborMock.GetFirstBlockTimestampCalls()) == 1
+	areNeighborMethodsCalled := len(senderMock.GetUtxosCalls()) == 1 && len(senderMock.GetFirstBlockTimestampCalls()) == 1
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -244,7 +244,7 @@ func Test_ServeHTTP_ConsolidationNotRequiredAndOneUtxoIsGreater_ReturnsOneUtxo(t
 func Test_ServeHTTP_ConsolidationNotRequiredAndNoUtxoIsGreater_ReturnsSomeUtxos(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 
 	inputInfo1 := protocol.NewInputInfo(0, "")
 	inputInfo2 := protocol.NewInputInfo(1, "")
@@ -258,8 +258,8 @@ func Test_ServeHTTP_ConsolidationNotRequiredAndNoUtxoIsGreater_ReturnsSomeUtxos(
 		protocol.NewUtxo(inputInfo3, output3, 1),
 	}
 	marshalledUtxos, _ := json.Marshal(utxos)
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
-	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
+	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
@@ -269,7 +269,7 @@ func Test_ServeHTTP_ConsolidationNotRequiredAndNoUtxoIsGreater_ReturnsSomeUtxos(
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 1 }
 	settings.SmallestUnitsPerCoinFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=3&consolidation=false", urlTarget), nil)
 
@@ -277,7 +277,7 @@ func Test_ServeHTTP_ConsolidationNotRequiredAndNoUtxoIsGreater_ReturnsSomeUtxos(
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	areNeighborMethodsCalled := len(neighborMock.GetUtxosCalls()) == 1 && len(neighborMock.GetFirstBlockTimestampCalls()) == 1
+	areNeighborMethodsCalled := len(senderMock.GetUtxosCalls()) == 1 && len(senderMock.GetFirstBlockTimestampCalls()) == 1
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
@@ -291,7 +291,7 @@ func Test_ServeHTTP_ConsolidationNotRequiredAndNoUtxoIsGreater_ReturnsSomeUtxos(
 func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
-	neighborMock := new(network.NeighborCallerMock)
+	senderMock := new(network.SenderMock)
 	inputInfo1 := protocol.NewInputInfo(0, "")
 	inputInfo2 := protocol.NewInputInfo(2, "")
 	output1 := protocol.NewOutput("", false, 1)
@@ -301,8 +301,8 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 		protocol.NewUtxo(inputInfo2, output2, 1),
 	}
 	marshalledUtxos, _ := json.Marshal(utxos)
-	neighborMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
-	neighborMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
+	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledUtxos, nil }
+	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(ledger.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
 	settings := new(SettingsProviderMock)
@@ -312,7 +312,7 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 	settings.MinimalTransactionFeeFunc = func() uint64 { return 1 }
 	settings.SmallestUnitsPerCoinFunc = func() uint64 { return 1 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
-	handler := NewHandler(neighborMock, settings, watchMock, logger)
+	handler := NewHandler(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s?address=address&value=1&consolidation=true", urlTarget), nil)
 
@@ -320,7 +320,7 @@ func Test_ServeHTTP_ConsolidationRequired_ReturnsAllUtxos(t *testing.T) {
 	handler.ServeHTTP(recorder, request)
 
 	// Assert
-	areNeighborMethodsCalled := len(neighborMock.GetUtxosCalls()) == 1 && len(neighborMock.GetFirstBlockTimestampCalls()) == 1
+	areNeighborMethodsCalled := len(senderMock.GetUtxosCalls()) == 1 && len(senderMock.GetFirstBlockTimestampCalls()) == 1
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))

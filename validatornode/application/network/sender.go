@@ -1,5 +1,12 @@
 package network
 
 type Sender interface {
-	Send(topic string, req []byte) (res []byte, err error)
+	Target() string
+	GetBlocks(startingBlockHeight uint64) (blocks []byte, err error)
+	GetFirstBlockTimestamp() (firstBlockTimestamp int64, err error)
+	GetSettings() (settings []byte, err error)
+	SendTargets(targets []string) error
+	AddTransaction(transaction []byte) error
+	GetTransactions() (transactions []byte, err error)
+	GetUtxos(address string) (utxos []byte, err error)
 }
