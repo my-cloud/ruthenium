@@ -19,7 +19,7 @@ func main() {
 	port := flag.Int("port", environment.NewVariable("PORT").GetIntValue(8080), "The TCP port number of the access node")
 	validatorIp := flag.String("validator-ip", environment.NewVariable("VALIDATOR_IP").GetStringValue("127.0.0.1"), "The validator node IP or DNS address")
 	validatorPort := flag.Int("validator-port", environment.NewVariable("VALIDATOR_PORT").GetIntValue(10600), "The TCP port number of the validator node")
-	templatePath := flag.String("template-path", environment.NewVariable("TEMPLATE_PATH").GetStringValue("accessnode/template.html"), "The UI template path")
+	templatePath := flag.String("template-path", environment.NewVariable("TEMPLATE_PATH").GetStringValue("accessnode/presentation/api/template.html"), "The UI template path")
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level (possible values: 'debug', 'info', 'warn', 'error', 'fatal')")
 
 	flag.Parse()
