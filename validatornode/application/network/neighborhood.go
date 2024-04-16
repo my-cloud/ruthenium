@@ -1,27 +1,26 @@
 package network
 
 import (
+	"github.com/my-cloud/ruthenium/validatornode/application"
 	"math/rand"
 	"sort"
 	"sync"
 	"time"
-
-	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
 )
 
 type Neighborhood struct {
-	senderCreator            SenderCreator
+	senderCreator            application.SenderCreator
 	hostTarget               *Target
 	maxOutboundsCount        int
-	senders                  []Sender
+	senders                  []application.Sender
 	sendersMutex             sync.RWMutex
 	scoresBySeedTargetValue  map[string]int
 	scoresByTargetValue      map[string]int
 	scoresByTargetValueMutex sync.RWMutex
-	watch                    ledger.TimeProvider
+	watch                    application.TimeProvider
 }
 
-func NewNeighborhood(senderCreator SenderCreator, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTargetValue map[string]int, watch ledger.TimeProvider) *Neighborhood {
+func NewNeighborhood(senderCreator application.SenderCreator, hostIp string, hostPort string, maxOutboundsCount int, scoresBySeedTargetValue map[string]int, watch application.TimeProvider) *Neighborhood {
 	neighborhood := new(Neighborhood)
 	neighborhood.senderCreator = senderCreator
 	neighborhood.hostTarget = NewTarget(hostIp, hostPort)
@@ -58,7 +57,7 @@ func (neighborhood *Neighborhood) Incentive(targetValue string) {
 	neighborhood.scoresByTargetValue[targetValue] += 1
 }
 
-func (neighborhood *Neighborhood) Senders() []Sender {
+func (neighborhood *Neighborhood) Senders() []application.Sender {
 	return neighborhood.senders
 }
 
@@ -72,7 +71,7 @@ func (neighborhood *Neighborhood) Synchronize(int64) {
 	}
 	neighborhood.scoresByTargetValue = map[string]int{}
 	neighborhood.scoresByTargetValueMutex.Unlock()
-	neighborsByScore := map[int][]Sender{}
+	neighborsByScore := map[int][]application.Sender{}
 	var targetValues []string
 	hostTargetValue := neighborhood.hostTarget.Value()
 	targetValues = append(targetValues, hostTargetValue)
@@ -102,20 +101,20 @@ func (neighborhood *Neighborhood) Synchronize(int64) {
 				neighborTargetValues = append(neighborTargetValues, targetValue)
 			}
 		}
-		go func(neighbor Sender) {
+		go func(neighbor application.Sender) {
 			_ = neighbor.SendTargets(neighborTargetValues)
 		}(neighbor)
 	}
 }
 
-func (neighborhood *Neighborhood) selectOutbounds(neighborsByScore map[int][]Sender, targetsCount int) []Sender {
+func (neighborhood *Neighborhood) selectOutbounds(neighborsByScore map[int][]application.Sender, targetsCount int) []application.Sender {
 	var keys []int
 	for k := range neighborsByScore {
 		keys = append(keys, k)
 	}
 	sort.Ints(keys)
 	outboundsCount := min(targetsCount, neighborhood.maxOutboundsCount)
-	var outbounds []Sender
+	var outbounds []application.Sender
 	for i := len(keys) - 1; i >= 0; i-- {
 		if len(outbounds)+len(neighborsByScore[keys[i]]) >= outboundsCount {
 			temp := neighborsByScore[keys[i]]

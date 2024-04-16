@@ -2,22 +2,22 @@ package network
 
 import (
 	"fmt"
+	"github.com/my-cloud/ruthenium/validatornode/application"
 	"testing"
 	"time"
 
-	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
 func Test_AddTargets_MoreThanOneTarget_IncentiveTargetsSender(t *testing.T) {
 	// Arrange
-	watchMock := new(ledger.TimeProviderMock)
+	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Now() }
-	senderCreatorMock := new(SenderCreatorMock)
-	senderMock := new(SenderMock)
+	senderCreatorMock := new(application.SenderCreatorMock)
+	senderMock := new(application.SenderMock)
 	senderMock.TargetFunc = func() string { return "0.0.0.0:1" }
 	senderMock.SendTargetsFunc = func([]string) error { return nil }
-	senderCreatorMock.CreateSenderFunc = func(string, string) (Sender, error) { return senderMock, nil }
+	senderCreatorMock.CreateSenderFunc = func(string, string) (application.Sender, error) { return senderMock, nil }
 	scoresBySeedTarget := map[string]int{}
 	neighborhood := NewNeighborhood(senderCreatorMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
 	target1 := "0.0.0.0:1"
@@ -38,13 +38,13 @@ func Test_AddTargets_MoreThanOneTarget_IncentiveTargetsSender(t *testing.T) {
 
 func Test_Incentive_TargetIsNotKnown_TargetIncentive(t *testing.T) {
 	// Arrange
-	watchMock := new(ledger.TimeProviderMock)
+	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Now() }
-	senderCreatorMock := new(SenderCreatorMock)
-	senderMock := new(SenderMock)
+	senderCreatorMock := new(application.SenderCreatorMock)
+	senderMock := new(application.SenderMock)
 	senderMock.TargetFunc = func() string { return "0.0.0.0:1" }
 	senderMock.SendTargetsFunc = func([]string) error { return nil }
-	senderCreatorMock.CreateSenderFunc = func(string, string) (Sender, error) { return senderMock, nil }
+	senderCreatorMock.CreateSenderFunc = func(string, string) (application.Sender, error) { return senderMock, nil }
 	scoresBySeedTarget := map[string]int{}
 	neighborhood := NewNeighborhood(senderCreatorMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
 	expectedTarget := "0.0.0.0:1"
@@ -63,13 +63,13 @@ func Test_Incentive_TargetIsNotKnown_TargetIncentive(t *testing.T) {
 
 func Test_Synchronize_OneSeed_NeighborAdded(t *testing.T) {
 	// Arrange
-	watchMock := new(ledger.TimeProviderMock)
+	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Now() }
-	senderCreatorMock := new(SenderCreatorMock)
-	senderMock := new(SenderMock)
+	senderCreatorMock := new(application.SenderCreatorMock)
+	senderMock := new(application.SenderMock)
 	senderMock.TargetFunc = func() string { return "0.0.0.0:1" }
 	senderMock.SendTargetsFunc = func([]string) error { return nil }
-	senderCreatorMock.CreateSenderFunc = func(string, string) (Sender, error) { return senderMock, nil }
+	senderCreatorMock.CreateSenderFunc = func(string, string) (application.Sender, error) { return senderMock, nil }
 	scoresBySeedTarget := map[string]int{"0.0.0.0:1": 0}
 	neighborhood := NewNeighborhood(senderCreatorMock, "0.0.0.0", "0", 1, scoresBySeedTarget, watchMock)
 

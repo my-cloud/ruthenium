@@ -1,15 +1,14 @@
 package clock
 
 import (
+	"github.com/my-cloud/ruthenium/validatornode/application"
 	"time"
-
-	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
 )
 
 type Engine struct {
 	function func(timestamp int64)
 
-	watch              ledger.TimeProvider
+	watch              application.TimeProvider
 	timer              time.Duration
 	subTimer           time.Duration
 	ticker             *time.Ticker
@@ -19,7 +18,7 @@ type Engine struct {
 	requested          bool
 }
 
-func NewEngine(function func(timestamp int64), watch ledger.TimeProvider, timer time.Duration, occurrences int64, skippedOccurrences int) *Engine {
+func NewEngine(function func(timestamp int64), watch application.TimeProvider, timer time.Duration, occurrences int64, skippedOccurrences int) *Engine {
 	var subTimer time.Duration
 	if occurrences > 0 {
 		subTimer = time.Duration(timer.Nanoseconds() / occurrences)

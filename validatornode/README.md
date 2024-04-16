@@ -30,7 +30,7 @@ Base URL: `<validator node IP>:<validator node port>` (example: seed-styx.ruthen
 
 Each request value or response value shall be marshaled to bytes or un-marshaled from bytes. All fields are required.
 
-### Blockchain
+### History
 <details>
 <summary><b>Get blocks</b></summary>
 
@@ -61,7 +61,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 * **response value:** *none*
 </details>
 
-### Node
+### Configuration
 <details>
 <summary><b>Get settings</b></summary>
 
@@ -72,7 +72,7 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 * **response value:** *none*
 </details>
 
-### Transactions pool
+### Payment
 <details>
 <summary><b>Add transaction</b></summary>
 

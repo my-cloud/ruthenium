@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/my-cloud/ruthenium/validatornode/application/validation"
+	verification2 "github.com/my-cloud/ruthenium/validatornode/application/verification"
 	"github.com/my-cloud/ruthenium/validatornode/presentation/api"
 	"io"
 	"net/http"
@@ -11,8 +13,6 @@ import (
 
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
 
-	"github.com/my-cloud/ruthenium/validatornode/application/ledger/validation"
-	"github.com/my-cloud/ruthenium/validatornode/application/ledger/verification"
 	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/domain/clock"
 	"github.com/my-cloud/ruthenium/validatornode/domain/encryption"
@@ -76,14 +76,14 @@ func createHostNode(settingsPath string, infuraKey string, seedsPath string, ip 
 		return nil, err
 	}
 	humanityRegistry := poh.NewHumanityRegistry(infuraKey, logger)
-	addressesRegistry := verification.NewAddressesRegistry(humanityRegistry, logger)
+	addressesRegistry := verification2.NewAddressesRegistry(humanityRegistry, logger)
 	watch := clock.NewWatch()
 	neighborhood, err := createNeighborhood(seedsPath, ip, port, settings, watch, logger)
 	if err != nil {
 		return nil, err
 	}
-	utxosRegistry := verification.NewUtxosRegistry(settings)
-	blockchain := verification.NewBlockchain(addressesRegistry, settings, neighborhood, utxosRegistry, logger)
+	utxosRegistry := verification2.NewUtxosRegistry(settings)
+	blockchain := verification2.NewBlockchain(addressesRegistry, settings, neighborhood, utxosRegistry, logger)
 	transactionsPool := validation.NewTransactionsPool(blockchain, settings, neighborhood, utxosRegistry, address, logger)
 	neighborhoodSynchronizationEngine := clock.NewEngine(neighborhood.Synchronize, watch, settings.SynchronizationTimer(), 1, 0)
 	validationEngine := clock.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)

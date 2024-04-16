@@ -2,31 +2,35 @@ package api
 
 import (
 	"fmt"
+	"github.com/my-cloud/ruthenium/validatornode/application"
+	"github.com/my-cloud/ruthenium/validatornode/presentation/api/configuration"
+	"github.com/my-cloud/ruthenium/validatornode/presentation/api/history"
+	"github.com/my-cloud/ruthenium/validatornode/presentation/api/network"
+	"github.com/my-cloud/ruthenium/validatornode/presentation/api/payment"
+	"github.com/my-cloud/ruthenium/validatornode/presentation/api/wallet"
 	"strconv"
 
 	gp2p "github.com/leprosus/golang-p2p"
 
-	"github.com/my-cloud/ruthenium/validatornode/application/ledger"
-	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/config"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
 )
 
 type Host struct {
 	*gp2p.Server
-	blocksController       *BlocksController
-	sendersController      *SendersController
-	settingsController     *SettingsController
-	transactionsController *TransactionsController
-	utxosController        *UtxosController
+	blocksController       *history.BlocksController
+	sendersController      *network.SendersController
+	settingsController     *configuration.SettingsController
+	transactionsController *payment.TransactionsController
+	utxosController        *wallet.UtxosController
 }
 
 func NewHost(port int,
 	settings *config.Settings,
-	blocksManager ledger.BlocksManager,
-	sendersManager network.SendersManager,
-	transactionsManager ledger.TransactionsManager,
-	utxosManager ledger.UtxosManager) (*Host, error) {
+	blocksManager application.BlocksManager,
+	sendersManager application.SendersManager,
+	transactionsManager application.TransactionsManager,
+	utxosManager application.UtxosManager) (*Host, error) {
 	tcp := gp2p.NewTCP("0.0.0.0", strconv.Itoa(port))
 	server, err := gp2p.NewServer(tcp)
 	if err != nil {
@@ -36,11 +40,11 @@ func NewHost(port int,
 	serverSettings := gp2p.NewServerSettings()
 	serverSettings.SetConnTimeout(settings.ValidationTimeout())
 	server.SetSettings(serverSettings)
-	blocksController := NewBlocksController(blocksManager)
-	sendersController := NewSendersController(sendersManager)
-	settingsController := NewSettingsController(settings.Bytes())
-	transactionsController := NewTransactionsController(sendersManager, transactionsManager)
-	utxosController := NewUtxosController(utxosManager)
+	blocksController := history.NewBlocksController(blocksManager)
+	sendersController := network.NewSendersController(sendersManager)
+	settingsController := configuration.NewSettingsController(settings.Bytes())
+	transactionsController := payment.NewTransactionsController(sendersManager, transactionsManager)
+	utxosController := wallet.NewUtxosController(utxosManager)
 	return &Host{server, blocksController, sendersController, settingsController, transactionsController, utxosController}, err
 }
 

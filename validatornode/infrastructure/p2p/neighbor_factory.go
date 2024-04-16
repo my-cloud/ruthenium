@@ -2,9 +2,9 @@ package p2p
 
 import (
 	"fmt"
+	"github.com/my-cloud/ruthenium/validatornode/application"
 	"time"
 
-	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 )
 
@@ -18,7 +18,7 @@ func NewNeighborFactory(ipFinder IpFinder, connectionTimeout time.Duration, logg
 	return &NeighborFactory{ipFinder, connectionTimeout, logger}
 }
 
-func (factory *NeighborFactory) CreateSender(ip string, port string) (network.Sender, error) {
+func (factory *NeighborFactory) CreateSender(ip string, port string) (application.Sender, error) {
 	lookedUpIp, err := factory.ipFinder.LookupIP(ip)
 	if err != nil {
 		return nil, fmt.Errorf("failed to look up IP on addresse %s: %w", ip, err)

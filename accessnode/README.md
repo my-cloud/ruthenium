@@ -26,7 +26,7 @@ Using a web browser, go to `http://localhost:8080` (If needed, replace `localhos
 ## API
 Base URL: `<access node IP>:<access node port>` (example: `localhost:8080`)
 
-### Transactions pool
+### Payment
 <details>
 <summary><b>Add transaction</b></summary>
 
@@ -38,11 +38,11 @@ Base URL: `<access node IP>:<access node port>` (example: `localhost:8080`)
 * **request body:** [TransactionRequest](#transactionrequest)
 * **responses:**
 
-  |Code|Description|
-    |---|---|
-  |201|Transaction added|
-  |400|Bad request, if any request argument is invalid|
-  |500|Internal server error, if an unexpected condition occurred|
+  | Code | Description                                                |
+  |------|------------------------------------------------------------|
+  | 201  | Transaction added                                          |
+  | 400  | Bad request, if any request argument is invalid            |
+  | 500  | Internal server error, if an unexpected condition occurred |
 </details>
 <details>
 <summary><b>Get transaction info</b></summary>
@@ -53,19 +53,19 @@ Base URL: `<access node IP>:<access node port>` (example: `localhost:8080`)
 *Description:* Get the transaction data needed for a transaction request.
 * **parameters:**
 
-  |Name|Description|Example|
-      |---|---|---|
-  |`address`|42 characters hexadecimal sender wallet address|`0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a`|
-  |`value`|64 bits floating-point number value of the transaction|`0`|
+  | Name      | Description                                            | Example                                      |
+  |-----------|--------------------------------------------------------|----------------------------------------------|
+  | `address` | 42 characters hexadecimal sender wallet address        | `0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a` |
+  | `value`   | 64 bits floating-point number value of the transaction | `0`                                          |
 * **request body:** *none*
 * **responses:**
 
-  |Code|Description|
-      |---|---|
-  |200|[TransactionInfo](#transactioninfo)|
-  |400|Bad request, if any request argument is invalid|
-  |405|Method not allowed, if the value exceeds the wallet amount for the given address|
-  |500|Internal server error, if an unexpected condition occurred|
+  | Code | Description                                                                      |
+  |------|----------------------------------------------------------------------------------|
+  | 200  | [TransactionInfo](#transactioninfo)                                              |
+  | 400  | Bad request, if any request argument is invalid                                  |
+  | 405  | Method not allowed, if the value exceeds the wallet amount for the given address |
+  | 500  | Internal server error, if an unexpected condition occurred                       |
 </details>
 <details>
 <summary><b>Get transactions</b></summary>
@@ -78,10 +78,10 @@ Base URL: `<access node IP>:<access node port>` (example: `localhost:8080`)
 * **request body:** *none*
 * **responses:**
 
-  |Code|Description|
-    |---|---|
-  |200|Array of [transactions](#transaction)|
-  |500|Internal server error, if an unexpected condition occurred|
+  | Code | Description                                                |
+  |------|------------------------------------------------------------|
+  | 200  | Array of [transactions](#transaction)                      |
+  | 500  | Internal server error, if an unexpected condition occurred |
 </details>
 
 ### Wallet
@@ -94,16 +94,16 @@ Base URL: `<access node IP>:<access node port>` (example: `localhost:8080`)
 *Description:* Get the wallet address depending on the given public key.
 * **parameters:** *none*
 
-  |Name|Description|Example|
-    |---|---|---|
-  |`publicKey`|132 characters hexadecimal public key|`0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782`|
+  | Name        | Description                           | Example                                                                                                                                |
+  |-------------|---------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+  | `publicKey` | 132 characters hexadecimal public key | `0x046bd857ce80ff5238d6561f3a775802453c570b6ea2cbf93a35a8a6542b2edbe5f625f9e3fbd2a5df62adebc27391332a265fb94340fb11b69cf569605a5df782` |
 * **request body:** *none*
 * **responses:**
 
-  |Code|Description|
-    |---|---|
-  |200|42 characters hexadecimal wallet address|
-  |500|Internal server error, if an unexpected condition occurred|
+  | Code | Description                                                |
+  |------|------------------------------------------------------------|
+  | 200  | 42 characters hexadecimal wallet address                   |
+  | 500  | Internal server error, if an unexpected condition occurred |
 </details>
 <details>
 <summary><b>Get wallet amount</b></summary>
@@ -114,17 +114,17 @@ Base URL: `<access node IP>:<access node port>` (example: `localhost:8080`)
 *Description:* Get the amount for the given wallet address.
 * **parameters:**
 
-  |Name|Description|Example|
-    |---|---|---|
-  |`address`|42 characters hexadecimal wallet address|`0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a`|
+  | Name      | Description                              | Example                                      |
+  |-----------|------------------------------------------|----------------------------------------------|
+  | `address` | 42 characters hexadecimal wallet address | `0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a` |
 * **request body:** *none*
 * **responses:**
 
-  |Code|Description|
-    |---|---|
-  |200|64 bits floating-point number amount|
-  |400|Bad request, if any request argument is invalid|
-  |500|Internal server error, if an unexpected condition occurred|
+  | Code | Description                                                |
+  |------|------------------------------------------------------------|
+  | 200  | 64 bits floating-point number amount                       |
+  | 400  | Bad request, if any request argument is invalid            |
+  | 500  | Internal server error, if an unexpected condition occurred |
 </details>
 
 ---
