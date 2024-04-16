@@ -3,8 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/my-cloud/ruthenium/validatornode/presentation/api"
+	"io"
+	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
 
 	"github.com/my-cloud/ruthenium/validatornode/application/ledger/validation"
 	"github.com/my-cloud/ruthenium/validatornode/application/ledger/verification"
@@ -15,10 +20,9 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/environment"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/file"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
+	p2p2 "github.com/my-cloud/ruthenium/validatornode/infrastructure/p2p"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/poh"
 	"github.com/my-cloud/ruthenium/validatornode/presentation"
-	p2p2 "github.com/my-cloud/ruthenium/validatornode/presentation/p2p"
 )
 
 func main() {
@@ -85,7 +89,7 @@ func createHostNode(settingsPath string, infuraKey string, seedsPath string, ip 
 	validationEngine := clock.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)
 	verificationEngine := clock.NewEngine(blockchain.Update, watch, settings.ValidationTimer(), settings.VerificationsCountPerValidation(), 1)
 	registrySynchronizationEngine := clock.NewEngine(addressesRegistry.Synchronize, watch, time.Hour /* TODO extract */, 1, 0)
-	host, err := p2p2.NewHost(port, settings, blockchain, neighborhood, transactionsPool, utxosRegistry)
+	host, err := api.NewHost(port, settings, blockchain, neighborhood, transactionsPool, utxosRegistry)
 	if err != nil {
 		return nil, err
 	}
@@ -105,11 +109,28 @@ func createNeighborhood(seedsPath string, hostIp string, port int, settings *con
 	}
 	ipFinder := net.NewIpFinderImplementation(logger)
 	if hostIp == "" {
-		hostIp, err = ipFinder.FindHostPublicIp()
+		hostIp, err = findHostPublicIp(logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find the public IP: %w", err)
 		}
 	}
-	neighborFactory := p2p2.NewNeighborFactory(ipFinder, settings.ValidationTimeout())
+	neighborFactory := p2p2.NewNeighborFactory(ipFinder, settings.ValidationTimeout(), console.NewLogger(console.Fatal))
 	return network.NewNeighborhood(neighborFactory, hostIp, strconv.Itoa(port), settings.MaxOutboundsCount(), scoresBySeedTargetValue, watch), nil
+}
+
+func findHostPublicIp(logger *console.Logger) (string, error) {
+	resp, err := http.Get("https://ifconfig.me")
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		if bodyCloseError := resp.Body.Close(); bodyCloseError != nil {
+			logger.Error(fmt.Errorf("failed to close public IP request body: %w", bodyCloseError).Error())
+		}
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
 }

@@ -1,14 +1,6 @@
 package presentation
 
-const (
-	BlocksEndpoint              = "blocks"
-	FirstBlockTimestampEndpoint = "first-block-timestamp"
-	SettingsEndpoint            = "settings"
-	TargetsEndpoint             = "targets"
-	TransactionEndpoint         = "transaction"
-	TransactionsEndpoint        = "transactions"
-	UtxosEndpoint               = "utxos"
-)
+import "github.com/my-cloud/ruthenium/validatornode/infrastructure/p2p"
 
 type Node struct {
 	server  Server
@@ -16,13 +8,13 @@ type Node struct {
 }
 
 func NewNode(server Server, engines ...Pulser) *Node {
-	server.SetHandleBlocksRequest(BlocksEndpoint)
-	server.SetHandleFirstBlockTimestampRequest(FirstBlockTimestampEndpoint)
-	server.SetHandleSettingsRequest(SettingsEndpoint)
-	server.SetHandleTargetsRequest(TargetsEndpoint)
-	server.SetHandleTransactionRequest(TransactionEndpoint)
-	server.SetHandleTransactionsRequest(TransactionsEndpoint)
-	server.SetHandleUtxosRequest(UtxosEndpoint)
+	server.SetHandleBlocksRequest(p2p.BlocksEndpoint)
+	server.SetHandleFirstBlockTimestampRequest(p2p.FirstBlockTimestampEndpoint)
+	server.SetHandleSettingsRequest(p2p.SettingsEndpoint)
+	server.SetHandleTargetsRequest(p2p.TargetsEndpoint)
+	server.SetHandleTransactionRequest(p2p.TransactionEndpoint)
+	server.SetHandleTransactionsRequest(p2p.TransactionsEndpoint)
+	server.SetHandleUtxosRequest(p2p.UtxosEndpoint)
 	return &Node{server, engines}
 }
 

@@ -8,7 +8,16 @@ import (
 
 	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
-	"github.com/my-cloud/ruthenium/validatornode/presentation"
+)
+
+const (
+	BlocksEndpoint              = "blocks"
+	FirstBlockTimestampEndpoint = "first-block-timestamp"
+	SettingsEndpoint            = "settings"
+	TargetsEndpoint             = "targets"
+	TransactionEndpoint         = "transaction"
+	TransactionsEndpoint        = "transactions"
+	UtxosEndpoint               = "utxos"
 )
 
 type Neighbor struct {
@@ -36,11 +45,11 @@ func (neighbor *Neighbor) Target() string {
 }
 
 func (neighbor *Neighbor) GetBlocks(startingBlockHeight uint64) ([]byte, error) {
-	return neighbor.sendRequest(presentation.BlocksEndpoint, startingBlockHeight)
+	return neighbor.sendRequest(BlocksEndpoint, startingBlockHeight)
 }
 
 func (neighbor *Neighbor) GetFirstBlockTimestamp() (int64, error) {
-	res, err := neighbor.sendRequestBytes(presentation.FirstBlockTimestampEndpoint, []byte{})
+	res, err := neighbor.sendRequestBytes(FirstBlockTimestampEndpoint, []byte{})
 	var timestamp int64
 	if err != nil {
 		return timestamp, err
@@ -53,25 +62,25 @@ func (neighbor *Neighbor) GetFirstBlockTimestamp() (int64, error) {
 }
 
 func (neighbor *Neighbor) GetSettings() ([]byte, error) {
-	return neighbor.sendRequest(presentation.SettingsEndpoint, []byte{})
+	return neighbor.sendRequest(SettingsEndpoint, []byte{})
 }
 
 func (neighbor *Neighbor) SendTargets(targets []string) error {
-	_, err := neighbor.sendRequest(presentation.TargetsEndpoint, targets)
+	_, err := neighbor.sendRequest(TargetsEndpoint, targets)
 	return err
 }
 
 func (neighbor *Neighbor) AddTransaction(transaction []byte) error {
-	_, err := neighbor.sendRequestBytes(presentation.TransactionEndpoint, transaction)
+	_, err := neighbor.sendRequestBytes(TransactionEndpoint, transaction)
 	return err
 }
 
 func (neighbor *Neighbor) GetTransactions() ([]byte, error) {
-	return neighbor.sendRequestBytes(presentation.TransactionsEndpoint, []byte{})
+	return neighbor.sendRequestBytes(TransactionsEndpoint, []byte{})
 }
 
 func (neighbor *Neighbor) GetUtxos(address string) ([]byte, error) {
-	return neighbor.sendRequest(presentation.UtxosEndpoint, address)
+	return neighbor.sendRequest(UtxosEndpoint, address)
 }
 
 func (neighbor *Neighbor) sendRequest(topic string, request interface{}) ([]byte, error) {

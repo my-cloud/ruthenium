@@ -12,8 +12,7 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/config"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/environment"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
-	"github.com/my-cloud/ruthenium/validatornode/presentation/p2p"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/p2p"
 )
 
 func main() {
@@ -25,9 +24,10 @@ func main() {
 
 	flag.Parse()
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
-	ipFinder := net.NewIpFinderImplementation(logger)
-	neighborFactory := p2p.NewNeighborFactory(ipFinder, time.Minute)
-	validatorNeighbor, err := neighborFactory.CreateSender(*validatorIp, strconv.Itoa(*validatorPort))
+	// ipFinder := net.NewIpFinderImplementation(logger)
+	// neighborFactory := p2p.NewNeighborFactory(ipFinder, time.Minute)
+	// validatorNeighbor, err := neighborFactory.CreateSender(*validatorIp, strconv.Itoa(*validatorPort))
+	validatorNeighbor, err := p2p.NewNeighbor(*validatorIp, strconv.Itoa(*validatorPort), time.Minute, console.NewLogger(console.Fatal))
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
 	}

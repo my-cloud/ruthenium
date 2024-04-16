@@ -4,15 +4,16 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
 func Test_CreateSender_IpFinderError_ReturnsNil(t *testing.T) {
 	// Arrange
-	ipFinder := new(net.IpFinderMock)
+	ipFinder := new(IpFinderMock)
 	ipFinder.LookupIPFunc = func(string) (string, error) { return "", errors.New("") }
-	neighborFactory := NewNeighborFactory(ipFinder, 0)
+	logger := log.NewLoggerMock()
+	neighborFactory := NewNeighborFactory(ipFinder, 0, logger)
 
 	// Act
 	client, _ := neighborFactory.CreateSender("", "0")
@@ -23,9 +24,10 @@ func Test_CreateSender_IpFinderError_ReturnsNil(t *testing.T) {
 
 func Test_CreateSender_ValidIp_ReturnsClient(t *testing.T) {
 	// Arrange
-	ipFinder := new(net.IpFinderMock)
+	ipFinder := new(IpFinderMock)
 	ipFinder.LookupIPFunc = func(string) (string, error) { return "", nil }
-	neighborFactory := NewNeighborFactory(ipFinder, 0)
+	logger := log.NewLoggerMock()
+	neighborFactory := NewNeighborFactory(ipFinder, 0, logger)
 
 	// Act
 	client, _ := neighborFactory.CreateSender("", "0")

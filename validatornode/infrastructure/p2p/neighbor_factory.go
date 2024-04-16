@@ -5,17 +5,17 @@ import (
 	"time"
 
 	"github.com/my-cloud/ruthenium/validatornode/application/network"
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 )
 
 type NeighborFactory struct {
-	ipFinder          net.IpFinder
+	ipFinder          IpFinder
 	connectionTimeout time.Duration
+	logger            log.Logger
 }
 
-func NewNeighborFactory(ipFinder net.IpFinder, connectionTimeout time.Duration) *NeighborFactory {
-	return &NeighborFactory{ipFinder, connectionTimeout}
+func NewNeighborFactory(ipFinder IpFinder, connectionTimeout time.Duration, logger log.Logger) *NeighborFactory {
+	return &NeighborFactory{ipFinder, connectionTimeout, logger}
 }
 
 func (factory *NeighborFactory) CreateSender(ip string, port string) (network.Sender, error) {
@@ -23,7 +23,7 @@ func (factory *NeighborFactory) CreateSender(ip string, port string) (network.Se
 	if err != nil {
 		return nil, fmt.Errorf("failed to look up IP on addresse %s: %w", ip, err)
 	}
-	neighbor, err := NewNeighbor(lookedUpIp, port, factory.connectionTimeout, console.NewLogger(console.Fatal))
+	neighbor, err := NewNeighbor(lookedUpIp, port, factory.connectionTimeout, factory.logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create neighbor for address %s: %w", ip, err)
 	}

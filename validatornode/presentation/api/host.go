@@ -1,4 +1,4 @@
-package p2p
+package api
 
 import (
 	"fmt"
@@ -14,7 +14,11 @@ import (
 
 type Host struct {
 	*gp2p.Server
-	handler *Handler
+	blocksController       *BlocksController
+	sendersController      *SendersController
+	settingsController     *SettingsController
+	transactionsController *TransactionsController
+	utxosController        *UtxosController
 }
 
 func NewHost(port int,
@@ -32,34 +36,38 @@ func NewHost(port int,
 	serverSettings := gp2p.NewServerSettings()
 	serverSettings.SetConnTimeout(settings.ValidationTimeout())
 	server.SetSettings(serverSettings)
-	handler := NewHandler(blocksManager, settings.Bytes(), sendersManager, transactionsManager, utxosManager)
-	return &Host{server, handler}, err
+	blocksController := NewBlocksController(blocksManager)
+	sendersController := NewSendersController(sendersManager)
+	settingsController := NewSettingsController(settings.Bytes())
+	transactionsController := NewTransactionsController(sendersManager, transactionsManager)
+	utxosController := NewUtxosController(utxosManager)
+	return &Host{server, blocksController, sendersController, settingsController, transactionsController, utxosController}, err
 }
 
 func (host *Host) SetHandleBlocksRequest(endpoint string) {
-	host.SetHandle(endpoint, host.handler.HandleBlocksRequest)
+	host.SetHandle(endpoint, host.blocksController.HandleBlocksRequest)
 }
 
 func (host *Host) SetHandleFirstBlockTimestampRequest(endpoint string) {
-	host.SetHandle(endpoint, host.handler.HandleFirstBlockTimestampRequest)
+	host.SetHandle(endpoint, host.blocksController.HandleFirstBlockTimestampRequest)
 }
 
 func (host *Host) SetHandleSettingsRequest(endpoint string) {
-	host.SetHandle(endpoint, host.handler.HandleSettingsRequest)
+	host.SetHandle(endpoint, host.settingsController.HandleSettingsRequest)
 }
 
 func (host *Host) SetHandleTargetsRequest(endpoint string) {
-	host.SetHandle(endpoint, host.handler.HandleTargetsRequest)
+	host.SetHandle(endpoint, host.sendersController.HandleTargetsRequest)
 }
 
 func (host *Host) SetHandleTransactionRequest(endpoint string) {
-	host.SetHandle(endpoint, host.handler.HandleTransactionRequest)
+	host.SetHandle(endpoint, host.transactionsController.HandleTransactionRequest)
 }
 
 func (host *Host) SetHandleTransactionsRequest(endpoint string) {
-	host.SetHandle(endpoint, host.handler.HandleTransactionsRequest)
+	host.SetHandle(endpoint, host.transactionsController.HandleTransactionsRequest)
 }
 
 func (host *Host) SetHandleUtxosRequest(endpoint string) {
-	host.SetHandle(endpoint, host.handler.HandleUtxosRequest)
+	host.SetHandle(endpoint, host.utxosController.HandleUtxosRequest)
 }
