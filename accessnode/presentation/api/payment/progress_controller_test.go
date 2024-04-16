@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/accessnode/presentation/transaction/output/progress"
 	"github.com/my-cloud/ruthenium/validatornode/application"
 	"net/http"
 	"net/http/httptest"
@@ -20,7 +19,7 @@ import (
 func Test_GetTransactionProgress_UndecipherableUtxo_BadRequest(t *testing.T) {
 	// Arrange
 	senderMock := new(application.SenderMock)
-	settings := new(progress.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	watchMock := new(application.TimeProviderMock)
 	logger := log.NewLoggerMock()
@@ -47,7 +46,7 @@ func Test_GetTransactionProgress_GetUtxosError_ReturnsInternalServerError(t *tes
 	senderMock := new(application.SenderMock)
 	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(application.TimeProviderMock)
-	settings := new(progress.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
@@ -75,7 +74,7 @@ func Test_GetTransactionProgress_GetFirstBlockTimestampError_ReturnsInternalServ
 	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
 	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(progress.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
@@ -104,7 +103,7 @@ func Test_GetTransactionProgress_GetBlocksError_ReturnsInternalServerError(t *te
 	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(progress.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
@@ -136,7 +135,7 @@ func Test_GetTransactionProgress_GetTransactionsError_ReturnsInternalServerError
 	senderMock.GetTransactionsFunc = func() ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(progress.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
@@ -168,7 +167,7 @@ func Test_GetTransactionProgress_TransactionNotFound_ReturnsRejected(t *testing.
 	senderMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledEmptyArray, nil }
 	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(progress.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
@@ -207,7 +206,7 @@ func Test_GetTransactionProgress_UtxoFound_ReturnsConfirmed(t *testing.T) {
 	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(progress.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
@@ -245,7 +244,7 @@ func Test_GetTransactionProgress_ValidatedTransactionFound_ReturnsValidated(t *t
 	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) { return marshalledBlocks, nil }
 	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(progress.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
@@ -288,7 +287,7 @@ func Test_GetTransactionProgress_PendingTransactionFound_ReturnsSent(t *testing.
 	senderMock.GetTransactionsFunc = func() ([]byte, error) { return marshalledTransactions, nil }
 	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(progress.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()

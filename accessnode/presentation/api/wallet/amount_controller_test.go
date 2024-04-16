@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/my-cloud/ruthenium/accessnode/presentation/wallet"
 	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
@@ -21,7 +20,7 @@ func Test_GetWalletAmount_InvalidAddress_ReturnsBadRequest(t *testing.T) {
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
 	watchMock := new(application.TimeProviderMock)
-	settings := new(wallet.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -44,7 +43,7 @@ func Test_GetWalletAmount_GetUtxosError_ReturnsInternalServerError(t *testing.T)
 	senderMock := new(application.SenderMock)
 	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(application.TimeProviderMock)
-	settings := new(wallet.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -71,7 +70,7 @@ func Test_GetWalletAmount_ValidRequest_ReturnsAmount(t *testing.T) {
 	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(wallet.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }

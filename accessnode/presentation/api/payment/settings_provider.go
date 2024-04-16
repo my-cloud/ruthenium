@@ -1,4 +1,4 @@
-package info
+package payment
 
 type SettingsProvider interface {
 	HalfLifeInNanoseconds() float64

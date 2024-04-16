@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/my-cloud/ruthenium/accessnode/presentation/transaction/info"
 	"github.com/my-cloud/ruthenium/validatornode/application"
 	"net/http"
 	"net/http/httptest"
@@ -21,7 +20,7 @@ func Test_GetTransactionInfo_InvalidAddress_ReturnsBadRequest(t *testing.T) {
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
 	watchMock := new(application.TimeProviderMock)
-	settings := new(info.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -44,7 +43,7 @@ func Test_GetTransactionInfo_InvalidValue_ReturnsBadRequest(t *testing.T) {
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
 	watchMock := new(application.TimeProviderMock)
-	settings := new(info.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -67,7 +66,7 @@ func Test_GetTransactionInfo_IsRegisteredNotProvided_ReturnsBadRequest(t *testin
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
 	watchMock := new(application.TimeProviderMock)
-	settings := new(info.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -91,7 +90,7 @@ func Test_GetTransactionInfo_GetUtxosError_ReturnsInternalServerError(t *testing
 	senderMock := new(application.SenderMock)
 	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return nil, errors.New("") }
 	watchMock := new(application.TimeProviderMock)
-	settings := new(info.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -119,7 +118,7 @@ func Test_GetTransactionInfo_GetFirstBlockTimestampError_ReturnsInternalServerEr
 	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, errors.New("") }
 	watchMock := new(application.TimeProviderMock)
-	settings := new(info.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -148,7 +147,7 @@ func Test_GetTransactionInfo_InsufficientWalletBalance_ReturnsMethodNotAllowed(t
 	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(info.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -190,7 +189,7 @@ func Test_GetTransactionInfo_ConsolidationNotRequiredAndOneUtxoIsGreater_Returns
 	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(info.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -237,7 +236,7 @@ func Test_GetTransactionInfo_ConsolidationNotRequiredAndNoUtxoIsGreater_ReturnsS
 	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(info.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
@@ -280,7 +279,7 @@ func Test_GetTransactionInfo_ConsolidationRequired_ReturnsAllUtxos(t *testing.T)
 	senderMock.GetFirstBlockTimestampFunc = func() (int64, error) { return 0, nil }
 	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }
-	settings := new(info.SettingsProviderMock)
+	settings := new(SettingsProviderMock)
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }

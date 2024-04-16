@@ -3,7 +3,6 @@ package payment
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/accessnode/presentation/transaction/info"
 	"github.com/my-cloud/ruthenium/validatornode/application"
 	"math"
 	"net/http"
@@ -16,12 +15,12 @@ import (
 
 type InfoController struct {
 	sender   application.Sender
-	settings info.SettingsProvider
+	settings SettingsProvider
 	watch    application.TimeProvider
 	logger   log.Logger
 }
 
-func NewInfoController(sender application.Sender, settings info.SettingsProvider, watch application.TimeProvider, logger log.Logger) *InfoController {
+func NewInfoController(sender application.Sender, settings SettingsProvider, watch application.TimeProvider, logger log.Logger) *InfoController {
 	return &InfoController{sender, settings, watch, logger}
 }
 

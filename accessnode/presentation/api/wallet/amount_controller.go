@@ -7,19 +7,18 @@ import (
 	"net/http"
 
 	"github.com/my-cloud/ruthenium/accessnode/infrastructure/io"
-	"github.com/my-cloud/ruthenium/accessnode/presentation/wallet"
 	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 )
 
 type AmountController struct {
 	sender   application.Sender
-	settings wallet.SettingsProvider
+	settings SettingsProvider
 	watch    application.TimeProvider
 	logger   log.Logger
 }
 
-func NewAmountController(sender application.Sender, settings wallet.SettingsProvider, watch application.TimeProvider, logger log.Logger) *AmountController {
+func NewAmountController(sender application.Sender, settings SettingsProvider, watch application.TimeProvider, logger log.Logger) *AmountController {
 	return &AmountController{sender, settings, watch, logger}
 }
 

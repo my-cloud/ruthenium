@@ -3,7 +3,6 @@ package payment
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/my-cloud/ruthenium/accessnode/presentation/transaction/output/progress"
 	"github.com/my-cloud/ruthenium/validatornode/application"
 	"net/http"
 
@@ -14,12 +13,12 @@ import (
 
 type ProgressController struct {
 	sender   application.Sender
-	settings progress.SettingsProvider
+	settings SettingsProvider
 	watch    application.TimeProvider
 	logger   log.Logger
 }
 
-func NewProgressController(sender application.Sender, settings progress.SettingsProvider, watch application.TimeProvider, logger log.Logger) *ProgressController {
+func NewProgressController(sender application.Sender, settings SettingsProvider, watch application.TimeProvider, logger log.Logger) *ProgressController {
 	return &ProgressController{sender, settings, watch, logger}
 }
 
