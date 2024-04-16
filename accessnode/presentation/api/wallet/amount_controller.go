@@ -24,23 +24,27 @@ func NewAmountController(sender application.Sender, settings wallet.SettingsProv
 }
 
 func (controller *AmountController) GetWalletAmount(writer http.ResponseWriter, req *http.Request) {
+	response := io.NewResponse(writer, controller.logger)
 	address := req.URL.Query().Get("address")
 	if address == "" {
-		controller.logger.Error("address is missing in amount request")
-		writer.WriteHeader(http.StatusBadRequest)
+		errorMessage := "address is missing in amount request"
+		controller.logger.Error(errorMessage)
+		response.Write(http.StatusBadRequest, errorMessage)
 		return
 	}
 	utxosBytes, err := controller.sender.GetUtxos(address)
 	if err != nil {
-		controller.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())
-		writer.WriteHeader(http.StatusInternalServerError)
+		errorMessage := "failed to get UTXOs"
+		controller.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
+		response.Write(http.StatusInternalServerError, errorMessage)
 		return
 	}
 	var utxos []*protocol.Utxo
 	err = json.Unmarshal(utxosBytes, &utxos)
 	if err != nil {
-		controller.logger.Error(fmt.Errorf("failed to unmarshal UTXOs: %w", err).Error())
-		writer.WriteHeader(http.StatusInternalServerError)
+		errorMessage := "failed to unmarshal UTXOs"
+		controller.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
+		response.Write(http.StatusInternalServerError, errorMessage)
 		return
 	}
 	var balance uint64
@@ -48,13 +52,6 @@ func (controller *AmountController) GetWalletAmount(writer http.ResponseWriter, 
 		now := controller.watch.Now().UnixNano()
 		balance += utxo.Value(now, controller.settings.HalfLifeInNanoseconds(), controller.settings.IncomeBase(), controller.settings.IncomeLimit())
 	}
-	marshaledAmount, err := json.Marshal(float64(balance) / float64(controller.settings.SmallestUnitsPerCoin()))
-	if err != nil {
-		controller.logger.Error(fmt.Errorf("failed to marshal amount: %w", err).Error())
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	writer.Header().Add("Content-Type", "application/json")
-	writer.WriteHeader(http.StatusOK)
-	io.NewIoWriter(writer, controller.logger).Write(string(marshaledAmount[:]))
+	amount := float64(balance) / float64(controller.settings.SmallestUnitsPerCoin())
+	response.WriteJson(http.StatusOK, amount)
 }

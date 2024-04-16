@@ -2,7 +2,6 @@ package payment
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/my-cloud/ruthenium/accessnode/presentation/transaction/info"
 	"github.com/my-cloud/ruthenium/validatornode/application"
@@ -27,13 +26,12 @@ func NewInfoController(sender application.Sender, settings info.SettingsProvider
 }
 
 func (controller *InfoController) GetTransactionInfo(writer http.ResponseWriter, req *http.Request) {
-	jsonWriter := io.NewIoWriter(writer, controller.logger)
+	response := io.NewResponse(writer, controller.logger)
 	address := req.URL.Query().Get("address")
 	if address == "" {
 		errorMessage := "address is missing in amount request"
 		controller.logger.Error(errorMessage)
-		writer.WriteHeader(http.StatusBadRequest)
-		jsonWriter.Write(errorMessage)
+		response.Write(http.StatusBadRequest, errorMessage)
 		return
 	}
 	requestValue := req.URL.Query().Get("value")
@@ -41,8 +39,7 @@ func (controller *InfoController) GetTransactionInfo(writer http.ResponseWriter,
 	if err != nil {
 		errorMessage := "failed to parse transaction value"
 		controller.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
-		writer.WriteHeader(http.StatusBadRequest)
-		jsonWriter.Write(errorMessage)
+		response.Write(http.StatusBadRequest, errorMessage)
 		return
 	}
 	requestConsolidation := req.URL.Query().Get("consolidation")
@@ -50,27 +47,29 @@ func (controller *InfoController) GetTransactionInfo(writer http.ResponseWriter,
 	if err != nil {
 		errorMessage := "failed to parse consolidation value"
 		controller.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
-		writer.WriteHeader(http.StatusBadRequest)
-		jsonWriter.Write(errorMessage)
+		response.Write(http.StatusBadRequest, errorMessage)
 		return
 	}
 	utxosBytes, err := controller.sender.GetUtxos(address)
 	if err != nil {
-		controller.logger.Error(fmt.Errorf("failed to get UTXOs: %w", err).Error())
-		writer.WriteHeader(http.StatusInternalServerError)
+		errorMessage := "failed to get UTXOs"
+		controller.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
+		response.Write(http.StatusInternalServerError, errorMessage)
 		return
 	}
 	var utxos []*protocol.Utxo
 	err = json.Unmarshal(utxosBytes, &utxos)
 	if err != nil {
-		controller.logger.Error(fmt.Errorf("failed to unmarshal UTXOs: %w", err).Error())
-		writer.WriteHeader(http.StatusInternalServerError)
+		errorMessage := "failed to unmarshal UTXOs"
+		controller.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
+		response.Write(http.StatusInternalServerError, errorMessage)
 		return
 	}
 	genesisTimestamp, err := controller.sender.GetFirstBlockTimestamp()
 	if err != nil {
-		controller.logger.Error(fmt.Errorf("failed to get genesis timestamp: %w", err).Error())
-		writer.WriteHeader(http.StatusInternalServerError)
+		errorMessage := "failed to get genesis timestamp"
+		controller.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
+		response.Write(http.StatusInternalServerError, errorMessage)
 		return
 	}
 	var selectedInputs []*protocol.InputInfo
@@ -99,9 +98,8 @@ func (controller *InfoController) GetTransactionInfo(writer http.ResponseWriter,
 	targetValue := value + controller.settings.MinimalTransactionFee()
 	if walletBalance < targetValue {
 		errorMessage := "insufficient wallet balance"
-		controller.logger.Error(errors.New(errorMessage).Error())
-		writer.WriteHeader(http.StatusMethodNotAllowed)
-		jsonWriter.Write(errorMessage)
+		controller.logger.Error(errorMessage)
+		response.Write(http.StatusMethodNotAllowed, errorMessage)
 		return
 	}
 
@@ -126,20 +124,12 @@ func (controller *InfoController) GetTransactionInfo(writer http.ResponseWriter,
 		}
 	}
 	rest := inputsValue - targetValue
-	response := &TransactionInfo{
+	transactionInfo := &TransactionInfo{
 		Rest:      rest,
 		Inputs:    selectedInputs,
 		Timestamp: now,
 	}
-	marshaledResponse, err := json.Marshal(response)
-	if err != nil {
-		controller.logger.Error(fmt.Errorf("failed to marshal amount: %w", err).Error())
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	writer.Header().Add("Content-Type", "application/json")
-	writer.WriteHeader(http.StatusOK)
-	io.NewIoWriter(writer, controller.logger).Write(string(marshaledResponse[:]))
+	response.WriteJson(http.StatusOK, transactionInfo)
 }
 
 func findClosestValueIndex(target uint64, values []uint64) int {

@@ -19,13 +19,14 @@ func NewTransactionsController(sender application.Sender, logger log.Logger) *Tr
 }
 
 func (controller *TransactionsController) GetTransactions(writer http.ResponseWriter, req *http.Request) {
+	response := io.NewResponse(writer, controller.logger)
 	transactions, err := controller.sender.GetTransactions()
 	if err != nil {
-		controller.logger.Error(fmt.Errorf("failed to get transactions: %w", err).Error())
-		writer.WriteHeader(http.StatusInternalServerError)
+		errorMessage := "failed to get transactions"
+		controller.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
+		response.Write(http.StatusInternalServerError, errorMessage)
 		return
 	}
 	writer.Header().Add("Content-Type", "application/json")
-	writer.WriteHeader(http.StatusOK)
-	io.NewIoWriter(writer, controller.logger).Write(string(transactions[:]))
+	response.Write(http.StatusOK, string(transactions[:]))
 }
