@@ -8,14 +8,14 @@ import (
 
 	gp2p "github.com/leprosus/golang-p2p"
 
-	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
 func Test_HandleUtxosRequest_ValidUtxosRequest_UtxosByAddressCalled(t *testing.T) {
 	// Arrange
 	utxosManagerMock := new(application.UtxosManagerMock)
-	utxosManagerMock.UtxosFunc = func(string) []*protocol.Utxo { return nil }
+	utxosManagerMock.UtxosFunc = func(string) []*ledger.Utxo { return nil }
 	controller := NewUtxosController(utxosManagerMock)
 	address := "address"
 	marshalledAddress, _ := json.Marshal(&address)

@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/my-cloud/ruthenium/accessnode/infrastructure/io"
-	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 )
 
@@ -38,7 +38,7 @@ func (controller *AmountController) GetWalletAmount(writer http.ResponseWriter, 
 		response.Write(http.StatusInternalServerError, errorMessage)
 		return
 	}
-	var utxos []*protocol.Utxo
+	var utxos []*ledger.Utxo
 	err = json.Unmarshal(utxosBytes, &utxos)
 	if err != nil {
 		errorMessage := "failed to unmarshal UTXOs"

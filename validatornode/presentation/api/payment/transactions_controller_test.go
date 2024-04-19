@@ -9,7 +9,7 @@ import (
 
 	gp2p "github.com/leprosus/golang-p2p"
 
-	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
@@ -17,12 +17,12 @@ func Test_HandleTransactionRequest_AddValidTransaction_AddTransactionCalled(t *t
 	// Arrange
 	waitGroup := sync.WaitGroup{}
 	transactionsManagerMock := new(application.TransactionsManagerMock)
-	transactionsManagerMock.AddTransactionFunc = func(*protocol.Transaction, string, string) { waitGroup.Done() }
+	transactionsManagerMock.AddTransactionFunc = func(*ledger.Transaction, string, string) { waitGroup.Done() }
 	sendersManagerMock := new(application.SendersManagerMock)
 	sendersManagerMock.HostTargetFunc = func() string { return "" }
 	controller := NewTransactionsController(sendersManagerMock, transactionsManagerMock)
 	req := gp2p.Data{}
-	transaction, _ := protocol.NewRewardTransaction("", false, 0, 0)
+	transaction, _ := ledger.NewRewardTransaction("", false, 0, 0)
 	transactionBytes, _ := json.Marshal(transaction)
 	req.SetBytes(transactionBytes)
 	waitGroup.Add(1)
@@ -56,7 +56,7 @@ func Test_HandleTransactionRequest_AddInvalidValidTransaction_AddTransactionNotC
 func Test_HandleTransactionsRequest_ValidTransactionsRequest_TransactionsCalled(t *testing.T) {
 	// Arrange
 	transactionsManagerMock := new(application.TransactionsManagerMock)
-	transactionsManagerMock.TransactionsFunc = func() []*protocol.Transaction { return nil }
+	transactionsManagerMock.TransactionsFunc = func() []*ledger.Transaction { return nil }
 	controller := NewTransactionsController(nil, transactionsManagerMock)
 	req := gp2p.Data{}
 

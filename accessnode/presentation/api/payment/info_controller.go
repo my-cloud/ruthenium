@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/my-cloud/ruthenium/accessnode/infrastructure/io"
-	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 )
 
@@ -56,7 +56,7 @@ func (controller *InfoController) GetTransactionInfo(writer http.ResponseWriter,
 		response.Write(http.StatusInternalServerError, errorMessage)
 		return
 	}
-	var utxos []*protocol.Utxo
+	var utxos []*ledger.Utxo
 	err = json.Unmarshal(utxosBytes, &utxos)
 	if err != nil {
 		errorMessage := "failed to unmarshal UTXOs"
@@ -71,11 +71,11 @@ func (controller *InfoController) GetTransactionInfo(writer http.ResponseWriter,
 		response.Write(http.StatusInternalServerError, errorMessage)
 		return
 	}
-	var selectedInputs []*protocol.InputInfo
+	var selectedInputs []*ledger.InputInfo
 	now := controller.watch.Now().UnixNano()
 	nextBlockHeight := (now-genesisTimestamp)/controller.settings.ValidationTimestamp() + 1
 	nextBlockTimestamp := genesisTimestamp + nextBlockHeight*controller.settings.ValidationTimestamp()
-	utxosByValue := make(map[uint64][]*protocol.InputInfo)
+	utxosByValue := make(map[uint64][]*ledger.InputInfo)
 	var walletBalance uint64
 	var values []uint64
 	for _, utxo := range utxos {
@@ -111,7 +111,7 @@ func (controller *InfoController) GetTransactionInfo(writer http.ResponseWriter,
 			closestValue := values[closestValueIndex]
 			if closestValue > targetValue {
 				inputsValue = closestValue
-				selectedInputs = []*protocol.InputInfo{utxosByValue[closestValue][0]}
+				selectedInputs = []*ledger.InputInfo{utxosByValue[closestValue][0]}
 				break
 			}
 			values = append(values[:closestValueIndex], values[closestValueIndex+1:]...)

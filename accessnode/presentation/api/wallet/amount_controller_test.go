@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
@@ -66,7 +66,7 @@ func Test_GetWalletAmount_ValidRequest_ReturnsAmount(t *testing.T) {
 	// Arrange
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
-	marshalledEmptyUtxos, _ := json.Marshal([]*protocol.Utxo{})
+	marshalledEmptyUtxos, _ := json.Marshal([]*ledger.Utxo{})
 	senderMock.GetUtxosFunc = func(string) ([]byte, error) { return marshalledEmptyUtxos, nil }
 	watchMock := new(application.TimeProviderMock)
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, 0) }

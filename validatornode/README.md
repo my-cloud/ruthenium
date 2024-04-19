@@ -61,17 +61,6 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 * **response value:** *none*
 </details>
 
-### Configuration
-<details>
-<summary><b>Get settings</b></summary>
-
-![/settings](https://img.shields.io/badge//settings-dimgray?style=flat-square)
-
-*Description:* Get node settings.
-* **request value:** [settings](#settings)
-* **response value:** *none*
-</details>
-
 ### Payment
 <details>
 <summary><b>Add transaction</b></summary>
@@ -90,6 +79,17 @@ Each request value or response value shall be marshaled to bytes or un-marshaled
 *Description:* Get all the transactions of the current transactions pool.
 * **request value:** *none*
 * **response value:** Array of [transactions](#transaction)
+</details>
+
+### Protocol
+<details>
+<summary><b>Get settings</b></summary>
+
+![/settings](https://img.shields.io/badge//settings-dimgray?style=flat-square)
+
+*Description:* Get protocol settings.
+* **request value:** [settings](#settings)
+* **response value:** *none*
 </details>
 
 ### Wallet

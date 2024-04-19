@@ -8,7 +8,7 @@ import (
 
 	gp2p "github.com/leprosus/golang-p2p"
 
-	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
@@ -30,7 +30,7 @@ func Test_HandleFirstBlockTimestampRequest_ValidRequest_FirstBlockTimestampCalle
 func Test_HandleBlocksRequest_ValidBlocksRequest_LastBlocksCalled(t *testing.T) {
 	// Arrange
 	blocksManagerMock := new(application.BlocksManagerMock)
-	blocksManagerMock.BlocksFunc = func(uint64) []*protocol.Block { return nil }
+	blocksManagerMock.BlocksFunc = func(uint64) []*ledger.Block { return nil }
 	controller := NewBlocksController(blocksManagerMock)
 	var height uint64 = 0
 	marshalledHeight, _ := json.Marshal(&height)

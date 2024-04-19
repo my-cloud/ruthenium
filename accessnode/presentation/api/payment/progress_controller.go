@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/my-cloud/ruthenium/accessnode/infrastructure/io"
-	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 )
 
@@ -25,7 +25,7 @@ func NewProgressController(sender application.Sender, settings SettingsProvider,
 func (controller *ProgressController) GetTransactionProgress(writer http.ResponseWriter, req *http.Request) {
 	response := io.NewResponse(writer, controller.logger)
 	decoder := json.NewDecoder(req.Body)
-	var searchedUtxo *protocol.Utxo
+	var searchedUtxo *ledger.Utxo
 	err := decoder.Decode(&searchedUtxo)
 	if err != nil {
 		errorMessage := "failed to decode utxo"
@@ -40,7 +40,7 @@ func (controller *ProgressController) GetTransactionProgress(writer http.Respons
 		response.Write(http.StatusInternalServerError, errorMessage)
 		return
 	}
-	var utxos []*protocol.Utxo
+	var utxos []*ledger.Utxo
 	err = json.Unmarshal(utxosBytes, &utxos)
 	if err != nil {
 		errorMessage := "failed to unmarshal UTXOs"
@@ -76,7 +76,7 @@ func (controller *ProgressController) GetTransactionProgress(writer http.Respons
 		response.Write(http.StatusInternalServerError, errorMessage)
 		return
 	}
-	var blocks []*protocol.Block
+	var blocks []*ledger.Block
 	err = json.Unmarshal(blocksBytes, &blocks)
 	if err != nil {
 		errorMessage := "failed to unmarshal blocks"
@@ -104,7 +104,7 @@ func (controller *ProgressController) GetTransactionProgress(writer http.Respons
 		response.Write(http.StatusInternalServerError, errorMessage)
 		return
 	}
-	var transactions []*protocol.Transaction
+	var transactions []*ledger.Transaction
 	err = json.Unmarshal(transactionsBytes, &transactions)
 	if err != nil {
 		errorMessage := "failed to unmarshal transactions"

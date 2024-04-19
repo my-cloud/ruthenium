@@ -7,7 +7,7 @@ import (
 
 	gp2p "github.com/leprosus/golang-p2p"
 
-	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 )
 
 type TransactionsController struct {
@@ -20,7 +20,7 @@ func NewTransactionsController(sendersManager application.SendersManager, transa
 }
 
 func (controller *TransactionsController) HandleTransactionRequest(_ context.Context, req gp2p.Data) (gp2p.Data, error) {
-	var transactionRequest *protocol.TransactionRequest
+	var transactionRequest *ledger.TransactionRequest
 	data := req.GetBytes()
 	res := gp2p.Data{}
 	if err := json.Unmarshal(data, &transactionRequest); err != nil {

@@ -3,7 +3,7 @@ package verification
 import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/validatornode/application"
-	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 	"testing"
 )
@@ -22,7 +22,7 @@ import (
 //	utxosBytes := blockchain.Utxos(genesisValidatorAddress)
 //
 //	// Assert
-//	var utxos []*protocol.Utxo
+//	var utxos []*ledger.Utxo
 //	_ = json.Unmarshal(utxosBytes, &utxos)
 //	test.Assert(t, len(utxos) == 0, "utxos should be empty")
 // }
@@ -40,8 +40,8 @@ import (
 //	registeredAddress := ""
 //	var expectedValue uint64 = 1
 //	var genesisTimestamp int64 = 0
-//	transaction, _ := protocol.NewRewardTransaction(registeredAddress, true, genesisTimestamp+validationInterval, expectedValue)
-//	transactions := []*protocol.Transaction{transaction}
+//	transaction, _ := ledger.NewRewardTransaction(registeredAddress, true, genesisTimestamp+validationInterval, expectedValue)
+//	transactions := []*ledger.Transaction{transaction}
 //	transactionsBytes, _ := json.Marshal(transactions)
 //	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
 //	_ = blockchain.AddBlock(genesisTimestamp+validationInterval, transactionsBytes, []string{registeredAddress})
@@ -51,7 +51,7 @@ import (
 //	utxosBytes := blockchain.Utxos(registeredAddress)
 //
 //	// Assert
-//	var utxos []*protocol.Utxo
+//	var utxos []*ledger.Utxo
 //	_ = json.Unmarshal(utxosBytes, &utxos)
 //	actualValue := utxos[0].Value(genesisTimestamp+2*validationInterval, 1, 1, 1)
 //	test.Assert(t, actualValue == expectedValue, fmt.Sprintf("utxo amount is %d whereas it should be %d", actualValue, expectedValue))
@@ -74,8 +74,8 @@ func Test_Utxos_OneCorrespondingUtxo_ReturnsArrayWithOneUtxo(t *testing.T) {
 	// Arrange
 	registry := NewUtxosRegistry(new(application.SettingsProviderMock))
 	address := ""
-	transaction, _ := protocol.NewRewardTransaction(address, false, 0, 1)
-	_ = registry.UpdateUtxos([]*protocol.Transaction{transaction}, 0)
+	transaction, _ := ledger.NewRewardTransaction(address, false, 0, 1)
+	_ = registry.UpdateUtxos([]*ledger.Transaction{transaction}, 0)
 
 	// Act
 	actualUtxos := registry.Utxos("")

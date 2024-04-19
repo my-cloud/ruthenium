@@ -1,4 +1,4 @@
-package protocol
+package ledger
 
 func NewGenesisBlock(validatorWalletAddress string, genesisValue uint64) *Block {
 	genesisTransaction, _ := NewRewardTransaction(validatorWalletAddress, true, 0, genesisValue)

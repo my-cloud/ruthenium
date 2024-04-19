@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/my-cloud/ruthenium/validatornode/domain/clock"
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/config"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/configuration"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
 )
 
@@ -18,7 +18,7 @@ type Node struct {
 	rooter *gin.Engine
 }
 
-func NewNode(port string, sender application.Sender, settings *config.Settings, templatePath string, watch *clock.Watch, logger *console.Logger) *Node {
+func NewNode(port string, sender application.Sender, settings *configuration.Settings, templatePath string, watch *clock.Watch, logger *console.Logger) *Node {
 	indexController := api.NewIndexController(templatePath, logger)
 	rooter := gin.Default()
 	transactionController := payment.NewTransactionController(sender, logger)

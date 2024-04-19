@@ -4,7 +4,7 @@
 package application
 
 import (
-	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"sync"
 )
 
@@ -18,7 +18,7 @@ var _ UtxosManager = &UtxosManagerMock{}
 //
 //		// make and configure a mocked UtxosManager
 //		mockedUtxosManager := &UtxosManagerMock{
-//			CalculateFeeFunc: func(transaction *protocol.Transaction, timestamp int64) (uint64, error) {
+//			CalculateFeeFunc: func(transaction *ledger.Transaction, timestamp int64) (uint64, error) {
 //				panic("mock out the CalculateFee method")
 //			},
 //			ClearFunc: func()  {
@@ -27,10 +27,10 @@ var _ UtxosManager = &UtxosManagerMock{}
 //			CopyFunc: func() UtxosManager {
 //				panic("mock out the Copy method")
 //			},
-//			UpdateUtxosFunc: func(transactions []*protocol.Transaction, timestamp int64) error {
+//			UpdateUtxosFunc: func(transactions []*ledger.Transaction, timestamp int64) error {
 //				panic("mock out the UpdateUtxos method")
 //			},
-//			UtxosFunc: func(address string) []*protocol.Utxo {
+//			UtxosFunc: func(address string) []*ledger.Utxo {
 //				panic("mock out the Utxos method")
 //			},
 //		}
@@ -41,7 +41,7 @@ var _ UtxosManager = &UtxosManagerMock{}
 //	}
 type UtxosManagerMock struct {
 	// CalculateFeeFunc mocks the CalculateFee method.
-	CalculateFeeFunc func(transaction *protocol.Transaction, timestamp int64) (uint64, error)
+	CalculateFeeFunc func(transaction *ledger.Transaction, timestamp int64) (uint64, error)
 
 	// ClearFunc mocks the Clear method.
 	ClearFunc func()
@@ -50,17 +50,17 @@ type UtxosManagerMock struct {
 	CopyFunc func() UtxosManager
 
 	// UpdateUtxosFunc mocks the UpdateUtxos method.
-	UpdateUtxosFunc func(transactions []*protocol.Transaction, timestamp int64) error
+	UpdateUtxosFunc func(transactions []*ledger.Transaction, timestamp int64) error
 
 	// UtxosFunc mocks the Utxos method.
-	UtxosFunc func(address string) []*protocol.Utxo
+	UtxosFunc func(address string) []*ledger.Utxo
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// CalculateFee holds details about calls to the CalculateFee method.
 		CalculateFee []struct {
 			// Transaction is the transaction argument value.
-			Transaction *protocol.Transaction
+			Transaction *ledger.Transaction
 			// Timestamp is the timestamp argument value.
 			Timestamp int64
 		}
@@ -73,7 +73,7 @@ type UtxosManagerMock struct {
 		// UpdateUtxos holds details about calls to the UpdateUtxos method.
 		UpdateUtxos []struct {
 			// Transactions is the transactions argument value.
-			Transactions []*protocol.Transaction
+			Transactions []*ledger.Transaction
 			// Timestamp is the timestamp argument value.
 			Timestamp int64
 		}
@@ -91,12 +91,12 @@ type UtxosManagerMock struct {
 }
 
 // CalculateFee calls CalculateFeeFunc.
-func (mock *UtxosManagerMock) CalculateFee(transaction *protocol.Transaction, timestamp int64) (uint64, error) {
+func (mock *UtxosManagerMock) CalculateFee(transaction *ledger.Transaction, timestamp int64) (uint64, error) {
 	if mock.CalculateFeeFunc == nil {
 		panic("UtxosManagerMock.CalculateFeeFunc: method is nil but UtxosManager.CalculateFee was just called")
 	}
 	callInfo := struct {
-		Transaction *protocol.Transaction
+		Transaction *ledger.Transaction
 		Timestamp   int64
 	}{
 		Transaction: transaction,
@@ -113,11 +113,11 @@ func (mock *UtxosManagerMock) CalculateFee(transaction *protocol.Transaction, ti
 //
 //	len(mockedUtxosManager.CalculateFeeCalls())
 func (mock *UtxosManagerMock) CalculateFeeCalls() []struct {
-	Transaction *protocol.Transaction
+	Transaction *ledger.Transaction
 	Timestamp   int64
 } {
 	var calls []struct {
-		Transaction *protocol.Transaction
+		Transaction *ledger.Transaction
 		Timestamp   int64
 	}
 	mock.lockCalculateFee.RLock()
@@ -181,12 +181,12 @@ func (mock *UtxosManagerMock) CopyCalls() []struct {
 }
 
 // UpdateUtxos calls UpdateUtxosFunc.
-func (mock *UtxosManagerMock) UpdateUtxos(transactions []*protocol.Transaction, timestamp int64) error {
+func (mock *UtxosManagerMock) UpdateUtxos(transactions []*ledger.Transaction, timestamp int64) error {
 	if mock.UpdateUtxosFunc == nil {
 		panic("UtxosManagerMock.UpdateUtxosFunc: method is nil but UtxosManager.UpdateUtxos was just called")
 	}
 	callInfo := struct {
-		Transactions []*protocol.Transaction
+		Transactions []*ledger.Transaction
 		Timestamp    int64
 	}{
 		Transactions: transactions,
@@ -203,11 +203,11 @@ func (mock *UtxosManagerMock) UpdateUtxos(transactions []*protocol.Transaction, 
 //
 //	len(mockedUtxosManager.UpdateUtxosCalls())
 func (mock *UtxosManagerMock) UpdateUtxosCalls() []struct {
-	Transactions []*protocol.Transaction
+	Transactions []*ledger.Transaction
 	Timestamp    int64
 } {
 	var calls []struct {
-		Transactions []*protocol.Transaction
+		Transactions []*ledger.Transaction
 		Timestamp    int64
 	}
 	mock.lockUpdateUtxos.RLock()
@@ -217,7 +217,7 @@ func (mock *UtxosManagerMock) UpdateUtxosCalls() []struct {
 }
 
 // Utxos calls UtxosFunc.
-func (mock *UtxosManagerMock) Utxos(address string) []*protocol.Utxo {
+func (mock *UtxosManagerMock) Utxos(address string) []*ledger.Utxo {
 	if mock.UtxosFunc == nil {
 		panic("UtxosManagerMock.UtxosFunc: method is nil but UtxosManager.Utxos was just called")
 	}

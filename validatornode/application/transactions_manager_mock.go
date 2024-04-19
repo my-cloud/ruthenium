@@ -4,7 +4,7 @@
 package application
 
 import (
-	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"sync"
 )
 
@@ -18,10 +18,10 @@ var _ TransactionsManager = &TransactionsManagerMock{}
 //
 //		// make and configure a mocked TransactionsManager
 //		mockedTransactionsManager := &TransactionsManagerMock{
-//			AddTransactionFunc: func(transaction *protocol.Transaction, broadcasterTarget string, hostTarget string)  {
+//			AddTransactionFunc: func(transaction *ledger.Transaction, broadcasterTarget string, hostTarget string)  {
 //				panic("mock out the AddTransaction method")
 //			},
-//			TransactionsFunc: func() []*protocol.Transaction {
+//			TransactionsFunc: func() []*ledger.Transaction {
 //				panic("mock out the Transactions method")
 //			},
 //		}
@@ -32,17 +32,17 @@ var _ TransactionsManager = &TransactionsManagerMock{}
 //	}
 type TransactionsManagerMock struct {
 	// AddTransactionFunc mocks the AddTransaction method.
-	AddTransactionFunc func(transaction *protocol.Transaction, broadcasterTarget string, hostTarget string)
+	AddTransactionFunc func(transaction *ledger.Transaction, broadcasterTarget string, hostTarget string)
 
 	// TransactionsFunc mocks the Transactions method.
-	TransactionsFunc func() []*protocol.Transaction
+	TransactionsFunc func() []*ledger.Transaction
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// AddTransaction holds details about calls to the AddTransaction method.
 		AddTransaction []struct {
 			// Transaction is the transaction argument value.
-			Transaction *protocol.Transaction
+			Transaction *ledger.Transaction
 			// BroadcasterTarget is the broadcasterTarget argument value.
 			BroadcasterTarget string
 			// HostTarget is the hostTarget argument value.
@@ -57,12 +57,12 @@ type TransactionsManagerMock struct {
 }
 
 // AddTransaction calls AddTransactionFunc.
-func (mock *TransactionsManagerMock) AddTransaction(transaction *protocol.Transaction, broadcasterTarget string, hostTarget string) {
+func (mock *TransactionsManagerMock) AddTransaction(transaction *ledger.Transaction, broadcasterTarget string, hostTarget string) {
 	if mock.AddTransactionFunc == nil {
 		panic("TransactionsManagerMock.AddTransactionFunc: method is nil but TransactionsManager.AddTransaction was just called")
 	}
 	callInfo := struct {
-		Transaction       *protocol.Transaction
+		Transaction       *ledger.Transaction
 		BroadcasterTarget string
 		HostTarget        string
 	}{
@@ -81,12 +81,12 @@ func (mock *TransactionsManagerMock) AddTransaction(transaction *protocol.Transa
 //
 //	len(mockedTransactionsManager.AddTransactionCalls())
 func (mock *TransactionsManagerMock) AddTransactionCalls() []struct {
-	Transaction       *protocol.Transaction
+	Transaction       *ledger.Transaction
 	BroadcasterTarget string
 	HostTarget        string
 } {
 	var calls []struct {
-		Transaction       *protocol.Transaction
+		Transaction       *ledger.Transaction
 		BroadcasterTarget string
 		HostTarget        string
 	}
@@ -97,7 +97,7 @@ func (mock *TransactionsManagerMock) AddTransactionCalls() []struct {
 }
 
 // Transactions calls TransactionsFunc.
-func (mock *TransactionsManagerMock) Transactions() []*protocol.Transaction {
+func (mock *TransactionsManagerMock) Transactions() []*ledger.Transaction {
 	if mock.TransactionsFunc == nil {
 		panic("TransactionsManagerMock.TransactionsFunc: method is nil but TransactionsManager.Transactions was just called")
 	}

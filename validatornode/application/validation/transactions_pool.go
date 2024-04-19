@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
 )
 
 type TransactionsPool struct {
-	transactions []*protocol.Transaction
+	transactions []*ledger.Transaction
 	mutex        sync.RWMutex
 
 	blocksManager    application.BlocksManager
@@ -37,14 +37,14 @@ func NewTransactionsPool(blocksManager application.BlocksManager, settings appli
 	return pool
 }
 
-func (pool *TransactionsPool) AddTransaction(transaction *protocol.Transaction, broadcasterTarget string, hostTarget string) {
+func (pool *TransactionsPool) AddTransaction(transaction *ledger.Transaction, broadcasterTarget string, hostTarget string) {
 	err := pool.addTransaction(transaction)
 	if err != nil {
 		pool.logger.Debug(fmt.Errorf("failed to add transaction: %w", err).Error())
 		return
 	}
 	pool.sendersManager.Incentive(broadcasterTarget)
-	newTransactionRequest := protocol.NewTransactionRequest(transaction, hostTarget)
+	newTransactionRequest := ledger.NewTransactionRequest(transaction, hostTarget)
 	marshaledTransactionRequest, err := json.Marshal(newTransactionRequest)
 	if err != nil {
 		pool.logger.Debug(fmt.Errorf("failed to marshal transaction request: %w", err).Error())
@@ -58,7 +58,7 @@ func (pool *TransactionsPool) AddTransaction(transaction *protocol.Transaction, 
 	}
 }
 
-func (pool *TransactionsPool) Transactions() []*protocol.Transaction {
+func (pool *TransactionsPool) Transactions() []*ledger.Transaction {
 	return pool.transactions
 }
 
@@ -92,7 +92,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	rand.Shuffle(len(transactions), func(i, j int) {
 		transactions[i], transactions[j] = transactions[j], transactions[i]
 	})
-	var rejectedTransactions []*protocol.Transaction
+	var rejectedTransactions []*ledger.Transaction
 	for _, transaction := range transactions {
 		if timestamp < transaction.Timestamp() {
 			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too far in the future, transaction: %v", transaction))
@@ -115,7 +115,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		if err = utxosManagerCopy.UpdateUtxos([]*protocol.Transaction{transaction}, nextBlockTimestamp); err != nil {
+		if err = utxosManagerCopy.UpdateUtxos([]*ledger.Transaction{transaction}, nextBlockTimestamp); err != nil {
 			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to update UTXOs, transaction: %v\n %w", transaction, err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
@@ -132,7 +132,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			}
 		}
 	}
-	rewardTransaction, err := protocol.NewRewardTransaction(pool.validatorAddress, isYielding, timestamp, reward)
+	rewardTransaction, err := ledger.NewRewardTransaction(pool.validatorAddress, isYielding, timestamp, reward)
 	if err != nil {
 		pool.logger.Error(fmt.Errorf("unable to create block, failed to create reward transaction: %w", err).Error())
 		return
@@ -147,7 +147,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	pool.logger.Debug(fmt.Sprintf("reward: %d", reward))
 }
 
-func (pool *TransactionsPool) addTransaction(transaction *protocol.Transaction) error {
+func (pool *TransactionsPool) addTransaction(transaction *ledger.Transaction) error {
 	lastBlockTimestamp := pool.blocksManager.LastBlockTimestamp()
 	if lastBlockTimestamp == 0 {
 		return errors.New("the blockchain is empty")
@@ -191,7 +191,7 @@ func (pool *TransactionsPool) clear() {
 	pool.transactions = nil
 }
 
-func removeTransaction(transactions []*protocol.Transaction, removedTransaction *protocol.Transaction) []*protocol.Transaction {
+func removeTransaction(transactions []*ledger.Transaction, removedTransaction *ledger.Transaction) []*ledger.Transaction {
 	for i := 0; i < len(transactions); i++ {
 		if transactions[i] == removedTransaction {
 			transactions = append(transactions[:i], transactions[i+1:]...)

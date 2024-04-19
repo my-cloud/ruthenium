@@ -9,7 +9,7 @@ import (
 
 	"github.com/my-cloud/ruthenium/accessnode/presentation"
 	"github.com/my-cloud/ruthenium/validatornode/domain/clock"
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/config"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/configuration"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/environment"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/p2p"
@@ -24,9 +24,6 @@ func main() {
 
 	flag.Parse()
 	logger := console.NewLogger(console.ParseLevel(*logLevel))
-	// ipFinder := net.NewIpFinderImplementation(logger)
-	// neighborFactory := p2p.NewNeighborFactory(ipFinder, time.Minute)
-	// validatorNeighbor, err := neighborFactory.CreateSender(*validatorIp, strconv.Itoa(*validatorPort))
 	validatorNeighbor, err := p2p.NewNeighbor(*validatorIp, strconv.Itoa(*validatorPort), time.Minute, console.NewLogger(console.Fatal))
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
@@ -35,7 +32,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to get settings: %w", err).Error())
 	}
-	var settings *config.Settings
+	var settings *configuration.Settings
 	err = json.Unmarshal(settingsBytes, &settings)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to unmarshal settings: %w", err).Error())

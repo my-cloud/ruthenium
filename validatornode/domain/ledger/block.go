@@ -1,4 +1,4 @@
-package protocol
+package ledger
 
 import (
 	"crypto/sha256"
