@@ -32,7 +32,7 @@ func NewHost(settings *configuration.Settings,
 	tcp := gp2p.NewTCP("0.0.0.0", settings.Port())
 	server, err := gp2p.NewServer(tcp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate host on port %d: %w", port, err)
+		return nil, fmt.Errorf("failed to instantiate host on port %s: %w", port, err)
 	}
 	server.SetLogger(console.NewLogger(console.Fatal))
 	serverSettings := gp2p.NewServerSettings()
