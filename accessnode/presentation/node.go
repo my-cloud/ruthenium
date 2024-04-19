@@ -1,13 +1,11 @@
 package presentation
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/my-cloud/ruthenium/accessnode/presentation/api"
 	"github.com/my-cloud/ruthenium/accessnode/presentation/api/payment"
 	"github.com/my-cloud/ruthenium/accessnode/presentation/api/wallet"
 	"github.com/my-cloud/ruthenium/validatornode/application"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
 	"github.com/my-cloud/ruthenium/validatornode/domain/clock"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/configuration"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
@@ -19,8 +17,8 @@ type Node struct {
 }
 
 func NewNode(port string, sender application.Sender, settings *configuration.Settings, templatePath string, watch *clock.Watch, logger *console.Logger) *Node {
-	indexController := api.NewIndexController(templatePath, logger)
 	rooter := gin.Default()
+	indexController := api.NewIndexController(templatePath, logger)
 	transactionController := payment.NewTransactionController(sender, logger)
 	transactionsController := payment.NewTransactionsController(sender, logger)
 	infoController := payment.NewInfoController(sender, settings, watch, logger)
@@ -38,5 +36,5 @@ func NewNode(port string, sender application.Sender, settings *configuration.Set
 }
 
 func (node *Node) Run() error {
-	return http.ListenAndServe("0.0.0.0:"+node.port, nil)
+	return node.rooter.Run("0.0.0.0:" + node.port)
 }
