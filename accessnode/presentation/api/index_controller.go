@@ -17,7 +17,7 @@ func NewIndexController(templatePath string, logger log.Logger) *IndexController
 	return &IndexController{templatePath, logger}
 }
 
-func (controller *IndexController) GetIndex(writer http.ResponseWriter, req *http.Request) {
+func (controller *IndexController) GetIndex(writer http.ResponseWriter, _ *http.Request) {
 	t, err := template.ParseFiles(controller.templatePath)
 	if err != nil {
 		controller.logger.Error(fmt.Errorf("failed to parse the template: %w", err).Error())

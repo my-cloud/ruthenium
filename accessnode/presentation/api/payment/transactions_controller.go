@@ -18,7 +18,7 @@ func NewTransactionsController(sender application.Sender, logger log.Logger) *Tr
 	return &TransactionsController{sender, logger}
 }
 
-func (controller *TransactionsController) GetTransactions(writer http.ResponseWriter, req *http.Request) {
+func (controller *TransactionsController) GetTransactions(writer http.ResponseWriter, _ *http.Request) {
 	response := io.NewResponse(writer, controller.logger)
 	transactions, err := controller.sender.GetTransactions()
 	if err != nil {

@@ -1,5 +1,13 @@
 package verification
 
+import (
+	"fmt"
+	"github.com/my-cloud/ruthenium/validatornode/application"
+	"github.com/my-cloud/ruthenium/validatornode/domain/protocol"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
+	"testing"
+)
+
 // TODO
 // func Test_UtxosByAddress_UnknownAddress_ReturnsEmptyArray(t *testing.T) {
 //	// Arrange
@@ -48,3 +56,32 @@ package verification
 //	actualValue := utxos[0].Value(genesisTimestamp+2*validationInterval, 1, 1, 1)
 //	test.Assert(t, actualValue == expectedValue, fmt.Sprintf("utxo amount is %d whereas it should be %d", actualValue, expectedValue))
 // }
+
+func Test_Utxos_UnknownAddress_ReturnsEmptyArray(t *testing.T) {
+	// Arrange
+	registry := NewUtxosRegistry(new(application.SettingsProviderMock))
+
+	// Act
+	actualUtxos := registry.Utxos("")
+
+	// Assert
+	actualUtxosLength := len(actualUtxos)
+	expectedUtxosLength := 0
+	test.Assert(t, actualUtxosLength == expectedUtxosLength, fmt.Sprintf("utxos length is %d whereas it should be %d", actualUtxosLength, expectedUtxosLength))
+}
+
+func Test_Utxos_OneCorrespondingUtxo_ReturnsArrayWithOneUtxo(t *testing.T) {
+	// Arrange
+	registry := NewUtxosRegistry(new(application.SettingsProviderMock))
+	address := ""
+	transaction, _ := protocol.NewRewardTransaction(address, false, 0, 1)
+	_ = registry.UpdateUtxos([]*protocol.Transaction{transaction}, 0)
+
+	// Act
+	actualUtxos := registry.Utxos("")
+
+	// Assert
+	actualUtxosLength := len(actualUtxos)
+	expectedUtxosLength := 1
+	test.Assert(t, actualUtxosLength == expectedUtxosLength, fmt.Sprintf("utxo length is %d whereas it should be %d", actualUtxosLength, expectedUtxosLength))
+}
