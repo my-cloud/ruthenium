@@ -8,63 +8,67 @@ import (
 type Level uint32
 
 const (
-	Debug Level = iota
-	Info
-	Warn
-	Error
-	Fatal
+	debug Level = iota
+	info
+	warn
+	err
+	fatal
 )
 
-func ParseLevel(level string) Level {
+func parseLevel(level string) Level {
 	switch strings.ToLower(level) {
 	case "debug":
-		return Debug
+		return debug
 	case "info":
-		return Info
+		return info
 	case "warn":
-		return Warn
+		return warn
 	case "error":
-		return Error
+		return err
 	case "fatal":
-		return Fatal
+		return fatal
 	}
-	return Info
+	return info
 }
 
 type Logger struct {
 	level Level
 }
 
-func NewLogger(level Level) *Logger {
-	return &Logger{level}
+func NewLogger(level string) *Logger {
+	return &Logger{parseLevel(level)}
+}
+
+func NewFatalLogger() *Logger {
+	return &Logger{fatal}
 }
 
 func (logger *Logger) Debug(msg string) {
-	if logger.level <= Debug {
+	if logger.level <= debug {
 		log.Println("DEBUG:", msg)
 	}
 }
 
 func (logger *Logger) Info(msg string) {
-	if logger.level <= Info {
+	if logger.level <= info {
 		log.Println("INFO:", msg)
 	}
 }
 
 func (logger *Logger) Warn(msg string) {
-	if logger.level <= Warn {
+	if logger.level <= warn {
 		log.Println("WARN:", msg)
 	}
 }
 
 func (logger *Logger) Error(msg string) {
-	if logger.level <= Error {
+	if logger.level <= err {
 		log.Println("ERROR:", msg)
 	}
 }
 
 func (logger *Logger) Fatal(msg string) {
-	if logger.level <= Fatal {
+	if logger.level <= fatal {
 		log.Panicln("FATAL:", msg)
 	}
 }

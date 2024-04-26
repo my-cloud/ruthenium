@@ -2,17 +2,18 @@ package configuration
 
 import (
 	"encoding/json"
+	"math"
 	"time"
 )
 
 type protocolSettingsDto struct {
 	BlocksCountLimit                uint64
+	CoinDigitsCount                 uint8
 	GenesisAmount                   uint64
 	HalfLifeInDays                  float64
 	IncomeBase                      uint64
 	IncomeLimit                     uint64
 	MinimalTransactionFee           uint64
-	SmallestUnitsPerCoin            uint64
 	ValidationIntervalInSeconds     int64
 	ValidationTimeoutInSeconds      int64
 	VerificationsCountPerValidation int64
@@ -47,7 +48,7 @@ func (settings *ProtocolSettings) UnmarshalJSON(data []byte) error {
 	settings.incomeBase = dto.IncomeBase
 	settings.incomeLimit = dto.IncomeLimit
 	settings.minimalTransactionFee = dto.MinimalTransactionFee
-	settings.smallestUnitsPerCoin = dto.SmallestUnitsPerCoin
+	settings.smallestUnitsPerCoin = uint64(math.Pow10(int(dto.CoinDigitsCount)))
 	settings.validationTimeout = time.Duration(dto.ValidationTimeoutInSeconds) * time.Second
 	settings.validationTimer = time.Duration(dto.ValidationIntervalInSeconds) * time.Second
 	settings.validationTimestamp = dto.ValidationIntervalInSeconds * time.Second.Nanoseconds()

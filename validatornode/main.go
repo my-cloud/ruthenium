@@ -28,7 +28,7 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-	logger := console.NewLogger(console.ParseLevel(settings.Log().LogLevel()))
+	logger := console.NewLogger(settings.Log().LogLevel())
 	node, err := createHostNode(settings, logger)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -67,7 +67,7 @@ func createNeighborhood(settings *configuration.Settings, watch *clock.Watch, lo
 		scoresBySeedTargetValue[seedStringTargetValue] = 0
 	}
 	ipFinder := net.NewIpFinderImplementation(logger)
-	neighborFactory := p2p.NewNeighborFactory(ipFinder, settings.Protocol().ValidationTimeout(), console.NewLogger(console.Fatal))
+	neighborFactory := p2p.NewNeighborFactory(ipFinder, settings.Network().ConnectionTimeout(), console.NewFatalLogger())
 	hostIp, err := findHostPublicIp(settings.Host().Ip(), logger)
 	if err != nil {
 		return nil, err

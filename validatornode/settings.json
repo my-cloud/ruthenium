@@ -14,12 +14,12 @@
   },
   "protocol": {
     "blocksCountLimit": 1440,
+    "coinDigitsCount": 8,
     "genesisAmount": 5000000000000,
     "halfLifeInDays": 373.59,
     "incomeBase": 100000000000,
     "incomeLimit": 5000000000000,
     "minimalTransactionFee": 1000,
-    "smallestUnitsPerCoin": 100000000,
     "validationIntervalInSeconds": 3,
     "validationTimeoutInSeconds": 3,
     "verificationsCountPerValidation": 6

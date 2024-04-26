@@ -36,7 +36,7 @@ func NewHost(blocksManager application.BlocksManager,
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate host on port %s: %w", port, err)
 	}
-	server.SetLogger(console.NewLogger(console.Fatal))
+	server.SetLogger(console.NewFatalLogger())
 	serverSettings := gp2p.NewServerSettings()
 	serverSettings.SetConnTimeout(validationTimeout)
 	server.SetSettings(serverSettings)

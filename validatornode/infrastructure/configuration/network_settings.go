@@ -6,12 +6,14 @@ import (
 )
 
 type networkSettingsDto struct {
+	ConnectionTimeoutInSeconds       int
 	MaxOutboundsCount                int
 	Seeds                            []string
 	SynchronizationIntervalInSeconds int
 }
 
 type NetworkSettings struct {
+	connectionTimeout    time.Duration
 	maxOutboundsCount    int
 	seeds                []string
 	synchronizationTimer time.Duration
@@ -23,10 +25,15 @@ func (settings *NetworkSettings) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+	settings.connectionTimeout = time.Duration(dto.ConnectionTimeoutInSeconds) * time.Second
 	settings.maxOutboundsCount = dto.MaxOutboundsCount
 	settings.seeds = dto.Seeds
 	settings.synchronizationTimer = time.Duration(dto.SynchronizationIntervalInSeconds) * time.Second
 	return nil
+}
+
+func (settings *NetworkSettings) ConnectionTimeout() time.Duration {
+	return settings.connectionTimeout
 }
 
 func (settings *NetworkSettings) MaxOutboundsCount() int {

@@ -11,20 +11,148 @@ At root level (ruthenium folder), run the validator node using the command `go r
 go run validatornode/main.go -private-key=0x48913790c2bebc48417491f96a7e07ec94c76ccd0fe1562dc1749479d9715afd
 ```
 
-## Program arguments:
+## Program Arguments
 ```
--mnemonic: The mnemonic (required if the private key is not provided)
--derivation-path: The derivation path (unused if the mnemonic is omitted, default: "m/44'/60'/0'/0/0")
--password: The mnemonic password (unused if the mnemonic is omitted)
--private-key: The private key (required if the mnemonic is not provided, unused if the mnemonic is provided)
 -infura-key: The infura key (required to check the proof of humanity)
 -ip: The validator node IP or DNS address (detected if not provided)
 -port: The TCP port number of the validator node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
--settings-path: The settings file path (default: "config/settings.json")
+-settings-path: The settings file path (default: "validatornode/settings.json")
 -seeds-path: The seeds file path (default: "config/seeds.json")
 -log-level: The log level (accepted values: "debug", "info", "warn", "error", "fatal", default: "info")
 ```
-  
+
+## Application Settings
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+{
+  "host": {
+    "ip": string
+    "port": int
+  },
+  "network": {
+    "maxOutboundsCount": int
+    "seeds": []string
+    "synchronizationIntervalInSeconds": int
+    "connectionTimeoutInSeconds": int
+  },
+  "protocol": {
+    "blocksCountLimit": uint64
+    "coinDigitsCount": uint8
+    "genesisAmount": uint64
+    "halfLifeInDays": 373.float6
+    "incomeBase": uint64
+    "incomeLimit": uint64
+    "minimalTransactionFee": uint64
+    "validationIntervalInSeconds": int64
+    "validationTimeoutInSeconds": int64
+    "verificationsCountPerValidation": int64
+  },
+  "registry": {
+    "synchronizationIntervalInSeconds": int
+  },
+  "validator": {
+    "address": string
+    "infuraKey": string
+  },
+  "log": {
+    "logLevel": string
+  }
+}
+```
+</td>
+<td>
+
+```
+
+
+The validator node IP or DNS address (detected if not provided)
+The TCP port number of the validator node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet)
+
+
+The maximum validator node outbounds count
+The initial validator node neighbors
+The neighbors blockchain synchronization interval in seconds
+The neighbors connection timeout in seconds
+
+
+The maximum returned blocks for a blocks request
+The coin digits count
+The genesis transaction reward amount
+The coin half-life
+The income amount after a period of one half-life for an empty initial balance
+The balance limit to receive the income
+The minimal transaction fee
+The validation interval in seconds
+The validation timeout in seconds
+The verifications count per validation
+
+
+The synchronization interval in seconds
+
+
+The validator wallet address
+The infura key (required to check the proof of humanity)
+
+
+The log level (accepted values: "debug", "info", "warn", "error", "fatal")
+
+
+```
+</td>
+<td>
+
+```
+{
+  "host": {
+    "ip": "",
+    "port": 10600
+  },
+  "network": {
+    "maxOutboundsCount": 8,
+    "seeds": ["seed-styx.ruthenium.my-cloud.me:10600"],
+    "synchronizationIntervalInSeconds": 6,
+    "connectionTimeoutInSeconds": 3
+  },
+  "protocol": {
+    "blocksCountLimit": 1440,
+    "coinDigitsCount": 8,
+    "genesisAmount": 5000000000000,
+    "halfLifeInDays": 373.59,
+    "incomeBase": 100000000000,
+    "incomeLimit": 5000000000000,
+    "minimalTransactionFee": 1000,
+    "validationIntervalInSeconds": 3,
+    "validationTimeoutInSeconds": 3,
+    "verificationsCountPerValidation": 6
+  },
+  "registry": {
+    "synchronizationIntervalInSeconds": 3600
+  },
+  "validator": {
+    "address": "",
+    "infuraKey": ""
+  },
+  "log": {
+    "logLevel": "info"
+  }
+}
+```
+</td>
+</tr>
+</table>
+
 ## API
 Base URL: `<validator node IP>:<validator node port>` (example: seed-styx.ruthenium.my-cloud.me:10600)
 
@@ -467,5 +595,3 @@ The value at the transaction timestamp
 </td>
 </tr>
 </table>
-
-[1]: https://go.dev/blog/gob "Gobs official documentation"

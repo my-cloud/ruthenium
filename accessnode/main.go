@@ -23,8 +23,8 @@ func main() {
 	logLevel := flag.String("log-level", environment.NewVariable("LOG_LEVEL").GetStringValue("info"), "The log level (possible values: 'debug', 'info', 'warn', 'error', 'fatal')")
 
 	flag.Parse()
-	logger := console.NewLogger(console.ParseLevel(*logLevel))
-	validatorNeighbor, err := p2p.NewNeighbor(*validatorIp, strconv.Itoa(*validatorPort), time.Minute, console.NewLogger(console.Fatal))
+	logger := console.NewLogger(*logLevel)
+	validatorNeighbor, err := p2p.NewNeighbor(*validatorIp, strconv.Itoa(*validatorPort), time.Minute, console.NewFatalLogger())
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
 	}
