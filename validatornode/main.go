@@ -40,10 +40,18 @@ func createHostNode(settings *configuration.Settings, logger *console.Logger) (*
 	humanityRegistry := poh.NewHumanityRegistry(settings.Validator().InfuraKey(), logger)
 	addressesRegistry := verification.NewAddressesRegistry(humanityRegistry, logger)
 	watch := clock.NewWatch()
-	neighborhood, err := createNeighborhood(settings, watch, logger)
+	seedsStringTargets := settings.Network().Seeds()
+	scoresBySeedTargetValue := map[string]int{}
+	for _, seedStringTargetValue := range seedsStringTargets {
+		scoresBySeedTargetValue[seedStringTargetValue] = 0
+	}
+	ipFinder := net.NewIpFinderImplementation(logger)
+	neighborFactory := p2p.NewNeighborFactory(ipFinder, settings.Network().ConnectionTimeout(), console.NewFatalLogger())
+	hostIp, err := findHostPublicIp(settings.Host().Ip(), logger)
 	if err != nil {
 		return nil, err
 	}
+	neighborhood := network.NewNeighborhood(neighborFactory, hostIp, settings.Host().Port(), settings.Network().MaxOutboundsCount(), scoresBySeedTargetValue, watch)
 	utxosRegistry := verification.NewUtxosRegistry(settings.Protocol())
 	blockchain := verification.NewBlockchain(addressesRegistry, settings.Protocol(), neighborhood, utxosRegistry, logger)
 	transactionsPool := validation.NewTransactionsPool(blockchain, settings.Protocol(), neighborhood, utxosRegistry, settings.Validator().Address(), logger)
@@ -57,21 +65,6 @@ func createHostNode(settings *configuration.Settings, logger *console.Logger) (*
 	}
 	logger.Info(fmt.Sprintf("host validator node running for address: %s", settings.Validator().Address()))
 	return presentation.NewNode(host, neighborhoodSynchronizationEngine, validationEngine, verificationEngine, registrySynchronizationEngine), nil
-}
-
-func createNeighborhood(settings *configuration.Settings, watch *clock.Watch, logger *console.Logger) (*network.Neighborhood, error) {
-	seedsStringTargets := settings.Network().Seeds()
-	scoresBySeedTargetValue := map[string]int{}
-	for _, seedStringTargetValue := range seedsStringTargets {
-		scoresBySeedTargetValue[seedStringTargetValue] = 0
-	}
-	ipFinder := net.NewIpFinderImplementation(logger)
-	neighborFactory := p2p.NewNeighborFactory(ipFinder, settings.Network().ConnectionTimeout(), console.NewFatalLogger())
-	hostIp, err := findHostPublicIp(settings.Host().Ip(), logger)
-	if err != nil {
-		return nil, err
-	}
-	return network.NewNeighborhood(neighborFactory, hostIp, settings.Host().Port(), settings.Network().MaxOutboundsCount(), scoresBySeedTargetValue, watch), nil
 }
 
 func findHostPublicIp(ip string, logger *console.Logger) (string, error) {

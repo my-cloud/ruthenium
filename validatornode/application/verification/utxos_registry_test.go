@@ -72,10 +72,13 @@ func Test_Utxos_UnknownAddress_ReturnsEmptyArray(t *testing.T) {
 
 func Test_Utxos_OneCorrespondingUtxo_ReturnsArrayWithOneUtxo(t *testing.T) {
 	// Arrange
-	registry := NewUtxosRegistry(new(application.ProtocolSettingsProviderMock))
 	address := ""
-	transaction, _ := ledger.NewRewardTransaction(address, false, 0, 1)
-	_ = registry.UpdateUtxos([]*ledger.Transaction{transaction}, 0)
+	initialUtxos := utxosRegistrationInfo{
+		address,
+		"",
+		[]*ledger.Utxo{ledger.NewUtxo(nil, ledger.NewOutput(address, false, 1), 0)},
+	}
+	registry := NewUtxosRegistry(new(application.ProtocolSettingsProviderMock), initialUtxos)
 
 	// Act
 	actualUtxos := registry.Utxos("")

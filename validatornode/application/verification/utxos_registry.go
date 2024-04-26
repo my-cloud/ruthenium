@@ -9,6 +9,12 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
 )
 
+type utxosRegistrationInfo struct {
+	address       string
+	transactionId string
+	utxos         []*ledger.Utxo
+}
+
 type UtxosRegistry struct {
 	mutex          sync.RWMutex
 	settings       application.ProtocolSettingsProvider
@@ -16,11 +22,15 @@ type UtxosRegistry struct {
 	utxosById      map[string][]*ledger.Utxo
 }
 
-func NewUtxosRegistry(settings application.ProtocolSettingsProvider) *UtxosRegistry {
+func NewUtxosRegistry(settings application.ProtocolSettingsProvider, initialUtxos ...utxosRegistrationInfo) *UtxosRegistry {
 	registry := &UtxosRegistry{}
 	registry.settings = settings
 	registry.utxosByAddress = make(map[string][]*ledger.Utxo)
 	registry.utxosById = make(map[string][]*ledger.Utxo)
+	for _, info := range initialUtxos {
+		registry.utxosByAddress[info.address] = info.utxos
+		registry.utxosById[info.transactionId] = info.utxos
+	}
 	return registry
 }
 
