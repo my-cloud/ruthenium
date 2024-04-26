@@ -35,5 +35,5 @@ func NewNode(port string, sender application.Sender, settings application.Protoc
 }
 
 func (node *Node) Run() error {
-	return node.rooter.Run("0.0.0.0:" + node.port)
+	return node.rooter.Run(":" + node.port)
 }

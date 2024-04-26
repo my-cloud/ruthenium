@@ -32,6 +32,6 @@
     "infuraKey": ""
   },
   "log": {
-    "logLevel": "info"
+    "level": "info"
   }
 }

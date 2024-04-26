@@ -5,11 +5,11 @@ import (
 )
 
 type logSettingsDto struct {
-	LogLevel string
+	Level string
 }
 
 type LogSettings struct {
-	logLevel string
+	level string
 }
 
 func (settings *LogSettings) UnmarshalJSON(data []byte) error {
@@ -18,10 +18,10 @@ func (settings *LogSettings) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	settings.logLevel = dto.LogLevel
+	settings.level = dto.Level
 	return nil
 }
 
-func (settings *LogSettings) LogLevel() string {
-	return settings.logLevel
+func (settings *LogSettings) Level() string {
+	return settings.level
 }

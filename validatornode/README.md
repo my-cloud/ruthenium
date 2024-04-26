@@ -13,12 +13,7 @@ go run validatornode/main.go -private-key=0x48913790c2bebc48417491f96a7e07ec94c7
 
 ## Program Arguments
 ```
--infura-key: The infura key (required to check the proof of humanity)
--ip: The validator node IP or DNS address (detected if not provided)
--port: The TCP port number of the validator node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
 -settings-path: The settings file path (default: "validatornode/settings.json")
--seeds-path: The seeds file path (default: "config/seeds.json")
--log-level: The log level (accepted values: "debug", "info", "warn", "error", "fatal", default: "info")
 ```
 
 ## Application Settings
@@ -38,36 +33,36 @@ Example
 ```
 {
   "host": {
-    "ip": string
-    "port": int
+    "ip":                               string
+    "port":                             int
   },
   "network": {
-    "maxOutboundsCount": int
-    "seeds": []string
+    "maxOutboundsCount":                int
+    "seeds":                            []string
     "synchronizationIntervalInSeconds": int
-    "connectionTimeoutInSeconds": int
+    "connectionTimeoutInSeconds":       int
   },
   "protocol": {
-    "blocksCountLimit": uint64
-    "coinDigitsCount": uint8
-    "genesisAmount": uint64
-    "halfLifeInDays": 373.float6
-    "incomeBase": uint64
-    "incomeLimit": uint64
-    "minimalTransactionFee": uint64
-    "validationIntervalInSeconds": int64
-    "validationTimeoutInSeconds": int64
-    "verificationsCountPerValidation": int64
+    "blocksCountLimit":                 uint64
+    "coinDigitsCount":                  uint8
+    "genesisAmount":                    uint64
+    "halfLifeInDays":                   float64
+    "incomeBase":                       uint64
+    "incomeLimit":                      uint64
+    "minimalTransactionFee":            uint64
+    "validationIntervalInSeconds":      int64
+    "validationTimeoutInSeconds":       int64
+    "verificationsCountPerValidation":  int64
   },
   "registry": {
     "synchronizationIntervalInSeconds": int
   },
   "validator": {
-    "address": string
-    "infuraKey": string
+    "address":                          string
+    "infuraKey":                        string
   },
   "log": {
-    "logLevel": string
+    "level":                            string
   }
 }
 ```
@@ -78,7 +73,7 @@ Example
 
 
 The validator node IP or DNS address (detected if not provided)
-The TCP port number of the validator node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet)
+The validator node TCP port number (accepted values: "10600" for mainnet, "10601" to "10699" for testnet)
 
 
 The maximum validator node outbounds count
@@ -141,11 +136,11 @@ The log level (accepted values: "debug", "info", "warn", "error", "fatal")
     "synchronizationIntervalInSeconds": 3600
   },
   "validator": {
-    "address": "",
-    "infuraKey": ""
+    "address": "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a",
+    "infuraKey": "b41e3l513a654f92a5c6bb273e62a91c"
   },
   "log": {
-    "logLevel": "info"
+    "level": "info"
   }
 }
 ```

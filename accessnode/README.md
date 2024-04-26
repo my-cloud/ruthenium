@@ -12,16 +12,92 @@ At root level (ruthenium folder), run the access node using the command `go run 
 go run accessnode/main.go -validator-ip=0.0.0.0
 ```
 
-## Program arguments:
+## Program Arguments
 ```
 -port: The TCP port number for the access node (default: "8080")
 -validator-ip: The validator node IP or DNS address (default: "127.0.0.1")
 -validator-port: The TCP port number of the validator node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
 -template-path: The UI template path (default: "accessnode/presentation/api/template.html")
 -log-level: The log level (accepted values: "debug", "info", "warn", "error", "fatal", default: "info")
+-settings-path: The settings file path (default: "accessnode/settings.json")
 ```
 
-Using a web browser, go to `http://localhost:8080` (If needed, replace `localhost` by the UI server IP address and `8080` by the TCP port number for the UI server)
+Using a web browser, go to `http://localhost:8080` (Depending on settings, replace `localhost` by the UI server IP address and `8080` by the TCP port number for the UI server)
+
+## Application settings
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+{
+  "host": {
+    "port":  int
+  },
+  "template": {
+    "path":  string
+  },
+  "validator": {
+    "ip":    string
+    "port":  int
+  },
+  "log": {
+    "level": string
+  }
+}
+```
+</td>
+<td>
+
+```
+
+
+The access node TCP port number
+
+
+The User Interface html template path 
+
+
+The validator node IP or DNS address
+The validator node TCP port number (accepted values: "10600" for mainnet, "10601" to "10699" for testnet)
+
+
+The log level (accepted values: "debug", "info", "warn", "error", "fatal")
+
+
+```
+</td>
+<td>
+
+```
+{
+  "host": {
+    "port": 8080
+  },
+  "template": {
+    "path": "accessnode/presentation/api/template.html"
+  },
+  "validator": {
+    "ip": "127.0.0.1",
+    "port": 10600
+  },
+  "log": {
+    "level": "info"
+  }
+}
+```
+</td>
+</tr>
+</table>
 
 ## API
 Base URL: `<access node IP>:<access node port>` (example: `localhost:8080`)

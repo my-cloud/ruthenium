@@ -22,13 +22,12 @@ import (
 
 func main() {
 	settingsPath := flag.String("settings-path", environment.NewVariable("SETTINGS_PATH").GetStringValue("validatornode/settings.json"), "The settings file path")
-
 	flag.Parse()
 	settings, err := configuration.NewSettings(*settingsPath)
 	if err != nil {
 		panic(err.Error())
 	}
-	logger := console.NewLogger(settings.Log().LogLevel())
+	logger := console.NewLogger(settings.Log().Level())
 	node, err := createHostNode(settings, logger)
 	if err != nil {
 		logger.Fatal(err.Error())

@@ -136,6 +136,7 @@
             }
 
             const senderAddress = $("#sender_address").val();
+            const recipientAddress = $("#recipient_address").val();
             const atoms = $("#amount").val();
             const result = atomsToParticles(atoms, 100000000);
             if (result.err) {
@@ -160,7 +161,7 @@
                 dataType: 'json',
                 data: data,
                 success: function (response) {
-                    if (!confirm("Are you sure you want to send " + atoms + " coins to " + senderAddress + "?")) {
+                    if (!confirm("Are you sure you want to send " + atoms + " coins to " + recipientAddress + "?")) {
                         alert("Canceled");
                         return
                     }
@@ -246,8 +247,8 @@
             }
         })
 
-        setInterval(refresh_amount, 100)
-        setInterval(refresh_transactions, 100)
+        setInterval(refresh_amount, 1000)
+        setInterval(refresh_transactions, 200)
         setInterval(refresh_progress, 100)
 
         function refresh_amount() {
