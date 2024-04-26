@@ -26,7 +26,7 @@ func Test_AddBlock_ValidParameters_NoErrorReturned(t *testing.T) {
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	logger := log.NewLoggerMock()
 	sendersManagerMock := new(application.SendersManagerMock)
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	utxosManagerMock := new(application.UtxosManagerMock)
 	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 
@@ -42,7 +42,7 @@ func Test_Blocks_BlocksCountLimitSetToZero_ReturnsEmptyArray(t *testing.T) {
 	registryMock := new(application.AddressesManagerMock)
 	logger := log.NewLoggerMock()
 	sendersManagerMock := new(application.SendersManagerMock)
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 0 }
 	utxosManagerMock := new(application.UtxosManagerMock)
 	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
@@ -63,7 +63,7 @@ func Test_Blocks_BlocksCountLimitSetToOne_ReturnsOneBlock(t *testing.T) {
 	logger := log.NewLoggerMock()
 	sendersManagerMock := new(application.SendersManagerMock)
 	var expectedBlocksCount uint64 = 1
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return expectedBlocksCount }
 	utxosManagerMock := new(application.UtxosManagerMock)
 	utxosManagerMock.UpdateUtxosFunc = func([]*ledger.Transaction, int64) error { return nil }
@@ -90,7 +90,7 @@ func Test_Blocks_BlocksCountLimitSetToTwo_ReturnsTwoBlocks(t *testing.T) {
 	logger := log.NewLoggerMock()
 	sendersManagerMock := new(application.SendersManagerMock)
 	var expectedBlocksCount uint64 = 2
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return expectedBlocksCount }
 	utxosManagerMock := new(application.UtxosManagerMock)
 	utxosManagerMock.UpdateUtxosFunc = func([]*ledger.Transaction, int64) error { return nil }
@@ -116,7 +116,7 @@ func Test_Blocks_StartingBlockHeightGreaterThanBlocksLength_ReturnsEmptyArray(t 
 	logger := log.NewLoggerMock()
 	sendersManagerMock := new(application.SendersManagerMock)
 	var blocksCount uint64 = 1
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return blocksCount }
 	utxosManagerMock := new(application.UtxosManagerMock)
 	utxosManagerMock.UpdateUtxosFunc = func([]*ledger.Transaction, int64) error { return nil }
@@ -138,7 +138,7 @@ func Test_FirstBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 	registryMock := new(application.AddressesManagerMock)
 	logger := log.NewLoggerMock()
 	sendersManagerMock := new(application.SendersManagerMock)
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	utxosManagerMock := new(application.UtxosManagerMock)
 	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 
@@ -157,7 +157,7 @@ func Test_FirstBlockTimestamp_BlockchainIsNotEmpty_ReturnsFirstBlockTimestamp(t 
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
 	logger := log.NewLoggerMock()
 	sendersManagerMock := new(application.SendersManagerMock)
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	utxosManagerMock := new(application.UtxosManagerMock)
 	utxosManagerMock.UpdateUtxosFunc = func([]*ledger.Transaction, int64) error { return nil }
 	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
@@ -177,7 +177,7 @@ func Test_LastBlockTimestamp_BlockchainIsEmpty_Returns0(t *testing.T) {
 	registryMock := new(application.AddressesManagerMock)
 	logger := log.NewLoggerMock()
 	sendersManagerMock := new(application.SendersManagerMock)
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	utxosManagerMock := new(application.UtxosManagerMock)
 	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
 
@@ -197,7 +197,7 @@ func Test_LastBlockTimestamp_BlockchainIsNotEmpty_ReturnsLastBlockTimestamp(t *t
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
 	sendersManagerMock := new(application.SendersManagerMock)
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	utxosManagerMock := new(application.UtxosManagerMock)
 	utxosManagerMock.UpdateUtxosFunc = func([]*ledger.Transaction, int64) error { return nil }
 	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
@@ -232,7 +232,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 		return []application.Sender{senderMock}
 	}
 	var validationTimestamp int64 = 11
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 2 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
@@ -287,7 +287,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	sendersManagerMock.SendersFunc = func() []application.Sender {
 		return []application.Sender{senderMock}
 	}
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(application.UtxosManagerMock)
@@ -387,7 +387,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	sendersManagerMock.SendersFunc = func() []application.Sender {
 		return []application.Sender{senderMock}
 	}
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(application.UtxosManagerMock)
@@ -453,7 +453,7 @@ func Test_Update_NeighborNewBlockTransactionFeeCalculationFails_IsNotReplaced(t 
 	sendersManagerMock.SendersFunc = func() []application.Sender {
 		return []application.Sender{senderMock}
 	}
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 0 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -528,7 +528,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	sendersManagerMock.SendersFunc = func() []application.Sender {
 		return []application.Sender{senderMock}
 	}
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -598,7 +598,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	sendersManagerMock.SendersFunc = func() []application.Sender {
 		return []application.Sender{senderMock}
 	}
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -669,7 +669,7 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 	sendersManagerMock.SendersFunc = func() []application.Sender {
 		return []application.Sender{senderMock}
 	}
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -730,7 +730,7 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 	sendersManagerMock.SendersFunc = func() []application.Sender {
 		return []application.Sender{senderMock}
 	}
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -800,7 +800,7 @@ func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *te
 	sendersManagerMock.SendersFunc = func() []application.Sender {
 		return []application.Sender{senderMock}
 	}
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -870,7 +870,7 @@ func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplac
 	sendersManagerMock.SendersFunc = func() []application.Sender {
 		return []application.Sender{senderMock}
 	}
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -940,7 +940,7 @@ func Test_Update_NeighborBlockYieldingOutputIsNotRegistered_IsNotReplaced(t *tes
 	sendersManagerMock.SendersFunc = func() []application.Sender {
 		return []application.Sender{senderMock}
 	}
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
 	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
@@ -986,7 +986,7 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	sendersManagerMock.SendersFunc = func() []application.Sender {
 		return []application.Sender{senderMock}
 	}
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 1 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }
@@ -1046,7 +1046,7 @@ func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	sendersManagerMock.SendersFunc = func() []application.Sender {
 		return []application.Sender{senderMock}
 	}
-	settings := new(application.SettingsProviderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 2 }
 	settings.IncomeBaseFunc = func() uint64 { return 0 }
 	settings.IncomeLimitFunc = func() uint64 { return 1 }

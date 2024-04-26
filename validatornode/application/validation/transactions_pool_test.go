@@ -3,7 +3,6 @@ package validation
 import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/validatornode/application"
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/configuration"
 	"testing"
 	"time"
 
@@ -30,12 +29,10 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	blocksManagerMock.LastBlockTransactionsFunc = func() []*ledger.Transaction { return nil }
 	blocksManagerMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 	blocksManagerMock.AddBlockFunc = func(int64, []*ledger.Transaction, []string) error { return nil }
-	settings := new(configuration.SettingsProviderMock)
-	protocolSettings := new(application.ProtocolSettingsProviderMock)
-	protocolSettings.ValidationTimestampFunc = func() int64 { return 1 }
-	settings.ProtocolFunc = func() application.ProtocolSettingsProvider { return protocolSettings }
+	settings := new(application.ProtocolSettingsProviderMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(application.UtxosManagerMock)
-	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, validatorWalletAddress, logger)
 	var genesisValue uint64 = 0
 	transaction := ledger.NewSignedTransaction(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+2, "0", genesisValue, false)
 
@@ -64,12 +61,10 @@ func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *tes
 	blocksManagerMock.LastBlockTransactionsFunc = func() []*ledger.Transaction { return nil }
 	blocksManagerMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 	blocksManagerMock.AddBlockFunc = func(int64, []*ledger.Transaction, []string) error { return nil }
-	settings := new(configuration.SettingsProviderMock)
-	protocolSettings := new(application.ProtocolSettingsProviderMock)
-	protocolSettings.ValidationTimestampFunc = func() int64 { return 1 }
-	settings.ProtocolFunc = func() application.ProtocolSettingsProvider { return protocolSettings }
+	settings := new(application.ProtocolSettingsProviderMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(application.UtxosManagerMock)
-	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, validatorWalletAddress, logger)
 	var genesisValue uint64 = 0
 	transaction := ledger.NewSignedTransaction(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue, false)
 
@@ -101,12 +96,10 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	var outputIndex uint16 = 0
 	transactionId := ""
 	privateKey2, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey2)
-	settings := new(configuration.SettingsProviderMock)
-	protocolSettings := new(application.ProtocolSettingsProviderMock)
-	protocolSettings.ValidationTimestampFunc = func() int64 { return 1 }
-	settings.ProtocolFunc = func() application.ProtocolSettingsProvider { return protocolSettings }
+	settings := new(application.ProtocolSettingsProviderMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(application.UtxosManagerMock)
-	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, walletAddress, logger)
 	var genesisValue uint64 = 0
 	transaction := ledger.NewSignedTransaction(genesisValue, transactionFee, outputIndex, "A", privateKey2, publicKey, now, transactionId, genesisValue, false)
 
@@ -134,14 +127,12 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	blocksManagerMock.LastBlockTransactionsFunc = func() []*ledger.Transaction { return nil }
 	blocksManagerMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 	blocksManagerMock.AddBlockFunc = func(int64, []*ledger.Transaction, []string) error { return nil }
-	settings := new(configuration.SettingsProviderMock)
-	protocolSettings := new(application.ProtocolSettingsProviderMock)
-	protocolSettings.IncomeBaseFunc = func() uint64 { return 0 }
-	protocolSettings.IncomeLimitFunc = func() uint64 { return 0 }
-	protocolSettings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	protocolSettings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
-	protocolSettings.ValidationTimestampFunc = func() int64 { return 1 }
-	settings.ProtocolFunc = func() application.ProtocolSettingsProvider { return protocolSettings }
+	settings := new(application.ProtocolSettingsProviderMock)
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(application.UtxosManagerMock)
 	utxosManagerMock.CopyFunc = func() application.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*ledger.Transaction, int64) error { return nil }
@@ -151,7 +142,7 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	walletAddress := publicKey.Address()
 	var outputIndex uint16 = 0
 	transactionId := ""
-	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, walletAddress, logger)
 	var genesisValue uint64 = 0
 	transaction := ledger.NewSignedTransaction(genesisValue, transactionFee, outputIndex, walletAddress, privateKey, publicKey, now, transactionId, genesisValue, false)
 
@@ -172,12 +163,10 @@ func Test_Validate_BlockAlreadyExist_TransactionsNotValidated(t *testing.T) {
 	logger := log.NewLoggerMock()
 	blocksManagerMock := new(application.BlocksManagerMock)
 	blocksManagerMock.LastBlockTimestampFunc = func() int64 { return now }
-	settings := new(configuration.SettingsProviderMock)
-	protocolSettings := new(application.ProtocolSettingsProviderMock)
-	protocolSettings.ValidationTimestampFunc = func() int64 { return 1 }
-	settings.ProtocolFunc = func() application.ProtocolSettingsProvider { return protocolSettings }
+	settings := new(application.ProtocolSettingsProviderMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(application.UtxosManagerMock)
-	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, validatorWalletAddress, logger)
 
 	// Act
 	pool.Validate(now)
@@ -194,12 +183,10 @@ func Test_Validate_BlockIsMissing_TransactionsNotValidated(t *testing.T) {
 	logger := log.NewLoggerMock()
 	blocksManagerMock := new(application.BlocksManagerMock)
 	blocksManagerMock.LastBlockTimestampFunc = func() int64 { return now - 2 }
-	settings := new(configuration.SettingsProviderMock)
-	protocolSettings := new(application.ProtocolSettingsProviderMock)
-	protocolSettings.ValidationTimestampFunc = func() int64 { return 1 }
-	settings.ProtocolFunc = func() application.ProtocolSettingsProvider { return protocolSettings }
+	settings := new(application.ProtocolSettingsProviderMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(application.UtxosManagerMock)
-	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, validatorWalletAddress, logger)
 
 	// Act
 	pool.Validate(now)
@@ -220,14 +207,12 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t 
 	blocksManagerMock.LastBlockTransactionsFunc = func() []*ledger.Transaction { return nil }
 	blocksManagerMock.LastBlockTimestampFunc = func() int64 { return now }
 	blocksManagerMock.AddBlockFunc = func(int64, []*ledger.Transaction, []string) error { return nil }
-	settings := new(configuration.SettingsProviderMock)
-	protocolSettings := new(application.ProtocolSettingsProviderMock)
-	protocolSettings.IncomeBaseFunc = func() uint64 { return 0 }
-	protocolSettings.IncomeLimitFunc = func() uint64 { return 0 }
-	protocolSettings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	protocolSettings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
-	protocolSettings.ValidationTimestampFunc = func() int64 { return 1 }
-	settings.ProtocolFunc = func() application.ProtocolSettingsProvider { return protocolSettings }
+	settings := new(application.ProtocolSettingsProviderMock)
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(application.UtxosManagerMock)
 	utxosManagerMock.CopyFunc = func() application.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*ledger.Transaction, int64) error { return nil }
@@ -235,7 +220,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t 
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	walletAddress := publicKey.Address()
-	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, walletAddress, logger)
 	var genesisValue uint64 = 0
 	transaction := ledger.NewSignedTransaction(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now+1, "0", genesisValue, false)
 	pool.AddTransaction(transaction, "0", "0")
@@ -260,14 +245,12 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *test
 	blocksManagerMock.LastBlockTransactionsFunc = func() []*ledger.Transaction { return nil }
 	blocksManagerMock.LastBlockTimestampFunc = func() int64 { return now - 2 }
 	blocksManagerMock.AddBlockFunc = func(int64, []*ledger.Transaction, []string) error { return nil }
-	settings := new(configuration.SettingsProviderMock)
-	protocolSettings := new(application.ProtocolSettingsProviderMock)
-	protocolSettings.IncomeBaseFunc = func() uint64 { return 0 }
-	protocolSettings.IncomeLimitFunc = func() uint64 { return 0 }
-	protocolSettings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	protocolSettings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
-	protocolSettings.ValidationTimestampFunc = func() int64 { return 1 }
-	settings.ProtocolFunc = func() application.ProtocolSettingsProvider { return protocolSettings }
+	settings := new(application.ProtocolSettingsProviderMock)
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(application.UtxosManagerMock)
 	utxosManagerMock.CopyFunc = func() application.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*ledger.Transaction, int64) error { return nil }
@@ -275,7 +258,7 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *test
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	walletAddress := publicKey.Address()
-	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, walletAddress, logger)
 	var genesisValue uint64 = 0
 	transaction := ledger.NewSignedTransaction(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now-2, "0", genesisValue, false)
 	pool.AddTransaction(transaction, "0", "0")
@@ -300,14 +283,12 @@ func Test_Validate_ValidTransaction_TransactionsValidated(t *testing.T) {
 	blocksManagerMock.LastBlockTransactionsFunc = func() []*ledger.Transaction { return nil }
 	blocksManagerMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 	blocksManagerMock.AddBlockFunc = func(int64, []*ledger.Transaction, []string) error { return nil }
-	settings := new(configuration.SettingsProviderMock)
-	protocolSettings := new(application.ProtocolSettingsProviderMock)
-	protocolSettings.IncomeBaseFunc = func() uint64 { return 0 }
-	protocolSettings.IncomeLimitFunc = func() uint64 { return 0 }
-	protocolSettings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	protocolSettings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
-	protocolSettings.ValidationTimestampFunc = func() int64 { return 1 }
-	settings.ProtocolFunc = func() application.ProtocolSettingsProvider { return protocolSettings }
+	settings := new(application.ProtocolSettingsProviderMock)
+	settings.IncomeBaseFunc = func() uint64 { return 0 }
+	settings.IncomeLimitFunc = func() uint64 { return 0 }
+	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
+	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(application.UtxosManagerMock)
 	utxosManagerMock.CopyFunc = func() application.UtxosManager { return utxosManagerMock }
 	utxosManagerMock.UpdateUtxosFunc = func([]*ledger.Transaction, int64) error { return nil }
@@ -315,7 +296,7 @@ func Test_Validate_ValidTransaction_TransactionsValidated(t *testing.T) {
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	walletAddress := publicKey.Address()
-	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, logger)
+	pool := NewTransactionsPool(blocksManagerMock, settings, sendersManagerMock, utxosManagerMock, walletAddress, logger)
 	var genesisValue uint64 = 0
 	transaction := ledger.NewSignedTransaction(genesisValue, transactionFee, 0, "A", privateKey, publicKey, now, "0", genesisValue, false)
 	pool.AddTransaction(transaction, "0", "0")
