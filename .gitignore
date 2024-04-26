@@ -10,5 +10,4 @@
 *.exe
 
 ##Settings
-validatornode/settings?.json
-accessnode/settings?.json
+test/settings?.json
