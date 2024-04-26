@@ -1,10 +1,8 @@
 ##IDEs
-#JetBrain Goland
+#JetBrains
 .idea/**
 #Microsoft VSCode
 .vscode/**
-#Microsoft VS
-.vs/**
 
 ##Build
 *.exe
