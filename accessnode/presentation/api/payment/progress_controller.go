@@ -13,12 +13,12 @@ import (
 
 type ProgressController struct {
 	sender   application.Sender
-	settings SettingsProvider
+	settings application.ProtocolSettingsProvider
 	watch    application.TimeProvider
 	logger   log.Logger
 }
 
-func NewProgressController(sender application.Sender, settings SettingsProvider, watch application.TimeProvider, logger log.Logger) *ProgressController {
+func NewProgressController(sender application.Sender, settings application.ProtocolSettingsProvider, watch application.TimeProvider, logger log.Logger) *ProgressController {
 	return &ProgressController{sender, settings, watch, logger}
 }
 

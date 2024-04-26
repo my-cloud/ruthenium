@@ -13,12 +13,12 @@ import (
 
 type AmountController struct {
 	sender   application.Sender
-	settings SettingsProvider
+	settings application.ProtocolSettingsProvider
 	watch    application.TimeProvider
 	logger   log.Logger
 }
 
-func NewAmountController(sender application.Sender, settings SettingsProvider, watch application.TimeProvider, logger log.Logger) *AmountController {
+func NewAmountController(sender application.Sender, settings application.ProtocolSettingsProvider, watch application.TimeProvider, logger log.Logger) *AmountController {
 	return &AmountController{sender, settings, watch, logger}
 }
 

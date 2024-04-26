@@ -15,12 +15,12 @@ import (
 
 type InfoController struct {
 	sender   application.Sender
-	settings SettingsProvider
+	settings application.ProtocolSettingsProvider
 	watch    application.TimeProvider
 	logger   log.Logger
 }
 
-func NewInfoController(sender application.Sender, settings SettingsProvider, watch application.TimeProvider, logger log.Logger) *InfoController {
+func NewInfoController(sender application.Sender, settings application.ProtocolSettingsProvider, watch application.TimeProvider, logger log.Logger) *InfoController {
 	return &InfoController{sender, settings, watch, logger}
 }
 

@@ -18,16 +18,16 @@ type Blockchain struct {
 	registry       application.AddressesManager
 	sendersManager application.SendersManager
 	utxosManager   application.UtxosManager
-	settings       application.SettingsProvider
+	settings       application.ProtocolSettingsProvider
 	logger         log.Logger
 }
 
-func NewBlockchain(registry application.AddressesManager, settings application.SettingsProvider, sendersManager application.SendersManager, utxosManager application.UtxosManager, logger log.Logger) *Blockchain {
+func NewBlockchain(registry application.AddressesManager, settings application.ProtocolSettingsProvider, sendersManager application.SendersManager, utxosManager application.UtxosManager, logger log.Logger) *Blockchain {
 	blockchain := newBlockchain(nil, registry, settings, sendersManager, utxosManager, logger)
 	return blockchain
 }
 
-func newBlockchain(blocks []*ledger.Block, registry application.AddressesManager, settings application.SettingsProvider, sendersManager application.SendersManager, utxosManager application.UtxosManager, logger log.Logger) *Blockchain {
+func newBlockchain(blocks []*ledger.Block, registry application.AddressesManager, settings application.ProtocolSettingsProvider, sendersManager application.SendersManager, utxosManager application.UtxosManager, logger log.Logger) *Blockchain {
 	blockchain := new(Blockchain)
 	blockchain.blocks = blocks
 	blockchain.registry = registry

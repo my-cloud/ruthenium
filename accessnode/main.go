@@ -32,7 +32,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to get settings: %w", err).Error())
 	}
-	var settings *configuration.Settings
+	var settings *configuration.ProtocolSettings
 	err = json.Unmarshal(settingsBytes, &settings)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to unmarshal settings: %w", err).Error())

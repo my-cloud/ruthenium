@@ -11,12 +11,12 @@ import (
 
 type UtxosRegistry struct {
 	mutex          sync.RWMutex
-	settings       application.SettingsProvider
+	settings       application.ProtocolSettingsProvider
 	utxosByAddress map[string][]*ledger.Utxo
 	utxosById      map[string][]*ledger.Utxo
 }
 
-func NewUtxosRegistry(settings application.SettingsProvider) *UtxosRegistry {
+func NewUtxosRegistry(settings application.ProtocolSettingsProvider) *UtxosRegistry {
 	registry := &UtxosRegistry{}
 	registry.settings = settings
 	registry.utxosByAddress = make(map[string][]*ledger.Utxo)

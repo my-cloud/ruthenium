@@ -7,7 +7,6 @@ import (
 	"github.com/my-cloud/ruthenium/accessnode/presentation/api/wallet"
 	"github.com/my-cloud/ruthenium/validatornode/application"
 	"github.com/my-cloud/ruthenium/validatornode/domain/clock"
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/configuration"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
 )
 
@@ -16,7 +15,7 @@ type Node struct {
 	rooter *gin.Engine
 }
 
-func NewNode(port string, sender application.Sender, settings *configuration.Settings, templatePath string, watch *clock.Watch, logger *console.Logger) *Node {
+func NewNode(port string, sender application.Sender, settings application.ProtocolSettingsProvider, templatePath string, watch *clock.Watch, logger *console.Logger) *Node {
 	rooter := gin.Default()
 	indexController := api.NewIndexController(templatePath, logger)
 	transactionController := payment.NewTransactionController(sender, logger)

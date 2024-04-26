@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/validatornode/application/validation"
 	"github.com/my-cloud/ruthenium/validatornode/application/verification"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
 	"github.com/my-cloud/ruthenium/validatornode/presentation/api"
 	"io"
 	"net/http"
-	"time"
-
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/net"
 
 	"github.com/my-cloud/ruthenium/validatornode/application/network"
 	"github.com/my-cloud/ruthenium/validatornode/domain/clock"
@@ -30,7 +28,7 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-	logger := console.NewLogger(console.ParseLevel(settings.LogLevel()))
+	logger := console.NewLogger(console.ParseLevel(settings.Log().LogLevel()))
 	node, err := createHostNode(settings, logger)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -40,51 +38,50 @@ func main() {
 }
 
 func createHostNode(settings *configuration.Settings, logger *console.Logger) (*presentation.Node, error) {
-	humanityRegistry := poh.NewHumanityRegistry(settings.InfuraKey(), logger)
+	humanityRegistry := poh.NewHumanityRegistry(settings.Validator().InfuraKey(), logger)
 	addressesRegistry := verification.NewAddressesRegistry(humanityRegistry, logger)
 	watch := clock.NewWatch()
 	neighborhood, err := createNeighborhood(settings, watch, logger)
 	if err != nil {
 		return nil, err
 	}
-	utxosRegistry := verification.NewUtxosRegistry(settings)
-	blockchain := verification.NewBlockchain(addressesRegistry, settings, neighborhood, utxosRegistry, logger)
-	transactionsPool := validation.NewTransactionsPool(blockchain, settings, neighborhood, utxosRegistry, settings.Address(), logger)
-	neighborhoodSynchronizationEngine := clock.NewEngine(neighborhood.Synchronize, watch, settings.SynchronizationTimer(), 1, 0)
-	validationEngine := clock.NewEngine(transactionsPool.Validate, watch, settings.ValidationTimer(), 1, 0)
-	verificationEngine := clock.NewEngine(blockchain.Update, watch, settings.ValidationTimer(), settings.VerificationsCountPerValidation(), 1)
-	registrySynchronizationEngine := clock.NewEngine(addressesRegistry.Synchronize, watch, time.Hour /* TODO extract */, 1, 0)
-	host, err := api.NewHost(settings, blockchain, neighborhood, transactionsPool, utxosRegistry)
+	utxosRegistry := verification.NewUtxosRegistry(settings.Protocol())
+	blockchain := verification.NewBlockchain(addressesRegistry, settings.Protocol(), neighborhood, utxosRegistry, logger)
+	transactionsPool := validation.NewTransactionsPool(blockchain, settings.Protocol(), neighborhood, utxosRegistry, settings.Validator().Address(), logger)
+	neighborhoodSynchronizationEngine := clock.NewEngine(neighborhood.Synchronize, watch, settings.Network().SynchronizationTimer(), 1, 0)
+	validationEngine := clock.NewEngine(transactionsPool.Validate, watch, settings.Protocol().ValidationTimer(), 1, 0)
+	verificationEngine := clock.NewEngine(blockchain.Update, watch, settings.Protocol().ValidationTimer(), settings.Protocol().VerificationsCountPerValidation(), 1)
+	registrySynchronizationEngine := clock.NewEngine(addressesRegistry.Synchronize, watch, settings.Registry().SynchronizationTimer(), 1, 0)
+	host, err := api.NewHost(blockchain, neighborhood, transactionsPool, utxosRegistry, settings.Host().Port(), settings.ProtocolBytes(), settings.Protocol().ValidationTimeout())
 	if err != nil {
 		return nil, err
 	}
-	logger.Info(fmt.Sprintf("host validator node running for address: %s", settings.Address()))
+	logger.Info(fmt.Sprintf("host validator node running for address: %s", settings.Validator().Address()))
 	return presentation.NewNode(host, neighborhoodSynchronizationEngine, validationEngine, verificationEngine, registrySynchronizationEngine), nil
 }
 
 func createNeighborhood(settings *configuration.Settings, watch *clock.Watch, logger *console.Logger) (*network.Neighborhood, error) {
-	seedsStringTargets := settings.Seeds()
+	seedsStringTargets := settings.Network().Seeds()
 	scoresBySeedTargetValue := map[string]int{}
 	for _, seedStringTargetValue := range seedsStringTargets {
 		scoresBySeedTargetValue[seedStringTargetValue] = 0
 	}
 	ipFinder := net.NewIpFinderImplementation(logger)
-	hostIp := settings.Ip()
-	if hostIp == "" {
-		var err error
-		hostIp, err = findHostPublicIp(logger)
-		if err != nil {
-			return nil, fmt.Errorf("failed to find the public IP: %w", err)
-		}
+	neighborFactory := p2p.NewNeighborFactory(ipFinder, settings.Protocol().ValidationTimeout(), console.NewLogger(console.Fatal))
+	hostIp, err := findHostPublicIp(settings.Host().Ip(), logger)
+	if err != nil {
+		return nil, err
 	}
-	neighborFactory := p2p.NewNeighborFactory(ipFinder, settings.ValidationTimeout(), console.NewLogger(console.Fatal))
-	return network.NewNeighborhood(neighborFactory, hostIp, settings.Port(), settings.MaxOutboundsCount(), scoresBySeedTargetValue, watch), nil
+	return network.NewNeighborhood(neighborFactory, hostIp, settings.Host().Port(), settings.Network().MaxOutboundsCount(), scoresBySeedTargetValue, watch), nil
 }
 
-func findHostPublicIp(logger *console.Logger) (string, error) {
+func findHostPublicIp(ip string, logger *console.Logger) (string, error) {
+	if ip != "" {
+		return ip, nil
+	}
 	resp, err := http.Get("https://ifconfig.me")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to find the public IP: %w", err)
 	}
 	defer func() {
 		if bodyCloseError := resp.Body.Close(); bodyCloseError != nil {

@@ -9,8 +9,8 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/presentation/api/payment"
 	"github.com/my-cloud/ruthenium/validatornode/presentation/api/protocol"
 	"github.com/my-cloud/ruthenium/validatornode/presentation/api/wallet"
+	"time"
 
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/configuration"
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
 )
 
@@ -23,24 +23,26 @@ type Host struct {
 	utxosController        *wallet.UtxosController
 }
 
-func NewHost(settings *configuration.Settings,
-	blocksManager application.BlocksManager,
+func NewHost(blocksManager application.BlocksManager,
 	sendersManager application.SendersManager,
 	transactionsManager application.TransactionsManager,
-	utxosManager application.UtxosManager) (*Host, error) {
-	port := settings.Port()
-	tcp := gp2p.NewTCP("0.0.0.0", settings.Port())
+	utxosManager application.UtxosManager,
+	hostPort string,
+	protocolSettingsBytes []byte,
+	validationTimeout time.Duration) (*Host, error) {
+	port := hostPort
+	tcp := gp2p.NewTCP("0.0.0.0", hostPort)
 	server, err := gp2p.NewServer(tcp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate host on port %s: %w", port, err)
 	}
 	server.SetLogger(console.NewLogger(console.Fatal))
 	serverSettings := gp2p.NewServerSettings()
-	serverSettings.SetConnTimeout(settings.ValidationTimeout())
+	serverSettings.SetConnTimeout(validationTimeout)
 	server.SetSettings(serverSettings)
 	blocksController := history.NewBlocksController(blocksManager)
 	sendersController := network.NewSendersController(sendersManager)
-	settingsController := protocol.NewSettingsController(settings.Bytes())
+	settingsController := protocol.NewSettingsController(protocolSettingsBytes)
 	transactionsController := payment.NewTransactionsController(sendersManager, transactionsManager)
 	utxosController := wallet.NewUtxosController(utxosManager)
 	return &Host{server, blocksController, sendersController, settingsController, transactionsController, utxosController}, err

@@ -10,7 +10,6 @@
       "seed-styx.ruthenium.my-cloud.me:10600"
     ],
     "synchronizationIntervalInSeconds": 6,
-    "validationTimeoutInSeconds": 3,
     "connectionTimeoutInSeconds": 3
   },
   "protocol": {
@@ -22,6 +21,7 @@
     "minimalTransactionFee": 1000,
     "smallestUnitsPerCoin": 100000000,
     "validationIntervalInSeconds": 3,
+    "validationTimeoutInSeconds": 3,
     "verificationsCountPerValidation": 6
   },
   "registry": {

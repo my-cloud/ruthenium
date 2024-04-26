@@ -18,7 +18,7 @@ type TransactionsPool struct {
 	mutex        sync.RWMutex
 
 	blocksManager    application.BlocksManager
-	settings         application.SettingsProvider
+	settings         application.ProtocolSettingsProvider
 	sendersManager   application.SendersManager
 	utxosManager     application.UtxosManager
 	validatorAddress string
@@ -26,7 +26,7 @@ type TransactionsPool struct {
 	logger log.Logger
 }
 
-func NewTransactionsPool(blocksManager application.BlocksManager, settings application.SettingsProvider, sendersManager application.SendersManager, utxosManager application.UtxosManager, validatorAddress string, logger log.Logger) *TransactionsPool {
+func NewTransactionsPool(blocksManager application.BlocksManager, settings application.ProtocolSettingsProvider, sendersManager application.SendersManager, utxosManager application.UtxosManager, validatorAddress string, logger log.Logger) *TransactionsPool {
 	pool := new(TransactionsPool)
 	pool.blocksManager = blocksManager
 	pool.settings = settings
