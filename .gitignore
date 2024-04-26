@@ -10,4 +10,4 @@
 *.exe
 
 ##Settings
-test/settings?.json
+*/settings?.json
