@@ -22,7 +22,7 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	var now int64 = 2
 	watchMock.NowFunc = func() time.Time { return time.Unix(0, now) }
 	logger := log.NewLoggerMock()
-	var transactionFee uint64 = 0
+	transactionFee := 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	blocksManagerMock := new(application.BlocksManagerMock)
@@ -43,7 +43,7 @@ func Test_AddTransaction_TransactionTimestampIsInTheFuture_TransactionNotAdded(t
 	expectedTransactionsLength := 0
 	actualTransactionsLength := len(pool.Transactions())
 	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
-	test.AssertThatMessageIsLogged(t, []string{"failed to add transaction: the transaction timestamp is too far in the future"}, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), "failed to add transaction: the transaction timestamp is too far in the future")
 }
 
 func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *testing.T) {
@@ -54,7 +54,7 @@ func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *tes
 	sendersManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
 	logger := log.NewLoggerMock()
-	var transactionFee uint64 = 0
+	transactionFee := 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	blocksManagerMock := new(application.BlocksManagerMock)
@@ -75,7 +75,7 @@ func Test_AddTransaction_TransactionTimestampIsTooOld_TransactionNotAdded(t *tes
 	expectedTransactionsLength := 0
 	actualTransactionsLength := len(pool.Transactions())
 	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
-	test.AssertThatMessageIsLogged(t, []string{"failed to add transaction: the transaction timestamp is too old"}, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), "failed to add transaction: the transaction timestamp is too old")
 }
 
 func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
@@ -84,7 +84,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	sendersManagerMock.SendersFunc = func() []application.Sender { return nil }
 	sendersManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
-	var transactionFee uint64 = 0
+	transactionFee := 0
 	logger := log.NewLoggerMock()
 	blocksManagerMock := new(application.BlocksManagerMock)
 	blocksManagerMock.LastBlockTransactionsFunc = func() []*ledger.Transaction { return nil }
@@ -110,7 +110,7 @@ func Test_AddTransaction_InvalidSignature_TransactionNotAdded(t *testing.T) {
 	expectedTransactionsLength := 0
 	actualTransactionsLength := len(pool.Transactions())
 	test.Assert(t, actualTransactionsLength == expectedTransactionsLength, fmt.Sprintf("Wrong transactions count. Expected: %d - Actual: %d", expectedTransactionsLength, actualTransactionsLength))
-	test.AssertThatMessageIsLogged(t, []string{"failed to add transaction: failed to verify signature"}, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), "failed to add transaction: failed to verify signature")
 }
 
 func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
@@ -121,17 +121,13 @@ func Test_AddTransaction_ValidTransaction_TransactionAdded(t *testing.T) {
 	sendersManagerMock.SendersFunc = func() []application.Sender { return []application.Sender{senderMock} }
 	sendersManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
-	var transactionFee uint64 = 0
+	transactionFee := 0
 	logger := log.NewLoggerMock()
 	blocksManagerMock := new(application.BlocksManagerMock)
 	blocksManagerMock.LastBlockTransactionsFunc = func() []*ledger.Transaction { return nil }
 	blocksManagerMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 	blocksManagerMock.AddBlockFunc = func(int64, []*ledger.Transaction, []string) error { return nil }
 	settings := new(application.ProtocolSettingsProviderMock)
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 0 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(application.UtxosManagerMock)
 	utxosManagerMock.CopyFunc = func() application.UtxosManager { return utxosManagerMock }
@@ -172,7 +168,7 @@ func Test_Validate_BlockAlreadyExist_TransactionsNotValidated(t *testing.T) {
 	pool.Validate(now)
 
 	// Assert
-	test.AssertThatMessageIsLogged(t, []string{"unable to create block, a block with the same timestamp is already in the blockchain"}, logger.ErrorCalls())
+	test.AssertThatMessageIsLogged(t, logger.ErrorCalls(), "unable to create block, a block with the same timestamp is already in the blockchain")
 }
 
 func Test_Validate_BlockIsMissing_TransactionsNotValidated(t *testing.T) {
@@ -192,7 +188,7 @@ func Test_Validate_BlockIsMissing_TransactionsNotValidated(t *testing.T) {
 	pool.Validate(now)
 
 	// Assert
-	test.AssertThatMessageIsLogged(t, []string{"unable to create block, a block is missing in the blockchain"}, logger.ErrorCalls())
+	test.AssertThatMessageIsLogged(t, logger.ErrorCalls(), "unable to create block, a block is missing in the blockchain")
 }
 
 func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t *testing.T) {
@@ -201,17 +197,13 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t 
 	sendersManagerMock.SendersFunc = func() []application.Sender { return nil }
 	sendersManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
-	var transactionFee uint64 = 0
+	transactionFee := 0
 	logger := log.NewLoggerMock()
 	blocksManagerMock := new(application.BlocksManagerMock)
 	blocksManagerMock.LastBlockTransactionsFunc = func() []*ledger.Transaction { return nil }
 	blocksManagerMock.LastBlockTimestampFunc = func() int64 { return now }
 	blocksManagerMock.AddBlockFunc = func(int64, []*ledger.Transaction, []string) error { return nil }
 	settings := new(application.ProtocolSettingsProviderMock)
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 0 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(application.UtxosManagerMock)
 	utxosManagerMock.CopyFunc = func() application.UtxosManager { return utxosManagerMock }
@@ -230,7 +222,7 @@ func Test_Validate_TransactionTimestampIsInTheFuture_TransactionsNotValidated(t 
 	pool.Validate(now)
 
 	// Assert
-	test.AssertThatMessageIsLogged(t, []string{"transaction removed from the transactions pool, the transaction timestamp is too far in the future"}, logger.WarnCalls())
+	test.AssertThatMessageIsLogged(t, logger.WarnCalls(), "transaction removed from the transactions pool, the transaction timestamp is too far in the future")
 }
 
 func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *testing.T) {
@@ -239,17 +231,13 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *test
 	sendersManagerMock.SendersFunc = func() []application.Sender { return nil }
 	sendersManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 3
-	var transactionFee uint64 = 0
+	transactionFee := 0
 	logger := log.NewLoggerMock()
 	blocksManagerMock := new(application.BlocksManagerMock)
 	blocksManagerMock.LastBlockTransactionsFunc = func() []*ledger.Transaction { return nil }
 	blocksManagerMock.LastBlockTimestampFunc = func() int64 { return now - 2 }
 	blocksManagerMock.AddBlockFunc = func(int64, []*ledger.Transaction, []string) error { return nil }
 	settings := new(application.ProtocolSettingsProviderMock)
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 0 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(application.UtxosManagerMock)
 	utxosManagerMock.CopyFunc = func() application.UtxosManager { return utxosManagerMock }
@@ -268,7 +256,7 @@ func Test_Validate_TransactionTimestampIsTooOld_TransactionsNotValidated(t *test
 	pool.Validate(now)
 
 	// Assert
-	test.AssertThatMessageIsLogged(t, []string{"transaction removed from the transactions pool, the transaction timestamp is too old"}, logger.WarnCalls())
+	test.AssertThatMessageIsLogged(t, logger.WarnCalls(), "transaction removed from the transactions pool, the transaction timestamp is too old")
 }
 
 func Test_Validate_ValidTransaction_TransactionsValidated(t *testing.T) {
@@ -277,17 +265,13 @@ func Test_Validate_ValidTransaction_TransactionsValidated(t *testing.T) {
 	sendersManagerMock.SendersFunc = func() []application.Sender { return nil }
 	sendersManagerMock.IncentiveFunc = func(string) {}
 	var now int64 = 2
-	var transactionFee uint64 = 0
+	transactionFee := 0
 	logger := log.NewLoggerMock()
 	blocksManagerMock := new(application.BlocksManagerMock)
 	blocksManagerMock.LastBlockTransactionsFunc = func() []*ledger.Transaction { return nil }
 	blocksManagerMock.LastBlockTimestampFunc = func() int64 { return now - 1 }
 	blocksManagerMock.AddBlockFunc = func(int64, []*ledger.Transaction, []string) error { return nil }
 	settings := new(application.ProtocolSettingsProviderMock)
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 0 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	utxosManagerMock := new(application.UtxosManagerMock)
 	utxosManagerMock.CopyFunc = func() application.UtxosManager { return utxosManagerMock }

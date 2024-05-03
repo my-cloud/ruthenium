@@ -6,7 +6,7 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/domain/encryption"
 )
 
-func NewSignedTransaction(inputsValue uint64, fee uint64, outputIndex uint16, recipientAddress string, privateKey *encryption.PrivateKey, publicKey *encryption.PublicKey, timestamp int64, transactionId string, value uint64, isYielding bool) *Transaction {
+func NewSignedTransaction(inputsValue uint64, fee int, outputIndex uint16, recipientAddress string, privateKey *encryption.PrivateKey, publicKey *encryption.PublicKey, timestamp int64, transactionId string, value uint64, isYielding bool) *Transaction {
 	marshalledInput, _ := json.Marshal(struct {
 		OutputIndex   uint16 `json:"output_index"`
 		TransactionId string `json:"transaction_id"`
@@ -18,7 +18,7 @@ func NewSignedTransaction(inputsValue uint64, fee uint64, outputIndex uint16, re
 	signatureString := signature.String()
 	input, _ := NewInput(outputIndex, transactionId, publicKey.String(), signatureString)
 	sent := NewOutput(recipientAddress, false, value)
-	restValue := inputsValue - value - fee
+	restValue := uint64(int(inputsValue) - int(value) - fee)
 	rest := NewOutput(recipientAddress, isYielding, restValue)
 	inputs := []*Input{input}
 	outputs := []*Output{sent, rest}

@@ -39,12 +39,15 @@ func (registry *UtxosRegistry) CalculateFee(transaction *ledger.Transaction, tim
 	var outputsValue uint64
 	for _, input := range transaction.Inputs() {
 		utxos, ok := registry.utxosById[input.TransactionId()]
-		if !ok || int(input.OutputIndex()) > len(utxos)-1 {
-			return 0, fmt.Errorf("failed to find UTXO, input: %v", input)
+		if !ok {
+			return 0, fmt.Errorf("failed to find transaction ID, input: %v", input)
 		}
-		utxo := utxos[input.OutputIndex()]
+		var utxo *ledger.Utxo = nil
+		if int(input.OutputIndex()) < len(utxos) {
+			utxo = utxos[input.OutputIndex()]
+		}
 		if utxo == nil {
-			return 0, fmt.Errorf("failed to find UTXO, input: %v", input)
+			return 0, fmt.Errorf("failed to find output index, input: %v", input)
 		}
 		utxoAddress := utxo.Address()
 		inputAddress := input.Address()

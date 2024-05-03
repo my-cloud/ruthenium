@@ -16,7 +16,7 @@ func Assert(t testing.TB, condition bool, msg string, v ...interface{}) {
 	}
 }
 
-func AssertThatMessageIsLogged(t testing.TB, expectedMessages []string, loggedMessageStructs []struct{ Msg string }) {
+func AssertThatMessageIsLogged(t testing.TB, loggedMessageStructs []struct{ Msg string }, expectedMessages ...string) {
 	isLoggedByExpectedMessage := make(map[string]bool)
 	var loggedMessages []string
 	for _, call := range loggedMessageStructs {

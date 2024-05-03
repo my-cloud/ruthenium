@@ -266,7 +266,7 @@ func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	expectedMessages := []string{
 		blockchainReplacedMessage,
 	}
-	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 }
 
 func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) {
@@ -354,7 +354,7 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 				"neighbor block timestamp is invalid",
 				blockchainKeptMessage,
 			}
-			test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+			test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 		})
 	}
 }
@@ -405,7 +405,7 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 		"neighbor block timestamp is in the future",
 		blockchainKeptMessage,
 	}
-	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 }
 
 func Test_Update_NeighborNewBlockTransactionFeeCalculationFails_IsNotReplaced(t *testing.T) {
@@ -421,7 +421,7 @@ func Test_Update_NeighborNewBlockTransactionFeeCalculationFails_IsNotReplaced(t 
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
 	address := test.Address
-	var invalidTransactionFee uint64 = 0
+	invalidTransactionFee := 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	var validationTimestamp int64 = 1
@@ -454,9 +454,6 @@ func Test_Update_NeighborNewBlockTransactionFeeCalculationFails_IsNotReplaced(t 
 		return []application.Sender{senderMock}
 	}
 	settings := new(application.ProtocolSettingsProviderMock)
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 0 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(application.UtxosManagerMock)
@@ -481,7 +478,7 @@ func Test_Update_NeighborNewBlockTransactionFeeCalculationFails_IsNotReplaced(t 
 		"failed to verify a neighbor block transaction fee",
 		blockchainKeptMessage,
 	}
-	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 }
 
 func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotReplaced(t *testing.T) {
@@ -497,7 +494,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
 	address := test.Address
-	var transactionFee uint64 = 0
+	transactionFee := 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	var validationTimestamp int64 = 1
@@ -529,10 +526,6 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 		return []application.Sender{senderMock}
 	}
 	settings := new(application.ProtocolSettingsProviderMock)
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 1 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(application.UtxosManagerMock)
@@ -551,7 +544,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 		fmt.Sprintf("a neighbor block transaction timestamp is too far in the future: transaction timestamp: %d, id: %s", invalidTransaction.Timestamp(), invalidTransaction.Id()),
 		blockchainKeptMessage,
 	}
-	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 }
 
 func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *testing.T) {
@@ -567,7 +560,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
 	address := test.Address
-	var transactionFee uint64 = 0
+	transactionFee := 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	var validationTimestamp int64 = 1
@@ -599,10 +592,6 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 		return []application.Sender{senderMock}
 	}
 	settings := new(application.ProtocolSettingsProviderMock)
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 1 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(application.UtxosManagerMock)
@@ -621,7 +610,7 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 		fmt.Sprintf("a neighbor block transaction timestamp is too old: transaction timestamp: %d, id: %s", invalidTransaction.Timestamp(), invalidTransaction.Id()),
 		blockchainKeptMessage,
 	}
-	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 }
 
 func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplaced(t *testing.T) {
@@ -637,7 +626,7 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
 	address := test.Address
-	var transactionFee uint64 = 0
+	transactionFee := 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	privateKey2, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey2)
 	publicKey := encryption.NewPublicKey(privateKey)
@@ -670,10 +659,6 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 		return []application.Sender{senderMock}
 	}
 	settings := new(application.ProtocolSettingsProviderMock)
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 1 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(application.UtxosManagerMock)
@@ -692,7 +677,7 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 		"neighbor transaction is invalid: failed to verify signature of an input: signature is invalid",
 		blockchainKeptMessage,
 	}
-	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 }
 
 func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
@@ -731,10 +716,6 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 		return []application.Sender{senderMock}
 	}
 	settings := new(application.ProtocolSettingsProviderMock)
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 1 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(application.UtxosManagerMock)
@@ -753,7 +734,7 @@ func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
 		"failed to verify registered addresses",
 		blockchainKeptMessage,
 	}
-	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 }
 
 func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *testing.T) {
@@ -768,7 +749,7 @@ func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *te
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
-	var transactionFee uint64 = 0
+	transactionFee := 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	var validationTimestamp int64 = 1
@@ -801,10 +782,6 @@ func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *te
 		return []application.Sender{senderMock}
 	}
 	settings := new(application.ProtocolSettingsProviderMock)
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 1 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(application.UtxosManagerMock)
@@ -822,7 +799,7 @@ func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *te
 	expectedMessages := []string{
 		blockchainReplacedMessage,
 	}
-	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 }
 
 func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplaced(t *testing.T) {
@@ -837,7 +814,7 @@ func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplac
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
-	var transactionFee uint64 = 0
+	transactionFee := 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	var validationTimestamp int64 = 1
@@ -871,10 +848,6 @@ func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplac
 		return []application.Sender{senderMock}
 	}
 	settings := new(application.ProtocolSettingsProviderMock)
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 1 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(application.UtxosManagerMock)
@@ -892,7 +865,7 @@ func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplac
 	expectedMessages := []string{
 		blockchainReplacedMessage,
 	}
-	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 }
 
 func Test_Update_NeighborBlockYieldingOutputIsNotRegistered_IsNotReplaced(t *testing.T) {
@@ -907,7 +880,7 @@ func Test_Update_NeighborBlockYieldingOutputIsNotRegistered_IsNotReplaced(t *tes
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
-	var transactionFee uint64 = 0
+	transactionFee := 0
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
 	publicKey := encryption.NewPublicKey(privateKey)
 	var validationTimestamp int64 = 1
@@ -941,10 +914,6 @@ func Test_Update_NeighborBlockYieldingOutputIsNotRegistered_IsNotReplaced(t *tes
 		return []application.Sender{senderMock}
 	}
 	settings := new(application.ProtocolSettingsProviderMock)
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 1 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return transactionFee }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(application.UtxosManagerMock)
@@ -963,7 +932,7 @@ func Test_Update_NeighborBlockYieldingOutputIsNotRegistered_IsNotReplaced(t *tes
 		"neighbor block transaction yielding output address is not registered",
 		blockchainKeptMessage,
 	}
-	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 }
 
 func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
@@ -988,10 +957,6 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	}
 	settings := new(application.ProtocolSettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 1 }
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 1 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(application.UtxosManagerMock)
@@ -1023,7 +988,7 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	expectedMessages := []string{
 		blockchainKeptMessage,
 	}
-	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 }
 
 func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
@@ -1048,10 +1013,6 @@ func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	}
 	settings := new(application.ProtocolSettingsProviderMock)
 	settings.BlocksCountLimitFunc = func() uint64 { return 2 }
-	settings.IncomeBaseFunc = func() uint64 { return 0 }
-	settings.IncomeLimitFunc = func() uint64 { return 1 }
-	settings.HalfLifeInNanosecondsFunc = func() float64 { return 0 }
-	settings.MinimalTransactionFeeFunc = func() uint64 { return 0 }
 	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
 	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
 	utxosManagerMock := new(application.UtxosManagerMock)
@@ -1081,5 +1042,5 @@ func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	expectedMessages := []string{
 		blockchainReplacedMessage,
 	}
-	test.AssertThatMessageIsLogged(t, expectedMessages, logger.DebugCalls())
+	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 }
