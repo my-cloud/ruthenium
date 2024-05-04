@@ -106,11 +106,14 @@ func (registry *UtxosRegistry) UpdateUtxos(transactions []*ledger.Transaction, t
 			}
 		}
 		for _, input := range transaction.Inputs() {
-			utxosForInputTransactionId := utxosById[input.TransactionId()]
-			if int(input.OutputIndex()) > len(utxosForInputTransactionId)-1 {
-				return fmt.Errorf("failed to find UTXO, input: %v", input)
+			utxosForInputTransactionId, ok := utxosById[input.TransactionId()]
+			if !ok {
+				return fmt.Errorf("failed to find transaction ID, input: %v", input)
 			}
-			utxo := utxosForInputTransactionId[input.OutputIndex()]
+			var utxo *ledger.Utxo = nil
+			if int(input.OutputIndex()) < len(utxosForInputTransactionId) {
+				utxo = utxosForInputTransactionId[input.OutputIndex()]
+			}
 			if utxo == nil {
 				return fmt.Errorf("failed to find output index, input: %v", input)
 			}

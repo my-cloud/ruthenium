@@ -225,6 +225,27 @@ func Test_CalculateFee_ValidTransaction_ReturnsFee(t *testing.T) {
 	test.Assert(t, actualFee == expectedFee, fmt.Sprintf("fee is %d whereas it should be %d", actualFee, expectedFee))
 }
 
+func Test_UpdateUtxos_ValidTransactions_ReturnsNil(t *testing.T) {
+	// Arrange
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
+	publicKey := encryption.NewPublicKey(privateKey)
+	address := publicKey.Address()
+	transactionId := ""
+	initialUtxos := utxosRegistrationInfo{
+		address,
+		transactionId,
+		[]*ledger.Utxo{ledger.NewUtxo(ledger.NewInputInfo(0, ""), ledger.NewOutput(address, false, 1), 0)},
+	}
+	registry := NewUtxosRegistry(new(application.ProtocolSettingsProviderMock), initialUtxos)
+	transaction := ledger.NewSignedTransaction(1, 1, 0, address, privateKey, publicKey, 0, transactionId, 0, false)
+
+	// Act
+	err := registry.UpdateUtxos([]*ledger.Transaction{transaction}, 0)
+
+	// Assert
+	test.Assert(t, err == nil, fmt.Errorf("error should be nil but was: %w", err).Error())
+}
+
 func Test_Utxos_UnknownAddress_ReturnsEmptyArray(t *testing.T) {
 	// Arrange
 	registry := NewUtxosRegistry(new(application.ProtocolSettingsProviderMock))
