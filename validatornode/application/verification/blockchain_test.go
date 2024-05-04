@@ -213,6 +213,50 @@ func Test_LastBlockTimestamp_BlockchainIsNotEmpty_ReturnsLastBlockTimestamp(t *t
 	test.Assert(t, actualTimestamp == expectedTimestamp, fmt.Sprintf("timestamp is %d whereas it should be %d", actualTimestamp, expectedTimestamp))
 }
 
+func Test_LastBlockTransactions_BlockchainIsEmpty_ReturnsEmptyArray(t *testing.T) {
+	// Arrange
+	registryMock := new(application.AddressesManagerMock)
+	logger := log.NewLoggerMock()
+	sendersManagerMock := new(application.SendersManagerMock)
+	settings := new(application.ProtocolSettingsProviderMock)
+	utxosManagerMock := new(application.UtxosManagerMock)
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
+
+	// Act
+	actualTransactions := blockchain.LastBlockTransactions()
+
+	// Assert
+	expectedTransactionsLength := 0
+	test.Assert(t, len(actualTransactions) == expectedTransactionsLength, fmt.Sprintf("transactions length is %d whereas it should be %d", len(actualTransactions), expectedTransactionsLength))
+}
+
+func Test_LastBlockTransactions_BlockchainIsNotEmpty_ReturnsLastBlockTimestamp(t *testing.T) {
+	// Arrange
+	registryMock := new(application.AddressesManagerMock)
+	registryMock.FilterFunc = func([]string) []string { return nil }
+	registryMock.RemovedAddressesFunc = func() []string { return nil }
+	registryMock.UpdateFunc = func([]string, []string) {}
+	logger := log.NewLoggerMock()
+	sendersManagerMock := new(application.SendersManagerMock)
+	settings := new(application.ProtocolSettingsProviderMock)
+	utxosManagerMock := new(application.UtxosManagerMock)
+	utxosManagerMock.UpdateUtxosFunc = func([]*ledger.Transaction, int64) error { return nil }
+	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
+	var genesisTimestamp int64 = 0
+	var timestamp int64 = 1
+	_ = blockchain.AddBlock(genesisTimestamp, nil, nil)
+	transaction, _ := ledger.NewRewardTransaction("", false, timestamp, 0)
+	expectedTransactionId := transaction.Id()
+	_ = blockchain.AddBlock(timestamp, []*ledger.Transaction{transaction}, nil)
+
+	// Act
+	actualTransactions := blockchain.LastBlockTransactions()
+
+	// Assert
+	actualTransactionId := actualTransactions[0].Id()
+	test.Assert(t, actualTransactionId == expectedTransactionId, fmt.Sprintf("transactions ID is %s whereas it should be %s", actualTransactionId, expectedTransactionId))
+}
+
 func Test_Update_NeighborBlockchainIsBetter_IsReplaced(t *testing.T) {
 	// Arrange
 	registryMock := new(application.AddressesManagerMock)
