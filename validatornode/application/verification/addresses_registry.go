@@ -74,7 +74,7 @@ func (registry *AddressesRegistry) RemovedAddresses() []string {
 	return registry.removedAddresses
 }
 
-func (registry *AddressesRegistry) Synchronize(int64) {
+func (registry *AddressesRegistry) Synchronize(_ int64) {
 	registry.registeredMutex.RLock()
 	defer registry.registeredMutex.RUnlock()
 	registry.removedMutex.Lock()
@@ -98,7 +98,7 @@ func (registry *AddressesRegistry) Update(addedAddresses []string, removedAddres
 	registry.removedMutex.Lock()
 	defer registry.removedMutex.Unlock()
 	for _, address := range removedAddresses {
-		removeAddress(registry.removedAddresses, address)
+		registry.removedAddresses = removeAddress(registry.removedAddresses, address)
 		delete(registry.registeredAddresses, address)
 	}
 	for _, address := range addedAddresses {
@@ -113,7 +113,7 @@ func (registry *AddressesRegistry) Verify(addedAddresses []string, removedAddres
 	defer registry.temporaryMutex.Unlock()
 	for _, address := range removedAddresses {
 		if registry.registeredAddresses[address] && registry.temporaryAddresses[address] {
-			isPohValid, err := registry.humansManager.IsRegistered(address)
+			isPohValid, err := registry.humansManager.IsRegistered(address) // FIXME can be spammed
 			if err != nil {
 				registry.logger.Debug(err.Error())
 			} else if isPohValid {
@@ -125,7 +125,7 @@ func (registry *AddressesRegistry) Verify(addedAddresses []string, removedAddres
 	}
 	for _, address := range addedAddresses {
 		if !registry.registeredAddresses[address] && registry.temporaryAddresses[address] {
-			isPohValid, err := registry.humansManager.IsRegistered(address)
+			isPohValid, err := registry.humansManager.IsRegistered(address) // FIXME can be spammed
 			if err != nil {
 				registry.logger.Debug(err.Error())
 			} else if !isPohValid {
