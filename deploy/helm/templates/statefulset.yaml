@@ -66,6 +66,8 @@ spec:
             memory: {{ $container.resources.requests.memory }}
           limits:
             memory: {{ $container.resources.limits.memory }}
+            cpu: {{ $container.resources.limits.cpu }}
+            ephemeral-storage: {{ $container.resources.limits.storage }}
         ports:
         {{- range $container.service }}
           - name: {{ $container.name }}
@@ -101,6 +103,7 @@ spec:
             mountPath: {{ $mountPath }}
           {{- end }}
       {{- end }}
+      automountServiceAccountToken: false
       securityContext:
           fsGroup: 1000
       restartPolicy: Always
