@@ -61,7 +61,7 @@ func (neighborhood *Neighborhood) Senders() []application.Sender {
 	return neighborhood.senders
 }
 
-func (neighborhood *Neighborhood) Synchronize(int64) {
+func (neighborhood *Neighborhood) Synchronize(_ int64) {
 	neighborhood.scoresByTargetValueMutex.Lock()
 	var scoresByTargetValue map[string]int
 	if len(neighborhood.scoresByTargetValue) == 0 {
