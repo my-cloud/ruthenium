@@ -1,0 +1,37 @@
+{
+  "host": {
+    "ip": "",
+    "port": 10600
+  },
+  "network": {
+    "maxOutboundsCount": 8,
+    "seeds": [
+      "seed-hael.ruthenium.my-cloud.me:10600",
+      "seed-styx.ruthenium.my-cloud.me:10600"
+    ],
+    "synchronizationIntervalInSeconds": 6,
+    "connectionTimeoutInSeconds": 3
+  },
+  "protocol": {
+    "blocksCountLimit": 1440,
+    "coinDigitsCount": 8,
+    "genesisAmount": 5000000000000,
+    "halfLifeInDays": 373.59,
+    "incomeBase": 100000000000,
+    "incomeLimit": 5000000000000,
+    "minimalTransactionFee": 1000,
+    "validationIntervalInSeconds": 3,
+    "validationTimeoutInSeconds": 3,
+    "verificationsCountPerValidation": 6
+  },
+  "registry": {
+    "synchronizationIntervalInSeconds": 3600
+  },
+  "validator": {
+    "address": "",
+    "infuraKey": ""
+  },
+  "log": {
+    "level": "info"
+  }
+}

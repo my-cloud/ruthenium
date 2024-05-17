@@ -1,0 +1,15 @@
+{
+  "host": {
+    "port": 8080
+  },
+  "template": {
+    "path": "accessnode/presentation/api/template.html"
+  },
+  "validator": {
+    "ip": "127.0.0.1",
+    "port": 10600
+  },
+  "log": {
+    "level": "info"
+  }
+}

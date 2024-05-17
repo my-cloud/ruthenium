@@ -21,18 +21,18 @@ app:
   - name: shared-data
     emptyDir: {}
   containers:
-  - name: node
+  - name: validatornode
     image:
       name: ghcr.io/my-cloud/ruthenium
       tagOverride: latest
       #pullPolicy: "IfNotPresent"
     #autoReload: "true"
-    command: [/app/node]
+    command: [/app/validatornode]
     args: []
     service:
     - protocol: TCP
-      port: "8106"
-      targetPort: "8106"
+      port: "10600"
+      targetPort: "10600"
     annotations:
     health:
       # type: grpc   # can be either: grpc httpGet tcpSocket
@@ -45,8 +45,12 @@ app:
     resources:
       requests:
         memory: "128Mi"
+        cpu: 0.5
+        storage: 2Gi
       limits:
         memory: "512Mi"
+        cpu: 2
+        storage: 4Gi
     storage:
       data: /tmp
     secret:
@@ -54,13 +58,13 @@ app:
         PRIVATE_KEY: privateKey
     env:
 
-  - name: ui
+  - name: accessnode
     image:
       name: ghcr.io/my-cloud/ruthenium
       tagOverride: latest
       #pullPolicy: "IfNotPresent"
     #autoReload: "true"
-    command: [/app/ui]
+    command: [/app/accessnode]
     service:
     - protocol: TCP
       port: "80"
@@ -79,8 +83,12 @@ app:
     resources:
       requests:
         memory: "128Mi"
+        cpu: 0.5
+        storage: 2Gi
       limits:
         memory: "512Mi"
+        cpu: 2
+        storage: 4Gi
     storage:
       data: /data
     secret:
