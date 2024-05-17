@@ -66,8 +66,8 @@ spec:
             memory: {{ $container.resources.requests.memory }}
           limits:
             memory: {{ $container.resources.limits.memory }}
-            cpu: 0.5
-            ephemeral-storage: "2Gi"
+            cpu: {{ $container.resources.limits.cpu }}
+            ephemeral-storage: {{ $container.resources.limits.storage }}
         ports:
         {{- range $container.service }}
           - name: {{ $container.name }}
