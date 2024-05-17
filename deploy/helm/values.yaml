@@ -46,7 +46,7 @@ app:
       requests:
         memory: "128Mi"
         cpu: 0.5
-        storage: 2GI
+        storage: 2Gi
       limits:
         memory: "512Mi"
         cpu: 2
@@ -84,7 +84,7 @@ app:
       requests:
         memory: "128Mi"
         cpu: 0.5
-        storage: 2GI
+        storage: 2Gi
       limits:
         memory: "512Mi"
         cpu: 2
