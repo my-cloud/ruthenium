@@ -64,10 +64,12 @@ spec:
         resources:
           requests:
             memory: {{ $container.resources.requests.memory }}
+            cpu: {{ $containers.resources.requests.cpu }}
+            ephemeral-storage: {{ $containers.resources.requests.storage }}
           limits:
             memory: {{ $container.resources.limits.memory }}
-            cpu: {{ $container.resources.limits.cpu }}
-            ephemeral-storage: {{ $container.resources.limits.storage }}
+            cpu: {{ $containers.resources.limits.cpu }}
+            ephemeral-storage: {{ $containers.resources.limits.storage }}
         ports:
         {{- range $container.service }}
           - name: {{ $container.name }}
