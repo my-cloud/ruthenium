@@ -287,13 +287,6 @@ func (blockchain *Blockchain) verify(lastHostBlocks []*ledger.Block, neighborBlo
 	} else if len(oldHostBlocks) > 0 && (len(neighborBlocks) == 0 || lastHostBlocks[0].PreviousHash() != neighborBlocks[0].PreviousHash()) {
 		return nil, errors.New("neighbor's blockchain is a fork")
 	}
-	if neighborBlocks[len(neighborBlocks)-1].Timestamp() == timestamp {
-		lastNeighborBlock := neighborBlocks[len(neighborBlocks)-1]
-		addedRegisteredAddresses := append(lastNeighborBlock.AddedRegisteredAddresses(), lastNeighborBlock.ValidatorAddress())
-		if err := blockchain.registry.Verify(addedRegisteredAddresses, lastNeighborBlock.RemovedRegisteredAddresses()); err != nil {
-			return nil, fmt.Errorf("failed to verify registered addresses: %w", err)
-		}
-	}
 	neighborUtxosPool := blockchain.utxosManager.Copy()
 	neighborRegistry := blockchain.registry.Copy()
 	if len(oldHostBlocks) == 0 {

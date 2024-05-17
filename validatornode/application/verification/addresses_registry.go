@@ -1,7 +1,6 @@
 package verification
 
 import (
-	"fmt"
 	"github.com/my-cloud/ruthenium/validatornode/application"
 	"sync"
 
@@ -14,7 +13,6 @@ type AddressesRegistry struct {
 	temporaryMutex      sync.RWMutex
 	removedMutex        sync.RWMutex
 	registeredAddresses map[string]bool
-	temporaryAddresses  map[string]bool
 	removedAddresses    []string
 	logger              log.Logger
 }
@@ -23,7 +21,6 @@ func NewAddressesRegistry(humansManager HumansManager, logger log.Logger) *Addre
 	registry := &AddressesRegistry{}
 	registry.humansManager = humansManager
 	registry.registeredAddresses = make(map[string]bool)
-	registry.temporaryAddresses = make(map[string]bool)
 	registry.logger = logger
 	return registry
 }
@@ -36,7 +33,6 @@ func (registry *AddressesRegistry) Clear() {
 	registry.removedMutex.Lock()
 	defer registry.removedMutex.Unlock()
 	registry.registeredAddresses = make(map[string]bool)
-	registry.temporaryAddresses = make(map[string]bool)
 	registry.removedAddresses = nil
 }
 
@@ -50,7 +46,6 @@ func (registry *AddressesRegistry) Copy() application.AddressesManager {
 	registryCopy := &AddressesRegistry{}
 	registryCopy.humansManager = registry.humansManager
 	registryCopy.registeredAddresses = copyAddressesMap(registry.registeredAddresses)
-	registryCopy.temporaryAddresses = copyAddressesMap(registry.temporaryAddresses)
 	registryCopy.removedAddresses = registry.removedAddresses
 	registryCopy.logger = registry.logger
 	return registryCopy
@@ -89,7 +84,6 @@ func (registry *AddressesRegistry) Synchronize(_ int64) {
 	}
 	registry.temporaryMutex.Lock()
 	defer registry.temporaryMutex.Unlock()
-	registry.temporaryAddresses = make(map[string]bool)
 }
 
 func (registry *AddressesRegistry) Update(addedAddresses []string, removedAddresses []string) {
@@ -104,38 +98,6 @@ func (registry *AddressesRegistry) Update(addedAddresses []string, removedAddres
 	for _, address := range addedAddresses {
 		registry.registeredAddresses[address] = true
 	}
-}
-
-func (registry *AddressesRegistry) Verify(addedAddresses []string, removedAddresses []string) error {
-	registry.registeredMutex.RLock()
-	defer registry.registeredMutex.RUnlock()
-	registry.temporaryMutex.Lock()
-	defer registry.temporaryMutex.Unlock()
-	for _, address := range removedAddresses {
-		if registry.registeredAddresses[address] && registry.temporaryAddresses[address] {
-			isPohValid, err := registry.humansManager.IsRegistered(address) // FIXME can be spammed
-			if err != nil {
-				registry.logger.Debug(err.Error())
-			} else if isPohValid {
-				return fmt.Errorf("a removed address is registered")
-			} else {
-				registry.temporaryAddresses[address] = false
-			}
-		}
-	}
-	for _, address := range addedAddresses {
-		if !registry.registeredAddresses[address] && registry.temporaryAddresses[address] {
-			isPohValid, err := registry.humansManager.IsRegistered(address) // FIXME can be spammed
-			if err != nil {
-				registry.logger.Debug(err.Error())
-			} else if !isPohValid {
-				return fmt.Errorf("an added address is not registered")
-			} else {
-				registry.temporaryAddresses[address] = true
-			}
-		}
-	}
-	return nil
 }
 
 func copyAddressesMap(addresses map[string]bool) map[string]bool {

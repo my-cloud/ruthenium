@@ -7,5 +7,4 @@ type AddressesManager interface {
 	IsRegistered(address string) bool
 	RemovedAddresses() (removedAddresses []string)
 	Update(addedAddresses []string, removedAddresses []string)
-	Verify(addedAddresses []string, removedAddresses []string) error
 }

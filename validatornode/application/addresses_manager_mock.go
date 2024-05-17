@@ -35,9 +35,6 @@ var _ AddressesManager = &AddressesManagerMock{}
 //			UpdateFunc: func(addedAddresses []string, removedAddresses []string)  {
 //				panic("mock out the Update method")
 //			},
-//			VerifyFunc: func(addedAddresses []string, removedAddresses []string) error {
-//				panic("mock out the Verify method")
-//			},
 //		}
 //
 //		// use mockedAddressesManager in code that requires AddressesManager
@@ -62,9 +59,6 @@ type AddressesManagerMock struct {
 
 	// UpdateFunc mocks the Update method.
 	UpdateFunc func(addedAddresses []string, removedAddresses []string)
-
-	// VerifyFunc mocks the Verify method.
-	VerifyFunc func(addedAddresses []string, removedAddresses []string) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -94,13 +88,6 @@ type AddressesManagerMock struct {
 			// RemovedAddresses is the removedAddresses argument value.
 			RemovedAddresses []string
 		}
-		// Verify holds details about calls to the Verify method.
-		Verify []struct {
-			// AddedAddresses is the addedAddresses argument value.
-			AddedAddresses []string
-			// RemovedAddresses is the removedAddresses argument value.
-			RemovedAddresses []string
-		}
 	}
 	lockClear            sync.RWMutex
 	lockCopy             sync.RWMutex
@@ -108,7 +95,6 @@ type AddressesManagerMock struct {
 	lockIsRegistered     sync.RWMutex
 	lockRemovedAddresses sync.RWMutex
 	lockUpdate           sync.RWMutex
-	lockVerify           sync.RWMutex
 }
 
 // Clear calls ClearFunc.
@@ -289,41 +275,5 @@ func (mock *AddressesManagerMock) UpdateCalls() []struct {
 	mock.lockUpdate.RLock()
 	calls = mock.calls.Update
 	mock.lockUpdate.RUnlock()
-	return calls
-}
-
-// Verify calls VerifyFunc.
-func (mock *AddressesManagerMock) Verify(addedAddresses []string, removedAddresses []string) error {
-	if mock.VerifyFunc == nil {
-		panic("AddressesManagerMock.VerifyFunc: method is nil but AddressesManager.Verify was just called")
-	}
-	callInfo := struct {
-		AddedAddresses   []string
-		RemovedAddresses []string
-	}{
-		AddedAddresses:   addedAddresses,
-		RemovedAddresses: removedAddresses,
-	}
-	mock.lockVerify.Lock()
-	mock.calls.Verify = append(mock.calls.Verify, callInfo)
-	mock.lockVerify.Unlock()
-	return mock.VerifyFunc(addedAddresses, removedAddresses)
-}
-
-// VerifyCalls gets all the calls that were made to Verify.
-// Check the length with:
-//
-//	len(mockedAddressesManager.VerifyCalls())
-func (mock *AddressesManagerMock) VerifyCalls() []struct {
-	AddedAddresses   []string
-	RemovedAddresses []string
-} {
-	var calls []struct {
-		AddedAddresses   []string
-		RemovedAddresses []string
-	}
-	mock.lockVerify.RLock()
-	calls = mock.calls.Verify
-	mock.lockVerify.RUnlock()
 	return calls
 }

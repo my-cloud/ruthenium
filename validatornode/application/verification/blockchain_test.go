@@ -321,7 +321,6 @@ func Test_Update_NeighborNewBlockTimestampIsInvalid_IsNotReplaced(t *testing.T) 
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
-	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
 	senderMock.TargetFunc = func() string {
@@ -411,7 +410,6 @@ func Test_Update_NeighborNewBlockTimestampIsInTheFuture_IsNotReplaced(t *testing
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
-	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
 	var validationTimestamp int64 = 1
@@ -460,7 +458,6 @@ func Test_Update_NeighborNewBlockTransactionFeeCalculationFails_IsNotReplaced(t 
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
-	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
@@ -533,7 +530,6 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooFarInTheFuture_IsNotRe
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
-	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
@@ -599,7 +595,6 @@ func Test_Update_NeighborNewBlockTransactionTimestampIsTooOld_IsNotReplaced(t *t
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
-	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
@@ -665,7 +660,6 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
-	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
@@ -724,63 +718,6 @@ func Test_Update_NeighborNewBlockTransactionInputSignatureIsInvalid_IsNotReplace
 	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
 }
 
-func Test_Update_NeighborAddressIsNotRegistered_IsNotReplaced(t *testing.T) {
-	// Arrange
-	registryMock := new(application.AddressesManagerMock)
-	notRegisteredAddress := test.Address
-	registryMock.ClearFunc = func() {}
-	registryMock.CopyFunc = func() application.AddressesManager { return registryMock }
-	registryMock.FilterFunc = func([]string) []string { return nil }
-	registryMock.IsRegisteredFunc = func(string) bool { return true }
-	registryMock.RemovedAddressesFunc = func() []string { return nil }
-	registryMock.VerifyFunc = func([]string, []string) error { return errors.New("") }
-	registryMock.UpdateFunc = func([]string, []string) {}
-	logger := log.NewLoggerMock()
-	senderMock := new(application.SenderMock)
-	var validationTimestamp int64 = 1
-	now := 2 * validationTimestamp
-	var genesisAmount uint64 = 1
-	block1 := ledger.NewGenesisBlock(notRegisteredAddress, genesisAmount)
-	hash1, _ := block1.Hash()
-	block2 := ledger.NewRewardedBlock(hash1, now-validationTimestamp)
-	hash2, _ := block2.Hash()
-	rewardTransaction, _ := ledger.NewRewardTransaction(notRegisteredAddress, false, now, 0)
-	transactions := []*ledger.Transaction{rewardTransaction}
-	block3 := ledger.NewBlock(hash2, []string{notRegisteredAddress}, nil, now, transactions)
-	senderMock.GetBlocksFunc = func(uint64) ([]byte, error) {
-		blocks := []*ledger.Block{block1, block2, block3}
-		blocksBytes, _ := json.Marshal(blocks)
-		return blocksBytes, nil
-	}
-	senderMock.TargetFunc = func() string {
-		return "neighbor"
-	}
-	sendersManagerMock := new(application.SendersManagerMock)
-	sendersManagerMock.SendersFunc = func() []application.Sender {
-		return []application.Sender{senderMock}
-	}
-	settings := new(application.ProtocolSettingsProviderMock)
-	settings.ValidationTimestampFunc = func() int64 { return validationTimestamp }
-	settings.ValidationTimeoutFunc = func() time.Duration { return time.Second }
-	utxosManagerMock := new(application.UtxosManagerMock)
-	utxosManagerMock.ClearFunc = func() {}
-	utxosManagerMock.CopyFunc = func() application.UtxosManager { return utxosManagerMock }
-	utxosManagerMock.UpdateUtxosFunc = func([]*ledger.Transaction, int64) error { return nil }
-	utxosManagerMock.CalculateFeeFunc = func(transaction *ledger.Transaction, timestamp int64) (uint64, error) { return 0, nil }
-	blockchain := NewBlockchain(registryMock, settings, sendersManagerMock, utxosManagerMock, logger)
-	_ = blockchain.AddBlock(0, nil, nil)
-
-	// Act
-	blockchain.Update(now)
-
-	// Assert
-	expectedMessages := []string{
-		"failed to verify registered addresses",
-		blockchainKeptMessage,
-	}
-	test.AssertThatMessageIsLogged(t, logger.DebugCalls(), expectedMessages...)
-}
-
 func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *testing.T) {
 	// Arrange
 	registryMock := new(application.AddressesManagerMock)
@@ -789,7 +726,6 @@ func Test_Update_NeighborBlockYieldingOutputAddressIsRegistered_IsReplaced(t *te
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
-	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
@@ -854,7 +790,6 @@ func Test_Update_NeighborBlockYieldingOutputAddressHasBeenRecentlyAdded_IsReplac
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return false }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
-	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
@@ -920,7 +855,6 @@ func Test_Update_NeighborBlockYieldingOutputIsNotRegistered_IsNotReplaced(t *tes
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return false }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
-	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
@@ -986,7 +920,6 @@ func Test_Update_NeighborValidatorIsNotTheOldest_IsNotReplaced(t *testing.T) {
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
-	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
@@ -1042,7 +975,6 @@ func Test_Update_NeighborValidatorIsTheOldest_IsReplaced(t *testing.T) {
 	registryMock.FilterFunc = func([]string) []string { return nil }
 	registryMock.IsRegisteredFunc = func(string) bool { return true }
 	registryMock.RemovedAddressesFunc = func() []string { return nil }
-	registryMock.VerifyFunc = func([]string, []string) error { return nil }
 	registryMock.UpdateFunc = func([]string, []string) {}
 	logger := log.NewLoggerMock()
 	senderMock := new(application.SenderMock)
