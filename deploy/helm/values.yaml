@@ -45,8 +45,12 @@ app:
     resources:
       requests:
         memory: "128Mi"
+        cpu: 0.5
+        storage: 2GI
       limits:
         memory: "512Mi"
+        cpu: 2
+        storage: 4Gi
     storage:
       data: /tmp
     secret:
