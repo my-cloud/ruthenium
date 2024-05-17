@@ -41,20 +41,20 @@ There are two ways to run a Ruthenium node. You can either use your own build fr
   * Extract files from the sources archive
   * At root level (ruthenium folder), run the [validator node](validatornode/README.md):
     ```
-    go run validatornode/main.go -private-key=<private key>
+    go run validatornode/main.go
     ```
   * At root level (ruthenium folder), run the [access node](accessnode/README.md):
     ```
-    go run accessnode/main.go -validator-ip=<validator node IP address>
+    go run accessnode/main.go
     ```
 * Option B (using docker image):
   * Run the [validator node](validatornode/README.md):
     ```
-    sudo docker run -p 10600:10600 -ti ghcr.io/my-cloud/ruthenium:latest \app\validatornode -private-key=<private key>
+    sudo docker run -p 10600:10600 -ti ghcr.io/my-cloud/ruthenium:latest \app\validatornode
     ```
   * Run the [access node](accessnode/README.md):
     ```
-    sudo docker run -p 8080:8080 -ti ghcr.io/my-cloud/ruthenium:latest \app\accessnode -validator-ip=<validator node IP address>
+    sudo docker run -p 8080:8080 -ti ghcr.io/my-cloud/ruthenium:latest \app\accessnode
     ```
 * Using a web browser, go to:
   * http://localhost:8080
