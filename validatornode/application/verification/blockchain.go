@@ -121,7 +121,6 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 				blocksByTarget[target] = append(oldHostBlocks, verifiedBlocks...)
 				mutex.Unlock()
 			}
-			// FIXME Done() must be called in goroutine
 			waitGroup.Done()
 		}
 		waitGroup.Wait()
