@@ -19,7 +19,7 @@ func NewSignedTransaction(inputsValue uint64, fee int, outputIndex uint16, recip
 	input, _ := NewInput(outputIndex, transactionId, publicKey.String(), signatureString)
 	sent := NewOutput(recipientAddress, false, value)
 	restValue := uint64(int(inputsValue) - int(value) - fee)
-	rest := NewOutput(recipientAddress, isYielding, restValue)
+	rest := NewOutput(publicKey.Address(), isYielding, restValue)
 	inputs := []*Input{input}
 	outputs := []*Output{sent, rest}
 	id, _ := generateId(inputs, outputs, timestamp)
