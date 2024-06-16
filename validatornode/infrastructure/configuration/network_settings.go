@@ -44,6 +44,10 @@ func (settings *NetworkSettings) SynchronizationTimer() time.Duration {
 	return settings.synchronizationTimer
 }
 
-func (settings *NetworkSettings) Seeds() []string {
-	return settings.seeds
+func (settings *NetworkSettings) Seeds() map[string]int {
+	scoresBySeedTargetValue := map[string]int{}
+	for _, seedStringTargetValue := range settings.seeds {
+		scoresBySeedTargetValue[seedStringTargetValue] = 0
+	}
+	return scoresBySeedTargetValue
 }

@@ -40,18 +40,14 @@ func createHostNode(settings *configuration.Settings, logger *console.Logger) (*
 	humanityRegistry := poh.NewHumanityRegistry(settings.Validator().InfuraKey(), logger)
 	addressesRegistry := verification.NewAddressesRegistry(humanityRegistry, logger)
 	watch := clock.NewWatch()
-	seedsStringTargets := settings.Network().Seeds()
-	scoresBySeedTargetValue := map[string]int{}
-	for _, seedStringTargetValue := range seedsStringTargets {
-		scoresBySeedTargetValue[seedStringTargetValue] = 0
-	}
+	seeds := settings.Network().Seeds()
 	ipFinder := net.NewIpFinderImplementation(logger)
 	neighborFactory := p2p.NewNeighborFactory(ipFinder, settings.Network().ConnectionTimeout(), console.NewFatalLogger())
 	hostIp, err := findHostPublicIp(settings.Host().Ip(), logger)
 	if err != nil {
 		return nil, err
 	}
-	neighborhood := network.NewNeighborhood(neighborFactory, hostIp, settings.Host().Port(), settings.Network().MaxOutboundsCount(), scoresBySeedTargetValue, watch)
+	neighborhood := network.NewNeighborhood(neighborFactory, hostIp, settings.Host().Port(), settings.Network().MaxOutboundsCount(), seeds, watch)
 	utxosRegistry := verification.NewUtxosRegistry(settings.Protocol())
 	blockchain := verification.NewBlockchain(addressesRegistry, settings.Protocol(), neighborhood, utxosRegistry, logger)
 	transactionsPool := validation.NewTransactionsPool(blockchain, settings.Protocol(), neighborhood, utxosRegistry, settings.Validator().Address(), logger)
