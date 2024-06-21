@@ -246,6 +246,7 @@ func (blockchain *Blockchain) Update(timestamp int64) {
 			blockchain.utxosManager.Clear()
 			newBlocks = selectedBlocks[:len(selectedBlocks)-1]
 		} else if len(hostBlocks) < len(selectedBlocks) {
+			// TODO find a way to add last host block unspent transactions to transactions pool (if old transactions are accepted)
 			newBlocks = selectedBlocks[len(hostBlocks)-1 : len(selectedBlocks)-1]
 		}
 		for _, newBlock := range newBlocks {
@@ -456,7 +457,7 @@ func (blockchain *Blockchain) verifyBlock(neighborBlock *ledger.Block, previousB
 		return errors.New("neighbor block has not been rewarded")
 	}
 	if reward > totalTransactionsFees {
-		return errors.New("neighbor block reward exceeds the consented one")
+		return errors.New(fmt.Sprintf("neighbor block reward (%d) exceeds the consented one (%d)", reward, totalTransactionsFees))
 	}
 	return nil
 }

@@ -81,7 +81,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 	}
 	lastBlockTransactions := pool.blocksManager.LastBlockTransactions()
 	utxosManagerCopy := pool.utxosManager.Copy()
-	if err := utxosManagerCopy.UpdateUtxos(lastBlockTransactions, nextBlockTimestamp); err != nil {
+	if err := utxosManagerCopy.UpdateUtxos(lastBlockTransactions, timestamp-pool.settings.ValidationTimestamp()); err != nil {
 		pool.logger.Error(fmt.Errorf("failed to update UTXOs: %w", err).Error())
 		return
 	}
@@ -99,7 +99,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		if transaction.Timestamp() < lastBlockTimestamp {
+		if transaction.Timestamp() < timestamp-pool.settings.ValidationTimestamp() {
 			pool.logger.Warn(fmt.Sprintf("transaction removed from the transactions pool, the transaction timestamp is too old, transaction: %v", transaction))
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
@@ -115,7 +115,7 @@ func (pool *TransactionsPool) Validate(timestamp int64) {
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
 		}
-		if err = utxosManagerCopy.UpdateUtxos([]*ledger.Transaction{transaction}, nextBlockTimestamp); err != nil {
+		if err = utxosManagerCopy.UpdateUtxos([]*ledger.Transaction{transaction}, timestamp); err != nil {
 			pool.logger.Warn(fmt.Errorf("transaction removed from the transactions pool, failed to update UTXOs, transaction: %v\n %w", transaction, err).Error())
 			rejectedTransactions = append(rejectedTransactions, transaction)
 			continue
@@ -171,7 +171,7 @@ func (pool *TransactionsPool) addTransaction(transaction *ledger.Transaction) er
 	}
 	utxoManagerCopy := pool.utxosManager.Copy()
 	lastBlockTransactions := pool.blocksManager.LastBlockTransactions()
-	if err := utxoManagerCopy.UpdateUtxos(lastBlockTransactions, nextBlockTimestamp); err != nil {
+	if err := utxoManagerCopy.UpdateUtxos(lastBlockTransactions, currentBlockTimestamp); err != nil {
 		return fmt.Errorf("failed to update UTXOs: %w", err)
 	}
 	if err := utxoManagerCopy.UpdateUtxos(pool.transactions, nextBlockTimestamp); err != nil {
