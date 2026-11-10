@@ -18,7 +18,7 @@ go run accessnode/main.go -validator-ip=0.0.0.0
 -validator-ip: The validator node IP or DNS address (default: "127.0.0.1")
 -validator-port: The TCP port number of the validator node (accepted values: "10600" for mainnet, "10601" to "10699" for testnet, default: "10600")
 -template-path: The UI template path (default: "accessnode/presentation/api/template.html")
--log-level: The log level (accepted values: "debug", "info", "warn", "error", "fatal", default: "info")
+-log-level: The log level (accepted values: "trace", "debug", "info", "warn", "error", "fatal", default: "info")
 -settings-path: The settings file path (default: "accessnode/settings.json")
 ```
 
@@ -71,7 +71,7 @@ The validator node IP or DNS address
 The validator node TCP port number (accepted values: "10600" for mainnet, "10601" to "10699" for testnet)
 
 
-The log level (accepted values: "debug", "info", "warn", "error", "fatal")
+The log level (accepted values: "trace", "debug", "info", "warn", "error", "fatal")
 
 
 ```

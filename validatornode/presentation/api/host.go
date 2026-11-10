@@ -11,7 +11,8 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/presentation/api/wallet"
 	"time"
 
-	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log/console"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/log"
+	"github.com/my-cloud/ruthenium/validatornode/infrastructure/p2p"
 )
 
 type Host struct {
@@ -29,14 +30,15 @@ func NewHost(blocksManager application.BlocksManager,
 	utxosManager application.UtxosManager,
 	hostPort string,
 	protocolSettingsBytes []byte,
-	validationTimeout time.Duration) (*Host, error) {
+	validationTimeout time.Duration,
+	logger log.Logger) (*Host, error) {
 	port := hostPort
 	tcp := gp2p.NewTCP("0.0.0.0", hostPort)
 	server, err := gp2p.NewServer(tcp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to instantiate host on port %s: %w", port, err)
 	}
-	server.SetLogger(console.NewFatalLogger())
+	server.SetLogger(p2p.NewNeighborLogger(logger))
 	serverSettings := gp2p.NewServerSettings()
 	serverSettings.SetConnTimeout(validationTimeout)
 	server.SetSettings(serverSettings)

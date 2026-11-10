@@ -23,7 +23,7 @@ func main() {
 		panic(err.Error())
 	}
 	logger := console.NewLogger(settings.Log().Level())
-	validatorNeighbor, err := p2p.NewNeighbor(settings.Validator().Ip(), settings.Validator().Port(), time.Minute, console.NewFatalLogger())
+	validatorNeighbor, err := p2p.NewNeighbor(settings.Validator().Ip(), settings.Validator().Port(), time.Minute, logger)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("unable to find blockchain client: %w", err).Error())
 	}
