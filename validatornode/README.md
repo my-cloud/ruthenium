@@ -101,7 +101,7 @@ The validator wallet address
 The infura key (required to check the proof of humanity)
 
 
-The log level (accepted values: "debug", "info", "warn", "error", "fatal")
+The log level (accepted values: "trace", "debug", "info", "warn", "error", "fatal")
 
 
 ```

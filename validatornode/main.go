@@ -46,7 +46,7 @@ func createHostNode(settings *configuration.Settings, logger *console.Logger) (*
 		scoresBySeedTargetValue[seedStringTargetValue] = 0
 	}
 	ipFinder := net.NewIpFinderImplementation(logger)
-	neighborFactory := p2p.NewNeighborFactory(ipFinder, settings.Network().ConnectionTimeout(), console.NewFatalLogger())
+	neighborFactory := p2p.NewNeighborFactory(ipFinder, settings.Network().ConnectionTimeout(), logger)
 	hostIp, err := findHostPublicIp(settings.Host().Ip(), logger)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func createHostNode(settings *configuration.Settings, logger *console.Logger) (*
 	validationEngine := clock.NewEngine(transactionsPool.Validate, watch, settings.Protocol().ValidationTimer(), 1, 0)
 	verificationEngine := clock.NewEngine(blockchain.Update, watch, settings.Protocol().ValidationTimer(), settings.Protocol().VerificationsCountPerValidation(), 1)
 	registrySynchronizationEngine := clock.NewEngine(addressesRegistry.Synchronize, watch, settings.Registry().SynchronizationTimer(), 1, 0)
-	host, err := api.NewHost(blockchain, neighborhood, transactionsPool, utxosRegistry, settings.Host().Port(), settings.ProtocolBytes(), settings.Protocol().ValidationTimeout())
+	host, err := api.NewHost(blockchain, neighborhood, transactionsPool, utxosRegistry, settings.Host().Port(), settings.ProtocolBytes(), settings.Protocol().ValidationTimeout(), logger)
 	if err != nil {
 		return nil, err
 	}
