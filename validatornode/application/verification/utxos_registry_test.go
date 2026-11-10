@@ -176,6 +176,65 @@ func Test_CalculateFee_ValidTransaction_ReturnsFee(t *testing.T) {
 	test.Assert(t, actualFee == expectedFee, fmt.Sprintf("fee is %d whereas it should be %d", actualFee, expectedFee))
 }
 
+func Test_CalculateFee_SingleOutputTransaction_ReturnsFee(t *testing.T) {
+	// Arrange
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
+	publicKey := encryption.NewPublicKey(privateKey)
+	address := publicKey.Address()
+	transactionId := ""
+	initialUtxos := utxosRegistrationInfo{
+		address,
+		transactionId,
+		[]*ledger.Utxo{ledger.NewUtxo(nil, ledger.NewOutput(address, false, 3), 0)},
+	}
+	settingsMock := new(application.ProtocolSettingsProviderMock)
+	settingsMock.HalfLifeInNanosecondsFunc = func() float64 { return 1 }
+	settingsMock.IncomeBaseFunc = func() uint64 { return 1 }
+	settingsMock.IncomeLimitFunc = func() uint64 { return 1 }
+	settingsMock.MinimalTransactionFeeFunc = func() uint64 { return 0 }
+	registry := NewUtxosRegistry(settingsMock, initialUtxos)
+	transaction := ledger.NewSignedSingleOutputTransaction(0, test.Address2, privateKey, publicKey, 0, transactionId, 1)
+
+	// Act
+	actualFee, err := registry.CalculateFee(transaction, 0)
+
+	// Assert
+	test.Assert(t, err == nil, fmt.Sprintf("error should be nil but was: %v", err))
+	var expectedFee uint64 = 2
+	test.Assert(t, actualFee == expectedFee, fmt.Sprintf("fee is %d whereas it should be %d", actualFee, expectedFee))
+}
+
+func Test_UpdateUtxos_SingleOutputTransaction_RecipientUtxoAdded(t *testing.T) {
+	// Arrange
+	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
+	publicKey := encryption.NewPublicKey(privateKey)
+	address := publicKey.Address()
+	transactionId := ""
+	initialUtxos := utxosRegistrationInfo{
+		address,
+		transactionId,
+		[]*ledger.Utxo{ledger.NewUtxo(ledger.NewInputInfo(0, ""), ledger.NewOutput(address, false, 3), 0)},
+	}
+	registry := NewUtxosRegistry(new(application.ProtocolSettingsProviderMock), initialUtxos)
+	var expectedValue uint64 = 1
+	transaction := ledger.NewSignedSingleOutputTransaction(0, test.Address2, privateKey, publicKey, 0, transactionId, expectedValue)
+
+	// Act
+	err := registry.UpdateUtxos([]*ledger.Transaction{transaction}, 0)
+
+	// Assert
+	test.Assert(t, err == nil, fmt.Sprintf("error should be nil but was: %v", err))
+	senderUtxosLength := len(registry.Utxos(address))
+	test.Assert(t, senderUtxosLength == 0, fmt.Sprintf("sender utxos length is %d whereas it should be %d", senderUtxosLength, 0))
+	recipientUtxos := registry.Utxos(test.Address2)
+	recipientUtxosLength := len(recipientUtxos)
+	test.Assert(t, recipientUtxosLength == 1, fmt.Sprintf("recipient utxos length is %d whereas it should be %d", recipientUtxosLength, 1))
+	actualValue := recipientUtxos[0].InitialValue()
+	test.Assert(t, actualValue == expectedValue, fmt.Sprintf("recipient utxo value is %d whereas it should be %d", actualValue, expectedValue))
+	actualOutputIndex := recipientUtxos[0].OutputIndex()
+	test.Assert(t, actualOutputIndex == 0, fmt.Sprintf("recipient utxo output index is %d whereas it should be %d", actualOutputIndex, 0))
+}
+
 func Test_UpdateUtxos_ValidTransactions_ReturnsNil(t *testing.T) {
 	// Arrange
 	privateKey, _ := encryption.NewPrivateKeyFromHex(test.PrivateKey)
