@@ -155,7 +155,7 @@
             const data = {"address": senderAddress, "value": value, "consolidation": isConsolidationRequested};
 
             $.ajax({
-                url: "/transaction/info",
+                url: "/transactions/info",
                 type: "GET",
                 contentType: "application/json",
                 dataType: 'json',
@@ -175,7 +175,7 @@
 
             function send(data) {
                 $.ajax({
-                    url: "/transaction/info",
+                    url: "/transactions/info",
                     type: "GET",
                     contentType: "application/json",
                     dataType: 'json',
@@ -214,7 +214,7 @@
                         transaction.id = CryptoJS.SHA256(JSON.stringify(transaction)).toString(CryptoJS.enc.Hex);
 
                         $.ajax({
-                            url: "/transaction",
+                            url: "/transactions",
                             type: "POST",
                             contentType: "application/json",
                             data: JSON.stringify(transaction),
@@ -292,10 +292,13 @@
                 progressBar.textContent = "";
             } else {
                 $.ajax({
-                    url: "/transaction/output/progress",
-                    type: "PUT",
-                    contentType: "application/json",
-                    data: JSON.stringify(lastRestUtxo),
+                    url: "/transactions/output/progress",
+                    type: "GET",
+                    data: {
+                        "address": lastRestUtxo.address,
+                        "transactionId": lastRestUtxo.transaction_id,
+                        "outputIndex": lastRestUtxo.output_index,
+                    },
                     success: function (response) {
                         const now = new Date().getTime() * 1000000
                         let angle = (now - response.current_block_timestamp) / response.validation_timestamp * 100

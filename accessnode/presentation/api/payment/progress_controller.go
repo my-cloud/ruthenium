@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/my-cloud/ruthenium/validatornode/application"
 	"net/http"
+	"strconv"
 
 	"github.com/my-cloud/ruthenium/accessnode/infrastructure/io"
 	"github.com/my-cloud/ruthenium/validatornode/domain/ledger"
@@ -24,16 +25,30 @@ func NewProgressController(sender application.Sender, settings application.Proto
 
 func (controller *ProgressController) GetTransactionProgress(writer http.ResponseWriter, req *http.Request) {
 	response := io.NewResponse(writer, controller.logger)
-	decoder := json.NewDecoder(req.Body)
-	var searchedUtxo *ledger.Utxo
-	err := decoder.Decode(&searchedUtxo)
+	address := req.URL.Query().Get("address")
+	if address == "" {
+		errorMessage := "address is missing in progress request"
+		controller.logger.Error(errorMessage)
+		response.Write(http.StatusBadRequest, errorMessage)
+		return
+	}
+	transactionId := req.URL.Query().Get("transactionId")
+	if transactionId == "" {
+		errorMessage := "transaction ID is missing in progress request"
+		controller.logger.Error(errorMessage)
+		response.Write(http.StatusBadRequest, errorMessage)
+		return
+	}
+	requestOutputIndex := req.URL.Query().Get("outputIndex")
+	parsedOutputIndex, err := strconv.ParseUint(requestOutputIndex, 10, 16)
 	if err != nil {
-		errorMessage := "failed to decode utxo"
+		errorMessage := "failed to parse output index"
 		controller.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
 		response.Write(http.StatusBadRequest, errorMessage)
 		return
 	}
-	utxosBytes, err := controller.sender.GetUtxos(searchedUtxo.Address())
+	outputIndex := uint16(parsedOutputIndex)
+	utxosBytes, err := controller.sender.GetUtxos(address)
 	if err != nil {
 		errorMessage := "failed to get UTXOs"
 		controller.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
@@ -57,7 +72,7 @@ func (controller *ProgressController) GetTransactionProgress(writer http.Respons
 		ValidationTimestamp:   controller.settings.ValidationTimestamp(),
 	}
 	for _, utxo := range utxos {
-		if utxo.TransactionId() == searchedUtxo.TransactionId() && utxo.OutputIndex() == searchedUtxo.OutputIndex() {
+		if utxo.TransactionId() == transactionId && utxo.OutputIndex() == outputIndex {
 			progressInfo.TransactionStatus = "confirmed"
 			response.WriteJson(http.StatusOK, progressInfo)
 			return
@@ -91,7 +106,7 @@ func (controller *ProgressController) GetTransactionProgress(writer http.Respons
 		return
 	}
 	for _, validatedTransaction := range blocks[0].Transactions() {
-		if validatedTransaction.Id() == searchedUtxo.TransactionId() {
+		if validatedTransaction.Id() == transactionId {
 			progressInfo.TransactionStatus = "validated"
 			response.WriteJson(http.StatusOK, progressInfo)
 			return
@@ -113,7 +128,7 @@ func (controller *ProgressController) GetTransactionProgress(writer http.Respons
 		return
 	}
 	for _, pendingTransaction := range transactions {
-		if pendingTransaction.Id() == searchedUtxo.TransactionId() {
+		if pendingTransaction.Id() == transactionId {
 			progressInfo.TransactionStatus = "sent"
 			response.WriteJson(http.StatusOK, progressInfo)
 			return

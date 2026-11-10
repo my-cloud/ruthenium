@@ -25,10 +25,10 @@ func NewNode(port string, sender application.Sender, settings application.Protoc
 	addressController := wallet.NewAddressController(logger)
 	amountController := wallet.NewAmountController(sender, settings, watch, logger)
 	rooter.GET("/", func(c *gin.Context) { indexController.GetIndex(c.Writer, c.Request) })
-	rooter.POST("/transaction", func(c *gin.Context) { transactionController.PostTransaction(c.Writer, c.Request) })
+	rooter.POST("/transactions", func(c *gin.Context) { transactionController.PostTransaction(c.Writer, c.Request) })
 	rooter.GET("/transactions", func(c *gin.Context) { transactionsController.GetTransactions(c.Writer, c.Request) })
-	rooter.GET("/transaction/info", func(c *gin.Context) { infoController.GetTransactionInfo(c.Writer, c.Request) })
-	rooter.PUT("/transaction/output/progress", func(c *gin.Context) { progressController.GetTransactionProgress(c.Writer, c.Request) })
+	rooter.GET("/transactions/info", func(c *gin.Context) { infoController.GetTransactionInfo(c.Writer, c.Request) })
+	rooter.GET("/transactions/output/progress", func(c *gin.Context) { progressController.GetTransactionProgress(c.Writer, c.Request) })
 	rooter.GET("/wallet/address", func(c *gin.Context) { addressController.GetWalletAddress(c.Writer, c.Request) })
 	rooter.GET("/wallet/amount", func(c *gin.Context) { amountController.GetWalletAmount(c.Writer, c.Request) })
 	return &Node{port, rooter}
