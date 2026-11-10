@@ -49,6 +49,25 @@ func (controller *InfoController) GetTransactionInfo(writer http.ResponseWriter,
 		response.Write(http.StatusBadRequest, errorMessage)
 		return
 	}
+	transactionFee := controller.settings.MinimalTransactionFee()
+	requestFee := req.URL.Query().Get("fee")
+	if requestFee != "" {
+		parsedFee, err := strconv.ParseUint(requestFee, 10, 64)
+		if err != nil {
+			errorMessage := "failed to parse transaction fee"
+			controller.logger.Error(fmt.Errorf("%s: %w", errorMessage, err).Error())
+			response.Write(http.StatusBadRequest, errorMessage)
+			return
+		}
+		if parsedFee < transactionFee {
+			minimalFee := float64(transactionFee) / float64(controller.settings.SmallestUnitsPerCoin())
+			errorMessage := fmt.Sprintf("transaction fee is too low, minimal fee: %s coins", strconv.FormatFloat(minimalFee, 'f', -1, 64))
+			controller.logger.Error(errorMessage)
+			response.Write(http.StatusBadRequest, errorMessage)
+			return
+		}
+		transactionFee = parsedFee
+	}
 	utxosBytes, err := controller.sender.GetUtxos(address)
 	if err != nil {
 		errorMessage := "failed to get UTXOs"
@@ -94,7 +113,13 @@ func (controller *InfoController) GetTransactionInfo(writer http.ResponseWriter,
 		}
 	}
 	value := uint64(parsedValue)
-	targetValue := value + controller.settings.MinimalTransactionFee()
+	if transactionFee > math.MaxUint64-value {
+		errorMessage := "transaction fee is too high"
+		controller.logger.Error(errorMessage)
+		response.Write(http.StatusBadRequest, errorMessage)
+		return
+	}
+	targetValue := value + transactionFee
 	if walletBalance < targetValue {
 		errorMessage := "insufficient wallet balance"
 		controller.logger.Error(errorMessage)
@@ -124,6 +149,7 @@ func (controller *InfoController) GetTransactionInfo(writer http.ResponseWriter,
 	}
 	rest := inputsValue - targetValue
 	transactionInfo := &TransactionInfo{
+		Fee:       transactionFee,
 		Rest:      rest,
 		Inputs:    selectedInputs,
 		Timestamp: now,
