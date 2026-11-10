@@ -68,10 +68,13 @@ func (utxo *Utxo) f(h float64, x float64) uint64 {
 func (utxo *Utxo) g(h float64, incomeBase uint64, incomeLimit uint64, x float64) uint64 {
 	y := float64(utxo.InitialValue())
 	l := float64(incomeLimit)
+	i := float64(incomeBase)
 	if utxo.InitialValue() < incomeLimit {
-		k1 := k1(incomeBase, incomeLimit)
-		k2 := k2(incomeBase, incomeLimit, k1)
-		exp := -math.Pow(x*math.Log(2)/(k2*h)+math.Pow(-math.Log((l-y)/l), 1/k1), k1)
+		if incomeBase >= incomeLimit {
+			return incomeLimit
+		}
+		k := k(incomeBase, incomeLimit)
+		exp := -math.Pow(x/h*math.Pow(math.Log(l/(l-i)), 1/k)+math.Pow(math.Log(l/(l-y)), 1/k), k)
 		result := math.Floor(-l*math.Exp(exp)) + l
 		return uint64(result)
 	} else if incomeLimit < utxo.InitialValue() {
@@ -83,17 +86,11 @@ func (utxo *Utxo) g(h float64, incomeBase uint64, incomeLimit uint64, x float64)
 	}
 }
 
-func k1(incomeBase uint64, incomeLimit uint64) float64 {
-	if incomeLimit > incomeBase {
-		return 3 - 2*math.Log(2*float64(incomeBase))/math.Log(float64(incomeLimit))
-	} else {
-		return 1
-	}
-}
-
-func k2(incomeBase uint64, incomeLimit uint64, k1 float64) float64 {
-	if incomeLimit > incomeBase {
-		return math.Log(2) / math.Pow(-math.Log(1-float64(incomeBase)/float64(incomeLimit)), 1/k1)
+func k(incomeBase uint64, incomeLimit uint64) float64 {
+	if incomeBase > 0 && incomeLimit > incomeBase {
+		l := float64(incomeLimit)
+		i := float64(incomeBase)
+		return 1 + math.Log(l*(1+math.Log(l/i))/(2*(l+i*math.Log(l/i)-i)))
 	} else {
 		return 1
 	}

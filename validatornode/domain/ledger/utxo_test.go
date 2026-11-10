@@ -91,7 +91,78 @@ func Test_Value_ValueIs0AndIsYielding_ReturnsValueWithIncome(t *testing.T) {
 
 	// Assert
 	expectedValueAfterHalfLife := base
-	test.Assert(t, actualValueAfterHalfLife == expectedValueAfterHalfLife, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
+	isFloatingPointErrorAtMostOneSmallestUnit := actualValueAfterHalfLife <= expectedValueAfterHalfLife && expectedValueAfterHalfLife-actualValueAfterHalfLife <= 1
+	test.Assert(t, isFloatingPointErrorAtMostOneSmallestUnit, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
+}
+
+func Test_Value_ValueIsBelowLimitAndIsYielding_ReturnsExpectedValues(t *testing.T) {
+	// Arrange
+	var incomeBase uint64 = 1000 * particlesCount
+	var incomeLimit uint64 = 20000 * particlesCount
+	emptyUtxo := NewUtxo(&InputInfo{}, NewOutput("", true, 0), 0)
+	halfLimitUtxo := NewUtxo(&InputInfo{}, NewOutput("", true, incomeLimit/2), 0)
+	nearLimitUtxo := NewUtxo(&InputInfo{}, NewOutput("", true, incomeLimit-particlesCount), 0)
+
+	// Act
+	actualEmptyValueAfter30Days := emptyUtxo.Value(int64(genesisTimestamp+30*oneDay), halfLife, incomeBase, incomeLimit)
+	actualHalfLimitValueAfter30Days := halfLimitUtxo.Value(int64(genesisTimestamp+30*oneDay), halfLife, incomeBase, incomeLimit)
+	actualNearLimitValueAfterOneDay := nearLimitUtxo.Value(int64(genesisTimestamp+oneDay), halfLife, incomeBase, incomeLimit)
+
+	// Assert
+	var expectedEmptyValueAfter30Days uint64 = 1827172467
+	test.Assert(t, actualEmptyValueAfter30Days == expectedEmptyValueAfter30Days, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedEmptyValueAfter30Days, actualEmptyValueAfter30Days))
+	var expectedHalfLimitValueAfter30Days uint64 = 1017338511889
+	test.Assert(t, actualHalfLimitValueAfter30Days == expectedHalfLimitValueAfter30Days, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedHalfLimitValueAfter30Days, actualHalfLimitValueAfter30Days))
+	var expectedNearLimitValueAfterOneDay uint64 = 1999900156698
+	test.Assert(t, actualNearLimitValueAfterOneDay == expectedNearLimitValueAfterOneDay, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedNearLimitValueAfterOneDay, actualNearLimitValueAfterOneDay))
+	test.Assert(t, actualNearLimitValueAfterOneDay < incomeLimit, fmt.Sprintf("Wrong value. Expected a value < %d - Actual: %d", incomeLimit, actualNearLimitValueAfterOneDay))
+}
+
+func Test_Value_ValueIsBelowLimitAndIsYielding_IsConsistentOverTime(t *testing.T) {
+	// Arrange
+	var value uint64 = 10000 * particlesCount
+	firstPeriod := int64(halfLife)
+	secondPeriod := int64(30 * oneDay)
+	utxo := NewUtxo(&InputInfo{}, NewOutput("", true, value), 0)
+	valueAfterFirstPeriod := utxo.Value(firstPeriod, halfLife, base, limit)
+	intermediateUtxo := NewUtxo(&InputInfo{}, NewOutput("", true, valueAfterFirstPeriod), firstPeriod)
+
+	// Act
+	valueAfterBothPeriodsInOneStep := utxo.Value(firstPeriod+secondPeriod, halfLife, base, limit)
+	valueAfterBothPeriodsInTwoSteps := intermediateUtxo.Value(firstPeriod+secondPeriod, halfLife, base, limit)
+
+	// Assert
+	difference := int64(valueAfterBothPeriodsInOneStep) - int64(valueAfterBothPeriodsInTwoSteps)
+	test.Assert(t, difference >= -1 && difference <= 1, fmt.Sprintf("Values differ by more than one smallest unit. One step: %d - Two steps: %d", valueAfterBothPeriodsInOneStep, valueAfterBothPeriodsInTwoSteps))
+}
+
+func Test_Value_IncomeBaseIs0AndIsYielding_ReturnsValueWithoutIncome(t *testing.T) {
+	// Arrange
+	value := limit / 2
+	output := NewOutput("", true, value)
+	utxo := NewUtxo(&InputInfo{}, output, 0)
+
+	// Act
+	actualValueAfterHalfLife := utxo.Value(int64(genesisTimestamp+halfLife), halfLife, 0, limit)
+
+	// Assert
+	expectedValueAfterHalfLife := value
+	isFloatingPointErrorAtMostOneSmallestUnit := actualValueAfterHalfLife <= expectedValueAfterHalfLife && expectedValueAfterHalfLife-actualValueAfterHalfLife <= 1
+	test.Assert(t, isFloatingPointErrorAtMostOneSmallestUnit, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterHalfLife, actualValueAfterHalfLife))
+}
+
+func Test_Value_IncomeBaseIsGreaterThanLimitAndIsYielding_ReturnsLimit(t *testing.T) {
+	// Arrange
+	var value uint64 = 0
+	output := NewOutput("", true, value)
+	utxo := NewUtxo(&InputInfo{}, output, 0)
+
+	// Act
+	actualValueAfterOneDay := utxo.Value(int64(genesisTimestamp+oneDay), halfLife, 2*limit, limit)
+
+	// Assert
+	expectedValueAfterOneDay := limit
+	test.Assert(t, actualValueAfterOneDay == expectedValueAfterOneDay, fmt.Sprintf("Wrong value. Expected: %d - Actual: %d", expectedValueAfterOneDay, actualValueAfterOneDay))
 }
 
 func Test_Value_SamePortionOfHalfLifeElapsedAndIsYielding_ReturnsSameValue(t *testing.T) {
