@@ -127,7 +127,7 @@
     });
 
     $(function () {
-        let lastRestUtxo;
+        let lastUtxo;
 
         $("#send_coins_button").click(function () {
             if (!keyPair) {
@@ -206,9 +206,13 @@
                             "is_yielding": isIncomeUpdateRequested,
                             "value": response.rest,
                         }
+                        const outputs = [spend];
+                        if (rest.value > 0 || rest.is_yielding) {
+                            outputs.push(rest);
+                        }
                         const transaction = {
                             "inputs": inputs,
-                            "outputs": [spend, rest],
+                            "outputs": outputs,
                             "timestamp": response.timestamp,
                         };
                         transaction.id = CryptoJS.SHA256(JSON.stringify(transaction)).toString(CryptoJS.enc.Hex);
@@ -221,13 +225,15 @@
                             success: function (response) {
                                 if (response === "success") {
                                     alert("Send success");
-                                    lastRestUtxo = {
-                                        "address": rest.address,
+                                    const lastOutputIndex = outputs.length - 1;
+                                    const lastOutput = outputs[lastOutputIndex];
+                                    lastUtxo = {
+                                        "address": lastOutput.address,
                                         "timestamp": transaction.timestamp,
-                                        "is_yielding": rest.is_yielding,
-                                        "output_index": 1,
+                                        "is_yielding": lastOutput.is_yielding,
+                                        "output_index": lastOutputIndex,
                                         "transaction_id": transaction.id,
-                                        "value": rest.value,
+                                        "value": lastOutput.value,
                                     }
                                 } else {
                                     alert("Send failed: " + response)
@@ -287,7 +293,7 @@
 
         function refresh_progress() {
             const progressBar = document.querySelector('.progress-circle');
-            if (lastRestUtxo === undefined) {
+            if (lastUtxo === undefined) {
                 progressBar.style.background = `conic-gradient(white 100%, white 0)`;
                 progressBar.textContent = "";
             } else {
@@ -295,7 +301,7 @@
                     url: "/transaction/output/progress",
                     type: "PUT",
                     contentType: "application/json",
-                    data: JSON.stringify(lastRestUtxo),
+                    data: JSON.stringify(lastUtxo),
                     success: function (response) {
                         const now = new Date().getTime() * 1000000
                         let angle = (now - response.current_block_timestamp) / response.validation_timestamp * 100

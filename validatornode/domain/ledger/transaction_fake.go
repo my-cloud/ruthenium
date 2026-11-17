@@ -7,6 +7,18 @@ import (
 )
 
 func NewSignedTransaction(inputsValue uint64, fee int, outputIndex uint16, recipientAddress string, privateKey *encryption.PrivateKey, publicKey *encryption.PublicKey, timestamp int64, transactionId string, value uint64, isYielding bool) *Transaction {
+	sent := NewOutput(recipientAddress, false, value)
+	restValue := uint64(int(inputsValue) - int(value) - fee)
+	rest := NewOutput(recipientAddress, isYielding, restValue)
+	return newSignedTransaction(outputIndex, privateKey, publicKey, timestamp, transactionId, []*Output{sent, rest})
+}
+
+func NewSignedSingleOutputTransaction(outputIndex uint16, recipientAddress string, privateKey *encryption.PrivateKey, publicKey *encryption.PublicKey, timestamp int64, transactionId string, value uint64) *Transaction {
+	sent := NewOutput(recipientAddress, false, value)
+	return newSignedTransaction(outputIndex, privateKey, publicKey, timestamp, transactionId, []*Output{sent})
+}
+
+func newSignedTransaction(outputIndex uint16, privateKey *encryption.PrivateKey, publicKey *encryption.PublicKey, timestamp int64, transactionId string, outputs []*Output) *Transaction {
 	marshalledInput, _ := json.Marshal(struct {
 		OutputIndex   uint16 `json:"output_index"`
 		TransactionId string `json:"transaction_id"`
@@ -17,11 +29,7 @@ func NewSignedTransaction(inputsValue uint64, fee int, outputIndex uint16, recip
 	signature, _ := encryption.NewSignature(marshalledInput, privateKey)
 	signatureString := signature.String()
 	input, _ := NewInput(outputIndex, transactionId, publicKey.String(), signatureString)
-	sent := NewOutput(recipientAddress, false, value)
-	restValue := uint64(int(inputsValue) - int(value) - fee)
-	rest := NewOutput(recipientAddress, isYielding, restValue)
 	inputs := []*Input{input}
-	outputs := []*Output{sent, rest}
 	id, _ := generateId(inputs, outputs, timestamp)
 	dto := &transactionDto{
 		Id:        id,
