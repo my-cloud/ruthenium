@@ -11,7 +11,7 @@ import (
 
 const (
 	pohSmartContractAddressHex = "0xC5E9dDebb09Cd64DfaCab4011A0D5cEDaf7c9BDb"
-	clientUrl                  = "https://mainnet.infura.io/v3/"
+	clientUrl                  = "wss://mainnet.infura.io/ws/v3/"
 )
 
 type HumanityRegistry struct {
@@ -29,10 +29,11 @@ func (registry *HumanityRegistry) IsRegistered(address string) (isRegistered boo
 	if registry.infuraKey == "" {
 		return true, nil
 	}
-	client, err := ethclient.Dial(fmt.Sprint(clientUrl, registry.infuraKey))
+	client, err := ethclient.Dial(registry.url())
 	if err != nil {
 		return
 	}
+	defer client.Close()
 	pohSmartContractAddress := common.HexToAddress(pohSmartContractAddressHex)
 	proofOfHumanity, err := NewPoh(pohSmartContractAddress, client)
 	if err != nil {
@@ -43,4 +44,8 @@ func (registry *HumanityRegistry) IsRegistered(address string) (isRegistered boo
 		return false, fmt.Errorf("failed to get proof of humanity for address %s: %w", address, err)
 	}
 	return isRegistered, nil
+}
+
+func (registry *HumanityRegistry) url() string {
+	return fmt.Sprint(clientUrl, registry.infuraKey)
 }
