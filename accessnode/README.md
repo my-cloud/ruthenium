@@ -129,19 +129,20 @@ Base URL: `<access node IP>:<access node port>` (example: `localhost:8080`)
 *Description:* Get the transaction data needed for a transaction request.
 * **parameters:**
 
-  | Name      | Description                                            | Example                                      |
-  |-----------|--------------------------------------------------------|----------------------------------------------|
-  | `address` | 42 characters hexadecimal sender wallet address        | `0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a` |
-  | `value`   | 64 bits floating-point number value of the transaction | `0`                                          |
+  | Name      | Description                                                                                                    | Example                                      |
+  |-----------|----------------------------------------------------------------------------------------------------------------|----------------------------------------------|
+  | `address` | 42 characters hexadecimal sender wallet address                                                                | `0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a` |
+  | `value`   | 64 bits floating-point number value of the transaction                                                         | `0`                                          |
+  | `fee`     | *optional,* 64 bits unsigned integer fee of the transaction (default and minimum: the minimal transaction fee) | `1000`                                       |
 * **request body:** *none*
 * **responses:**
 
-  | Code | Description                                                                      |
-  |------|----------------------------------------------------------------------------------|
-  | 200  | [TransactionInfo](#transactioninfo)                                              |
-  | 400  | Bad request, if any request argument is invalid                                  |
-  | 405  | Method not allowed, if the value exceeds the wallet amount for the given address |
-  | 500  | Internal server error, if an unexpected condition occurred                       |
+  | Code | Description                                                                             |
+  |------|-----------------------------------------------------------------------------------------|
+  | 200  | [TransactionInfo](#transactioninfo)                                                     |
+  | 400  | Bad request, if any request argument is invalid or the fee is too low or too high       |
+  | 405  | Method not allowed, if the value and fee exceed the wallet amount for the given address |
+  | 500  | Internal server error, if an unexpected condition occurred                              |
 </details>
 <details>
 <summary><b>Get transactions</b></summary>
@@ -406,6 +407,7 @@ Example
 
 ```
 {
+  "fee":       uint64
   "inputs":    []InputInfo
   "rest":      uint64
   "timestamp": int64
@@ -416,8 +418,10 @@ Example
 
 ```
 
-The remaining amount to be used as a value for the output with the sender address
+The fee of the transaction
 The utxos to be used as inputs of the transaction
+The remaining amount to be used as a value for the output with the sender address
+The timestamp
 
 ```
 </td>
@@ -425,6 +429,7 @@ The utxos to be used as inputs of the transaction
 
 ```
 {
+  "fee": 1000
   "inputs": []
   "rest": 0
   "timestamp": 1667768884780639700

@@ -71,6 +71,10 @@
             <input id="amount" type="text" name="amount" class="form-field">
         </div>
         <div>
+            <label for="fee" class="form-label">Fee:</label>
+            <input id="fee" type="text" name="fee" class="form-field" placeholder="minimal transaction fee">
+        </div>
+        <div>
             <input id="utxo_consolidation" type="checkbox" name="utxo_consolidation" class="form-label" checked>
             <label for="utxo_consolidation" class="form-field">Consolidate UTXOs</label>
         </div>
@@ -153,6 +157,15 @@
                 isIncomeUpdateRequested = true
             }
             const data = {"address": senderAddress, "value": value, "consolidation": isConsolidationRequested};
+            const feeAtoms = $("#fee").val();
+            if (feeAtoms) {
+                const feeResult = atomsToParticles(feeAtoms, 100000000);
+                if (feeResult.err) {
+                    alert("Invalid fee: " + feeResult.err.message.replace("transaction value", "fee"));
+                    return
+                }
+                data.fee = feeResult.particles;
+            }
 
             $.ajax({
                 url: "/transaction/info",
@@ -161,7 +174,8 @@
                 dataType: 'json',
                 data: data,
                 success: function (response) {
-                    if (!confirm("Are you sure you want to send " + atoms + " coins to " + recipientAddress + "?")) {
+                    const responseFeeAtoms = response.fee / 100000000;
+                    if (!confirm("Are you sure you want to send " + atoms + " coins to " + recipientAddress + " with a fee of " + responseFeeAtoms + " coins?")) {
                         alert("Canceled");
                         return
                     }
