@@ -1,7 +1,6 @@
 package payment
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,7 +15,7 @@ import (
 	"github.com/my-cloud/ruthenium/validatornode/infrastructure/test"
 )
 
-func Test_GetTransactionProgress_UndecipherableUtxo_BadRequest(t *testing.T) {
+func Test_GetTransactionProgress_AddressIsMissing_BadRequest(t *testing.T) {
 	// Arrange
 	senderMock := new(application.SenderMock)
 	settings := new(application.ProtocolSettingsProviderMock)
@@ -24,11 +23,50 @@ func Test_GetTransactionProgress_UndecipherableUtxo_BadRequest(t *testing.T) {
 	watchMock := new(application.TimeProviderMock)
 	logger := log.NewLoggerMock()
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
-	data := ""
-	marshalledData, _ := json.Marshal(data)
-	body := bytes.NewReader(marshalledData)
 	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodPut, "/", body)
+	request := httptest.NewRequest(http.MethodGet, "/?transactionId=id&outputIndex=0", nil)
+
+	// Act
+	controller.GetTransactionProgress(recorder, request)
+
+	// Assert
+	isNeighborMethodCalled := len(senderMock.GetUtxosCalls()) != 0
+	test.Assert(t, !isNeighborMethodCalled, "Neighbor method is called whereas it should not.")
+	expectedStatusCode := 400
+	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
+}
+
+func Test_GetTransactionProgress_TransactionIdIsMissing_BadRequest(t *testing.T) {
+	// Arrange
+	senderMock := new(application.SenderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	watchMock := new(application.TimeProviderMock)
+	logger := log.NewLoggerMock()
+	controller := NewProgressController(senderMock, settings, watchMock, logger)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/?address=address&outputIndex=0", nil)
+
+	// Act
+	controller.GetTransactionProgress(recorder, request)
+
+	// Assert
+	isNeighborMethodCalled := len(senderMock.GetUtxosCalls()) != 0
+	test.Assert(t, !isNeighborMethodCalled, "Neighbor method is called whereas it should not.")
+	expectedStatusCode := 400
+	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
+}
+
+func Test_GetTransactionProgress_InvalidOutputIndex_BadRequest(t *testing.T) {
+	// Arrange
+	senderMock := new(application.SenderMock)
+	settings := new(application.ProtocolSettingsProviderMock)
+	settings.ValidationTimestampFunc = func() int64 { return 1 }
+	watchMock := new(application.TimeProviderMock)
+	logger := log.NewLoggerMock()
+	controller := NewProgressController(senderMock, settings, watchMock, logger)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/?address=address&transactionId=id&outputIndex=65536", nil)
 
 	// Act
 	controller.GetTransactionProgress(recorder, request)
@@ -50,10 +88,7 @@ func Test_GetTransactionProgress_GetUtxosError_ReturnsInternalServerError(t *tes
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	utxo := ledger.NewUtxo(&ledger.InputInfo{}, &ledger.Output{}, 0)
-	marshalledUtxo, _ := json.Marshal(utxo)
-	body := bytes.NewReader(marshalledUtxo)
-	request := httptest.NewRequest(http.MethodPut, "/", body)
+	request := httptest.NewRequest(http.MethodGet, "/?address=address&transactionId=id&outputIndex=0", nil)
 
 	// Act
 	controller.GetTransactionProgress(recorder, request)
@@ -78,10 +113,7 @@ func Test_GetTransactionProgress_GetFirstBlockTimestampError_ReturnsInternalServ
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	utxo := ledger.NewUtxo(&ledger.InputInfo{}, &ledger.Output{}, 0)
-	marshalledUtxo, _ := json.Marshal(utxo)
-	body := bytes.NewReader(marshalledUtxo)
-	request := httptest.NewRequest(http.MethodPut, "/", body)
+	request := httptest.NewRequest(http.MethodGet, "/?address=address&transactionId=id&outputIndex=0", nil)
 
 	// Act
 	controller.GetTransactionProgress(recorder, request)
@@ -107,10 +139,7 @@ func Test_GetTransactionProgress_GetBlocksError_ReturnsInternalServerError(t *te
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	utxo := ledger.NewUtxo(&ledger.InputInfo{}, &ledger.Output{}, 0)
-	marshalledUtxo, _ := json.Marshal(utxo)
-	body := bytes.NewReader(marshalledUtxo)
-	request := httptest.NewRequest(http.MethodPut, "/", body)
+	request := httptest.NewRequest(http.MethodGet, "/?address=address&transactionId=id&outputIndex=0", nil)
 
 	// Act
 	controller.GetTransactionProgress(recorder, request)
@@ -139,10 +168,7 @@ func Test_GetTransactionProgress_GetTransactionsError_ReturnsInternalServerError
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	utxo := ledger.NewUtxo(&ledger.InputInfo{}, &ledger.Output{}, 0)
-	marshalledUtxo, _ := json.Marshal(utxo)
-	body := bytes.NewReader(marshalledUtxo)
-	request := httptest.NewRequest(http.MethodPut, "/", body)
+	request := httptest.NewRequest(http.MethodGet, "/?address=address&transactionId=id&outputIndex=0", nil)
 
 	// Act
 	controller.GetTransactionProgress(recorder, request)
@@ -171,10 +197,7 @@ func Test_GetTransactionProgress_TransactionNotFound_ReturnsRejected(t *testing.
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	utxo := ledger.NewUtxo(&ledger.InputInfo{}, &ledger.Output{}, 0)
-	marshalledUtxo, _ := json.Marshal(utxo)
-	body := bytes.NewReader(marshalledUtxo)
-	request := httptest.NewRequest(http.MethodPut, "/", body)
+	request := httptest.NewRequest(http.MethodGet, "/?address=address&transactionId=id&outputIndex=0", nil)
 
 	// Act
 	controller.GetTransactionProgress(recorder, request)
@@ -210,9 +233,8 @@ func Test_GetTransactionProgress_UtxoFound_ReturnsConfirmed(t *testing.T) {
 	settings.ValidationTimestampFunc = func() int64 { return 1 }
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
-	marshalledUtxo, _ := json.Marshal(utxo)
-	body := bytes.NewReader(marshalledUtxo)
-	request := httptest.NewRequest(http.MethodPut, "/", body)
+	expectedAddress := "address"
+	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?address=%s&transactionId=%s&outputIndex=%d", expectedAddress, transactionId, utxo.OutputIndex()), nil)
 
 	// Act
 	controller.GetTransactionProgress(recorder, request)
@@ -220,6 +242,8 @@ func Test_GetTransactionProgress_UtxoFound_ReturnsConfirmed(t *testing.T) {
 	// Assert
 	areNeighborMethodsCalled := len(senderMock.GetUtxosCalls()) == 1 && len(senderMock.GetFirstBlockTimestampCalls()) == 1
 	test.Assert(t, areNeighborMethodsCalled, "Neighbor method is not called whereas it should be.")
+	actualAddress := senderMock.GetUtxosCalls()[0].Address
+	test.Assert(t, actualAddress == expectedAddress, fmt.Sprintf("Wrong address. expected: %s actual: %s", expectedAddress, actualAddress))
 	expectedStatusCode := 200
 	test.Assert(t, recorder.Code == expectedStatusCode, fmt.Sprintf("Wrong response status code. expected: %d actual: %d", expectedStatusCode, recorder.Code))
 	expectedStatus := "confirmed"
@@ -249,10 +273,7 @@ func Test_GetTransactionProgress_ValidatedTransactionFound_ReturnsValidated(t *t
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	outputIndex := 0
-	utxo := ledger.NewUtxo(ledger.NewInputInfo(uint16(outputIndex), transaction.Id()), transaction.Outputs()[outputIndex], transaction.Timestamp())
-	marshalledUtxo, _ := json.Marshal(utxo)
-	body := bytes.NewReader(marshalledUtxo)
-	request := httptest.NewRequest(http.MethodPut, "/", body)
+	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?address=address&transactionId=%s&outputIndex=%d", transaction.Id(), outputIndex), nil)
 
 	// Act
 	controller.GetTransactionProgress(recorder, request)
@@ -292,10 +313,7 @@ func Test_GetTransactionProgress_PendingTransactionFound_ReturnsSent(t *testing.
 	controller := NewProgressController(senderMock, settings, watchMock, logger)
 	recorder := httptest.NewRecorder()
 	outputIndex := 0
-	utxo := ledger.NewUtxo(ledger.NewInputInfo(uint16(outputIndex), transaction.Id()), transaction.Outputs()[outputIndex], transaction.Timestamp())
-	marshalledUtxo, _ := json.Marshal(utxo)
-	body := bytes.NewReader(marshalledUtxo)
-	request := httptest.NewRequest(http.MethodPut, "/", body)
+	request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/?address=address&transactionId=%s&outputIndex=%d", transaction.Id(), outputIndex), nil)
 
 	// Act
 	controller.GetTransactionProgress(recorder, request)

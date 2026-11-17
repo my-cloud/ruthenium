@@ -107,7 +107,7 @@ Base URL: `<access node IP>:<access node port>` (example: `localhost:8080`)
 <summary><b>Add transaction</b></summary>
 
 ![POST](https://img.shields.io/badge/POST-seagreen?style=flat-square)
-![/transaction](https://img.shields.io/badge//transaction-dimgray?style=flat-square)
+![/transactions](https://img.shields.io/badge//transactions-dimgray?style=flat-square)
 
 *Description:* Add a transaction to the transactions pool.
 * **parameters:** *none*
@@ -124,7 +124,7 @@ Base URL: `<access node IP>:<access node port>` (example: `localhost:8080`)
 <summary><b>Get transaction info</b></summary>
 
 ![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
-![/transaction/info](https://img.shields.io/badge//transaction/info-dimgray?style=flat-square)
+![/transactions/info](https://img.shields.io/badge//transactions/info-dimgray?style=flat-square)
 
 *Description:* Get the transaction data needed for a transaction request.
 * **parameters:**
@@ -142,6 +142,29 @@ Base URL: `<access node IP>:<access node port>` (example: `localhost:8080`)
   | 400  | Bad request, if any request argument is invalid                                  |
   | 405  | Method not allowed, if the value exceeds the wallet amount for the given address |
   | 500  | Internal server error, if an unexpected condition occurred                       |
+</details>
+<details>
+<summary><b>Get transaction progress</b></summary>
+
+![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
+![/transactions/output/progress](https://img.shields.io/badge//transactions/output/progress-dimgray?style=flat-square)
+
+*Description:* Get the progress of the transaction holding the given output.
+* **parameters:**
+
+  | Name            | Description                                         | Example                                                            |
+  |-----------------|-----------------------------------------------------|--------------------------------------------------------------------|
+  | `address`       | 42 characters hexadecimal output recipient address  | `0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a`                       |
+  | `transactionId` | The ID of the transaction holding the output        | `8ae72a72c0c99dc9d41c2b7d8ea67b5a2de25ff4463b1a53816ba179947ce77d` |
+  | `outputIndex`   | 16 bits unsigned integer index of the output        | `1`                                                                |
+* **request body:** *none*
+* **responses:**
+
+  | Code | Description                                                |
+  |------|------------------------------------------------------------|
+  | 200  | [ProgressInfo](#progressinfo)                              |
+  | 400  | Bad request, if any request argument is invalid            |
+  | 500  | Internal server error, if an unexpected condition occurred |
 </details>
 <details>
 <summary><b>Get transactions</b></summary>
@@ -336,6 +359,51 @@ The value at the transaction timestamp
   "address": "0xf14DB86A3292ABaB1D4B912dbF55e8abc112593a"
   "is_yielding": true
   "value": 0
+}
+```
+</td>
+</tr>
+</table>
+
+#### ProgressInfo
+<table>
+<th>
+Schema
+</th>
+<th>
+Description
+</th>
+<th>
+Example
+</th>
+<tr>
+<td>
+
+```
+{
+  "current_block_timestamp": int64
+  "transaction_status":      string
+  "validation_timestamp":    int64
+}
+```
+</td>
+<td>
+
+```
+
+The current block timestamp in nanoseconds
+The transaction status ("sent", "validated", "confirmed" or "rejected")
+The validation interval in nanoseconds
+
+```
+</td>
+<td>
+
+```
+{
+  "current_block_timestamp": 1667768883000000000
+  "transaction_status": "confirmed"
+  "validation_timestamp": 3000000000
 }
 ```
 </td>
