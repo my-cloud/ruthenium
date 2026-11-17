@@ -35,7 +35,7 @@ func NewNeighbor(ip string, port string, connectionTimeout time.Duration, logger
 	settings.SetRetry(1, time.Nanosecond)
 	settings.SetConnTimeout(connectionTimeout)
 	client.SetSettings(settings)
-	client.SetLogger(logger)
+	client.SetLogger(NewNeighborLogger(logger))
 	target := network.NewTarget(ip, port)
 	return &Neighbor{client, target}, err
 }

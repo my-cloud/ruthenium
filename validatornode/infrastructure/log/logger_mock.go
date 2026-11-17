@@ -26,6 +26,9 @@ var _ Logger = &LoggerMock{}
 //			InfoFunc: func(msg string)  {
 //				panic("mock out the Info method")
 //			},
+//			TraceFunc: func(msg string)  {
+//				panic("mock out the Trace method")
+//			},
 //			WarnFunc: func(msg string)  {
 //				panic("mock out the Warn method")
 //			},
@@ -44,6 +47,9 @@ type LoggerMock struct {
 
 	// InfoFunc mocks the Info method.
 	InfoFunc func(msg string)
+
+	// TraceFunc mocks the Trace method.
+	TraceFunc func(msg string)
 
 	// WarnFunc mocks the Warn method.
 	WarnFunc func(msg string)
@@ -65,6 +71,11 @@ type LoggerMock struct {
 			// Msg is the msg argument value.
 			Msg string
 		}
+		// Trace holds details about calls to the Trace method.
+		Trace []struct {
+			// Msg is the msg argument value.
+			Msg string
+		}
 		// Warn holds details about calls to the Warn method.
 		Warn []struct {
 			// Msg is the msg argument value.
@@ -74,11 +85,13 @@ type LoggerMock struct {
 	lockDebug sync.RWMutex
 	lockError sync.RWMutex
 	lockInfo  sync.RWMutex
+	lockTrace sync.RWMutex
 	lockWarn  sync.RWMutex
 }
 
 func NewLoggerMock() *LoggerMock {
 	logger := new(LoggerMock)
+	logger.TraceFunc = func(string) {}
 	logger.DebugFunc = func(string) {}
 	logger.InfoFunc = func(string) {}
 	logger.WarnFunc = func(string) {}
@@ -179,6 +192,38 @@ func (mock *LoggerMock) InfoCalls() []struct {
 	mock.lockInfo.RLock()
 	calls = mock.calls.Info
 	mock.lockInfo.RUnlock()
+	return calls
+}
+
+// Trace calls TraceFunc.
+func (mock *LoggerMock) Trace(msg string) {
+	if mock.TraceFunc == nil {
+		panic("LoggerMock.TraceFunc: method is nil but Logger.Trace was just called")
+	}
+	callInfo := struct {
+		Msg string
+	}{
+		Msg: msg,
+	}
+	mock.lockTrace.Lock()
+	mock.calls.Trace = append(mock.calls.Trace, callInfo)
+	mock.lockTrace.Unlock()
+	mock.TraceFunc(msg)
+}
+
+// TraceCalls gets all the calls that were made to Trace.
+// Check the length with:
+//
+//	len(mockedLogger.TraceCalls())
+func (mock *LoggerMock) TraceCalls() []struct {
+	Msg string
+} {
+	var calls []struct {
+		Msg string
+	}
+	mock.lockTrace.RLock()
+	calls = mock.calls.Trace
+	mock.lockTrace.RUnlock()
 	return calls
 }
 

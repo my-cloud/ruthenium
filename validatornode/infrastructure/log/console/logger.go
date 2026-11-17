@@ -8,7 +8,8 @@ import (
 type Level uint32
 
 const (
-	debug Level = iota
+	trace Level = iota
+	debug
 	info
 	warn
 	err
@@ -17,6 +18,8 @@ const (
 
 func parseLevel(level string) Level {
 	switch strings.ToLower(level) {
+	case "trace":
+		return trace
 	case "debug":
 		return debug
 	case "info":
@@ -41,6 +44,12 @@ func NewLogger(level string) *Logger {
 
 func NewFatalLogger() *Logger {
 	return &Logger{fatal}
+}
+
+func (logger *Logger) Trace(msg string) {
+	if logger.level <= trace {
+		log.Println("TRACE:", msg)
+	}
 }
 
 func (logger *Logger) Debug(msg string) {
