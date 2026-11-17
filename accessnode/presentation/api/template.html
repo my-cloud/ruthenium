@@ -93,6 +93,14 @@
     <h1>Transactions Pool</h1>
     <pre id="transactions_pool"></pre>
 </div>
+
+<div>
+    <h1>Blockchain</h1>
+    <details id="blockchain">
+        <summary>Last blocks (height: <span id="blocks_height">-</span>)</summary>
+        <div id="blocks" class="collapsible-content"></div>
+    </details>
+</div>
 </body>
 <script>
     const curve = "secp256k1";
@@ -250,6 +258,7 @@
         setInterval(refresh_amount, 1000)
         setInterval(refresh_transactions, 200)
         setInterval(refresh_progress, 100)
+        setInterval(refresh_blocks, 1000)
 
         function refresh_amount() {
             const $walletAmount = $("#wallet_amount");
@@ -283,6 +292,83 @@
                     console.error(error)
                 }
             })
+        }
+
+        const maxDisplayedBlocksCount = 50;
+        let nextBlockHeight;
+        let lastBlockTimestamp;
+        let isBlocksRequestPending = false;
+
+        function refresh_blocks() {
+            if (isBlocksRequestPending || !document.getElementById("blockchain").open) {
+                return
+            }
+            isBlocksRequestPending = true;
+            if (nextBlockHeight === undefined) {
+                $.ajax({
+                    url: "/blocks/current-height",
+                    type: "GET",
+                    success: function (response) {
+                        nextBlockHeight = Math.max(0, response - maxDisplayedBlocksCount + 1);
+                    },
+                    error: function (error) {
+                        console.error(error)
+                    },
+                    complete: function () {
+                        isBlocksRequestPending = false;
+                    }
+                })
+                return
+            }
+            const isFirstRequest = lastBlockTimestamp === undefined;
+            const startingBlockHeight = isFirstRequest ? nextBlockHeight : nextBlockHeight - 1;
+            $.ajax({
+                url: "/blocks",
+                type: "GET",
+                data: {"height": startingBlockHeight},
+                success: function (response) {
+                    if (isFirstRequest) {
+                        if (response.length === 0) {
+                            // The estimated height is too high when blocks are missing
+                            nextBlockHeight = Math.floor(nextBlockHeight / 2);
+                            return
+                        }
+                        displayBlocks(nextBlockHeight, response);
+                    } else if (response.length === 0 || response[0].timestamp !== lastBlockTimestamp) {
+                        // The validator node has replaced or shortened its blockchain
+                        resetBlocks();
+                    } else {
+                        displayBlocks(nextBlockHeight, response.slice(1));
+                    }
+                },
+                error: function (error) {
+                    console.error(error)
+                },
+                complete: function () {
+                    isBlocksRequestPending = false;
+                }
+            })
+        }
+
+        function displayBlocks(startingBlockHeight, blocks) {
+            if (blocks.length === 0) {
+                return
+            }
+            const $blocks = $("#blocks");
+            for (let i = 0; i < blocks.length; i++) {
+                $blocks.prepend(createBlockElement(startingBlockHeight + i, blocks[i]));
+            }
+            $blocks.children().slice(maxDisplayedBlocksCount).remove();
+            nextBlockHeight = startingBlockHeight + blocks.length;
+            lastBlockTimestamp = blocks[blocks.length - 1].timestamp;
+            $("#blocks_height").text(nextBlockHeight - 1);
+        }
+
+        function resetBlocks() {
+            $("#blocks").empty();
+            $("#blocks_height").text("-");
+            nextBlockHeight = undefined;
+            lastBlockTimestamp = undefined;
         }
 
         function refresh_progress() {
@@ -395,6 +481,38 @@
                 err: null
             };
         }
+    }
+
+    function createBlockElement(height, block) {
+        const $block = $("<details>");
+        const transactions = block.transactions || [];
+        const timestamp = new Date(block.timestamp / 1000000).toLocaleString();
+        $block.append($("<summary>").text("Block " + height + " (" + timestamp + ", " + transactions.length + " transactions)"));
+        const $content = $("<div>").addClass("collapsible-content");
+        const header = {
+            "previous_hash": bytesToHex(block.previous_hash),
+            "added_registered_addresses": block.added_registered_addresses,
+            "removed_registered_addresses": block.removed_registered_addresses,
+            "timestamp": block.timestamp,
+        };
+        $content.append($("<pre>").text(JSON.stringify(header, undefined, 4)));
+        for (let i = 0; i < transactions.length; i++) {
+            const transaction = transactions[i];
+            const $transaction = $("<details>");
+            $transaction.append($("<summary>").text("Transaction " + transaction.id));
+            $transaction.append($("<pre>").text(JSON.stringify(transaction, undefined, 4)));
+            $content.append($transaction);
+        }
+        $block.append($content);
+        return $block;
+    }
+
+    function bytesToHex(bytes) {
+        let hex = "";
+        for (let i = 0; i < bytes.length; i++) {
+            hex += bytes[i].toString(16).padStart(2, "0");
+        }
+        return hex;
     }
 
     function getSignatureHex(signature) {
@@ -510,6 +628,14 @@
     table {
         width: 50%;
         margin-left: 90px;
+    }
+
+    summary {
+        cursor: pointer;
+    }
+
+    .collapsible-content {
+        margin-left: 20px;
     }
 
     .progress {

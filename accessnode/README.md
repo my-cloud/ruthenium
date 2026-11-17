@@ -102,6 +102,45 @@ The log level (accepted values: "debug", "info", "warn", "error", "fatal")
 ## API
 Base URL: `<access node IP>:<access node port>` (example: `localhost:8080`)
 
+### History
+<details>
+<summary><b>Get blocks</b></summary>
+
+![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
+![/blocks](https://img.shields.io/badge//blocks-dimgray?style=flat-square)
+
+*Description:* Get the blocks starting from the given height (returned blocks array size is limited by the validator node).
+* **parameters:**
+
+  | Name     | Description                                    | Example |
+  |----------|------------------------------------------------|---------|
+  | `height` | 64 bits unsigned integer starting block height | `0`     |
+* **request body:** *none*
+* **responses:**
+
+  | Code | Description                                                |
+  |------|------------------------------------------------------------|
+  | 200  | Array of [blocks](../validatornode/README.md#block)        |
+  | 400  | Bad request, if any request argument is invalid            |
+  | 500  | Internal server error, if an unexpected condition occurred |
+</details>
+<details>
+<summary><b>Get current block height</b></summary>
+
+![GET](https://img.shields.io/badge/GET-steelblue?style=flat-square)
+![/blocks/current-height](https://img.shields.io/badge//blocks/current--height-dimgray?style=flat-square)
+
+*Description:* Get the current block height, estimated from the first block timestamp and the validation interval (0 if the blockchain is empty).
+* **parameters:** *none*
+* **request body:** *none*
+* **responses:**
+
+  | Code | Description                                                |
+  |------|------------------------------------------------------------|
+  | 200  | 64 bits integer block height                               |
+  | 500  | Internal server error, if an unexpected condition occurred |
+</details>
+
 ### Payment
 <details>
 <summary><b>Add transaction</b></summary>
